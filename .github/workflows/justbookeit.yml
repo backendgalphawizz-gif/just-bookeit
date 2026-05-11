@@ -17,7 +17,7 @@ jobs:
         with:
           switches: -avzr --delete --exclude='.git*' --exclude='.github*' --exclude='.env'
           path: ./
-          remote_path: /home/${{ secrets.SERVER_USER }}/public_html/just-bookeit.developmentalphawizz.com/
+          remote_path: /home/${{ secrets.SERVER_USER }}/public_html/newabms.developmentalphawizz.com/
           remote_host: ${{ secrets.SERVER_IP }}
           remote_user: ${{ secrets.SERVER_USER }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
