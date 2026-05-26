@@ -62,13 +62,6 @@
                 @endforeach
             @endforeach
         </nav>
-
-        <div class="shrink-0 border-t border-slate-800/80 p-4">
-            <div class="rounded-xl bg-slate-800/50 px-3 py-3">
-                <p class="truncate text-sm font-semibold text-white">{{ auth('admin')->user()->name }}</p>
-                <p class="truncate text-xs text-slate-400">{{ auth('admin')->user()->role->name }}</p>
-            </div>
-        </div>
     </aside>
 
     <div class="jb-main-column">
@@ -84,10 +77,7 @@
             </div>
             <div class="jb-topbar-actions">
                 @yield('header_actions')
-                <form method="POST" action="{{ route('admin.logout') }}">
-                    @csrf
-                    <x-admin.button variant="secondary" type="submit" size="sm">Logout</x-admin.button>
-                </form>
+                @include('admin.partials.profile-menu')
             </div>
         </header>
 

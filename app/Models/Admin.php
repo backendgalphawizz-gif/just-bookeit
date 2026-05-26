@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Admin extends Authenticatable
 {
@@ -13,6 +16,7 @@ class Admin extends Authenticatable
         'name',
         'username',
         'email',
+        'avatar_path',
         'password',
         'status',
         'last_login_at',
@@ -65,5 +69,23 @@ class Admin extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->role?->slug === 'super_admin';
+    }
+
+    public function initials(): string
+    {
+        $parts = preg_split('/\s+/', trim($this->name)) ?: [];
+
+        return Str::upper(collect($parts)->take(2)->map(fn (string $part) => Str::substr($part, 0, 1))->implode(''));
+    }
+
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            if (! $this->avatar_path || ! Storage::disk('public')->exists($this->avatar_path)) {
+                return null;
+            }
+
+            return '/storage/'.ltrim(str_replace('\\', '/', $this->avatar_path), '/');
+        });
     }
 }

@@ -144,7 +144,7 @@
         @apply flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-3;
     }
 
-    .jb-topbar-actions form {
+    .jb-topbar-actions > form {
         @apply m-0 inline-flex items-center;
     }
 
@@ -154,6 +154,126 @@
 
     .jb-topbar-sub {
         @apply mt-0.5 text-sm text-slate-500;
+    }
+
+    .jb-profile-menu {
+        @apply relative shrink-0;
+    }
+
+    .jb-profile-trigger {
+        @apply flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white py-1 pl-1 pr-2.5 shadow-sm transition hover:border-slate-300 hover:shadow focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/25;
+    }
+
+    .jb-profile-trigger--open {
+        @apply border-rose-200 ring-4 ring-rose-500/15;
+    }
+
+    .jb-profile-chevron {
+        @apply size-4 shrink-0 text-slate-400 transition;
+    }
+
+    .jb-profile-trigger--open .jb-profile-chevron {
+        @apply rotate-180 text-rose-600;
+    }
+
+    .jb-profile-avatar {
+        @apply block size-9 shrink-0 rounded-full object-cover sm:size-10;
+    }
+
+    .jb-profile-avatar--lg {
+        @apply size-24 sm:size-28;
+    }
+
+    .jb-profile-avatar--initials {
+        @apply flex items-center justify-center bg-gradient-to-br from-rose-500 to-rose-700 text-xs font-bold text-white sm:text-sm;
+    }
+
+    .jb-profile-avatar--lg.jb-profile-avatar--initials {
+        @apply text-2xl sm:text-3xl;
+    }
+
+    .jb-profile-dropdown {
+        @apply absolute right-0 z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] origin-top-right overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-300/50;
+    }
+
+    .jb-profile-dropdown-header {
+        @apply flex items-center gap-3 border-b border-slate-100 bg-slate-50/90 px-4 py-3.5;
+    }
+
+    .jb-profile-dropdown-avatar {
+        @apply size-11 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm;
+    }
+
+    .jb-profile-dropdown-avatar.jb-profile-avatar--initials {
+        @apply text-sm;
+    }
+
+    .jb-profile-dropdown-body {
+        @apply p-1.5;
+    }
+
+    .jb-profile-dropdown-form {
+        @apply block w-full;
+    }
+
+    .jb-profile-dropdown-item {
+        @apply flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+    }
+
+    .jb-profile-dropdown-item--danger {
+        @apply text-rose-700 hover:bg-rose-50;
+    }
+
+    .jb-profile-page {
+        @apply mx-auto w-full max-w-3xl;
+    }
+
+    .jb-profile-section {
+        @apply space-y-5;
+    }
+
+    .jb-profile-section-title {
+        @apply text-sm font-bold uppercase tracking-wide text-slate-500;
+    }
+
+    .jb-profile-photo-panel {
+        @apply flex flex-col items-center gap-5 rounded-xl border border-slate-200/80 bg-slate-50/50 p-5 sm:flex-row sm:items-start sm:p-6;
+    }
+
+    .jb-profile-photo-meta {
+        @apply w-full min-w-0 flex-1 text-center sm:text-left;
+    }
+
+    .jb-profile-file-btn {
+        @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50;
+    }
+
+    .jb-profile-file-input {
+        @apply sr-only;
+    }
+
+    .jb-profile-dropdown-enter {
+        @apply transition ease-out duration-100;
+    }
+
+    .jb-profile-dropdown-enter-start {
+        @apply scale-95 opacity-0;
+    }
+
+    .jb-profile-dropdown-enter-end {
+        @apply scale-100 opacity-100;
+    }
+
+    .jb-profile-dropdown-leave {
+        @apply transition ease-in duration-75;
+    }
+
+    .jb-profile-dropdown-leave-start {
+        @apply scale-100 opacity-100;
+    }
+
+    .jb-profile-dropdown-leave-end {
+        @apply scale-95 opacity-0;
     }
 
     .jb-main {

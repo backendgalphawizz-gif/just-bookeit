@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\Auth\LoginController;
@@ -30,6 +31,9 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
     Route::middleware('admin.auth')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+
+        Route::get('profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('profile', [AdminProfileController::class, 'update'])->name('profile.update');
 
         Route::middleware('admin.module')->group(function () {
             Route::resource('customers', CustomerController::class);
