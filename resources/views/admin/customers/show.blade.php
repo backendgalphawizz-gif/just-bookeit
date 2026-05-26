@@ -1,0 +1,71 @@
+@extends('admin.layouts.app')
+@section('title', $customer->name)
+@section('page_title', $customer->name)
+@section('page_subtitle', $customer->customer_code)
+
+@section('header_actions')
+    @if (auth('admin')->user()->hasPermission('customers', 'edit'))
+        @if ($customer->status !== 'active')
+            <form method="POST" action="{{ route('admin.customers.activate', $customer) }}" class="inline-flex">@csrf
+                <x-admin.button variant="success" type="submit">Activate</x-admin.button>
+            </form>
+        @endif
+        @if ($customer->status === 'active')
+            <form method="POST" action="{{ route('admin.customers.suspend', $customer) }}" class="inline-flex">@csrf
+                <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
+            </form>
+        @endif
+        <x-admin.button variant="secondary" :href="route('admin.customers.edit', $customer)">Edit</x-admin.button>
+    @endif
+    @if (auth('admin')->user()->hasPermission('customers', 'delete'))
+        <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" onsubmit="return confirm('Delete this customer?')">
+            @csrf @method('DELETE')
+            <x-admin.button variant="danger" type="submit">Delete</x-admin.button>
+        </form>
+    @endif
+@endsection
+
+@section('content')
+    <div class="jb-detail-grid">
+        <div class="jb-detail-card">
+            <h2>Basic Details</h2>
+            <dl class="jb-dl">
+                <div><dt>Mobile</dt><dd>{{ $customer->mobile }}</dd></div>
+                <div><dt>Email</dt><dd>{{ $customer->email ?? '—' }}</dd></div>
+                <div><dt>City</dt><dd>{{ $customer->city ?? '—' }}</dd></div>
+                <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $customer->status])</dd></div>
+                <div><dt>Verified</dt><dd>{{ $customer->is_verified ? 'Yes' : 'No' }}</dd></div>
+                <div><dt>Registered</dt><dd>{{ $customer->registered_at?->format('M d, Y') }}</dd></div>
+            </dl>
+        </div>
+        <div class="jb-detail-card lg:col-span-2">
+            <h2>Order History</h2>
+            <div class="jb-table-wrap mt-4">
+                <table class="jb-table">
+                    <thead><tr>
+                        @include('admin.partials.table-index-header')
+                        <th class="jb-col-id">Order</th>
+                        <th class="jb-col-name">Vendor</th>
+                        <th class="jb-col-amount">Amount</th>
+                        <th class="jb-col-status">Status</th>
+                        <th class="jb-table-actions-col">Actions</th>
+                    </tr></thead>
+                    <tbody>
+                        @forelse ($customer->orders as $order)
+                            <tr>
+                                @include('admin.partials.table-index-cell')
+                                <td class="jb-col-id font-semibold">{{ $order->order_number }}</td>
+                                <td class="jb-col-name">{{ $order->vendor?->brand_name ?? 'Unassigned' }}</td>
+                                <td class="jb-col-amount">₹{{ number_format($order->amount, 2) }}</td>
+                                <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
+                                <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" /></div></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="jb-table-empty">No orders yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+@endsection

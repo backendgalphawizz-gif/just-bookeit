@@ -1,0 +1,731 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --color-jb-primary: #be123c;
+    --color-jb-primary-hover: #9f1239;
+    --color-jb-sidebar: #0f172a;
+    --color-jb-sidebar-hover: #1e293b;
+}
+
+@layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    .jb-admin-shell {
+        @apply h-screen overflow-hidden bg-slate-50/90 text-slate-900 antialiased;
+    }
+
+    .jb-sidebar {
+        @apply fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-slate-800/80 text-slate-200;
+        background-color: var(--jb-sidebar-bg, #0f172a);
+        color: var(--jb-sidebar-text, #e2e8f0);
+    }
+
+    /* Scrollable nav without visible scrollbar */
+    .jb-sidebar-nav {
+        @apply min-h-0 flex-1 overflow-y-auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .jb-sidebar-nav::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    .jb-main-column {
+        @apply flex h-screen min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:ml-72;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .jb-main-column::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    .jb-sidebar-brand {
+        @apply border-b border-slate-800/80 px-4 py-4;
+    }
+
+    .jb-sidebar-brand-row {
+        @apply flex items-start gap-2;
+    }
+
+    .jb-sidebar-brand-link {
+        @apply block min-w-0 flex-1;
+    }
+
+    .jb-sidebar-brand-link--logo {
+        @apply w-full rounded-xl border border-slate-700/80 bg-white p-3 shadow-sm;
+    }
+
+    .jb-sidebar-brand-title {
+        @apply text-lg font-bold tracking-tight text-white;
+    }
+
+    .jb-sidebar-brand-sub {
+        @apply mt-0.5 text-xs font-medium text-slate-400;
+    }
+
+    .jb-sidebar-brand-logo {
+        @apply mx-auto block h-auto w-full max-h-16 object-contain object-center;
+    }
+
+    .jb-logo-upload {
+        @apply flex flex-col;
+    }
+
+    .jb-logo-preview {
+        @apply flex min-h-[7rem] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-4;
+    }
+
+    .jb-logo-preview--empty {
+        @apply border-slate-200 bg-slate-50;
+    }
+
+    .jb-logo-preview-img {
+        @apply max-h-24 w-auto max-w-full object-contain;
+    }
+
+    .jb-logo-preview--banner {
+        @apply min-h-[10rem];
+    }
+
+    .jb-logo-preview-img--banner {
+        @apply max-h-40 w-full max-w-md rounded-lg object-cover;
+    }
+
+    .jb-nav-group-label {
+        @apply px-4 pb-1 pt-4 text-[10px] font-bold uppercase tracking-widest text-slate-500;
+    }
+
+    .jb-nav-link {
+        @apply mx-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 transition;
+    }
+
+    .jb-nav-link:hover {
+        background-color: color-mix(in srgb, var(--jb-sidebar-hover, #1e293b) 80%, transparent);
+        @apply text-white;
+    }
+
+    .jb-nav-link--active {
+        background-color: var(--jb-primary, #be123c);
+        @apply text-white shadow-lg;
+        box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--jb-primary, #be123c) 35%, transparent);
+    }
+
+    .jb-nav-link--disabled {
+        @apply mx-2 flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-600;
+    }
+
+    .jb-nav-badge {
+        background-color: var(--jb-primary, #be123c);
+        @apply ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold text-white;
+    }
+
+    .jb-topbar {
+        @apply sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4 backdrop-blur-md sm:px-6 lg:px-8;
+        background-color: color-mix(in srgb, var(--jb-topbar-bg, #ffffff) 90%, transparent);
+    }
+
+    .jb-topbar-actions {
+        @apply flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-3;
+    }
+
+    .jb-topbar-actions form {
+        @apply m-0 inline-flex items-center;
+    }
+
+    .jb-topbar-title {
+        @apply text-xl font-bold tracking-tight text-slate-900;
+    }
+
+    .jb-topbar-sub {
+        @apply mt-0.5 text-sm text-slate-500;
+    }
+
+    .jb-main {
+        @apply flex-1 p-4 sm:p-6 lg:p-8;
+    }
+
+    .jb-card {
+        @apply overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/40;
+    }
+
+    .jb-card-header {
+        @apply flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/50 px-5 py-4 sm:px-6;
+    }
+
+    .jb-card-header-title {
+        @apply text-base font-semibold text-slate-900;
+    }
+
+    .jb-card-body {
+        @apply p-5 sm:p-6;
+    }
+
+    .jb-filters {
+        @apply mb-6 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5;
+    }
+
+    .jb-filters-grid {
+        @apply flex flex-nowrap items-end gap-3;
+    }
+
+    .jb-filters-field {
+        @apply shrink-0;
+        min-width: 8.5rem;
+    }
+
+    .jb-filters-field--wide {
+        min-width: 11rem;
+        max-width: 16rem;
+        flex: 0 1 14rem;
+    }
+
+    .jb-filters-field--date {
+        min-width: 9rem;
+    }
+
+    .jb-filters-actions {
+        @apply flex shrink-0 flex-col;
+    }
+
+    .jb-filters-actions-btns {
+        @apply flex items-center gap-2;
+    }
+
+    .jb-filters-actions .jb-btn {
+        @apply min-h-[2.625rem] whitespace-nowrap;
+    }
+
+    .jb-filters-page-actions {
+        @apply ml-auto flex shrink-0 flex-col;
+    }
+
+    .jb-filters-page-actions-btns {
+        @apply flex flex-wrap items-center justify-end gap-2;
+    }
+
+    .jb-filters-page-actions .jb-btn {
+        @apply min-h-[2.625rem] whitespace-nowrap;
+    }
+
+    .jb-label--spacer {
+        @apply invisible mb-1.5 block select-none;
+    }
+
+    .jb-label {
+        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .jb-input,
+    .jb-select,
+    .jb-textarea {
+        @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400;
+    }
+
+    .jb-input:focus,
+    .jb-select:focus,
+    .jb-textarea:focus {
+        border-color: color-mix(in srgb, var(--jb-primary, #be123c) 40%, #e2e8f0);
+        outline: none;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--jb-primary, #be123c) 12%, transparent);
+    }
+
+    .jb-btn {
+        @apply inline-flex min-h-[2.5rem] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold leading-none transition focus:outline-none focus:ring-4 focus:ring-rose-500/20;
+    }
+
+    .jb-btn-sm {
+        @apply min-h-[2.125rem] px-3 py-2 text-xs;
+    }
+
+    .jb-btn-primary {
+        background-color: var(--jb-primary, #be123c);
+        @apply text-white shadow-sm;
+        box-shadow: 0 1px 2px 0 color-mix(in srgb, var(--jb-primary, #be123c) 25%, transparent);
+    }
+
+    .jb-btn-primary:hover {
+        background-color: var(--jb-primary-hover, #9f1239);
+    }
+
+    .jb-btn-secondary {
+        @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50;
+    }
+
+    .jb-btn-ghost {
+        @apply text-slate-600 hover:bg-slate-100;
+    }
+
+    .jb-btn-danger {
+        @apply border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100;
+    }
+
+    .jb-btn-success {
+        @apply bg-emerald-600 text-white hover:bg-emerald-700;
+    }
+
+    .jb-table-wrap {
+        @apply overflow-x-auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .jb-table-wrap::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    .jb-table {
+        @apply w-full table-auto text-sm;
+    }
+
+    .jb-table thead {
+        @apply border-b border-slate-200 bg-slate-50/80;
+    }
+
+    .jb-table th {
+        @apply px-4 py-3.5 text-left text-xs font-bold uppercase tracking-wider text-slate-500;
+    }
+
+    .jb-table td {
+        @apply border-b border-slate-100 px-4 py-4 align-middle text-slate-700;
+    }
+
+    .jb-col-sn {
+        @apply w-11 min-w-[2.75rem] max-w-[2.75rem] px-2 text-center text-xs font-bold tabular-nums text-slate-500;
+    }
+
+    .jb-col-id {
+        @apply w-28 min-w-[6rem] whitespace-nowrap;
+    }
+
+    .jb-col-status {
+        @apply w-32 min-w-[7rem];
+    }
+
+    .jb-col-amount {
+        @apply w-28 min-w-[6rem] whitespace-nowrap text-right;
+    }
+
+    .jb-col-date {
+        @apply w-32 min-w-[7.5rem] whitespace-nowrap;
+    }
+
+    .jb-col-name {
+        @apply min-w-[6rem] max-w-[12rem];
+    }
+
+    .jb-table td.jb-col-name {
+        @apply truncate;
+    }
+
+    .jb-col-meta {
+        @apply w-28 min-w-[6rem] max-w-[8rem] whitespace-nowrap;
+    }
+
+    .jb-table--balanced {
+        @apply table-fixed;
+    }
+
+    .jb-table--balanced .jb-col-name {
+        width: 28%;
+    }
+
+
+    .jb-table tbody tr:hover {
+        @apply bg-slate-50/60;
+    }
+
+    .jb-table tbody tr:last-child td {
+        @apply border-b-0;
+    }
+
+    .jb-table-empty {
+        @apply px-5 py-16 text-center text-slate-500;
+    }
+
+    .jb-actions {
+        @apply flex flex-wrap items-center justify-end gap-1.5;
+    }
+
+    .jb-action-form {
+        @apply inline-flex;
+    }
+
+    .jb-action-btn {
+        @apply inline-flex min-h-[2rem] min-w-[5.25rem] items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold leading-none whitespace-nowrap shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-1;
+    }
+
+    .jb-action-btn__icon {
+        @apply inline-flex shrink-0 items-center justify-center;
+    }
+
+    .jb-action-btn__icon svg {
+        @apply h-4 w-4;
+    }
+
+    .jb-action-btn__label {
+        @apply inline-block leading-none;
+    }
+
+    .jb-table th.jb-table-actions-col,
+    .jb-table td.jb-table-actions-col {
+        @apply w-[8.5rem] min-w-[8.5rem] whitespace-nowrap text-right;
+    }
+
+    .jb-action-btn--view {
+        @apply border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus:ring-slate-300/40;
+    }
+
+    .jb-action-btn--icon-only {
+        @apply min-w-0 gap-0 px-2.5;
+    }
+
+    .jb-action-btn--icon-only.jb-action-btn--view,
+    .jb-action-btn--icon-only.jb-action-btn--edit {
+        @apply h-9 w-9 p-0;
+    }
+
+    .jb-action-btn--icon-only .jb-action-btn__icon svg {
+        @apply h-[1.125rem] w-[1.125rem];
+    }
+
+    .jb-action-btn--edit {
+        @apply border-sky-200 bg-sky-50 text-sky-800 hover:border-sky-300 hover:bg-sky-100 focus:ring-sky-300/40;
+    }
+
+    .jb-action-btn--delete {
+        @apply border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100 focus:ring-rose-300/40;
+    }
+
+    .jb-action-btn--approve {
+        @apply border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100 focus:ring-emerald-300/40;
+    }
+
+    .jb-link {
+        color: var(--jb-primary, #be123c);
+        @apply font-semibold hover:underline;
+    }
+
+    .jb-link:hover {
+        color: var(--jb-primary-hover, #9f1239);
+    }
+
+    .jb-settings-tab {
+        @apply rounded-lg px-4 py-2 text-sm font-semibold transition bg-slate-100 text-slate-700 hover:bg-slate-200;
+    }
+
+    .jb-settings-tab--active {
+        background-color: var(--jb-primary, #be123c);
+        @apply text-white hover:opacity-90;
+    }
+
+    .jb-link-muted {
+        @apply font-medium text-slate-600 hover:text-slate-900 hover:underline;
+    }
+
+    .jb-form-grid {
+        @apply grid gap-5 sm:grid-cols-2;
+    }
+
+    .jb-form-actions {
+        @apply mt-8 flex flex-wrap gap-3 border-t border-slate-100 pt-6;
+    }
+
+    .jb-stat-card {
+        @apply relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm;
+    }
+
+    .jb-stat-card::before {
+        content: '';
+        @apply absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-500 to-rose-400;
+    }
+
+    .jb-stat-label {
+        @apply text-xs font-semibold uppercase tracking-wide text-slate-500;
+    }
+
+    .jb-stat-value {
+        @apply mt-2 text-2xl font-bold tracking-tight text-slate-900;
+    }
+
+    .jb-detail-grid {
+        @apply grid gap-6 lg:grid-cols-3;
+    }
+
+    .jb-detail-card {
+        @apply rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm;
+    }
+
+    .jb-detail-card h2 {
+        @apply text-base font-bold text-slate-900;
+    }
+
+    .jb-dl {
+        @apply mt-4 space-y-4 text-sm;
+    }
+
+    .jb-dl dt {
+        @apply text-xs font-semibold uppercase tracking-wide text-slate-400;
+    }
+
+    .jb-dl dd {
+        @apply mt-1 font-medium text-slate-800;
+    }
+
+    .jb-modal-alert {
+        @apply fixed inset-0 z-[300] flex items-center justify-center p-4;
+    }
+
+    .jb-modal-alert-backdrop {
+        @apply absolute inset-0 bg-slate-900/45 backdrop-blur-[2px];
+    }
+
+    .jb-modal-alert-card {
+        @apply relative z-10 w-full max-w-md rounded-2xl bg-white px-8 py-8 text-center shadow-2xl shadow-slate-900/20;
+    }
+
+    .jb-modal-alert-icon-wrap {
+        @apply relative mx-auto mb-5 flex h-20 w-20 items-center justify-center;
+    }
+
+    .jb-modal-alert-icon-ring {
+        @apply absolute inset-0 rounded-full opacity-30;
+    }
+
+    .jb-modal-alert-icon-wrap--success .jb-modal-alert-icon-ring {
+        @apply bg-sky-400;
+    }
+
+    .jb-modal-alert-icon-wrap--error .jb-modal-alert-icon-ring {
+        @apply bg-rose-400;
+    }
+
+    .jb-modal-alert-icon-wrap--warning .jb-modal-alert-icon-ring {
+        @apply bg-amber-400;
+    }
+
+    .jb-modal-alert-icon {
+        @apply relative flex h-14 w-14 items-center justify-center rounded-full text-white;
+    }
+
+    .jb-modal-alert-icon svg {
+        @apply h-7 w-7;
+    }
+
+    .jb-modal-alert-icon-wrap--success .jb-modal-alert-icon {
+        @apply bg-sky-500 shadow-lg shadow-sky-500/30;
+    }
+
+    .jb-modal-alert-icon-wrap--error .jb-modal-alert-icon {
+        @apply bg-rose-500 shadow-lg shadow-rose-500/30;
+    }
+
+    .jb-modal-alert-icon-wrap--warning .jb-modal-alert-icon {
+        @apply bg-amber-500 shadow-lg shadow-amber-500/30;
+    }
+
+    .jb-modal-alert-title {
+        @apply text-xl font-bold tracking-tight text-slate-900;
+    }
+
+    .jb-modal-alert-message {
+        @apply mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500;
+    }
+
+    .jb-modal-alert-btn {
+        background-color: var(--jb-primary, #be123c);
+        @apply mt-6 w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-md transition focus:outline-none focus:ring-4;
+        box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--jb-primary, #be123c) 30%, transparent);
+    }
+
+    .jb-modal-alert-btn:hover {
+        background-color: var(--jb-primary-hover, #9f1239);
+    }
+
+    .jb-modal-enter {
+        transition: opacity 0.25s ease-out;
+    }
+
+    .jb-modal-enter-start {
+        opacity: 0;
+    }
+
+    .jb-modal-enter-end {
+        opacity: 1;
+    }
+
+    .jb-modal-leave {
+        transition: opacity 0.2s ease-in;
+    }
+
+    .jb-modal-leave-start {
+        opacity: 1;
+    }
+
+    .jb-modal-leave-end {
+        opacity: 0;
+    }
+
+    .jb-modal-card-enter {
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .jb-modal-card-enter-start {
+        opacity: 0;
+        transform: scale(0.92) translateY(8px);
+    }
+
+    .jb-modal-card-enter-end {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
+    .jb-modal-card-leave {
+        transition: all 0.2s ease-in;
+    }
+
+    .jb-modal-card-leave-start {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
+    .jb-modal-card-leave-end {
+        opacity: 0;
+        transform: scale(0.95) translateY(4px);
+    }
+
+    .jb-badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+    }
+
+    .jb-pagination {
+        @apply flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/50 px-5 py-4;
+    }
+
+    .jb-user-pill {
+        @apply hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 sm:flex;
+    }
+
+    .jb-checkbox-row {
+        @apply flex items-center gap-2.5 pt-2;
+    }
+
+    .jb-checkbox-row input,
+    .jb-checkbox-accent {
+        @apply h-4 w-4 rounded border-slate-300 focus:ring-2;
+        accent-color: var(--jb-primary, #be123c);
+    }
+
+    /* Admin login (guest) */
+    .jb-login-page {
+        @apply flex min-h-screen items-center justify-center bg-slate-100 p-4 antialiased;
+        font-family: var(--font-sans);
+    }
+
+    .jb-login-wrap {
+        @apply w-full max-w-5xl;
+    }
+
+    .jb-login-card {
+        @apply flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-300/40 md:min-h-[32rem] md:flex-row;
+    }
+
+    .jb-login-brand {
+        @apply flex flex-col items-center justify-center border-b border-slate-200/80 bg-slate-50/90 px-8 py-10 text-center md:w-[42%] md:border-b-0 md:border-r md:px-10 md:py-12;
+    }
+
+    .jb-login-brand-logo {
+        @apply mx-auto h-auto w-full max-w-[14rem] object-contain;
+    }
+
+    .jb-login-brand-title {
+        @apply mt-6 text-xl font-bold tracking-tight text-[#1a2e35];
+    }
+
+    .jb-login-brand-tagline {
+        @apply mt-2 max-w-[16rem] text-sm leading-relaxed text-slate-500;
+    }
+
+    .jb-login-form-panel {
+        @apply flex flex-1 flex-col justify-center px-8 py-10 md:px-12 md:py-12;
+    }
+
+    .jb-login-form-logo {
+        @apply mx-auto mb-6 h-12 w-auto max-w-[10rem] object-contain;
+    }
+
+    .jb-login-form-header {
+        @apply mb-6 text-center;
+    }
+
+    .jb-login-title {
+        @apply text-xl font-bold text-[#1a2e35] sm:text-2xl;
+    }
+
+    .jb-login-subtitle {
+        @apply mt-1.5 text-sm text-slate-500;
+    }
+
+    .jb-login-form {
+        @apply space-y-5;
+    }
+
+    .jb-login-label {
+        @apply mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-600;
+    }
+
+    .jb-login-input {
+        @apply w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm transition placeholder:text-slate-400;
+    }
+
+    .jb-login-input:focus {
+        @apply border-[#f15a24] outline-none ring-4 ring-[#f15a24]/15;
+    }
+
+    .jb-login-input--password {
+        @apply pr-11;
+    }
+
+    .jb-login-password-wrap {
+        @apply relative;
+    }
+
+    .jb-login-password-toggle {
+        @apply absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:text-slate-600;
+    }
+
+    .jb-login-remember {
+        @apply flex cursor-pointer items-center gap-2.5 text-sm text-slate-500;
+    }
+
+    .jb-login-remember input {
+        @apply h-4 w-4 rounded border-slate-300;
+        accent-color: #f15a24;
+    }
+
+    .jb-login-submit {
+        @apply mt-2 w-full rounded-lg bg-[#1a2e35] py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0f1f26] focus:outline-none focus:ring-4 focus:ring-[#1a2e35]/25;
+    }
+
+    .jb-login-error {
+        @apply mt-1.5 text-xs font-medium text-rose-600;
+    }
+
+}

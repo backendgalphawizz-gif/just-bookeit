@@ -1,0 +1,34 @@
+<?php
+
+return [
+    'groups' => [
+        'Overview' => [
+            ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'route_is' => 'admin.dashboard', 'permission' => 'dashboard', 'badge' => null, 'icon' => 'dashboard'],
+        ],
+        'Operations' => [
+            ['label' => 'Customers', 'route' => 'admin.customers.index', 'route_is' => 'admin.customers.*', 'permission' => 'customers', 'badge' => null, 'icon' => 'users'],
+            ['label' => 'Vendors', 'route' => 'admin.vendors.index', 'route_is' => 'admin.vendors.*', 'permission' => 'vendors', 'badge' => 'pending_vendors', 'icon' => 'store'],
+            ['label' => 'Drivers', 'route' => 'admin.drivers.index', 'route_is' => 'admin.drivers.*', 'permission' => 'drivers', 'badge' => 'pending_drivers', 'icon' => 'wallet'],
+            ['label' => 'Categories', 'route' => 'admin.categories.index', 'route_is' => 'admin.categories.*', 'permission' => 'categories', 'badge' => null, 'icon' => 'grid'],
+            ['label' => 'Orders', 'route' => 'admin.orders.index', 'route_is' => 'admin.orders.*', 'permission' => 'orders', 'badge' => 'new_orders', 'icon' => 'cart'],
+            ['label' => 'Disputes', 'route' => 'admin.disputes.index', 'route_is' => 'admin.disputes.*', 'permission' => 'disputes', 'badge' => 'open_disputes', 'icon' => 'alert'],
+        ],
+        'Finance' => [
+            ['label' => 'Payments', 'route' => 'admin.payments.index', 'route_is' => 'admin.payments.*', 'permission' => 'payments', 'badge' => null, 'icon' => 'card'],
+            ['label' => 'Refunds', 'route' => 'admin.refunds.index', 'route_is' => 'admin.refunds.*', 'permission' => 'refunds', 'badge' => 'open_refunds', 'icon' => 'refund'],
+            ['label' => 'Payouts', 'route' => 'admin.payouts.index', 'route_is' => 'admin.payouts.*', 'permission' => 'payouts', 'badge' => 'open_payouts', 'icon' => 'wallet'],
+        ],
+        'Content' => [
+            ['label' => 'Portfolio', 'route' => 'admin.portfolio.index', 'route_is' => 'admin.portfolio.*', 'permission' => 'portfolio', 'badge' => 'pending_portfolio', 'icon' => 'image'],
+            ['label' => 'Banners & CMS', 'route' => 'admin.banners.index', 'route_is' => 'admin.banners.*', 'permission' => 'banners', 'badge' => null, 'icon' => 'banner'],
+        ],
+        'System' => [
+            ['label' => 'Reports', 'route' => 'admin.reports.index', 'route_is' => 'admin.reports.*', 'permission' => 'reports', 'badge' => null, 'icon' => 'chart'],
+            ['label' => 'Notifications', 'route' => 'admin.notifications.index', 'route_is' => 'admin.notifications.*', 'permission' => 'notifications', 'badge' => null, 'icon' => 'bell'],
+            ['label' => 'Admin Users', 'route' => 'admin.admins.index', 'route_is' => 'admin.admins.*', 'permission' => 'admins', 'badge' => null, 'icon' => 'users'],
+            ['label' => 'Roles', 'route' => 'admin.roles.index', 'route_is' => 'admin.roles.*', 'permission' => 'admins', 'badge' => null, 'icon' => 'shield'],
+            ['label' => 'Permissions', 'route' => 'admin.permissions.index', 'route_is' => 'admin.permissions.*', 'permission' => 'admins', 'badge' => null, 'icon' => 'grid'],
+            ['label' => 'Settings', 'route' => 'admin.settings.index', 'route_is' => 'admin.settings.*', 'permission' => 'settings', 'badge' => null, 'icon' => 'settings'],
+        ],
+    ],
+];
