@@ -1,13 +1,12 @@
 # Just Book IT — Local Setup
 
-Admin panel backend built with **Laravel 12 (PHP)**, **MySQL**, and **Tailwind CSS**, aligned with the Alphawizz project proposal (User/Vendor Flutter apps + PHP website + PHP admin panel).
+Admin panel backend built with **Laravel 12 (PHP)**, **MySQL**, and pre-built CSS/JS in `public/build/`, aligned with the Alphawizz project proposal (User/Vendor Flutter apps + PHP website + PHP admin panel).
 
 ## Prerequisites
 
 - PHP 8.2+
 - Composer
 - MySQL 8+ (database: `justbookit`)
-- Node.js 20+
 
 ## 1. Environment
 
@@ -46,26 +45,15 @@ php artisan db:seed
 
 ## 3. Frontend assets
 
-```powershell
-npm install
-npm run build
-```
-
-For development with hot reload:
-
-```powershell
-npm run dev
-```
+CSS and JavaScript are **pre-compiled** in `public/build/` (no Node.js required). After changing styles in `resources/css/app.css`, you would need a separate Tailwind build step; for day-to-day admin work, use the committed build output as-is.
 
 ## 4. Run the application
-
-**Option A — PHP server only**
 
 ```powershell
 php artisan serve
 ```
 
-**Option B — Full dev stack** (server + queue + logs + Vite)
+Or:
 
 ```powershell
 composer run dev
