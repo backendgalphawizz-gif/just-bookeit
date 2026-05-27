@@ -10,47 +10,17 @@ All responses:
 
 Auth header (protected routes): `Authorization: Bearer {token}`
 
-**OTP in API response (testing only)**
-
-| Environment | `otp` in Send OTP response? |
-|-------------|----------------------------|
-| Local (`APP_ENV=local`) | Yes (automatic) |
-| Live (`APP_ENV=production`) | **No** — unless you enable test mode (below) |
-
-**Local / staging:** Works automatically when `APP_ENV` is not `production`.
-
-**Live server (Postman / QA):** Add to the server `.env`:
-
-```env
-API_OTP_TEST_MODE=true
-API_OTP_DEBUG_CODE=1234
-```
-
-Then on the server run:
-
-```bash
-php artisan config:clear
-```
-
-If you use config cache in production, rebuild after changing `.env`:
-
-```bash
-php artisan config:cache
-```
-
-Send OTP will then return:
+**Send OTP response:** Always includes a random 4-digit `otp` in `data` on v1, v2, and v3 (use that value in Verify OTP).
 
 ```json
 "data": {
-  "mobile": "3333333333",
-  "otp": "1234",
-  "debug_otp": "1234",
-  "test_mode": true,
-  ...
+  "mobile": "9876543210",
+  "otp": "5821",
+  "masked_mobile": "+91 ******210",
+  "expires_in_seconds": 300,
+  "message": "OTP sent successfully."
 }
 ```
-
-Turn off before real users: `API_OTP_TEST_MODE=false` and `config:clear` (never leave this on public production long-term).
 
 **Postman:** Import `docs/postman/Just-Book-IT-API.postman_collection.json` and `docs/postman/Just-Book-IT-Local.postman_environment.json`. Tokens are saved automatically after Verify OTP / Register / Guest.
 

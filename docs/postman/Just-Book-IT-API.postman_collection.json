@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**Dev OTP:** `1234` (from `API_OTP_DEBUG_CODE` in `.env`)\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Logout\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
+		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**OTP:** Random 4-digit code returned in Send OTP response (`data.otp`); Postman saves it automatically.\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Logout\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -26,8 +26,7 @@
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
 									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
-									"const otp = json.data?.otp || json.data?.debug_otp;",
-									"if (otp) { pm.environment.set('v1_otp', otp); }"
+									"if (json.data?.otp) { pm.environment.set('v1_otp', json.data.otp); }"
 								]
 							}
 						}
@@ -43,7 +42,7 @@
 							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\"\n}"
 						},
 						"url": "{{base_url}}/v1/auth/otp/send",
-						"description": "Send OTP to customer mobile. In local/dev, response includes `debug_otp`."
+						"description": "Send OTP to customer mobile. Response includes random `otp` (saved to v1_otp)."
 					}
 				},
 				{
@@ -176,8 +175,7 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"const otp = json.data?.otp || json.data?.debug_otp;",
-									"if (otp) { pm.environment.set('v2_otp', otp); }"
+									"if (json.data?.otp) { pm.environment.set('v2_otp', json.data.otp); }"
 								]
 							}
 						}
@@ -298,8 +296,7 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"const otp = json.data?.otp || json.data?.debug_otp;",
-									"if (otp) { pm.environment.set('v3_otp', otp); }"
+									"if (json.data?.otp) { pm.environment.set('v3_otp', json.data.otp); }"
 								]
 							}
 						}
