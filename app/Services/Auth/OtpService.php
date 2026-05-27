@@ -46,6 +46,8 @@ class OtpService
         $type = $this->normalizeType($type);
         $this->assertActorType($actorType);
 
+        $this->assertAuthTypeMatchesAccount($actorType, $mobile, $type);
+
         $otp = (string) random_int(1000, 9999);
 
         OtpVerification::query()
@@ -60,16 +62,17 @@ class OtpService
             'expires_at' => now()->addMinutes((int) config('api.otp_ttl_minutes', 5)),
         ]);
 
-        $flow = $this->resolveFlow($actorType, $mobile, $type);
+        $isRegistered = $this->isRegistered($actorType, $mobile);
 
         return [
             'mobile' => $mobile,
             'masked_mobile' => '+91 ******'.substr($mobile, -3),
             'expires_in_seconds' => (int) config('api.otp_ttl_minutes', 5) * 60,
-            'type' => $flow['type'],
-            'requested_type' => $flow['requested_type'],
-            'is_registered' => $flow['is_registered'],
-            'message' => $flow['message'],
+            'type' => $type,
+            'is_registered' => $isRegistered,
+            'message' => $type === self::TYPE_LOGIN
+                ? 'OTP sent for login.'
+                : 'OTP sent for registration.',
             'otp' => $otp,
         ];
     }
@@ -101,56 +104,22 @@ class OtpService
 
         $record->update(['verified_at' => now()]);
 
-        $flow = $this->resolveFlow($actorType, $mobile, $type);
-        $actor = $this->findActor($actorType, $mobile);
+        $this->assertAuthTypeMatchesAccount($actorType, $mobile, $type);
 
-        if ($flow['type'] === self::TYPE_LOGIN) {
-            if (! $actor) {
-                throw ValidationException::withMessages([
-                    'mobile' => ['No account found with this mobile. Please register.'],
-                ]);
-            }
-
-            $this->assertActorCanAuthenticate($actorType, $actor);
-
-            $token = $actor->createToken($this->tokenName($actorType))->plainTextToken;
-
-            $payload = [
-                'type' => self::TYPE_LOGIN,
-                'requested_type' => $type,
-                'is_registered' => true,
-                'requires_registration' => false,
-                'token' => $token,
-                'token_type' => 'Bearer',
-                'user' => $this->formatActor($actorType, $actor),
-                'message' => $type === self::TYPE_REGISTER
-                    ? 'You are already registered with this mobile. Logged in successfully.'
-                    : 'Login successful.',
-            ];
-
-            if ($type === self::TYPE_REGISTER) {
-                $payload['already_registered'] = true;
-            }
-
-            return $payload;
-        }
-
-        // Register flow
-        if ($actor && $this->isRegisteredActor($actorType, $actor)) {
+        if ($type === self::TYPE_LOGIN) {
+            $actor = $this->findActor($actorType, $mobile);
             $this->assertActorCanAuthenticate($actorType, $actor);
 
             $token = $actor->createToken($this->tokenName($actorType))->plainTextToken;
 
             return [
                 'type' => self::TYPE_LOGIN,
-                'requested_type' => $type,
                 'is_registered' => true,
-                'already_registered' => true,
                 'requires_registration' => false,
                 'token' => $token,
                 'token_type' => 'Bearer',
                 'user' => $this->formatActor($actorType, $actor),
-                'message' => 'You are already registered with this mobile. Please continue with login.',
+                'message' => 'Login successful.',
             ];
         }
 
@@ -159,7 +128,6 @@ class OtpService
 
         return [
             'type' => self::TYPE_REGISTER,
-            'requested_type' => $type,
             'is_registered' => false,
             'requires_registration' => true,
             'registration_token' => $registrationToken,
@@ -231,39 +199,21 @@ class OtpService
         };
     }
 
-    /**
-     * @return array{type: string, requested_type: string, is_registered: bool, message: string}
-     */
-    protected function resolveFlow(string $actorType, string $mobile, string $requestedType): array
+    protected function assertAuthTypeMatchesAccount(string $actorType, string $mobile, string $type): void
     {
         $isRegistered = $this->isRegistered($actorType, $mobile);
 
-        if ($requestedType === self::TYPE_REGISTER && $isRegistered) {
-            return [
-                'type' => self::TYPE_LOGIN,
-                'requested_type' => $requestedType,
-                'is_registered' => true,
-                'message' => 'You are already registered with this mobile. Please continue with login.',
-            ];
+        if ($type === self::TYPE_REGISTER && $isRegistered) {
+            throw ValidationException::withMessages([
+                'type' => ['You are already registered. Please login first.'],
+            ]);
         }
 
-        if ($requestedType === self::TYPE_LOGIN && ! $isRegistered) {
-            return [
-                'type' => self::TYPE_REGISTER,
-                'requested_type' => $requestedType,
-                'is_registered' => false,
-                'message' => 'No account found with this mobile. Please register to continue.',
-            ];
+        if ($type === self::TYPE_LOGIN && ! $isRegistered) {
+            throw ValidationException::withMessages([
+                'type' => ['No account found with this mobile. Please register first.'],
+            ]);
         }
-
-        return [
-            'type' => $requestedType,
-            'requested_type' => $requestedType,
-            'is_registered' => $isRegistered,
-            'message' => $requestedType === self::TYPE_LOGIN
-                ? 'OTP sent for login.'
-                : 'OTP sent for registration.',
-        ];
     }
 
     protected function isRegistered(string $actorType, string $mobile): bool

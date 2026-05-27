@@ -1,6 +1,13 @@
 # Just Book IT — Mobile API
 
-Base URL: `http://127.0.0.1:8000/api`
+Base URL: `http://127.0.0.1:8000/api` (must include `/api` — not the site root alone)
+
+**404 Not Found?** Check:
+1. Method is **POST** (not GET)
+2. Full path: `{APP_URL}/api/v2/auth/otp/send` (example for vendor)
+3. `base_url` in Postman = `https://your-domain.com/api` (with `/api` at the end)
+4. Latest code is deployed (`routes/api.php` exists on the server)
+5. Run `php artisan route:list --path=api` on the server to confirm routes exist
 
 All responses:
 
@@ -12,24 +19,25 @@ Auth header (protected routes): `Authorization: Bearer {token}`
 
 **OTP auth `type`:** Send and verify require `"type": "login"` or `"type": "register"`.
 
-| Situation | Send OTP `data.type` | Message |
-|-----------|----------------------|---------|
-| `register` but mobile already exists | `login` | Already registered — continue with login |
-| `login` but mobile not found | `register` | No account — please register |
-| Matches account state | same as requested | OTP sent for login / registration |
+| Request | Account exists? | Result |
+|---------|-------------------|--------|
+| `type: "register"` | Yes | **422 error** — *You are already registered. Please login first.* (no OTP sent) |
+| `type: "login"` | No | **422 error** — *No account found with this mobile. Please register first.* (no OTP sent) |
+| `type: "register"` | No | OTP sent → verify → `registration_token` |
+| `type: "login"` | Yes | OTP sent → verify → `token` |
 
-**Verify OTP:** Use the same `type` as send. If user chose `register` but is already registered, verify returns **login** (`token`, `already_registered: true`).
+Use the **same `type`** on send and verify.
 
 **Send OTP response** includes random `otp`:
 
+**422 example** (`type: register` but already registered):
+
 ```json
 {
-  "mobile": "9876543210",
-  "type": "login",
-  "requested_type": "register",
-  "is_registered": true,
-  "otp": "5821",
-  "message": "You are already registered with this mobile. Please continue with login."
+  "message": "You are already registered. Please login first.",
+  "errors": {
+    "type": ["You are already registered. Please login first."]
+  }
 }
 ```
 
