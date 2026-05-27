@@ -15,7 +15,7 @@ jobs:
       - name: Deploy via Rsync
         uses: Burnett01/rsync-deployments@7.0.0
         with:
-          switches: -avzr --delete --exclude='.git*' --exclude='.github*' --exclude='.env'
+          switches: -avzr --delete --exclude='.git*' --exclude='.github*' --exclude='.env' --exclude='vendor' --exclude='node_modules'
           path: ./
           remote_path: /home/${{ secrets.SERVER_USER }}/public_html/just-bookeit.developmentalphawizz.com/
           remote_host: ${{ secrets.SERVER_IP }}
