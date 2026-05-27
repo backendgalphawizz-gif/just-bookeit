@@ -19,6 +19,10 @@ class OtpService
 
     public const ACTOR_DRIVER = 'driver';
 
+    public const TYPE_LOGIN = 'login';
+
+    public const TYPE_REGISTER = 'register';
+
     public function normalizeMobile(string $mobile): string
     {
         $digits = preg_replace('/\D+/', '', $mobile) ?? '';
@@ -36,9 +40,10 @@ class OtpService
         return $digits;
     }
 
-    public function send(string $actorType, string $mobile): array
+    public function send(string $actorType, string $mobile, string $type): array
     {
         $mobile = $this->normalizeMobile($mobile);
+        $type = $this->normalizeType($type);
         $this->assertActorType($actorType);
 
         $otp = (string) random_int(1000, 9999);
@@ -55,18 +60,24 @@ class OtpService
             'expires_at' => now()->addMinutes((int) config('api.otp_ttl_minutes', 5)),
         ]);
 
+        $flow = $this->resolveFlow($actorType, $mobile, $type);
+
         return [
             'mobile' => $mobile,
             'masked_mobile' => '+91 ******'.substr($mobile, -3),
             'expires_in_seconds' => (int) config('api.otp_ttl_minutes', 5) * 60,
-            'message' => 'OTP sent successfully.',
+            'type' => $flow['type'],
+            'requested_type' => $flow['requested_type'],
+            'is_registered' => $flow['is_registered'],
+            'message' => $flow['message'],
             'otp' => $otp,
         ];
     }
 
-    public function verify(string $actorType, string $mobile, string $otp): array
+    public function verify(string $actorType, string $mobile, string $otp, string $type): array
     {
         $mobile = $this->normalizeMobile($mobile);
+        $type = $this->normalizeType($type);
         $this->assertActorType($actorType);
 
         $record = OtpVerification::query()
@@ -90,38 +101,70 @@ class OtpService
 
         $record->update(['verified_at' => now()]);
 
-        $registrationToken = Str::random(64);
-        Cache::put($this->registrationCacheKey($actorType, $registrationToken), $mobile, now()->addMinutes(15));
-
+        $flow = $this->resolveFlow($actorType, $mobile, $type);
         $actor = $this->findActor($actorType, $mobile);
 
-        if ($actor) {
-            if ($actorType === self::ACTOR_VENDOR && $actor->status === 'rejected') {
-                throw ValidationException::withMessages(['mobile' => ['This vendor account was rejected.']]);
+        if ($flow['type'] === self::TYPE_LOGIN) {
+            if (! $actor) {
+                throw ValidationException::withMessages([
+                    'mobile' => ['No account found with this mobile. Please register.'],
+                ]);
             }
 
-            if ($actorType === self::ACTOR_DRIVER && $actor->status === 'rejected') {
-                throw ValidationException::withMessages(['mobile' => ['This driver account was rejected.']]);
-            }
-
-            if (in_array($actor->status ?? 'active', ['suspended', 'blocked'], true)) {
-                throw ValidationException::withMessages(['mobile' => ['This account is suspended.']]);
-            }
+            $this->assertActorCanAuthenticate($actorType, $actor);
 
             $token = $actor->createToken($this->tokenName($actorType))->plainTextToken;
 
-            return [
+            $payload = [
+                'type' => self::TYPE_LOGIN,
+                'requested_type' => $type,
+                'is_registered' => true,
                 'requires_registration' => false,
                 'token' => $token,
                 'token_type' => 'Bearer',
                 'user' => $this->formatActor($actorType, $actor),
+                'message' => $type === self::TYPE_REGISTER
+                    ? 'You are already registered with this mobile. Logged in successfully.'
+                    : 'Login successful.',
+            ];
+
+            if ($type === self::TYPE_REGISTER) {
+                $payload['already_registered'] = true;
+            }
+
+            return $payload;
+        }
+
+        // Register flow
+        if ($actor && $this->isRegisteredActor($actorType, $actor)) {
+            $this->assertActorCanAuthenticate($actorType, $actor);
+
+            $token = $actor->createToken($this->tokenName($actorType))->plainTextToken;
+
+            return [
+                'type' => self::TYPE_LOGIN,
+                'requested_type' => $type,
+                'is_registered' => true,
+                'already_registered' => true,
+                'requires_registration' => false,
+                'token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $this->formatActor($actorType, $actor),
+                'message' => 'You are already registered with this mobile. Please continue with login.',
             ];
         }
 
+        $registrationToken = Str::random(64);
+        Cache::put($this->registrationCacheKey($actorType, $registrationToken), $mobile, now()->addMinutes(15));
+
         return [
+            'type' => self::TYPE_REGISTER,
+            'requested_type' => $type,
+            'is_registered' => false,
             'requires_registration' => true,
             'registration_token' => $registrationToken,
             'masked_mobile' => '+91 ******'.substr($mobile, -3),
+            'message' => 'OTP verified. Please complete registration.',
         ];
     }
 
@@ -186,6 +229,85 @@ class OtpService
                 'aadhar_url' => $actor->aadharUrl(),
             ],
         };
+    }
+
+    /**
+     * @return array{type: string, requested_type: string, is_registered: bool, message: string}
+     */
+    protected function resolveFlow(string $actorType, string $mobile, string $requestedType): array
+    {
+        $isRegistered = $this->isRegistered($actorType, $mobile);
+
+        if ($requestedType === self::TYPE_REGISTER && $isRegistered) {
+            return [
+                'type' => self::TYPE_LOGIN,
+                'requested_type' => $requestedType,
+                'is_registered' => true,
+                'message' => 'You are already registered with this mobile. Please continue with login.',
+            ];
+        }
+
+        if ($requestedType === self::TYPE_LOGIN && ! $isRegistered) {
+            return [
+                'type' => self::TYPE_REGISTER,
+                'requested_type' => $requestedType,
+                'is_registered' => false,
+                'message' => 'No account found with this mobile. Please register to continue.',
+            ];
+        }
+
+        return [
+            'type' => $requestedType,
+            'requested_type' => $requestedType,
+            'is_registered' => $isRegistered,
+            'message' => $requestedType === self::TYPE_LOGIN
+                ? 'OTP sent for login.'
+                : 'OTP sent for registration.',
+        ];
+    }
+
+    protected function isRegistered(string $actorType, string $mobile): bool
+    {
+        $actor = $this->findActor($actorType, $mobile);
+
+        return $actor && $this->isRegisteredActor($actorType, $actor);
+    }
+
+    protected function isRegisteredActor(string $actorType, Customer|Vendor|Driver $actor): bool
+    {
+        if ($actorType === self::ACTOR_CUSTOMER) {
+            return ! ($actor->is_guest ?? false);
+        }
+
+        return true;
+    }
+
+    protected function assertActorCanAuthenticate(string $actorType, Customer|Vendor|Driver $actor): void
+    {
+        if ($actorType === self::ACTOR_VENDOR && $actor->status === 'rejected') {
+            throw ValidationException::withMessages(['mobile' => ['This vendor account was rejected.']]);
+        }
+
+        if ($actorType === self::ACTOR_DRIVER && $actor->status === 'rejected') {
+            throw ValidationException::withMessages(['mobile' => ['This driver account was rejected.']]);
+        }
+
+        if (in_array($actor->status ?? 'active', ['suspended', 'blocked'], true)) {
+            throw ValidationException::withMessages(['mobile' => ['This account is suspended.']]);
+        }
+    }
+
+    protected function normalizeType(string $type): string
+    {
+        $type = strtolower(trim($type));
+
+        if (! in_array($type, [self::TYPE_LOGIN, self::TYPE_REGISTER], true)) {
+            throw ValidationException::withMessages([
+                'type' => ['Type must be login or register.'],
+            ]);
+        }
+
+        return $type;
     }
 
     protected function registrationCacheKey(string $actorType, string $token): string

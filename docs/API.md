@@ -10,15 +10,26 @@ All responses:
 
 Auth header (protected routes): `Authorization: Bearer {token}`
 
-**Send OTP response:** Always includes a random 4-digit `otp` in `data` on v1, v2, and v3 (use that value in Verify OTP).
+**OTP auth `type`:** Send and verify require `"type": "login"` or `"type": "register"`.
+
+| Situation | Send OTP `data.type` | Message |
+|-----------|----------------------|---------|
+| `register` but mobile already exists | `login` | Already registered — continue with login |
+| `login` but mobile not found | `register` | No account — please register |
+| Matches account state | same as requested | OTP sent for login / registration |
+
+**Verify OTP:** Use the same `type` as send. If user chose `register` but is already registered, verify returns **login** (`token`, `already_registered: true`).
+
+**Send OTP response** includes random `otp`:
 
 ```json
-"data": {
+{
   "mobile": "9876543210",
+  "type": "login",
+  "requested_type": "register",
+  "is_registered": true,
   "otp": "5821",
-  "masked_mobile": "+91 ******210",
-  "expires_in_seconds": 300,
-  "message": "OTP sent successfully."
+  "message": "You are already registered with this mobile. Please continue with login."
 }
 ```
 
@@ -30,8 +41,8 @@ Auth header (protected routes): `Authorization: Bearer {token}`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/v1/auth/otp/send` | `{ "mobile": "+91 9512345678" }` |
-| POST | `/v1/auth/otp/verify` | `{ "mobile", "otp" }` → token or `registration_token` |
+| POST | `/v1/auth/otp/send` | `{ "mobile", "type": "login\|register" }` |
+| POST | `/v1/auth/otp/verify` | `{ "mobile", "otp", "type" }` → token or `registration_token` |
 | POST | `/v1/auth/register` | `{ "registration_token", "name", "email?" }` |
 | POST | `/v1/auth/guest` | Guest session |
 | GET | `/v1/auth/me` | Profile (auth) |

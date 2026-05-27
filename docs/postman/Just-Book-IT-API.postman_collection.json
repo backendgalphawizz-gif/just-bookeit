@@ -39,7 +39,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
 						"url": "{{base_url}}/v1/auth/otp/send",
 						"description": "Send OTP to customer mobile. Response includes random `otp` (saved to v1_otp)."
@@ -73,7 +73,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
 						"url": "{{base_url}}/v1/auth/otp/verify",
 						"description": "Existing user → saves `v1_token`. New user → saves `v1_registration_token` for register."
@@ -188,7 +188,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
 						"url": "{{base_url}}/v2/auth/otp/send"
 					}
@@ -221,7 +221,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
 						"url": "{{base_url}}/v2/auth/otp/verify"
 					}
@@ -309,7 +309,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
 						"url": "{{base_url}}/v3/auth/otp/send"
 					}
@@ -342,7 +342,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\",\n  \"otp\": \"{{v3_otp}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\",\n  \"otp\": \"{{v3_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
 						"url": "{{base_url}}/v3/auth/otp/verify"
 					}
