@@ -41,11 +41,7 @@ class OtpService
         $mobile = $this->normalizeMobile($mobile);
         $this->assertActorType($actorType);
 
-        $testMode = (bool) config('api.otp_test_mode', false);
-
-        $otp = $testMode
-            ? (string) config('api.otp_debug_code', '1234')
-            : (string) random_int(1000, 9999);
+        $otp = (string) random_int(1000, 9999);
 
         OtpVerification::query()
             ->where('actor_type', $actorType)
@@ -59,20 +55,13 @@ class OtpService
             'expires_at' => now()->addMinutes((int) config('api.otp_ttl_minutes', 5)),
         ]);
 
-        $payload = [
+        return [
             'mobile' => $mobile,
             'masked_mobile' => '+91 ******'.substr($mobile, -3),
             'expires_in_seconds' => (int) config('api.otp_ttl_minutes', 5) * 60,
             'message' => 'OTP sent successfully.',
+            'otp' => $otp,
         ];
-
-        if ($testMode) {
-            $payload['otp'] = $otp;
-            $payload['debug_otp'] = $otp;
-            $payload['test_mode'] = true;
-        }
-
-        return $payload;
     }
 
     public function verify(string $actorType, string $mobile, string $otp): array
