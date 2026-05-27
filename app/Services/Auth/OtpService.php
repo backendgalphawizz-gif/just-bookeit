@@ -41,9 +41,11 @@ class OtpService
         $mobile = $this->normalizeMobile($mobile);
         $this->assertActorType($actorType);
 
-        $otp = app()->environment('production')
-            ? (string) random_int(1000, 9999)
-            : (string) config('api.otp_debug_code', '1234');
+        $testMode = (bool) config('api.otp_test_mode', false);
+
+        $otp = $testMode
+            ? (string) config('api.otp_debug_code', '1234')
+            : (string) random_int(1000, 9999);
 
         OtpVerification::query()
             ->where('actor_type', $actorType)
@@ -64,8 +66,10 @@ class OtpService
             'message' => 'OTP sent successfully.',
         ];
 
-        if (! app()->environment('production')) {
+        if ($testMode) {
+            $payload['otp'] = $otp;
             $payload['debug_otp'] = $otp;
+            $payload['test_mode'] = true;
         }
 
         return $payload;

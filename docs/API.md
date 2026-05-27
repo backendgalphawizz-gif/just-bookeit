@@ -10,7 +10,9 @@ All responses:
 
 Auth header (protected routes): `Authorization: Bearer {token}`
 
-**Development OTP:** `1234` (see `API_OTP_DEBUG_CODE` in `.env`)
+**Test mode (`API_OTP_TEST_MODE=true`, default when `APP_ENV` is not `production`):** Send OTP responses include `otp` and `debug_otp` (fixed code from `API_OTP_DEBUG_CODE`, default `1234`) for v1, v2, and v3.
+
+**Postman:** Import `docs/postman/Just-Book-IT-API.postman_collection.json` and `docs/postman/Just-Book-IT-Local.postman_environment.json`. Tokens are saved automatically after Verify OTP / Register / Guest.
 
 ---
 

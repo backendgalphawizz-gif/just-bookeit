@@ -1,0 +1,419 @@
+{
+	"info": {
+		"_postman_id": "just-book-it-api-collection",
+		"name": "Just Book IT — Mobile API",
+		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**Dev OTP:** `1234` (from `API_OTP_DEBUG_CODE` in `.env`)\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Logout\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000/api"
+		}
+	],
+	"item": [
+		{
+			"name": "v1 — User (Customer)",
+			"item": [
+				{
+					"name": "Send OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+									"const otp = json.data?.otp || json.data?.debug_otp;",
+									"if (otp) { pm.environment.set('v1_otp', otp); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\"\n}"
+						},
+						"url": "{{base_url}}/v1/auth/otp/send",
+						"description": "Send OTP to customer mobile. In local/dev, response includes `debug_otp`."
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v1_token', json.data.token);",
+									"}",
+									"if (json.data?.registration_token) {",
+									"    pm.environment.set('v1_registration_token', json.data.registration_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\"\n}"
+						},
+						"url": "{{base_url}}/v1/auth/otp/verify",
+						"description": "Existing user → saves `v1_token`. New user → saves `v1_registration_token` for register."
+					}
+				},
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v1_token', json.data.token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"email\": \"customer@example.com\"\n}"
+						},
+						"url": "{{base_url}}/v1/auth/register",
+						"description": "Complete registration after OTP verify (new users only)."
+					}
+				},
+				{
+					"name": "Guest session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v1_token', json.data.token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": "{{base_url}}/v1/auth/guest",
+						"description": "Create a guest customer session (no OTP)."
+					}
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v1/auth/me"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v1/auth/logout"
+					}
+				}
+			]
+		},
+		{
+			"name": "v2 — Vendor",
+			"item": [
+				{
+					"name": "Send OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"const otp = json.data?.otp || json.data?.debug_otp;",
+									"if (otp) { pm.environment.set('v2_otp', otp); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\"\n}"
+						},
+						"url": "{{base_url}}/v2/auth/otp/send"
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v2_token', json.data.token);",
+									"}",
+									"if (json.data?.registration_token) {",
+									"    pm.environment.set('v2_registration_token', json.data.registration_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\"\n}"
+						},
+						"url": "{{base_url}}/v2/auth/otp/verify"
+					}
+				},
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v2_token', json.data.token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"registration_token\": \"{{v2_registration_token}}\",\n  \"brand_name\": \"Demo Salon\",\n  \"owner_name\": \"Vendor Owner\",\n  \"email\": \"vendor@example.com\",\n  \"city\": \"Mumbai\"\n}"
+						},
+						"url": "{{base_url}}/v2/auth/register",
+						"description": "Vendor status starts as `pending` until approved in admin."
+					}
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/auth/me"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/auth/logout"
+					}
+				}
+			]
+		},
+		{
+			"name": "v3 — Driver",
+			"item": [
+				{
+					"name": "Send OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"const otp = json.data?.otp || json.data?.debug_otp;",
+									"if (otp) { pm.environment.set('v3_otp', otp); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\"\n}"
+						},
+						"url": "{{base_url}}/v3/auth/otp/send"
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v3_token', json.data.token);",
+									"}",
+									"if (json.data?.registration_token) {",
+									"    pm.environment.set('v3_registration_token', json.data.registration_token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\",\n  \"otp\": \"{{v3_otp}}\"\n}"
+						},
+						"url": "{{base_url}}/v3/auth/otp/verify"
+					}
+				},
+				{
+					"name": "Register (multipart + Aadhar)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"if (json.data?.token) {",
+									"    pm.environment.set('v3_token', json.data.token);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "registration_token", "value": "{{v3_registration_token}}", "type": "text" },
+								{ "key": "name", "value": "Test Driver", "type": "text" },
+								{ "key": "email", "value": "driver@example.com", "type": "text" },
+								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{
+									"key": "aadhar",
+									"description": "Select a JPG/PNG/WebP image (max 4MB)",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": "{{base_url}}/v3/auth/register",
+						"description": "Driver registration requires Aadhar image upload. Account stays `pending` until approved in admin → Drivers."
+					}
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v3_token}}", "type": "string" }]
+						},
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v3/auth/me"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v3_token}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v3/auth/logout"
+					}
+				}
+			]
+		}
+	]
+}
