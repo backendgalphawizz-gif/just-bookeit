@@ -17,9 +17,14 @@ class VendorAuthController extends ApiController
 
     public function sendOtp(Request $request): JsonResponse
     {
-        $data = $request->validate(['mobile' => ['required', 'string', 'max:20']]);
+        $data = $request->validate([
+            'mobile' => ['required', 'string', 'max:20'],
+            'type' => ['required', 'in:login,register'],
+        ]);
 
-        return $this->success($this->otp->send(OtpService::ACTOR_VENDOR, $data['mobile']), 'OTP sent.');
+        $payload = $this->otp->send(OtpService::ACTOR_VENDOR, $data['mobile'], $data['type']);
+
+        return $this->success($payload, $payload['message']);
     }
 
     public function verifyOtp(Request $request): JsonResponse
@@ -27,12 +32,17 @@ class VendorAuthController extends ApiController
         $data = $request->validate([
             'mobile' => ['required', 'string', 'max:20'],
             'otp' => ['required', 'digits:4'],
+            'type' => ['required', 'in:login,register'],
         ]);
 
-        return $this->success(
-            $this->otp->verify(OtpService::ACTOR_VENDOR, $data['mobile'], $data['otp']),
-            'OTP verified.'
+        $payload = $this->otp->verify(
+            OtpService::ACTOR_VENDOR,
+            $data['mobile'],
+            $data['otp'],
+            $data['type']
         );
+
+        return $this->success($payload, $payload['message']);
     }
 
     public function register(Request $request): JsonResponse

@@ -1,6 +1,13 @@
 # Just Book IT — Mobile API
 
-Base URL: `http://127.0.0.1:8000/api`
+Base URL: `http://127.0.0.1:8000/api` (must include `/api` — not the site root alone)
+
+**404 Not Found?** Check:
+1. Method is **POST** (not GET)
+2. Full path: `{APP_URL}/api/v2/auth/otp/send` (example for vendor)
+3. `base_url` in Postman = `https://your-domain.com/api` (with `/api` at the end)
+4. Latest code is deployed (`routes/api.php` exists on the server)
+5. Run `php artisan route:list --path=api` on the server to confirm routes exist
 
 All responses:
 
@@ -10,15 +17,27 @@ All responses:
 
 Auth header (protected routes): `Authorization: Bearer {token}`
 
-**Send OTP response:** Always includes a random 4-digit `otp` in `data` on v1, v2, and v3 (use that value in Verify OTP).
+**OTP auth `type`:** Send and verify require `"type": "login"` or `"type": "register"`.
+
+| Request | Account exists? | Result |
+|---------|-------------------|--------|
+| `type: "register"` | Yes | **422 error** — *You are already registered. Please login first.* (no OTP sent) |
+| `type: "login"` | No | **422 error** — *No account found with this mobile. Please register first.* (no OTP sent) |
+| `type: "register"` | No | OTP sent → verify → `registration_token` |
+| `type: "login"` | Yes | OTP sent → verify → `token` |
+
+Use the **same `type`** on send and verify.
+
+**Send OTP response** includes random `otp`:
+
+**422 example** (`type: register` but already registered):
 
 ```json
-"data": {
-  "mobile": "9876543210",
-  "otp": "5821",
-  "masked_mobile": "+91 ******210",
-  "expires_in_seconds": 300,
-  "message": "OTP sent successfully."
+{
+  "message": "You are already registered. Please login first.",
+  "errors": {
+    "type": ["You are already registered. Please login first."]
+  }
 }
 ```
 
@@ -30,8 +49,8 @@ Auth header (protected routes): `Authorization: Bearer {token}`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/v1/auth/otp/send` | `{ "mobile": "+91 9512345678" }` |
-| POST | `/v1/auth/otp/verify` | `{ "mobile", "otp" }` → token or `registration_token` |
+| POST | `/v1/auth/otp/send` | `{ "mobile", "type": "login\|register" }` |
+| POST | `/v1/auth/otp/verify` | `{ "mobile", "otp", "type" }` → token or `registration_token` |
 | POST | `/v1/auth/register` | `{ "registration_token", "name", "email?" }` |
 | POST | `/v1/auth/guest` | Guest session |
 | GET | `/v1/auth/me` | Profile (auth) |
