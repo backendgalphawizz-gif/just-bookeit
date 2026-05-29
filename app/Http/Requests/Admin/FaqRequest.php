@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Http\Requests\Admin;
+
+use App\Support\AdminValidationRules;
+
+class FaqRequest extends AdminFormRequest
+{
+    public function rules(): array
+    {
+        return [
+            ...AdminValidationRules::faq(),
+            'is_active' => ['nullable', 'boolean'],
+        ];
+    }
+
+    protected function passedValidation(): void
+    {
+        $this->merge([
+            'is_active' => $this->boolean('is_active', true),
+            'sort_order' => (int) ($this->input('sort_order') ?? 0),
+        ]);
+    }
+}

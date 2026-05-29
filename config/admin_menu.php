@@ -21,6 +21,7 @@ return [
         'Content' => [
             ['label' => 'Portfolio', 'route' => 'admin.portfolio.index', 'route_is' => 'admin.portfolio.*', 'permission' => 'portfolio', 'badge' => 'pending_portfolio', 'icon' => 'image'],
             ['label' => 'Banners & CMS', 'route' => 'admin.banners.index', 'route_is' => 'admin.banners.*', 'permission' => 'banners', 'badge' => null, 'icon' => 'banner'],
+            ['label' => 'FAQs', 'route' => 'admin.faqs.index', 'route_is' => 'admin.faqs.*', 'permission' => 'faqs', 'badge' => null, 'icon' => 'grid'],
         ],
         'System' => [
             ['label' => 'Reports', 'route' => 'admin.reports.index', 'route_is' => 'admin.reports.*', 'permission' => 'reports', 'badge' => null, 'icon' => 'chart'],

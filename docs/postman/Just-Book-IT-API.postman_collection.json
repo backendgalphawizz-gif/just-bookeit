@@ -16,6 +16,30 @@
 			"name": "v1 — User (Customer)",
 			"item": [
 				{
+					"name": "Get Config",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+									"pm.test('user legal section exists', () => pm.expect(json.data?.user?.terms_and_conditions).to.be.a('string'));",
+									"pm.test('faq list returned', () => pm.expect(json.data?.user?.faq).to.be.an('array'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v1/config",
+						"description": "Public endpoint. Returns terms, privacy policy, and FAQ for user, vendor, and driver apps, plus contact, features, and branding."
+					}
+				},
+				{
 					"name": "Send OTP",
 					"event": [
 						{
