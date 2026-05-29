@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\RefundController;
+use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -52,6 +53,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::resource('refunds', RefundController::class);
             Route::resource('disputes', DisputeController::class);
             Route::resource('banners', BannerController::class)->except(['show']);
+            Route::resource('faqs', FaqController::class)->except(['show']);
 
             Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
             Route::get('payments/{order}', [PaymentController::class, 'show'])->name('payments.show');

@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\UserAuthController;
 use App\Http\Controllers\Api\V2\VendorAuthController;
 use App\Http\Controllers\Api\V3\DriverAuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
+    Route::get('config', [ConfigController::class, 'index'])->name('config');
+
     Route::prefix('auth')->group(function () {
         Route::post('otp/send', [UserAuthController::class, 'sendOtp'])->name('auth.otp.send');
         Route::post('otp/verify', [UserAuthController::class, 'verifyOtp'])->name('auth.otp.verify');

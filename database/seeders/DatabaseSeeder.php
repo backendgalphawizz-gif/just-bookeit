@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             AdminAccessSeeder::class,
             PlatformDataSeeder::class,
             PlatformSettingsSeeder::class,
+            FaqSeeder::class,
         ]);
     }
 }

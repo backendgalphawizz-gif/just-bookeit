@@ -128,6 +128,16 @@ class AdminValidationRules
         ];
     }
 
+    public static function faq(): array
+    {
+        return [
+            'audience' => ['required', 'in:user,vendor,driver'],
+            'question' => ['required', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
+            'answer' => ['required', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
+            'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+        ];
+    }
+
     public static function role(): array
     {
         return [
@@ -208,13 +218,17 @@ class AdminValidationRules
 
     public static function settingsLegal(): array
     {
+        $legalText = ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT];
+
         return [
-            'terms_conditions_user' => ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
-            'terms_conditions_vendor' => ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
-            'privacy_policy_user' => ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
-            'privacy_policy_vendor' => ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
-            'about_us' => ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
-            'help_support' => ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT],
+            'terms_conditions_user' => $legalText,
+            'terms_conditions_vendor' => $legalText,
+            'terms_conditions_driver' => $legalText,
+            'privacy_policy_user' => $legalText,
+            'privacy_policy_vendor' => $legalText,
+            'privacy_policy_driver' => $legalText,
+            'about_us' => $legalText,
+            'help_support' => $legalText,
         ];
     }
 
@@ -302,8 +316,8 @@ class AdminValidationRules
             'currency' => 'currency',
             'categories_text' => 'comma-list',
             'reason', 'message', 'contact_address',
-            'terms_conditions_user', 'terms_conditions_vendor',
-            'privacy_policy_user', 'privacy_policy_vendor',
+            'terms_conditions_user', 'terms_conditions_vendor', 'terms_conditions_driver',
+            'privacy_policy_user', 'privacy_policy_vendor', 'privacy_policy_driver',
             'about_us', 'help_support' => 'text',
             'amount', 'earnings', 'global_commission_percent', 'rating' => 'decimal',
             'orders_completed' => 'integer',

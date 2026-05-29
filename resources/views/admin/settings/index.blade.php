@@ -63,13 +63,33 @@
                     @include('admin.partials.form-input', ['label' => 'Office address', 'name' => 'contact_address', 'type' => 'textarea', 'rows' => 3, 'value' => old('contact_address', $values['contact_address'] ?? ''), 'full' => true])
                 </div>
             @elseif ($tab === 'legal')
-                <div class="grid gap-6">
-                    @include('admin.partials.form-input', ['label' => 'Terms & conditions (customer / user app)', 'name' => 'terms_conditions_user', 'type' => 'textarea', 'rows' => 8, 'value' => old('terms_conditions_user', $values['terms_conditions_user'] ?? ''), 'full' => true])
-                    @include('admin.partials.form-input', ['label' => 'Terms & conditions (vendor app)', 'name' => 'terms_conditions_vendor', 'type' => 'textarea', 'rows' => 8, 'value' => old('terms_conditions_vendor', $values['terms_conditions_vendor'] ?? ''), 'full' => true])
-                    @include('admin.partials.form-input', ['label' => 'Privacy policy (customer / user app)', 'name' => 'privacy_policy_user', 'type' => 'textarea', 'rows' => 8, 'value' => old('privacy_policy_user', $values['privacy_policy_user'] ?? ''), 'full' => true])
-                    @include('admin.partials.form-input', ['label' => 'Privacy policy (vendor app)', 'name' => 'privacy_policy_vendor', 'type' => 'textarea', 'rows' => 8, 'value' => old('privacy_policy_vendor', $values['privacy_policy_vendor'] ?? ''), 'full' => true])
-                    @include('admin.partials.form-input', ['label' => 'About us', 'name' => 'about_us', 'type' => 'textarea', 'rows' => 5, 'value' => old('about_us', $values['about_us'] ?? ''), 'full' => true])
-                    @include('admin.partials.form-input', ['label' => 'Help & support content', 'name' => 'help_support', 'type' => 'textarea', 'rows' => 5, 'value' => old('help_support', $values['help_support'] ?? ''), 'full' => true])
+                <div class="grid gap-8">
+                    <section class="space-y-4 rounded-xl border border-slate-200 p-5">
+                        <h3 class="text-base font-semibold text-slate-900">Customer / User app</h3>
+                        <p class="text-sm text-slate-500">Terms and privacy policy shown in the customer mobile app. Manage FAQs from the FAQ menu.</p>
+                        @include('admin.partials.form-input', ['label' => 'Terms & conditions', 'name' => 'terms_conditions_user', 'type' => 'textarea', 'rows' => 8, 'value' => old('terms_conditions_user', $values['terms_conditions_user'] ?? ''), 'full' => true])
+                        @include('admin.partials.form-input', ['label' => 'Privacy policy', 'name' => 'privacy_policy_user', 'type' => 'textarea', 'rows' => 8, 'value' => old('privacy_policy_user', $values['privacy_policy_user'] ?? ''), 'full' => true])
+                    </section>
+
+                    <section class="space-y-4 rounded-xl border border-slate-200 p-5">
+                        <h3 class="text-base font-semibold text-slate-900">Vendor app</h3>
+                        <p class="text-sm text-slate-500">Terms and privacy policy shown in the vendor mobile app. Manage FAQs from the FAQ menu.</p>
+                        @include('admin.partials.form-input', ['label' => 'Terms & conditions', 'name' => 'terms_conditions_vendor', 'type' => 'textarea', 'rows' => 8, 'value' => old('terms_conditions_vendor', $values['terms_conditions_vendor'] ?? ''), 'full' => true])
+                        @include('admin.partials.form-input', ['label' => 'Privacy policy', 'name' => 'privacy_policy_vendor', 'type' => 'textarea', 'rows' => 8, 'value' => old('privacy_policy_vendor', $values['privacy_policy_vendor'] ?? ''), 'full' => true])
+                    </section>
+
+                    <section class="space-y-4 rounded-xl border border-slate-200 p-5">
+                        <h3 class="text-base font-semibold text-slate-900">Driver app</h3>
+                        <p class="text-sm text-slate-500">Terms and privacy policy shown in the driver mobile app. Manage FAQs from the FAQ menu.</p>
+                        @include('admin.partials.form-input', ['label' => 'Terms & conditions', 'name' => 'terms_conditions_driver', 'type' => 'textarea', 'rows' => 8, 'value' => old('terms_conditions_driver', $values['terms_conditions_driver'] ?? ''), 'full' => true])
+                        @include('admin.partials.form-input', ['label' => 'Privacy policy', 'name' => 'privacy_policy_driver', 'type' => 'textarea', 'rows' => 8, 'value' => old('privacy_policy_driver', $values['privacy_policy_driver'] ?? ''), 'full' => true])
+                    </section>
+
+                    <section class="space-y-4 rounded-xl border border-slate-200 p-5">
+                        <h3 class="text-base font-semibold text-slate-900">General</h3>
+                        @include('admin.partials.form-input', ['label' => 'About us', 'name' => 'about_us', 'type' => 'textarea', 'rows' => 5, 'value' => old('about_us', $values['about_us'] ?? ''), 'full' => true])
+                        @include('admin.partials.form-input', ['label' => 'Help & support content', 'name' => 'help_support', 'type' => 'textarea', 'rows' => 5, 'value' => old('help_support', $values['help_support'] ?? ''), 'full' => true])
+                    </section>
                 </div>
             @elseif ($tab === 'features')
                 <div class="space-y-4">
