@@ -6,11 +6,14 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Services\Auth\OtpService;
 use App\Support\CodeGenerator;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserAuthController extends ApiController
 {
+    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'];
+
     public function __construct(
         protected OtpService $otp
     ) {}
@@ -47,11 +50,10 @@ class UserAuthController extends ApiController
 
     public function register(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'registration_token' => ['required', 'string'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-        ]);
+        $data = $request->validate(array_merge(
+            ['registration_token' => ['required', 'string']],
+            $this->customerFieldRules(required: true)
+        ));
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_CUSTOMER, $data['registration_token']);
 
@@ -60,10 +62,9 @@ class UserAuthController extends ApiController
         }
 
         $customer = Customer::query()->create([
+            ...$this->mapCustomerAttributes($data),
             'customer_code' => CodeGenerator::customerCode(),
-            'name' => $data['name'],
             'mobile' => $mobile,
-            'email' => $data['email'] ?? null,
             'status' => 'active',
             'is_verified' => true,
             'is_guest' => false,
@@ -108,10 +109,53 @@ class UserAuthController extends ApiController
         return $this->success($this->otp->formatActor(OtpService::ACTOR_CUSTOMER, $customer));
     }
 
+    public function updateProfile(Request $request): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+
+        $data = $request->validate(array_merge(
+            $this->customerFieldRules(required: false),
+            ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
+        ));
+
+        $customer->fill($this->mapCustomerAttributes($data));
+
+        if ($request->hasFile('profile_image')) {
+            $customer->profile_image_path = StoresUploadedFiles::replace(
+                $request->file('profile_image'),
+                $customer->profile_image_path,
+                'customers/profile-images'
+            );
+        }
+
+        $customer->save();
+
+        return $this->success(
+            $this->otp->formatActor(OtpService::ACTOR_CUSTOMER, $customer->fresh()),
+            'Profile updated.'
+        );
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()?->delete();
 
         return $this->success(null, 'Logged out.');
+    }
+
+    private function customerFieldRules(bool $required): array
+    {
+        $rule = $required ? 'required' : 'sometimes';
+
+        return [
+            'name' => [$rule, 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ];
+    }
+
+    private function mapCustomerAttributes(array $data): array
+    {
+        return collect($data)->only(['name', 'email'])->all();
     }
 }

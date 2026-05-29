@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**OTP:** Random 4-digit code returned in Send OTP response (`data.otp`); Postman saves it automatically.\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Logout\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
+		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**OTP:** Random 4-digit code returned in Send OTP response (`data.otp`); Postman saves it automatically.\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Update Profile / Logout\n\n**Multipart:** Vendor register, driver register, and all profile updates use `form-data`. Image fields: JPG/PNG/WebP, max 4MB.\n\n**Vendor `service_types`:** Array of category IDs from admin Categories (type: service). Use `service_types[0]`, `service_types[1]`, etc.\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -149,6 +149,45 @@
 					}
 				},
 				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "name", "value": "Updated Customer", "type": "text" },
+								{ "key": "email", "value": "customer@example.com", "type": "text" },
+								{
+									"key": "profile_image",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": "{{base_url}}/v1/auth/profile",
+						"description": "Update customer profile. Same fields as register (name, email) plus profile_image. All fields optional."
+					}
+				},
+				{
 					"name": "Logout",
 					"request": {
 						"auth": {
@@ -252,10 +291,24 @@
 							"mode": "formdata",
 							"formdata": [
 								{ "key": "registration_token", "value": "{{v2_registration_token}}", "type": "text" },
-								{ "key": "brand_name", "value": "Demo Salon", "type": "text" },
+								{ "key": "shop_name", "value": "Demo Salon", "type": "text" },
 								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
 								{ "key": "email", "value": "vendor@example.com", "type": "text" },
+								{ "key": "service_types[0]", "value": "1", "description": "Category ID (service type) — add more service_types[1], etc.", "type": "text" },
+								{ "key": "service_types[1]", "value": "2", "type": "text" },
+								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
+								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
+								{ "key": "gst_no", "value": "27AABCU9603R1ZM", "type": "text" },
+								{ "key": "address", "value": "123 Main Street, Andheri", "type": "text" },
+								{ "key": "country", "value": "India", "type": "text" },
+								{ "key": "state", "value": "Maharashtra", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{ "key": "pincode", "value": "400001", "type": "text" },
+								{ "key": "account_name", "value": "Vendor Owner", "type": "text" },
+								{ "key": "account_no", "value": "123456789012", "type": "text" },
+								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
+								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
+								{ "key": "account_type", "value": "savings", "description": "savings or current", "type": "text" },
 								{
 									"key": "aadhar_front",
 									"description": "Aadhar front — JPG/PNG/WebP, max 4MB",
@@ -267,11 +320,23 @@
 									"description": "Aadhar back — JPG/PNG/WebP, max 4MB",
 									"type": "file",
 									"src": []
+								},
+								{
+									"key": "shop_logo",
+									"description": "Shop logo — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "pan_card",
+									"description": "PAN card — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
 								}
 							]
 						},
 						"url": "{{base_url}}/v2/auth/register",
-						"description": "Vendor status starts as `pending` until approved in admin. Requires Aadhar front and back images."
+						"description": "Vendor registration (multipart). Status starts as `pending` until approved in admin. `service_types` must be valid category IDs from admin Categories."
 					}
 				},
 				{
@@ -284,6 +349,85 @@
 						"method": "GET",
 						"header": [{ "key": "Accept", "value": "application/json" }],
 						"url": "{{base_url}}/v2/auth/me"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "shop_name", "value": "Updated Demo Salon", "type": "text" },
+								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
+								{ "key": "email", "value": "vendor@example.com", "type": "text" },
+								{ "key": "service_types[0]", "value": "1", "description": "Category ID (service type)", "type": "text" },
+								{ "key": "service_types[1]", "value": "2", "type": "text" },
+								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
+								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
+								{ "key": "gst_no", "value": "27AABCU9603R1ZM", "type": "text" },
+								{ "key": "address", "value": "123 Main Street, Andheri", "type": "text" },
+								{ "key": "country", "value": "India", "type": "text" },
+								{ "key": "state", "value": "Maharashtra", "type": "text" },
+								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{ "key": "pincode", "value": "400001", "type": "text" },
+								{ "key": "account_name", "value": "Vendor Owner", "type": "text" },
+								{ "key": "account_no", "value": "123456789012", "type": "text" },
+								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
+								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
+								{ "key": "account_type", "value": "savings", "description": "savings or current", "type": "text" },
+								{
+									"key": "profile_image",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_front",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_back",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "shop_logo",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "pan_card",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": "{{base_url}}/v2/auth/profile",
+						"description": "Update vendor profile. Same fields as register plus profile_image. All fields optional."
 					}
 				},
 				{
@@ -365,7 +509,7 @@
 					}
 				},
 				{
-					"name": "Register (multipart + Aadhar)",
+					"name": "Register",
 					"event": [
 						{
 							"listen": "test",
@@ -392,15 +536,27 @@
 								{ "key": "email", "value": "driver@example.com", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
 								{
-									"key": "aadhar",
-									"description": "Select a JPG/PNG/WebP image (max 4MB)",
+									"key": "aadhar_front",
+									"description": "Aadhar front — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_back",
+									"description": "Aadhar back — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "driving_licence",
+									"description": "Driving licence — JPG/PNG/WebP, max 4MB",
 									"type": "file",
 									"src": []
 								}
 							]
 						},
 						"url": "{{base_url}}/v3/auth/register",
-						"description": "Driver registration requires Aadhar image upload. Account stays `pending` until approved in admin → Drivers."
+						"description": "Driver registration (multipart). Requires Aadhar front/back and driving licence images. Account stays `pending` until approved in admin → Drivers."
 					}
 				},
 				{
@@ -413,6 +569,64 @@
 						"method": "GET",
 						"header": [{ "key": "Accept", "value": "application/json" }],
 						"url": "{{base_url}}/v3/auth/me"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{v3_token}}", "type": "string" }]
+						},
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "name", "value": "Updated Driver", "type": "text" },
+								{ "key": "email", "value": "driver@example.com", "type": "text" },
+								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{
+									"key": "profile_image",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_front",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_back",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "driving_licence",
+									"description": "Optional — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": "{{base_url}}/v3/auth/profile",
+						"description": "Update driver profile. Same fields as register plus profile_image. All fields optional."
 					}
 				},
 				{

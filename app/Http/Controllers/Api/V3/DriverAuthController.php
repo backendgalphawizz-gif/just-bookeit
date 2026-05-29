@@ -6,11 +6,14 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\Driver;
 use App\Services\Auth\OtpService;
 use App\Support\CodeGenerator;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DriverAuthController extends ApiController
 {
+    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'];
+
     public function __construct(
         protected OtpService $otp
     ) {}
@@ -47,13 +50,10 @@ class DriverAuthController extends ApiController
 
     public function register(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'registration_token' => ['required', 'string'],
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'aadhar' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-        ]);
+        $data = $request->validate(array_merge(
+            ['registration_token' => ['required', 'string']],
+            $this->driverFieldRules(required: true)
+        ));
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_DRIVER, $data['registration_token']);
 
@@ -61,19 +61,17 @@ class DriverAuthController extends ApiController
             return $this->error('Driver already registered.', 409);
         }
 
-        $aadharPath = $request->file('aadhar')->store('drivers/aadhar', 'public');
-
-        $driver = Driver::query()->create([
+        $driver = new Driver([
+            ...$this->mapDriverAttributes($data),
             'driver_code' => CodeGenerator::driverCode(),
-            'name' => $data['name'],
             'mobile' => $mobile,
-            'email' => $data['email'] ?? null,
-            'city' => $data['city'] ?? null,
-            'aadhar_path' => $aadharPath,
             'status' => 'pending',
             'is_verified' => false,
             'registered_at' => now(),
         ]);
+
+        $this->applyDriverFiles($driver, $request);
+        $driver->save();
 
         $token = $driver->createToken('driver-api')->plainTextToken;
 
@@ -92,10 +90,72 @@ class DriverAuthController extends ApiController
         return $this->success($this->otp->formatActor(OtpService::ACTOR_DRIVER, $driver));
     }
 
+    public function updateProfile(Request $request): JsonResponse
+    {
+        /** @var Driver $driver */
+        $driver = $request->user();
+
+        $data = $request->validate(array_merge(
+            $this->driverFieldRules(required: false),
+            ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
+        ));
+
+        $driver->fill($this->mapDriverAttributes($data));
+        $this->applyDriverFiles($driver, $request);
+        $driver->save();
+
+        return $this->success(
+            $this->otp->formatActor(OtpService::ACTOR_DRIVER, $driver->fresh()),
+            'Profile updated.'
+        );
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()?->delete();
 
         return $this->success(null, 'Logged out.');
+    }
+
+    private function driverFieldRules(bool $required): array
+    {
+        $rule = $required ? 'required' : 'sometimes';
+        $emailRule = $required ? 'nullable' : 'sometimes';
+
+        return [
+            'name' => [$rule, 'string', 'max:255'],
+            'email' => [$emailRule, 'nullable', 'email', 'max:255'],
+            'city' => [$emailRule, 'nullable', 'string', 'max:100'],
+            'aadhar_front' => [$rule, ...self::IMAGE_RULE],
+            'aadhar_back' => [$rule, ...self::IMAGE_RULE],
+            'driving_licence' => [$rule, ...self::IMAGE_RULE],
+        ];
+    }
+
+    private function mapDriverAttributes(array $data): array
+    {
+        return collect($data)->only(['name', 'email', 'city'])->all();
+    }
+
+    private function applyDriverFiles(Driver $driver, Request $request): void
+    {
+        $files = [
+            'profile_image' => ['column' => 'profile_image_path', 'dir' => 'drivers/profile-images'],
+            'aadhar_front' => ['column' => 'aadhar_front_path', 'dir' => 'drivers/aadhar/front'],
+            'aadhar_back' => ['column' => 'aadhar_back_path', 'dir' => 'drivers/aadhar/back'],
+            'driving_licence' => ['column' => 'driving_licence_path', 'dir' => 'drivers/driving-licence'],
+        ];
+
+        foreach ($files as $input => $config) {
+            if (! $request->hasFile($input)) {
+                continue;
+            }
+
+            $driver->{$config['column']} = StoresUploadedFiles::replace(
+                $request->file($input),
+                $driver->{$config['column']},
+                $config['dir']
+            );
+        }
     }
 }
