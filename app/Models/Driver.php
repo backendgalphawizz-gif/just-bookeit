@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -19,6 +20,10 @@ class Driver extends Authenticatable
         'email',
         'city',
         'aadhar_path',
+        'aadhar_front_path',
+        'aadhar_back_path',
+        'driving_licence_path',
+        'profile_image_path',
         'status',
         'is_verified',
         'approved_at',
@@ -27,6 +32,10 @@ class Driver extends Authenticatable
 
     protected $hidden = [
         'aadhar_path',
+        'aadhar_front_path',
+        'aadhar_back_path',
+        'driving_licence_path',
+        'profile_image_path',
     ];
 
     protected function casts(): array
@@ -50,10 +59,26 @@ class Driver extends Authenticatable
 
     public function aadharUrl(): ?string
     {
-        if (! $this->aadhar_path) {
-            return null;
-        }
+        return StoresUploadedFiles::url($this->aadhar_path);
+    }
 
-        return '/storage/'.ltrim(str_replace('\\', '/', $this->aadhar_path), '/');
+    public function aadharFrontUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->aadhar_front_path);
+    }
+
+    public function aadharBackUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->aadhar_back_path);
+    }
+
+    public function drivingLicenceUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->driving_licence_path);
+    }
+
+    public function profileImageUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->profile_image_path);
     }
 }

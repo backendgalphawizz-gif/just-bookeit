@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -16,11 +17,16 @@ class Customer extends Authenticatable
         'mobile',
         'email',
         'city',
+        'profile_image_path',
         'status',
         'is_verified',
         'is_guest',
         'total_orders',
         'registered_at',
+    ];
+
+    protected $hidden = [
+        'profile_image_path',
     ];
 
     protected function casts(): array
@@ -40,5 +46,10 @@ class Customer extends Authenticatable
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
+    }
+
+    public function profileImageUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->profile_image_path);
     }
 }

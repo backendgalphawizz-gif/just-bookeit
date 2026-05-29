@@ -14,6 +14,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('me', [UserAuthController::class, 'me'])->name('auth.me');
+            Route::post('profile', [UserAuthController::class, 'updateProfile'])->name('auth.profile.update');
             Route::post('logout', [UserAuthController::class, 'logout'])->name('auth.logout');
         });
     });
@@ -27,6 +28,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
 
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('me', [VendorAuthController::class, 'me']);
+            Route::post('profile', [VendorAuthController::class, 'updateProfile']);
             Route::post('logout', [VendorAuthController::class, 'logout']);
         });
     });
@@ -40,6 +42,7 @@ Route::prefix('v3')->name('api.v3.')->group(function () {
 
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('me', [DriverAuthController::class, 'me']);
+            Route::post('profile', [DriverAuthController::class, 'updateProfile']);
             Route::post('logout', [DriverAuthController::class, 'logout']);
         });
     });
