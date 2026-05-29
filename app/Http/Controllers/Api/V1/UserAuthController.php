@@ -131,10 +131,9 @@ class UserAuthController extends ApiController
 
         $customer->save();
 
-        return $this->success(
-            $this->otp->formatActor(OtpService::ACTOR_CUSTOMER, $customer->fresh()),
-            'Profile updated.'
-        );
+        return $this->success([
+            'user' => $this->otp->formatActor(OtpService::ACTOR_CUSTOMER, $customer->fresh()),
+        ], 'Profile updated.');
     }
 
     public function logout(Request $request): JsonResponse

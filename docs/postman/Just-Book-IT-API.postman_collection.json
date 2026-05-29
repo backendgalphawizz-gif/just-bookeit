@@ -26,6 +26,7 @@
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
 									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));",
 									"if (json.data?.otp) { pm.environment.set('v1_otp', json.data.otp); }"
 								]
 							}
@@ -158,7 +159,8 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));"
 								]
 							}
 						}
@@ -192,6 +194,7 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
+							
 							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
 						},
 						"method": "POST",
@@ -361,7 +364,8 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));"
 								]
 							}
 						}
@@ -535,6 +539,7 @@
 								{ "key": "name", "value": "Test Driver", "type": "text" },
 								{ "key": "email", "value": "driver@example.com", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
 								{
 									"key": "aadhar_front",
 									"description": "Aadhar front — JPG/PNG/WebP, max 4MB",
@@ -581,7 +586,8 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));"
 								]
 							}
 						}
@@ -599,6 +605,7 @@
 								{ "key": "name", "value": "Updated Driver", "type": "text" },
 								{ "key": "email", "value": "driver@example.com", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
 								{
 									"key": "profile_image",
 									"description": "Optional — JPG/PNG/WebP, max 4MB",

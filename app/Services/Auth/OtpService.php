@@ -212,6 +212,7 @@ class OtpService
                 'mobile' => $actor->mobile,
                 'email' => $actor->email,
                 'city' => $actor->city,
+                'vehicle_no' => $actor->vehicle_no,
                 'status' => $actor->status,
                 'is_verified' => $actor->is_verified,
                 'profile_image_url' => $actor->profileImageUrl(),
