@@ -105,10 +105,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"email\": \"customer@example.com\"\n}"
+							"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"mobile_no\": \"{{v1_mobile}}\",\n  \"email\": \"customer@example.com\"\n}"
 						},
 						"url": "{{base_url}}/v1/auth/register",
-						"description": "Complete registration after OTP verify (new users only)."
+						"description": "Complete registration after OTP verify (new users only). `mobile_no` must match OTP verified number."
 					}
 				},
 				{
@@ -176,6 +176,7 @@
 							"mode": "formdata",
 							"formdata": [
 								{ "key": "name", "value": "Updated Customer", "type": "text" },
+								{ "key": "mobile_no", "value": "{{v1_mobile}}", "type": "text" },
 								{ "key": "email", "value": "customer@example.com", "type": "text" },
 								{
 									"key": "profile_image",
@@ -186,7 +187,7 @@
 							]
 						},
 						"url": "{{base_url}}/v1/auth/profile",
-						"description": "Update customer profile. Same fields as register (name, email) plus profile_image. All fields optional."
+						"description": "Update customer profile. Same fields as register (name, mobile_no, email) plus profile_image. All fields optional."
 					}
 				},
 				{
@@ -194,7 +195,7 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							
+
 							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
 						},
 						"method": "POST",
@@ -606,6 +607,11 @@
 								{ "key": "email", "value": "driver@example.com", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
 								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
+								{ "key": "account_name", "value": "Test Driver", "type": "text" },
+								{ "key": "account_no", "value": "123456789012", "type": "text" },
+								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
+								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
+								{ "key": "account_type", "value": "savings", "description": "savings or current", "type": "text" },
 								{
 									"key": "profile_image",
 									"description": "Optional — JPG/PNG/WebP, max 4MB",

@@ -9,6 +9,8 @@ use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserAuthController extends ApiController
 {
@@ -56,6 +58,12 @@ class UserAuthController extends ApiController
         ));
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_CUSTOMER, $data['registration_token']);
+
+        if (isset($data['mobile_no']) && $this->otp->normalizeMobile($data['mobile_no']) !== $mobile) {
+            throw ValidationException::withMessages([
+                'mobile_no' => ['Mobile number must match OTP verified number.'],
+            ]);
+        }
 
         if (Customer::query()->where('mobile', $mobile)->exists()) {
             return $this->error('Account already exists. Please login.', 409);
@@ -115,7 +123,7 @@ class UserAuthController extends ApiController
         $customer = $request->user();
 
         $data = $request->validate(array_merge(
-            $this->customerFieldRules(required: false),
+            $this->customerFieldRules(required: false, customerId: $customer->id),
             ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
         ));
 
@@ -143,18 +151,31 @@ class UserAuthController extends ApiController
         return $this->success(null, 'Logged out.');
     }
 
-    private function customerFieldRules(bool $required): array
+    private function customerFieldRules(bool $required, ?int $customerId = null): array
     {
         $rule = $required ? 'required' : 'sometimes';
+
+        $mobileRules = [$required ? 'nullable' : 'sometimes', 'string', 'max:20'];
+
+        if ($customerId) {
+            $mobileRules[] = Rule::unique('customers', 'mobile')->ignore($customerId);
+        }
 
         return [
             'name' => [$rule, 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
+            'mobile_no' => $mobileRules,
         ];
     }
 
     private function mapCustomerAttributes(array $data): array
     {
-        return collect($data)->only(['name', 'email'])->all();
+        $attributes = collect($data)->only(['name', 'email'])->all();
+
+        if (isset($data['mobile_no'])) {
+            $attributes['mobile'] = $this->otp->normalizeMobile($data['mobile_no']);
+        }
+
+        return $attributes;
     }
 }
