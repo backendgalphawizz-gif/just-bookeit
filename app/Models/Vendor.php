@@ -57,7 +57,6 @@ class Vendor extends Authenticatable
     {
         return [
             'categories' => 'array',
-            'service_types' => 'array',
             'rating' => 'decimal:2',
             'earnings' => 'decimal:2',
             'approved_at' => 'datetime',
@@ -102,5 +101,18 @@ class Vendor extends Authenticatable
     public function profileImageUrl(): ?string
     {
         return StoresUploadedFiles::url($this->profile_image_path);
+    }
+
+    public function serviceType(): ?string
+    {
+        $value = $this->service_types;
+
+        if (is_array($value)) {
+            $value = $value[0] ?? implode(', ', $value);
+        }
+
+        $value = trim((string) ($value ?? ''));
+
+        return $value !== '' ? $value : null;
     }
 }
