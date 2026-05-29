@@ -28,6 +28,25 @@
                 <div><dt>Earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
             </dl>
         </div>
+        @if ($vendor->aadharFrontUrl() || $vendor->aadharBackUrl())
+            <div class="jb-detail-card lg:col-span-2">
+                <h2>Aadhar</h2>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    @if ($vendor->aadharFrontUrl())
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Front</p>
+                            <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="w-full rounded-xl border border-slate-200 object-contain bg-slate-50 p-2 max-h-80">
+                        </div>
+                    @endif
+                    @if ($vendor->aadharBackUrl())
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Back</p>
+                            <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="w-full rounded-xl border border-slate-200 object-contain bg-slate-50 p-2 max-h-80">
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
         <div class="jb-detail-card lg:col-span-2">
             <h2>Recent Orders</h2>
             <div class="jb-table-wrap mt-4">

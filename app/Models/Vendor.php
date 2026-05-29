@@ -17,12 +17,19 @@ class Vendor extends Authenticatable
         'mobile',
         'email',
         'city',
+        'aadhar_front_path',
+        'aadhar_back_path',
         'categories',
         'rating',
         'orders_completed',
         'earnings',
         'status',
         'approved_at',
+    ];
+
+    protected $hidden = [
+        'aadhar_front_path',
+        'aadhar_back_path',
     ];
 
     protected function casts(): array
@@ -48,5 +55,24 @@ class Vendor extends Authenticatable
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    public function aadharFrontUrl(): ?string
+    {
+        return $this->storageUrl($this->aadhar_front_path);
+    }
+
+    public function aadharBackUrl(): ?string
+    {
+        return $this->storageUrl($this->aadhar_back_path);
+    }
+
+    protected function storageUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        return '/storage/'.ltrim(str_replace('\\', '/', $path), '/');
     }
 }
