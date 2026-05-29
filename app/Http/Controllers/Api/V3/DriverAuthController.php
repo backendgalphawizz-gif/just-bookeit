@@ -97,6 +97,7 @@ class DriverAuthController extends ApiController
 
         $data = $request->validate(array_merge(
             $this->driverFieldRules(required: false),
+            $this->driverBankFieldRules(),
             ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
         ));
 
@@ -134,7 +135,33 @@ class DriverAuthController extends ApiController
 
     private function mapDriverAttributes(array $data): array
     {
-        return collect($data)->only(['name', 'email', 'city', 'vehicle_no'])->all();
+        $attributes = collect($data)->only([
+            'name',
+            'email',
+            'city',
+            'vehicle_no',
+            'account_name',
+            'ifsc_code',
+            'bank_name',
+            'account_type',
+        ])->all();
+
+        if (isset($data['account_no'])) {
+            $attributes['account_number'] = $data['account_no'];
+        }
+
+        return $attributes;
+    }
+
+    private function driverBankFieldRules(): array
+    {
+        return [
+            'account_name' => ['sometimes', 'string', 'max:255'],
+            'account_no' => ['sometimes', 'string', 'max:20'],
+            'ifsc_code' => ['sometimes', 'string', 'max:11'],
+            'bank_name' => ['sometimes', 'string', 'max:255'],
+            'account_type' => ['sometimes', 'in:savings,current'],
+        ];
     }
 
     private function applyDriverFiles(Driver $driver, Request $request): void
