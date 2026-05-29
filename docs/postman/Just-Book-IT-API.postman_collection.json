@@ -246,15 +246,32 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
+							{ "key": "Accept", "value": "application/json" }
 						],
 						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"registration_token\": \"{{v2_registration_token}}\",\n  \"brand_name\": \"Demo Salon\",\n  \"owner_name\": \"Vendor Owner\",\n  \"email\": \"vendor@example.com\",\n  \"city\": \"Mumbai\"\n}"
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "registration_token", "value": "{{v2_registration_token}}", "type": "text" },
+								{ "key": "brand_name", "value": "Demo Salon", "type": "text" },
+								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
+								{ "key": "email", "value": "vendor@example.com", "type": "text" },
+								{ "key": "city", "value": "Mumbai", "type": "text" },
+								{
+									"key": "aadhar_front",
+									"description": "Aadhar front — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_back",
+									"description": "Aadhar back — JPG/PNG/WebP, max 4MB",
+									"type": "file",
+									"src": []
+								}
+							]
 						},
 						"url": "{{base_url}}/v2/auth/register",
-						"description": "Vendor status starts as `pending` until approved in admin."
+						"description": "Vendor status starts as `pending` until approved in admin. Requires Aadhar front and back images."
 					}
 				},
 				{

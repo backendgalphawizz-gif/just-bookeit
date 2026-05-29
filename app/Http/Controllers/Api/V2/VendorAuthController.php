@@ -53,6 +53,8 @@ class VendorAuthController extends ApiController
             'owner_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],
+            'aadhar_front' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_back' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ]);
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_VENDOR, $data['registration_token']);
@@ -68,6 +70,8 @@ class VendorAuthController extends ApiController
             'mobile' => $mobile,
             'email' => $data['email'],
             'city' => $data['city'] ?? null,
+            'aadhar_front_path' => $request->file('aadhar_front')->store('vendors/aadhar/front', 'public'),
+            'aadhar_back_path' => $request->file('aadhar_back')->store('vendors/aadhar/back', 'public'),
             'status' => 'pending',
         ]);
 

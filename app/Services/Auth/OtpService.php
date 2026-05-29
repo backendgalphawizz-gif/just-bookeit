@@ -183,6 +183,8 @@ class OtpService
                 'email' => $actor->email,
                 'city' => $actor->city,
                 'status' => $actor->status,
+                'aadhar_front_url' => $actor->aadharFrontUrl(),
+                'aadhar_back_url' => $actor->aadharBackUrl(),
             ],
             self::ACTOR_DRIVER => [
                 'id' => $actor->id,

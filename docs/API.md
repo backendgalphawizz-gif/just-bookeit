@@ -64,7 +64,7 @@ Use the **same `type`** on send and verify.
 |--------|----------|-------------|
 | POST | `/v2/auth/otp/send` | Send OTP |
 | POST | `/v2/auth/otp/verify` | Verify OTP |
-| POST | `/v2/auth/register` | `{ "registration_token", "brand_name", "owner_name", "email", "city?" }` |
+| POST | `/v2/auth/register` | `multipart`: `registration_token`, `brand_name`, `owner_name`, `email`, `city?`, `aadhar_front`, `aadhar_back` (images) |
 | GET | `/v2/auth/me` | Profile (auth) |
 | POST | `/v2/auth/logout` | Logout (auth) |
 
