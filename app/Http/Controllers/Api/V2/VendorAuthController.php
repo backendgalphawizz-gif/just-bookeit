@@ -123,8 +123,7 @@ class VendorAuthController extends ApiController
             'brand_name' => [$required ? 'required_without:shop_name' : 'sometimes', 'nullable', 'string', 'max:255'],
             'owner_name' => [$rule, 'string', 'max:255'],
             'email' => [$rule, 'email', 'max:255'],
-            'service_types' => [$rule, 'array', 'min:1'],
-            'service_types.*' => ['required', 'string', 'max:100'],
+            'service_types' => [$rule, 'string', 'max:500'],
             'business_mobile' => [$rule, 'string', 'max:20'],
             'business_mail' => [$rule, 'email', 'max:255'],
             'gst_no' => ['nullable', 'string', 'max:15'],
@@ -183,21 +182,7 @@ class VendorAuthController extends ApiController
             $attributes['account_number'] = $data['account_no'];
         }
 
-        if (array_key_exists('service_types', $data)) {
-            $serviceTypes = $this->normalizeServiceTypes($data['service_types']);
-            $attributes['service_types'] = $serviceTypes;
-            $attributes['categories'] = $serviceTypes;
-        }
-
         return $attributes;
-    }
-
-    private function normalizeServiceTypes(array $serviceTypes): array
-    {
-        return array_values(array_unique(array_filter(array_map(
-            fn ($type) => trim((string) $type),
-            $serviceTypes
-        ))));
     }
 
     private function applyVendorFiles(Vendor $vendor, Request $request): void
