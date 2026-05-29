@@ -102,10 +102,9 @@ class VendorAuthController extends ApiController
         $this->applyVendorFiles($vendor, $request);
         $vendor->save();
 
-        return $this->success(
-            $this->otp->formatActor(OtpService::ACTOR_VENDOR, $vendor->fresh()),
-            'Profile updated.'
-        );
+        return $this->success([
+            'user' => $this->otp->formatActor(OtpService::ACTOR_VENDOR, $vendor->fresh()),
+        ], 'Profile updated.');
     }
 
     public function logout(Request $request): JsonResponse
@@ -120,7 +119,8 @@ class VendorAuthController extends ApiController
         $rule = $required ? 'required' : 'sometimes';
 
         return [
-            'shop_name' => [$rule, 'string', 'max:255'],
+            'shop_name' => [$required ? 'required_without:brand_name' : 'sometimes', 'nullable', 'string', 'max:255'],
+            'brand_name' => [$required ? 'required_without:shop_name' : 'sometimes', 'nullable', 'string', 'max:255'],
             'owner_name' => [$rule, 'string', 'max:255'],
             'email' => [$rule, 'email', 'max:255'],
             'service_types' => [$rule, 'array', 'min:1'],
@@ -148,7 +148,6 @@ class VendorAuthController extends ApiController
     private function mapVendorAttributes(array $data): array
     {
         $attributes = collect($data)->only([
-            'shop_name',
             'owner_name',
             'email',
             'service_types',
@@ -165,7 +164,11 @@ class VendorAuthController extends ApiController
         ])->all();
 
         if (isset($data['shop_name'])) {
-            $attributes['brand_name'] = $data['shop_name'];
+            $attributes['shop_name'] = $data['shop_name'];
+            $attributes['brand_name'] = $data['brand_name'] ?? $data['shop_name'];
+        } elseif (isset($data['brand_name'])) {
+            $attributes['brand_name'] = $data['brand_name'];
+            $attributes['shop_name'] = $data['brand_name'];
         }
 
         if (isset($data['business_mail'])) {

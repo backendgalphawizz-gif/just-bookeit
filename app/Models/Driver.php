@@ -19,6 +19,7 @@ class Driver extends Authenticatable
         'mobile',
         'email',
         'city',
+        'vehicle_no',
         'aadhar_path',
         'aadhar_front_path',
         'aadhar_back_path',

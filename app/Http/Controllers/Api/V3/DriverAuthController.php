@@ -104,10 +104,9 @@ class DriverAuthController extends ApiController
         $this->applyDriverFiles($driver, $request);
         $driver->save();
 
-        return $this->success(
-            $this->otp->formatActor(OtpService::ACTOR_DRIVER, $driver->fresh()),
-            'Profile updated.'
-        );
+        return $this->success([
+            'user' => $this->otp->formatActor(OtpService::ACTOR_DRIVER, $driver->fresh()),
+        ], 'Profile updated.');
     }
 
     public function logout(Request $request): JsonResponse
@@ -126,6 +125,7 @@ class DriverAuthController extends ApiController
             'name' => [$rule, 'string', 'max:255'],
             'email' => [$emailRule, 'nullable', 'email', 'max:255'],
             'city' => [$emailRule, 'nullable', 'string', 'max:100'],
+            'vehicle_no' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:20'],
             'aadhar_front' => [$rule, ...self::IMAGE_RULE],
             'aadhar_back' => [$rule, ...self::IMAGE_RULE],
             'driving_licence' => [$rule, ...self::IMAGE_RULE],
@@ -134,7 +134,7 @@ class DriverAuthController extends ApiController
 
     private function mapDriverAttributes(array $data): array
     {
-        return collect($data)->only(['name', 'email', 'city'])->all();
+        return collect($data)->only(['name', 'email', 'city', 'vehicle_no'])->all();
     }
 
     private function applyDriverFiles(Driver $driver, Request $request): void
