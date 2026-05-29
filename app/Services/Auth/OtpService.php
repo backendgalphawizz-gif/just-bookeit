@@ -186,7 +186,7 @@ class OtpService
                 'business_mobile' => $actor->business_mobile,
                 'email' => $actor->email,
                 'business_mail' => $actor->business_email,
-                'service_types' => $actor->service_types ?? [],
+                'service_types' => $actor->normalizedServiceTypes(),
                 'gst_no' => $actor->gst_number,
                 'address' => $actor->address,
                 'country' => $actor->country,

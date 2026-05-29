@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**OTP:** Random 4-digit code returned in Send OTP response (`data.otp`); Postman saves it automatically.\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Update Profile / Logout\n\n**Multipart:** Vendor register, driver register, and all profile updates use `form-data`. Image fields: JPG/PNG/WebP, max 4MB.\n\n**Vendor `service_types`:** Array of category IDs from admin Categories (type: service). Use `service_types[0]`, `service_types[1]`, etc.\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
+		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**OTP:** Random 4-digit code returned in Send OTP response (`data.otp`); Postman saves it automatically.\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Update Profile / Logout\n\n**Multipart:** Vendor register, driver register, and all profile updates use `form-data`. Image fields: JPG/PNG/WebP, max 4MB.\n\n**Vendor `service_types`:** String array of service type names. Use `service_types[0]`, `service_types[1]`, etc.\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -322,8 +322,8 @@
 								{ "key": "shop_name", "value": "Demo Salon", "type": "text" },
 								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
 								{ "key": "email", "value": "vendor@example.com", "type": "text" },
-								{ "key": "service_types[0]", "value": "1", "description": "Category ID (service type) — add more service_types[1], etc.", "type": "text" },
-								{ "key": "service_types[1]", "value": "2", "type": "text" },
+								{ "key": "service_types[0]", "value": "Fashion Designer", "description": "Service type name (text)", "type": "text" },
+								{ "key": "service_types[1]", "value": "Rented Dress", "type": "text" },
 								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
 								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
 								{ "key": "gst_no", "value": "27AABCU9603R1ZM", "type": "text" },
@@ -364,7 +364,7 @@
 							]
 						},
 						"url": "{{base_url}}/v2/auth/register",
-						"description": "Vendor registration (multipart). Status starts as `pending` until approved in admin. `service_types` must be valid category IDs from admin Categories."
+						"description": "Vendor registration (multipart). Status starts as `pending` until approved in admin. `service_types` is a string array of service names."
 					}
 				},
 				{
@@ -408,8 +408,8 @@
 								{ "key": "shop_name", "value": "Updated Demo Salon", "type": "text" },
 								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
 								{ "key": "email", "value": "vendor@example.com", "type": "text" },
-								{ "key": "service_types[0]", "value": "1", "description": "Category ID (service type)", "type": "text" },
-								{ "key": "service_types[1]", "value": "2", "type": "text" },
+								{ "key": "service_types[0]", "value": "Fashion Designer", "description": "Service type name (text)", "type": "text" },
+								{ "key": "service_types[1]", "value": "Rented Dress", "type": "text" },
 								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
 								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
 								{ "key": "gst_no", "value": "27AABCU9603R1ZM", "type": "text" },

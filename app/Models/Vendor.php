@@ -103,4 +103,18 @@ class Vendor extends Authenticatable
     {
         return StoresUploadedFiles::url($this->profile_image_path);
     }
+
+    public function normalizedServiceTypes(): array
+    {
+        $types = $this->service_types ?? $this->categories ?? [];
+
+        if (! is_array($types)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($type) => trim((string) $type),
+            $types
+        )));
+    }
 }
