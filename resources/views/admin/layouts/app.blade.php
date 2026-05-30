@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('admin.partials.built-assets')
+    @include('admin.partials.responsive-overrides')
     @include('admin.partials.admin-theme-vars')
 </head>
 <body class="jb-admin-shell" x-data="{ sidebarOpen: false }">

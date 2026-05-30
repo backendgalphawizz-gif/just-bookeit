@@ -75,7 +75,7 @@
             <table class="jb-table text-xs">
                 <thead>
                     <tr>
-                        <th class="jb-col-name sticky left-0 bg-white">Role</th>
+                        <th class="jb-col-name jb-table-sticky-col">Role</th>
                         @foreach ($permissions as $permission)
                             <th class="min-w-[5rem] text-center whitespace-nowrap px-2" title="{{ $permission->name }}">{{ Str::limit($permission->slug, 10) }}</th>
                         @endforeach
@@ -84,7 +84,7 @@
                 <tbody>
                     @foreach ($roles as $role)
                         <tr>
-                            <td class="jb-col-name sticky left-0 bg-white font-semibold">
+                            <td class="jb-col-name jb-table-sticky-col font-semibold">
                                 {{ $role->name }}
                                 @if ($role->slug === 'super_admin')
                                     <span class="jb-badge bg-amber-100 text-amber-800 ml-1">Full</span>

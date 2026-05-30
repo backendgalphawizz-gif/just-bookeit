@@ -11,8 +11,8 @@
         ];
     @endphp
 
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div class="flex flex-wrap gap-2">
+    <div class="jb-tabs-row">
+        <div class="jb-tabs-list">
             @foreach ($tabs as $key => $label)
                 <a href="{{ route('admin.faqs.index', ['audience' => $key, 'search' => request('search')]) }}"
                    class="jb-settings-tab {{ $audience === $key ? 'jb-settings-tab--active' : '' }}">

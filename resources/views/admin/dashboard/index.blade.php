@@ -75,13 +75,13 @@
                 @php
                     $dots = ['amber' => 'bg-amber-500', 'emerald' => 'bg-emerald-500', 'blue' => 'bg-blue-500', 'orange' => 'bg-orange-500', 'rose' => 'bg-rose-500'];
                 @endphp
-                <div class="flex items-center gap-4 px-6 py-4">
+                <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
                     <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ $dots[$activity['tone']] ?? 'bg-slate-400' }}"></span>
                     <div class="min-w-0 flex-1">
                         <p class="font-semibold text-slate-900">{{ $activity['title'] }}</p>
                         <p class="truncate text-sm text-slate-500">{{ $activity['description'] }}</p>
                     </div>
-                    <span class="shrink-0 text-xs font-medium text-slate-400">{{ $activity['time_ago'] }}</span>
+                    <span class="shrink-0 text-xs font-medium text-slate-400 sm:text-right">{{ $activity['time_ago'] }}</span>
                 </div>
             @empty
                 <p class="jb-table-empty">No recent activity.</p>
