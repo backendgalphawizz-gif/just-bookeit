@@ -28,6 +28,7 @@
                     <th class="jb-col-name">Customer</th>
                     <th class="jb-col-name">Vendor</th>
                     <th>Category</th>
+                    <th>Type</th>
                     <th class="jb-col-amount">Amount</th>
                     <th class="jb-col-status">Payment</th>
                     <th class="jb-col-status">Status</th>
@@ -42,6 +43,9 @@
                             <td class="jb-col-name">{{ $order->customer->name }}</td>
                             <td class="jb-col-name">{{ $order->vendor?->brand_name ?? '—' }}</td>
                             <td>{{ $order->category->name }}</td>
+                    <td>
+                        <span class="text-xs text-slate-500">{{ $order->order_type === 'rental' ? 'Rental' : 'Sale' }}</span>
+                    </td>
                             <td class="jb-col-amount font-semibold">₹{{ number_format($order->amount, 2) }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->payment_status, 'label' => ucfirst($order->payment_status)])</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
@@ -49,7 +53,7 @@
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" /></div></td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="jb-table-empty">No orders found.</td></tr>
+                        <tr><td colspan="11" class="jb-table-empty">No orders found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -83,6 +83,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::resource('admins', AdminUserController::class)->except(['show']);
 
             Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
+            Route::post('orders/{order}/manage', [OrderController::class, 'manage'])->name('orders.manage');
             Route::post('customers/{customer}/activate', [CustomerController::class, 'activate'])->name('customers.activate');
             Route::post('customers/{customer}/suspend', [CustomerController::class, 'suspend'])->name('customers.suspend');
             Route::post('refunds/{refund}/approve', [RefundController::class, 'approve'])->name('refunds.approve');
