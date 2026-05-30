@@ -108,7 +108,7 @@ class Vendor extends Authenticatable
         $value = $this->service_types;
 
         if (is_array($value)) {
-            $value = $value[0] ?? implode(', ', $value);
+            $value = implode(', ', array_filter(array_map('strval', $value)));
         }
 
         $value = trim((string) ($value ?? ''));

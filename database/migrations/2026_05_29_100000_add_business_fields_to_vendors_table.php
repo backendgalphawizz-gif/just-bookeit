@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('vendors', function (Blueprint $table) {
             $table->string('shop_name')->nullable()->after('brand_name');
-            $table->json('service_types')->nullable()->after('categories');
+            $table->string('service_types', 500)->nullable()->after('categories');
             $table->string('business_mobile', 20)->nullable()->after('mobile');
             $table->string('business_email')->nullable()->after('email');
             $table->string('gst_number')->nullable()->after('city');
