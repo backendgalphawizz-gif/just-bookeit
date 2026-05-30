@@ -3,8 +3,8 @@
 @endphp
 <div
     class="jb-profile-menu"
-    x-data="{ open: false }"
-    @keydown.escape.window="open = false"
+    x-data="{ open: false, logoutConfirm: false }"
+    @keydown.escape.window="open = false; logoutConfirm = false"
     @click.outside="open = false"
 >
     <button
@@ -56,21 +56,32 @@
                 </svg>
                 Profile
             </a>
-            <form
-                method="POST"
-                action="{{ route('admin.logout') }}"
-                class="jb-profile-dropdown-form"
+            <button
+                type="button"
+                class="jb-profile-dropdown-item jb-profile-dropdown-item--danger w-full"
                 role="menuitem"
-                onsubmit="return confirm('Log out of your admin account?')"
+                @click="open = false; logoutConfirm = true"
             >
-                @csrf
-                <button type="submit" class="jb-profile-dropdown-item jb-profile-dropdown-item--danger">
-                    <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                    </svg>
-                    Logout
-                </button>
-            </form>
+                <svg class="size-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                </svg>
+                Logout
+            </button>
         </div>
     </div>
+
+    <x-admin.confirm-dialog
+        show="logoutConfirm"
+        title="Log out?"
+        message="You will be signed out of your admin account."
+        variant="warning"
+    >
+        <button type="button" class="jb-modal-alert-btn jb-modal-alert-btn--ghost" @click="logoutConfirm = false">
+            Cancel
+        </button>
+        <form method="POST" action="{{ route('admin.logout') }}" class="contents">
+            @csrf
+            <button type="submit" class="jb-modal-alert-btn">Log out</button>
+        </form>
+    </x-admin.confirm-dialog>
 </div>

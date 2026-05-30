@@ -64,4 +64,25 @@
     }
 
     .jb-tabs-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .jb-modal-alert-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .jb-modal-alert-actions .jb-modal-alert-btn {
+        margin-top: 0;
+        flex: 1 1 0;
+    }
+
+    .jb-modal-alert-btn--ghost {
+        background: rgb(241 245 249);
+        color: rgb(51 65 85);
+        box-shadow: none;
+    }
+
+    .jb-modal-alert-btn--ghost:hover {
+        background: rgb(226 232 240);
+    }
 </style>
