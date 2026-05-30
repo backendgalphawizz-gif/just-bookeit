@@ -679,6 +679,22 @@
         background-color: var(--jb-primary-hover, #9f1239);
     }
 
+    .jb-modal-alert-actions {
+        @apply mt-6 flex gap-3;
+    }
+
+    .jb-modal-alert-actions .jb-modal-alert-btn {
+        @apply mt-0 flex-1;
+    }
+
+    .jb-modal-alert-btn--ghost {
+        @apply bg-slate-100 text-slate-700 shadow-none;
+    }
+
+    .jb-modal-alert-btn--ghost:hover {
+        @apply bg-slate-200;
+    }
+
     .jb-modal-enter {
         transition: opacity 0.25s ease-out;
     }
