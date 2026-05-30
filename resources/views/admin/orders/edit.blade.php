@@ -5,7 +5,7 @@
 @section('content')
     <div class="jb-card max-w-4xl"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.orders.update', $order) }}">@csrf @method('PUT')
-            <div class="jb-form-grid">@include('admin.orders._form')</div>
+            <div class="jb-form-grid">@include('admin.orders._form', compact('order', 'customers', 'vendors', 'drivers', 'categories'))</div>
             <div class="jb-form-actions"><x-admin.button variant="primary" type="submit">Update Order</x-admin.button><x-admin.button variant="secondary" :href="route('admin.orders.show', $order)">Cancel</x-admin.button></div>
         </form>
     </div></div>

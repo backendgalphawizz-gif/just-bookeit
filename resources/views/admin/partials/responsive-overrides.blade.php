@@ -165,4 +165,125 @@
         padding: 0.5rem;
         object-fit: contain;
     }
+
+    .jb-form-section-title {
+        margin: 0.5rem 0 0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: rgb(100 116 139);
+    }
+
+    .jb-order-summary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid rgb(226 232 240);
+        background: linear-gradient(135deg, rgb(255 255 255), rgb(248 250 252));
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+
+    .jb-order-summary-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .jb-order-type-badge {
+        display: inline-flex;
+        border-radius: 9999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .jb-order-type-badge--rental {
+        background: rgb(254 243 199);
+        color: rgb(146 64 14);
+    }
+
+    .jb-order-type-badge--sale {
+        background: rgb(219 234 254);
+        color: rgb(30 64 175);
+    }
+
+    .jb-order-summary-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-order-summary-meta {
+        margin-top: 0.25rem;
+        font-size: 0.875rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-order-timeline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    @media (min-width: 768px) {
+        .jb-order-timeline {
+            flex-wrap: nowrap;
+            justify-content: space-between;
+        }
+    }
+
+    .jb-order-timeline-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1 1 auto;
+        min-width: 4.5rem;
+        text-align: center;
+    }
+
+    .jb-order-timeline-dot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 9999px;
+        background: rgb(226 232 240);
+    }
+
+    .jb-order-timeline-step--done .jb-order-timeline-dot {
+        background: rgb(34 197 94);
+    }
+
+    .jb-order-timeline-step--current .jb-order-timeline-dot {
+        background: var(--jb-primary, #be123c);
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--jb-primary, #be123c) 25%, transparent);
+    }
+
+    .jb-order-timeline-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: rgb(100 116 139);
+        line-height: 1.2;
+    }
+
+    .jb-order-timeline-step--current .jb-order-timeline-label {
+        color: rgb(15 23 42);
+    }
+
+    .jb-dl--grid {
+        display: grid;
+        gap: 1rem 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+        .jb-dl--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
 </style>

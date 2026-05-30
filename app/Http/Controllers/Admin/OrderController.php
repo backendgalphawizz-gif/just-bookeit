@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Driver;
 use App\Models\Order;
 use App\Models\Vendor;
 use App\Http\Requests\Admin\OrderRequest;
@@ -11,6 +12,7 @@ use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OrderController extends AdminController
@@ -46,6 +48,7 @@ class OrderController extends AdminController
         return view('admin.orders.create', [
             'customers' => Customer::query()->orderBy('name')->get(),
             'vendors' => Vendor::query()->active()->orderBy('brand_name')->get(),
+            'drivers' => Driver::query()->where('status', 'active')->orderBy('name')->get(),
             'categories' => Category::query()->where('type', 'service')->orderBy('name')->get(),
         ]);
     }
@@ -57,6 +60,8 @@ class OrderController extends AdminController
         $order = Order::query()->create([
             ...$data,
             'order_number' => CodeGenerator::orderNumber(),
+            'order_type' => $data['order_type'] ?? 'rental',
+            'quantity' => $data['quantity'] ?? 1,
         ]);
 
         $this->syncCustomerOrderCount($order->customer_id);
@@ -66,9 +71,12 @@ class OrderController extends AdminController
 
     public function show(Order $order): View
     {
-        $order->load(['customer', 'vendor', 'category', 'refund', 'dispute']);
+        $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute']);
 
-        return view('admin.orders.show', compact('order'));
+        return view('admin.orders.show', [
+            'order' => $order,
+            'drivers' => Driver::query()->where('status', 'active')->orderBy('name')->get(),
+        ]);
     }
 
     public function edit(Order $order): View
@@ -77,6 +85,7 @@ class OrderController extends AdminController
             'order' => $order,
             'customers' => Customer::query()->orderBy('name')->get(),
             'vendors' => Vendor::query()->orderBy('brand_name')->get(),
+            'drivers' => Driver::query()->where('status', 'active')->orderBy('name')->get(),
             'categories' => Category::query()->where('type', 'service')->orderBy('name')->get(),
         ]);
     }
@@ -108,20 +117,41 @@ class OrderController extends AdminController
         ]);
 
         $order->update(['status' => $data['status']]);
+        $this->applyStatusSideEffects($order, $data['status']);
 
-        if ($data['status'] === 'delivered' && $order->payment_status === 'pending') {
+        return back()->with('success', 'Order status updated to '.str_replace('_', ' ', $data['status']).'.');
+    }
+
+    public function manage(Request $request, Order $order): RedirectResponse
+    {
+        $this->authorizeAdmin('edit');
+
+        $data = $request->validate([
+            'status' => ['required', Rule::in(Order::STATUSES)],
+            'payment_status' => ['required', Rule::in(Order::PAYMENT_STATUSES)],
+            'driver_id' => ['nullable', 'exists:drivers,id'],
+            'admin_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $order->update($data);
+        $this->applyStatusSideEffects($order, $data['status'], $data['payment_status']);
+
+        return back()->with('success', 'Order updated successfully.');
+    }
+
+    protected function applyStatusSideEffects(Order $order, string $status, ?string $paymentStatus = null): void
+    {
+        if ($status === 'delivered' && ($paymentStatus === 'pending' || $order->payment_status === 'pending')) {
             $order->update(['payment_status' => 'success']);
         }
 
-        if ($data['status'] === 'refunded') {
+        if ($status === 'refunded') {
             $order->update(['payment_status' => 'refunded']);
         }
 
-        if ($data['status'] === 'cancelled' && $order->payment_status === 'pending') {
+        if ($status === 'cancelled' && $order->payment_status === 'pending') {
             $order->update(['payment_status' => 'failed']);
         }
-
-        return back()->with('success', 'Order status updated to '.str_replace('_', ' ', $data['status']).'.');
     }
 
     protected function syncCustomerOrderCount(int $customerId): void
