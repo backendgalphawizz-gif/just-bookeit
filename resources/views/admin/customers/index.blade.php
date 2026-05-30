@@ -57,7 +57,15 @@
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $customers])
                             <td class="jb-col-id"><span class="font-mono text-xs font-semibold text-slate-500">{{ $customer->customer_code }}</span></td>
-                            <td class="jb-col-name font-semibold text-slate-900">{{ $customer->name }}</td>
+                            <td class="jb-col-name">
+                                <div class="jb-actor-cell">
+                                    @include('admin.partials.actor-avatar', [
+                                        'imageUrl' => $customer->profileImageUrl(),
+                                        'label' => $customer->name,
+                                    ])
+                                    <span class="font-semibold text-slate-900">{{ $customer->name }}</span>
+                                </div>
+                            </td>
                             <td>{{ $customer->mobile }}</td>
                             <td>{{ $customer->city ?? '—' }}</td>
                             <td class="text-center">{{ $customer->total_orders }}</td>

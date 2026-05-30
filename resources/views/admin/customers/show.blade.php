@@ -18,7 +18,15 @@
         <x-admin.button variant="secondary" :href="route('admin.customers.edit', $customer)">Edit</x-admin.button>
     @endif
     @if (auth('admin')->user()->hasPermission('customers', 'delete'))
-        <form method="POST" action="{{ route('admin.customers.destroy', $customer) }}" onsubmit="return confirm('Delete this customer?')">
+        <form
+            method="POST"
+            action="{{ route('admin.customers.destroy', $customer) }}"
+            class="inline-flex"
+            data-jb-confirm="This customer will be permanently deleted."
+            data-jb-confirm-title="Delete customer?"
+            data-jb-confirm-variant="error"
+            data-jb-confirm-label="Delete"
+        >
             @csrf @method('DELETE')
             <x-admin.button variant="danger" type="submit">Delete</x-admin.button>
         </form>
@@ -29,11 +37,17 @@
     <div class="jb-detail-grid">
         <div class="jb-detail-card">
             <h2>Basic Details</h2>
+            <x-admin.actor-profile-header
+                :image-url="$customer->profileImageUrl()"
+                :title="$customer->name"
+                :subtitle="$customer->customer_code"
+            >
+                @include('admin.components.status-badge', ['status' => $customer->status])
+            </x-admin.actor-profile-header>
             <dl class="jb-dl">
                 <div><dt>Mobile</dt><dd>{{ $customer->mobile }}</dd></div>
                 <div><dt>Email</dt><dd>{{ $customer->email ?? '—' }}</dd></div>
                 <div><dt>City</dt><dd>{{ $customer->city ?? '—' }}</dd></div>
-                <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $customer->status])</dd></div>
                 <div><dt>Verified</dt><dd>{{ $customer->is_verified ? 'Yes' : 'No' }}</dd></div>
                 <div><dt>Registered</dt><dd>{{ $customer->registered_at?->format('M d, Y') }}</dd></div>
             </dl>

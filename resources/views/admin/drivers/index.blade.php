@@ -50,7 +50,15 @@
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $drivers])
                             <td class="jb-col-id font-mono text-xs">{{ $driver->driver_code }}</td>
-                            <td class="jb-col-name font-semibold">{{ $driver->name }}</td>
+                            <td class="jb-col-name">
+                                <div class="jb-actor-cell">
+                                    @include('admin.partials.actor-avatar', [
+                                        'imageUrl' => $driver->profileImageUrl(),
+                                        'label' => $driver->name,
+                                    ])
+                                    <span class="font-semibold">{{ $driver->name }}</span>
+                                </div>
+                            </td>
                             <td>{{ $driver->mobile }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $driver->status])</td>
                             <td class="jb-table-actions-col">
