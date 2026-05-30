@@ -22,13 +22,15 @@
 @section('page_title', 'System settings')
 @section('page_subtitle', 'Logos, legal content, contact, and platform options')
 @section('content')
-    <div class="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-4">
-        @foreach ($tabs as $key => $label)
-            <a href="{{ route('admin.settings.index', ['tab' => $key]) }}"
-               class="jb-settings-tab {{ $tab === $key ? 'jb-settings-tab--active' : '' }}">
-                {{ $label }}
-            </a>
-        @endforeach
+    <div class="jb-tabs-row">
+        <div class="jb-tabs-list">
+            @foreach ($tabs as $key => $label)
+                <a href="{{ route('admin.settings.index', ['tab' => $key]) }}"
+                   class="jb-settings-tab {{ $tab === $key ? 'jb-settings-tab--active' : '' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </div>
     </div>
 
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data" class="jb-card">
