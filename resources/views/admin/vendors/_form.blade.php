@@ -1,4 +1,22 @@
-@php $vendor = $vendor ?? null; @endphp
+@php
+    $vendor = $vendor ?? null;
+    $initials = collect(preg_split('/\s+/u', trim($vendor?->brand_name ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [])
+        ->take(2)
+        ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))
+        ->implode('') ?: '?';
+@endphp
+@include('admin.partials.profile-photo-upload', [
+    'currentUrl' => $vendor?->profileImageUrl(),
+    'initials' => $initials,
+    'label' => 'Profile photo',
+])
+<div class="sm:col-span-2">
+    @include('admin.partials.image-upload', [
+        'label' => 'Shop logo',
+        'name' => 'shop_logo',
+        'currentUrl' => $vendor?->shopLogoUrl(),
+    ])
+</div>
 @include('admin.partials.form-input', ['label' => 'Brand Name', 'name' => 'brand_name', 'value' => old('brand_name', $vendor?->brand_name), 'required' => true])
 @include('admin.partials.form-input', ['label' => 'Owner Name', 'name' => 'owner_name', 'value' => old('owner_name', $vendor?->owner_name), 'required' => true])
 @include('admin.partials.form-input', ['label' => 'Mobile', 'name' => 'mobile', 'value' => old('mobile', $vendor?->mobile), 'required' => true])

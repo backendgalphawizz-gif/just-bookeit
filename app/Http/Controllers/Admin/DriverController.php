@@ -6,9 +6,9 @@ use App\Http\Requests\Admin\DriverRequest;
 use App\Models\Driver;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class DriverController extends AdminController
@@ -46,20 +46,18 @@ class DriverController extends AdminController
 
     public function store(DriverRequest $request): RedirectResponse
     {
-        $data = $request->validated();
-        unset($data['aadhar']);
+        $data = $this->driverData($request);
 
-        if ($request->hasFile('aadhar')) {
-            $data['aadhar_path'] = $request->file('aadhar')->store('drivers/aadhar', 'public');
-        }
-
-        Driver::query()->create([
+        $driver = Driver::query()->create([
             ...$data,
             'driver_code' => CodeGenerator::driverCode(),
             'status' => $data['status'] ?? 'pending',
             'approved_at' => ($data['status'] ?? '') === 'active' ? now() : null,
             'registered_at' => now(),
         ]);
+
+        $this->applyDriverImages($driver, $request);
+        $driver->save();
 
         return redirect()->route('admin.drivers.index')->with('success', 'Driver created successfully.');
     }
@@ -78,22 +76,16 @@ class DriverController extends AdminController
 
     public function update(DriverRequest $request, Driver $driver): RedirectResponse
     {
-        $data = $request->validated();
-        unset($data['aadhar']);
-
-        if ($request->hasFile('aadhar')) {
-            if ($driver->aadhar_path && Storage::disk('public')->exists($driver->aadhar_path)) {
-                Storage::disk('public')->delete($driver->aadhar_path);
-            }
-            $data['aadhar_path'] = $request->file('aadhar')->store('drivers/aadhar', 'public');
-        }
+        $data = $this->driverData($request);
 
         if (($data['status'] ?? $driver->status) === 'active' && ! $driver->approved_at) {
             $data['approved_at'] = now();
             $data['is_verified'] = true;
         }
 
-        $driver->update($data);
+        $driver->fill($data);
+        $this->applyDriverImages($driver, $request);
+        $driver->save();
 
         return redirect()->route('admin.drivers.show', $driver)->with('success', 'Driver updated successfully.');
     }
@@ -102,10 +94,6 @@ class DriverController extends AdminController
     {
         if ($driver->orders()->exists()) {
             return back()->with('error', 'Cannot delete driver with assigned orders.');
-        }
-
-        if ($driver->aadhar_path && Storage::disk('public')->exists($driver->aadhar_path)) {
-            Storage::disk('public')->delete($driver->aadhar_path);
         }
 
         $driver->delete();
@@ -138,5 +126,39 @@ class DriverController extends AdminController
         $driver->update(['status' => 'suspended']);
 
         return back()->with('success', "Driver {$driver->name} suspended.");
+    }
+
+    private function driverData(DriverRequest $request): array
+    {
+        return collect($request->validated())->except([
+            'profile_image',
+            'aadhar',
+            'aadhar_front',
+            'aadhar_back',
+            'driving_licence',
+        ])->all();
+    }
+
+    private function applyDriverImages(Driver $driver, DriverRequest $request): void
+    {
+        $files = [
+            'profile_image' => ['column' => 'profile_image_path', 'dir' => 'drivers/profile-images'],
+            'aadhar' => ['column' => 'aadhar_path', 'dir' => 'drivers/aadhar'],
+            'aadhar_front' => ['column' => 'aadhar_front_path', 'dir' => 'drivers/aadhar/front'],
+            'aadhar_back' => ['column' => 'aadhar_back_path', 'dir' => 'drivers/aadhar/back'],
+            'driving_licence' => ['column' => 'driving_licence_path', 'dir' => 'drivers/driving-licence'],
+        ];
+
+        foreach ($files as $input => $config) {
+            if (! $request->hasFile($input)) {
+                continue;
+            }
+
+            $driver->{$config['column']} = StoresUploadedFiles::replace(
+                $request->file($input),
+                $driver->{$config['column']},
+                $config['dir']
+            );
+        }
     }
 }

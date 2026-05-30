@@ -13,7 +13,7 @@ class VendorRequest extends AdminFormRequest
 
     public function vendorData(): array
     {
-        $data = $this->safe()->except(['categories_text']);
+        $data = $this->safe()->except(['categories_text', 'profile_image', 'shop_logo']);
         $data['categories'] = array_filter(array_map('trim', explode(',', $this->input('categories_text', ''))));
         $data['rating'] = $data['rating'] ?? 0;
         $data['orders_completed'] = $data['orders_completed'] ?? 0;

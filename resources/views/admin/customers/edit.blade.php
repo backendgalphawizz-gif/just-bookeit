@@ -10,7 +10,7 @@
 @section('content')
     <div class="jb-card max-w-4xl">
         <div class="jb-card-body">
-            <form method="POST" action="{{ route('admin.customers.update', $customer) }}">
+            <form method="POST" action="{{ route('admin.customers.update', $customer) }}" enctype="multipart/form-data">
                 @csrf @method('PUT')
                 <div class="jb-form-grid">@include('admin.customers._form')</div>
                 <div class="jb-form-actions">
