@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Http\Requests\Admin\CustomerRequest;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,12 +49,15 @@ class CustomerController extends AdminController
     {
         $data = $request->validated();
 
-        Customer::query()->create([
-            ...$data,
+        $customer = Customer::query()->create([
+            ...collect($data)->except(['profile_image'])->all(),
             'customer_code' => CodeGenerator::customerCode(),
             'is_verified' => $request->boolean('is_verified'),
             'registered_at' => $data['registered_at'] ?? now(),
         ]);
+
+        $this->applyProfileImage($customer, $request);
+        $customer->save();
 
         return redirect()->route('admin.customers.index')->with('success', 'Customer created successfully.');
     }
@@ -74,10 +78,10 @@ class CustomerController extends AdminController
     {
         $data = $request->validated();
 
-        $customer->update([
-            ...$data,
-            'is_verified' => $request->boolean('is_verified'),
-        ]);
+        $customer->fill(collect($data)->except(['profile_image'])->all());
+        $customer->is_verified = $request->boolean('is_verified');
+        $this->applyProfileImage($customer, $request);
+        $customer->save();
 
         return redirect()->route('admin.customers.show', $customer)->with('success', 'Customer updated successfully.');
     }
@@ -109,5 +113,18 @@ class CustomerController extends AdminController
         $customer->update(['status' => 'suspended']);
 
         return back()->with('success', "Customer {$customer->name} suspended.");
+    }
+
+    private function applyProfileImage(Customer $customer, CustomerRequest $request): void
+    {
+        if (! $request->hasFile('profile_image')) {
+            return;
+        }
+
+        $customer->profile_image_path = StoresUploadedFiles::replace(
+            $request->file('profile_image'),
+            $customer->profile_image_path,
+            'customers/profile-images'
+        );
     }
 }

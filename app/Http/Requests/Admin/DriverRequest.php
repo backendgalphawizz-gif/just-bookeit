@@ -17,7 +17,11 @@ class DriverRequest extends AdminFormRequest
             'city' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
             'status' => ['required', 'in:pending,active,suspended,rejected'],
             'is_verified' => ['nullable', 'boolean'],
-            'aadhar' => [$this->isMethod('post') ? 'nullable' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'driving_licence' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
 

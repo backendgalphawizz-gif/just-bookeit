@@ -39,6 +39,8 @@ class AdminValidationRules
             'orders_completed' => ['nullable', 'integer', 'min:0'],
             'earnings' => ['nullable', 'numeric', 'min:0'],
             'categories_text' => ['nullable', 'string', 'max:1000', 'regex:'.self::REGEX_COMMA_LIST],
+            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'shop_logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
 
@@ -52,6 +54,7 @@ class AdminValidationRules
             'status' => ['required', 'in:active,suspended,blocked'],
             'is_verified' => ['nullable', 'boolean'],
             'registered_at' => ['nullable', 'date'],
+            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
 

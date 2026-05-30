@@ -6,6 +6,7 @@ use App\Models\Vendor;
 use App\Http\Requests\Admin\VendorRequest;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -47,12 +48,15 @@ class VendorController extends AdminController
     {
         $data = $request->vendorData();
 
-        Vendor::query()->create([
+        $vendor = Vendor::query()->create([
             ...$data,
             'vendor_code' => CodeGenerator::vendorCode(),
             'status' => $data['status'] ?? 'pending',
             'approved_at' => ($data['status'] ?? '') === 'active' ? now() : null,
         ]);
+
+        $this->applyVendorImages($vendor, $request);
+        $vendor->save();
 
         return redirect()->route('admin.vendors.index')->with('success', 'Vendor created successfully.');
     }
@@ -77,7 +81,9 @@ class VendorController extends AdminController
             $data['approved_at'] = now();
         }
 
-        $vendor->update($data);
+        $vendor->fill($data);
+        $this->applyVendorImages($vendor, $request);
+        $vendor->save();
 
         return redirect()->route('admin.vendors.show', $vendor)->with('success', 'Vendor updated successfully.');
     }
@@ -118,6 +124,25 @@ class VendorController extends AdminController
         $vendor->update(['status' => 'suspended']);
 
         return back()->with('success', "Vendor {$vendor->brand_name} suspended.");
+    }
+
+    private function applyVendorImages(Vendor $vendor, VendorRequest $request): void
+    {
+        if ($request->hasFile('profile_image')) {
+            $vendor->profile_image_path = StoresUploadedFiles::replace(
+                $request->file('profile_image'),
+                $vendor->profile_image_path,
+                'vendors/profile-images'
+            );
+        }
+
+        if ($request->hasFile('shop_logo')) {
+            $vendor->shop_logo_path = StoresUploadedFiles::replace(
+                $request->file('shop_logo'),
+                $vendor->shop_logo_path,
+                'vendors/shop-logos'
+            );
+        }
     }
 
 }
