@@ -65,6 +65,16 @@
 
     .jb-tabs-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
+    .jb-modal-alert {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
     .jb-modal-alert-actions {
         display: flex;
         gap: 0.75rem;
