@@ -9,6 +9,7 @@ use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class VendorAuthController extends ApiController
 {
@@ -94,7 +95,7 @@ class VendorAuthController extends ApiController
         $vendor = $request->user();
 
         $data = $request->validate(array_merge(
-            $this->vendorFieldRules(required: false),
+            $this->vendorFieldRules(required: false, vendorId: $vendor->id),
             ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
         ));
 
@@ -114,15 +115,22 @@ class VendorAuthController extends ApiController
         return $this->success(null, 'Logged out.');
     }
 
-    private function vendorFieldRules(bool $required): array
+    private function vendorFieldRules(bool $required, ?int $vendorId = null): array
     {
         $rule = $required ? 'required' : 'sometimes';
+
+        $mobileRules = [$required ? 'nullable' : 'sometimes', 'string', 'max:20'];
+
+        if ($vendorId) {
+            $mobileRules[] = Rule::unique('vendors', 'mobile')->ignore($vendorId);
+        }
 
         return [
             'shop_name' => [$required ? 'required_without:brand_name' : 'sometimes', 'nullable', 'string', 'max:255'],
             'brand_name' => [$required ? 'required_without:shop_name' : 'sometimes', 'nullable', 'string', 'max:255'],
             'owner_name' => [$rule, 'string', 'max:255'],
             'email' => [$rule, 'email', 'max:255'],
+            'mobile_no' => $vendorId ? $mobileRules : ['prohibited'],
             'service_types' => [$rule, 'string', 'max:500'],
             'business_mobile' => [$rule, 'string', 'max:20'],
             'business_mail' => [$rule, 'email', 'max:255'],
@@ -180,6 +188,10 @@ class VendorAuthController extends ApiController
 
         if (isset($data['account_no'])) {
             $attributes['account_number'] = $data['account_no'];
+        }
+
+        if (isset($data['mobile_no'])) {
+            $attributes['mobile'] = $this->otp->normalizeMobile($data['mobile_no']);
         }
 
         return $attributes;

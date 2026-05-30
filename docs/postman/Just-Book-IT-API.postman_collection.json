@@ -407,6 +407,7 @@
 								{ "key": "shop_name", "value": "Updated Demo Salon", "type": "text" },
 								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
 								{ "key": "email", "value": "vendor@example.com", "type": "text" },
+								{ "key": "mobile_no", "value": "{{v2_mobile}}", "type": "text" },
 								{ "key": "service_types", "value": "Fashion Designer, Rented Dress", "type": "text" },
 								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
 								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
@@ -454,7 +455,7 @@
 							]
 						},
 						"url": "{{base_url}}/v2/auth/profile",
-						"description": "Update vendor profile. Same fields as register plus profile_image. All fields optional."
+						"description": "Update vendor profile. Same fields as register plus profile_image and mobile_no. All fields optional."
 					}
 				},
 				{
@@ -627,6 +628,7 @@
 							"formdata": [
 								{ "key": "name", "value": "Updated Driver", "type": "text" },
 								{ "key": "email", "value": "driver@example.com", "type": "text" },
+								{ "key": "mobile_no", "value": "{{v3_mobile}}", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
 								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
 								{ "key": "account_name", "value": "Test Driver", "type": "text" },
@@ -661,7 +663,7 @@
 							]
 						},
 						"url": "{{base_url}}/v3/auth/profile",
-						"description": "Update driver profile. Same fields as register plus profile_image. All fields optional."
+						"description": "Update driver profile. Same fields as register plus profile_image and mobile_no. All fields optional."
 					}
 				},
 				{
