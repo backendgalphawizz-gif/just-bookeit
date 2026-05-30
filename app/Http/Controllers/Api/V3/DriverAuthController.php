@@ -9,6 +9,7 @@ use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DriverAuthController extends ApiController
 {
@@ -96,7 +97,7 @@ class DriverAuthController extends ApiController
         $driver = $request->user();
 
         $data = $request->validate(array_merge(
-            $this->driverFieldRules(required: false),
+            $this->driverFieldRules(required: false, driverId: $driver->id),
             $this->driverBankFieldRules(),
             ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
         ));
@@ -117,14 +118,21 @@ class DriverAuthController extends ApiController
         return $this->success(null, 'Logged out.');
     }
 
-    private function driverFieldRules(bool $required): array
+    private function driverFieldRules(bool $required, ?int $driverId = null): array
     {
         $rule = $required ? 'required' : 'sometimes';
         $emailRule = $required ? 'nullable' : 'sometimes';
 
+        $mobileRules = [$required ? 'nullable' : 'sometimes', 'string', 'max:20'];
+
+        if ($driverId) {
+            $mobileRules[] = Rule::unique('drivers', 'mobile')->ignore($driverId);
+        }
+
         return [
             'name' => [$rule, 'string', 'max:255'],
             'email' => [$emailRule, 'nullable', 'email', 'max:255'],
+            'mobile_no' => $driverId ? $mobileRules : ['prohibited'],
             'city' => [$emailRule, 'nullable', 'string', 'max:100'],
             'vehicle_no' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:20'],
             'aadhar_front' => [$rule, ...self::IMAGE_RULE],
@@ -148,6 +156,10 @@ class DriverAuthController extends ApiController
 
         if (isset($data['account_no'])) {
             $attributes['account_number'] = $data['account_no'];
+        }
+
+        if (isset($data['mobile_no'])) {
+            $attributes['mobile'] = $this->otp->normalizeMobile($data['mobile_no']);
         }
 
         return $attributes;

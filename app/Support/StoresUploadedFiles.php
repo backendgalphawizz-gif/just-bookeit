@@ -31,6 +31,10 @@ class StoresUploadedFiles
             return null;
         }
 
-        return '/storage/'.ltrim(str_replace('\\', '/', $path), '/');
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return Storage::disk('public')->url(ltrim(str_replace('\\', '/', $path), '/'));
     }
 }
