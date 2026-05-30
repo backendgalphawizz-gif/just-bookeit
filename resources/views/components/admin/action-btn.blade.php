@@ -3,6 +3,9 @@
     'href' => null,
     'type' => 'button',
     'confirm' => null,
+    'confirmTitle' => 'Are you sure?',
+    'confirmVariant' => null,
+    'confirmLabel' => null,
 ])
 
 @php
@@ -19,6 +22,8 @@
     if ($iconOnly) {
         $attrs = $attrs->merge(['aria-label' => $accessibleLabel, 'title' => $accessibleLabel]);
     }
+    $resolvedConfirmVariant = $confirmVariant ?? ($variant === 'delete' ? 'error' : 'warning');
+    $resolvedConfirmLabel = $confirmLabel ?? ($variant === 'delete' ? 'Delete' : 'Confirm');
 @endphp
 
 @if ($href)
@@ -30,9 +35,16 @@
     </a>
 @else
     <button
-        type="{{ $type }}"
+        type="{{ $confirm ? 'button' : $type }}"
         {{ $attrs }}
-        @if ($confirm) onclick="return confirm(@js($confirm))" @endif
+        @if ($confirm)
+            @click="$store.jbConfirm.ask($el.closest('form'), {
+                title: @js($confirmTitle),
+                message: @js($confirm),
+                variant: @js($resolvedConfirmVariant),
+                confirmLabel: @js($resolvedConfirmLabel),
+            })"
+        @endif
     >
         <span class="jb-action-btn__icon" aria-hidden="true">@include('admin.partials.action-icon', ['variant' => $variant])</span>
         @unless ($iconOnly)

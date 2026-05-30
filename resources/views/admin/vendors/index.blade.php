@@ -51,7 +51,16 @@
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $vendors])
                             <td class="jb-col-id"><span class="font-mono text-xs font-semibold text-slate-500">{{ $vendor->vendor_code }}</span></td>
-                            <td class="jb-col-name font-semibold">{{ $vendor->brand_name }}</td>
+                            <td class="jb-col-name">
+                                <div class="jb-actor-cell">
+                                    @include('admin.partials.actor-avatar', [
+                                        'imageUrl' => $vendor->profileImageUrl(),
+                                        'fallbackUrl' => $vendor->shopLogoUrl(),
+                                        'label' => $vendor->brand_name,
+                                    ])
+                                    <span class="font-semibold">{{ $vendor->brand_name }}</span>
+                                </div>
+                            </td>
                             <td>{{ $vendor->city ?? '—' }}</td>
                             <td class="text-center">{{ number_format($vendor->rating, 1) }}</td>
                             <td class="text-center">{{ $vendor->orders_completed }}</td>

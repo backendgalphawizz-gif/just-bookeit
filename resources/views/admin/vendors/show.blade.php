@@ -18,30 +18,56 @@
     <div class="jb-detail-grid">
         <div class="jb-detail-card">
             <h2>Profile</h2>
+            <x-admin.actor-profile-header
+                :image-url="$vendor->profileImageUrl()"
+                :fallback-url="$vendor->shopLogoUrl()"
+                :title="$vendor->shop_name ?? $vendor->brand_name"
+                :subtitle="$vendor->vendor_code"
+            >
+                @include('admin.components.status-badge', ['status' => $vendor->status])
+            </x-admin.actor-profile-header>
             <dl class="jb-dl">
                 <div><dt>Owner</dt><dd>{{ $vendor->owner_name }}</dd></div>
                 <div><dt>Contact</dt><dd>{{ $vendor->mobile }}<br>{{ $vendor->email }}</dd></div>
                 <div><dt>City</dt><dd>{{ $vendor->city ?? '—' }}</dd></div>
-                <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $vendor->status])</dd></div>
-                <div><dt>Categories</dt><dd>{{ implode(', ', $vendor->categories ?? []) ?: '—' }}</dd></div>
+                <div><dt>Service type</dt><dd>{{ $vendor->serviceType() ?? '—' }}</dd></div>
                 <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>
                 <div><dt>Earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
             </dl>
         </div>
+        @if ($vendor->shopLogoUrl() || $vendor->panCardUrl())
+            <div class="jb-detail-card lg:col-span-2">
+                <h2>Shop & documents</h2>
+                <div class="jb-doc-image-grid">
+                    @if ($vendor->shopLogoUrl())
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
+                            <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image">
+                        </div>
+                    @endif
+                    @if ($vendor->panCardUrl())
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">PAN card</p>
+                            <img src="{{ $vendor->panCardUrl() }}" alt="PAN card" class="jb-doc-image">
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
         @if ($vendor->aadharFrontUrl() || $vendor->aadharBackUrl())
             <div class="jb-detail-card lg:col-span-2">
                 <h2>Aadhar</h2>
-                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div class="jb-doc-image-grid">
                     @if ($vendor->aadharFrontUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Front</p>
-                            <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="w-full rounded-xl border border-slate-200 object-contain bg-slate-50 p-2 max-h-80">
+                            <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image">
                         </div>
                     @endif
                     @if ($vendor->aadharBackUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Back</p>
-                            <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="w-full rounded-xl border border-slate-200 object-contain bg-slate-50 p-2 max-h-80">
+                            <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image">
                         </div>
                     @endif
                 </div>

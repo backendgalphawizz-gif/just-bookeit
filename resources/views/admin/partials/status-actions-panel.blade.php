@@ -7,8 +7,16 @@
         </div>
         <div class="jb-card-body flex flex-wrap gap-2">
             @foreach ($actions as $action)
-                <form method="POST" action="{{ $action['url'] }}" class="inline-flex"
-                    @if (! empty($action['confirm'])) onsubmit="return confirm(@js($action['confirm']))" @endif
+                <form
+                    method="POST"
+                    action="{{ $action['url'] }}"
+                    class="inline-flex"
+                    @if (! empty($action['confirm']))
+                        data-jb-confirm="{{ $action['confirm'] }}"
+                        data-jb-confirm-title="{{ $action['confirmTitle'] ?? 'Are you sure?' }}"
+                        data-jb-confirm-variant="{{ $action['confirmVariant'] ?? 'warning' }}"
+                        data-jb-confirm-label="{{ $action['confirmLabel'] ?? $action['label'] }}"
+                    @endif
                 >
                     @csrf
                     @if (! empty($action['status']))
