@@ -36,4 +36,24 @@ class PortfolioItem extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function displayImageUrl(): ?string
+    {
+        if (! $this->image_url) {
+            return null;
+        }
+
+        if (str_starts_with($this->image_url, 'http://') || str_starts_with($this->image_url, 'https://')) {
+            return $this->image_url;
+        }
+
+        return '/storage/'.ltrim($this->image_url, '/');
+    }
+
+    public function rentalPriceLabel(): string
+    {
+        $price = 800 + (($this->id ?? 1) * 173) % 2700;
+
+        return '₹'.number_format($price, 0).' / day';
+    }
 }

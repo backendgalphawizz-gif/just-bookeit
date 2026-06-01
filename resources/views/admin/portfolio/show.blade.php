@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-    <div class="grid gap-6 lg:grid-cols-2 max-w-5xl">
+    <div class="grid gap-6 lg:grid-cols-2">
         <div class="jb-detail-card">
             <dl class="jb-detail-list">
                 <div><dt>Vendor</dt><dd>{{ $portfolio->vendor->brand_name }}</dd></div>

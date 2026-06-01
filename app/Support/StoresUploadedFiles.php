@@ -35,6 +35,13 @@ class StoresUploadedFiles
             return $path;
         }
 
-        return Storage::disk('public')->url(ltrim(str_replace('\\', '/', $path), '/'));
+        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+
+        // Prefer current request origin so images work on 127.0.0.1:8000, not only APP_URL.
+        if (! app()->runningInConsole() && app()->bound('request') && request()->getSchemeAndHttpHost()) {
+            return request()->getSchemeAndHttpHost().'/storage/'.$normalized;
+        }
+
+        return rtrim(config('app.url'), '/').'/storage/'.$normalized;
     }
 }

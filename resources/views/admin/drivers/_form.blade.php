@@ -5,14 +5,19 @@
         ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))
         ->implode('') ?: '?';
 @endphp
+
+<p class="jb-form-section-title sm:col-span-2">Profile</p>
 @include('admin.partials.profile-photo-upload', [
     'currentUrl' => $driver?->profileImageUrl(),
     'initials' => $initials,
 ])
+
+<p class="jb-form-section-title sm:col-span-2">Personal details</p>
 @include('admin.partials.form-input', ['label' => 'Full name', 'name' => 'name', 'value' => old('name', $driver?->name), 'required' => true])
 @include('admin.partials.form-input', ['label' => 'Mobile', 'name' => 'mobile', 'value' => old('mobile', $driver?->mobile), 'required' => true, 'restrict' => 'phone'])
 @include('admin.partials.form-input', ['label' => 'Email', 'name' => 'email', 'type' => 'email', 'value' => old('email', $driver?->email)])
 @include('admin.partials.form-input', ['label' => 'City', 'name' => 'city', 'value' => old('city', $driver?->city)])
+@include('admin.partials.form-input', ['label' => 'Vehicle number', 'name' => 'vehicle_no', 'value' => old('vehicle_no', $driver?->vehicle_no)])
 
 <div>
     <label for="status" class="jb-label">Status</label>
@@ -23,6 +28,12 @@
     </select>
 </div>
 
+<div class="jb-checkbox-row sm:col-span-2">
+    <input type="checkbox" name="is_verified" value="1" @checked(old('is_verified', $driver?->is_verified ?? false))>
+    <label class="text-sm font-medium text-slate-700">Verified driver</label>
+</div>
+
+<p class="jb-form-section-title sm:col-span-2">KYC documents</p>
 <div class="sm:col-span-2">
     @include('admin.partials.image-upload', [
         'label' => 'Aadhar front',
@@ -54,7 +65,10 @@
     </div>
 @endif
 
-<div class="jb-checkbox-row sm:col-span-2">
-    <input type="checkbox" name="is_verified" value="1" @checked(old('is_verified', $driver?->is_verified ?? false))>
-    <label class="text-sm font-medium text-slate-700">Verified driver</label>
-</div>
+@include('admin.partials.bank-details-fields', ['values' => [
+    'account_name' => $driver?->account_name,
+    'account_number' => $driver?->account_number,
+    'ifsc_code' => $driver?->ifsc_code,
+    'bank_name' => $driver?->bank_name,
+    'account_type' => $driver?->account_type,
+]])

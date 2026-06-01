@@ -14,7 +14,7 @@
 @endsection
 
 @section('content')
-    <div class="jb-detail-grid max-w-3xl">
+    <div class="jb-detail-grid">
         <div class="jb-detail-card">
             <dl class="jb-detail-list">
                 <div><dt>Vendor</dt><dd>{{ $payout->vendor->brand_name }}</dd></div>

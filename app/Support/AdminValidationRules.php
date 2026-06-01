@@ -26,21 +26,76 @@ class AdminValidationRules
         ];
     }
 
-    public static function vendor(): array
+    public static function vendor(?int $vendorId = null): array
     {
+        $uniqueMobile = 'unique:vendors,mobile';
+        $uniqueEmail = 'unique:vendors,email';
+
+        if ($vendorId) {
+            $uniqueMobile .= ','.$vendorId;
+            $uniqueEmail .= ','.$vendorId;
+        }
+
         return [
+            'shop_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'brand_name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'owner_name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
-            'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE],
-            'email' => ['required', 'email', 'max:255'],
+            'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE, $uniqueMobile],
+            'email' => ['required', 'email', 'max:255', $uniqueEmail],
+            'service_types' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
+            'business_mobile' => ['nullable', 'string', 'regex:'.self::REGEX_PHONE],
+            'business_email' => ['nullable', 'email', 'max:255'],
+            'gst_number' => ['nullable', 'string', 'max:15'],
+            'address' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
+            'country' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
+            'state' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
+            'pincode' => ['nullable', 'string', 'max:10'],
+            'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
+            'account_number' => ['nullable', 'string', 'max:20'],
+            'ifsc_code' => ['nullable', 'string', 'max:11'],
+            'bank_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
+            'account_type' => ['nullable', 'in:savings,current'],
             'status' => ['required', 'in:pending,active,suspended,rejected'],
             'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'orders_completed' => ['nullable', 'integer', 'min:0'],
             'earnings' => ['nullable', 'numeric', 'min:0'],
-            'categories_text' => ['nullable', 'string', 'max:1000', 'regex:'.self::REGEX_COMMA_LIST],
+            'category_ids' => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
             'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'shop_logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'pan_card' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+        ];
+    }
+
+    public static function driver(?int $driverId = null): array
+    {
+        $uniqueMobile = 'unique:drivers,mobile';
+
+        if ($driverId) {
+            $uniqueMobile .= ','.$driverId;
+        }
+
+        return [
+            'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
+            'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE, $uniqueMobile],
+            'email' => ['nullable', 'email', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
+            'vehicle_no' => ['nullable', 'string', 'max:20'],
+            'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
+            'account_number' => ['nullable', 'string', 'max:20'],
+            'ifsc_code' => ['nullable', 'string', 'max:11'],
+            'bank_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
+            'account_type' => ['nullable', 'in:savings,current'],
+            'status' => ['required', 'in:pending,active,suspended,rejected'],
+            'is_verified' => ['nullable', 'boolean'],
+            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'driving_licence' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
 
@@ -82,8 +137,18 @@ class AdminValidationRules
             'amount' => ['required', 'numeric', 'min:0'],
             'security_deposit' => ['nullable', 'numeric', 'min:0'],
             'delivery_fee' => ['nullable', 'numeric', 'min:0'],
+            'tax_amount' => ['nullable', 'numeric', 'min:0'],
             'customer_notes' => ['nullable', 'string', 'max:2000', 'regex:'.self::REGEX_TEXT],
             'admin_notes' => ['nullable', 'string', 'max:2000', 'regex:'.self::REGEX_TEXT],
+            'damage_note' => ['nullable', 'string', 'max:255'],
+            'damage_deduct_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'measure_height_cm' => ['nullable', 'integer', 'min:50', 'max:250'],
+            'measure_chest_cm' => ['nullable', 'integer', 'min:50', 'max:200'],
+            'measure_waist_cm' => ['nullable', 'integer', 'min:40', 'max:200'],
+            'billing_address' => ['nullable', 'string', 'max:1000', 'regex:'.self::REGEX_TEXT],
+            'item_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'reference_images' => ['nullable', 'array'],
+            'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'payment_status' => ['required', 'in:pending,success,failed,refunded'],
             'status' => ['required', 'in:new,pending_acceptance,accepted,in_progress,in_transit,delivered,cancelled,refunded'],
         ];
@@ -194,6 +259,7 @@ class AdminValidationRules
             'email' => ['required', 'email', 'max:255', $uniqueEmail],
             'password' => [$adminId ? 'nullable' : 'required', 'string', 'min:8', 'max:128'],
             'status' => ['required', 'in:active,inactive,suspended'],
+            'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
         ];
     }
 
@@ -296,6 +362,9 @@ class AdminValidationRules
             'subject.regex' => 'Subject contains invalid characters.',
             'platform_name.regex' => 'Platform name contains invalid characters.',
             'categories_text.regex' => 'Categories may only use letters, numbers, commas, and spaces.',
+            'category_ids.array' => 'Select at least one category for this sub-admin.',
+            'city.required' => 'Select a city for this sub-admin.',
+            'account_type.in' => 'Account type must be savings or current.',
             'currency.regex' => 'Currency must be 3–10 uppercase letters (e.g. INR).',
             'reason.regex' => 'Reason contains invalid characters.',
             'message.regex' => 'Message contains invalid characters.',

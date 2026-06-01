@@ -8,8 +8,10 @@ use App\Models\Driver;
 use App\Models\Order;
 use App\Models\Vendor;
 use App\Http\Requests\Admin\OrderRequest;
+use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,7 +27,9 @@ class OrderController extends AdminController
     {
         $this->validateListDateRange($request);
 
-        $orders = $this->applyDateRange(Order::query(), $request)
+        $orders = AdminCityScope::scopeOrders(
+            $this->applyDateRange(Order::query(), $request)
+        )
             ->with(['customer', 'vendor', 'category'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
@@ -38,7 +42,7 @@ class OrderController extends AdminController
             ->paginate(15)
             ->withQueryString();
 
-        $vendors = Vendor::query()->active()->orderBy('brand_name')->get();
+        $vendors = AdminCityScope::scopeVendors(Vendor::query())->active()->orderBy('brand_name')->get();
 
         return view('admin.orders.index', compact('orders', 'vendors'));
     }
@@ -46,16 +50,16 @@ class OrderController extends AdminController
     public function create(): View
     {
         return view('admin.orders.create', [
-            'customers' => Customer::query()->orderBy('name')->get(),
-            'vendors' => Vendor::query()->active()->orderBy('brand_name')->get(),
-            'drivers' => Driver::query()->where('status', 'active')->orderBy('name')->get(),
-            'categories' => Category::query()->where('type', 'service')->orderBy('name')->get(),
+            'customers' => AdminCityScope::scopeCustomers(Customer::query())->orderBy('name')->get(),
+            'vendors' => AdminCityScope::scopeVendors(Vendor::query())->active()->orderBy('brand_name')->get(),
+            'drivers' => AdminCityScope::scopeDrivers(Driver::query())->where('status', 'active')->orderBy('name')->get(),
+            'categories' => Category::query()->where('is_active', true)->where('type', 'service')->orderBy('name')->get(),
         ]);
     }
 
     public function store(OrderRequest $request): RedirectResponse
     {
-        $data = $request->validated();
+        $data = $this->orderPayload($request);
 
         $order = Order::query()->create([
             ...$data,
@@ -64,6 +68,7 @@ class OrderController extends AdminController
             'quantity' => $data['quantity'] ?? 1,
         ]);
 
+        $this->applyOrderUploads($request, $order);
         $this->syncCustomerOrderCount($order->customer_id);
 
         return redirect()->route('admin.orders.show', $order)->with('success', 'Order created successfully.');
@@ -83,17 +88,18 @@ class OrderController extends AdminController
     {
         return view('admin.orders.edit', [
             'order' => $order,
-            'customers' => Customer::query()->orderBy('name')->get(),
-            'vendors' => Vendor::query()->orderBy('brand_name')->get(),
-            'drivers' => Driver::query()->where('status', 'active')->orderBy('name')->get(),
-            'categories' => Category::query()->where('type', 'service')->orderBy('name')->get(),
+            'customers' => AdminCityScope::scopeCustomers(Customer::query())->orderBy('name')->get(),
+            'vendors' => AdminCityScope::scopeVendors(Vendor::query())->orderBy('brand_name')->get(),
+            'drivers' => AdminCityScope::scopeDrivers(Driver::query())->where('status', 'active')->orderBy('name')->get(),
+            'categories' => Category::query()->where('is_active', true)->where('type', 'service')->orderBy('name')->get(),
         ]);
     }
 
     public function update(OrderRequest $request, Order $order): RedirectResponse
     {
-        $data = $request->validated();
+        $data = $this->orderPayload($request);
         $order->update($data);
+        $this->applyOrderUploads($request, $order);
         $this->syncCustomerOrderCount($order->customer_id);
 
         return redirect()->route('admin.orders.show', $order)->with('success', 'Order updated successfully.');
@@ -158,5 +164,38 @@ class OrderController extends AdminController
     {
         $customer = Customer::query()->find($customerId);
         $customer?->update(['total_orders' => $customer->orders()->count()]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function orderPayload(OrderRequest $request): array
+    {
+        return collect($request->validated())
+            ->except(['item_image', 'reference_images'])
+            ->all();
+    }
+
+    protected function applyOrderUploads(OrderRequest $request, Order $order): void
+    {
+        $updates = [];
+
+        if ($request->hasFile('item_image')) {
+            $updates['item_image_path'] = StoresUploadedFiles::replace(
+                $request->file('item_image'),
+                $order->item_image_path,
+                'orders/items'
+            );
+        }
+
+        if ($request->hasFile('reference_images')) {
+            $paths = $order->reference_image_paths ?? [];
+            foreach ($request->file('reference_images') as $file) {
+                $paths[] = StoresUploadedFiles::store($file, 'orders/references');
+            }
+            $updates['reference_image_paths'] = $paths;
+        }
+
+        if ($updates !== []) {
+            $order->update($updates);
+        }
     }
 }

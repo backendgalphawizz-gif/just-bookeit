@@ -47,6 +47,9 @@
             <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-semibold text-slate-900">{{ $admin->name }}</p>
                 <p class="truncate text-xs text-slate-500">{{ $admin->email }}</p>
+                @if ($admin->role)
+                    <p class="truncate text-xs font-medium text-rose-600">{{ $admin->role->name }}</p>
+                @endif
             </div>
         </div>
         <div class="jb-profile-dropdown-body">

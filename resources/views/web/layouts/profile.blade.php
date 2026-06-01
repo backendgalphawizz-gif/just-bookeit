@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head>
+    @include('web.partials.head')
+</head>
+<body class="jbw-body">
+    @include('web.partials.header')
+    <main class="jbw-main jbw-main--profile">
+        <div class="jbw-container">
+            @include('web.partials.alert')
+            <div class="jbw-page-head">
+                @if (! empty($showBack))
+                    <a href="{{ $backUrl ?? url()->previous() }}" class="jbw-back-link">← @yield('page_title', 'Profile')</a>
+                @else
+                    <h1 class="jbw-page-title">@yield('page_title', 'Profile')</h1>
+                @endif
+                @hasSection('page_subtitle')
+                    <p class="jbw-page-subtitle">@yield('page_subtitle')</p>
+                @endif
+            </div>
+            <div class="jbw-profile-shell">
+                @include('web.partials.profile-sidebar')
+                <div class="jbw-profile-content">
+                    @yield('content')
+                </div>
+            </div>
+        </div>
+    </main>
+    @include('web.partials.footer')
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -39,7 +39,9 @@ class Role extends Model
             return true;
         }
 
-        $permission = $this->permissions()->where('slug', $slug)->first();
+        $permission = $this->relationLoaded('permissions')
+            ? $this->permissions->firstWhere('slug', $slug)
+            : $this->permissions()->where('slug', $slug)->first();
 
         if (! $permission) {
             return false;
@@ -52,6 +54,14 @@ class Role extends Model
             'export' => 'can_export',
             default => 'can_view',
         };
+
+        if ($action === 'view') {
+            return (bool) $permission->pivot->can_view
+                || (bool) $permission->pivot->can_create
+                || (bool) $permission->pivot->can_edit
+                || (bool) $permission->pivot->can_delete
+                || (bool) $permission->pivot->can_export;
+        }
 
         return (bool) $permission->pivot->{$column};
     }

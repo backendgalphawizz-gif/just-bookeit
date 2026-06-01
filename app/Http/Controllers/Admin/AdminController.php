@@ -13,4 +13,11 @@ abstract class AdminController extends Controller
     {
         $this->authorizeAdmin();
     }
+
+    protected function authorizeCityAccess(?string $city): void
+    {
+        if (! \App\Support\AdminCityScope::adminCanAccessCity($city)) {
+            abort(403, 'You do not have access to records outside your assigned city.');
+        }
+    }
 }

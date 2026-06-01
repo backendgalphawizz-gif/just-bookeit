@@ -27,6 +27,18 @@
                 <p class="jb-login-subtitle">Enter your credentials to access the admin dashboard.</p>
             </header>
 
+            @if (session('error'))
+                <div class="jb-login-banner jb-login-banner--error" role="alert">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            @if (session('success'))
+                <div class="jb-login-banner jb-login-banner--success" role="status">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('admin.login.submit') }}" class="jb-login-form">
                 @csrf
 

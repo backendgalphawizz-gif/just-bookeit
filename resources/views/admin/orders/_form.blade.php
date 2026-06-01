@@ -53,6 +53,10 @@
     <textarea id="delivery_address" name="delivery_address" rows="2" class="jb-input">{{ old('delivery_address', $order?->delivery_address) }}</textarea>
 </div>
 <div class="sm:col-span-2">
+    <label for="billing_address" class="jb-label">Billing address</label>
+    <textarea id="billing_address" name="billing_address" rows="2" class="jb-input">{{ old('billing_address', $order?->billing_address) }}</textarea>
+</div>
+<div class="sm:col-span-2">
     <label for="pickup_address" class="jb-label">Pickup / return address</label>
     <textarea id="pickup_address" name="pickup_address" rows="2" class="jb-input">{{ old('pickup_address', $order?->pickup_address) }}</textarea>
 </div>
@@ -63,6 +67,42 @@
 @include('admin.partials.form-input', ['label' => 'Outfit amount (₹)', 'name' => 'amount', 'type' => 'number', 'step' => '0.01', 'value' => old('amount', $order?->amount), 'required' => true])
 @include('admin.partials.form-input', ['label' => 'Security deposit (₹)', 'name' => 'security_deposit', 'type' => 'number', 'step' => '0.01', 'value' => old('security_deposit', $order?->security_deposit)])
 @include('admin.partials.form-input', ['label' => 'Delivery fee (₹)', 'name' => 'delivery_fee', 'type' => 'number', 'step' => '0.01', 'value' => old('delivery_fee', $order?->delivery_fee)])
+@include('admin.partials.form-input', ['label' => 'Tax / GST (₹)', 'name' => 'tax_amount', 'type' => 'number', 'step' => '0.01', 'value' => old('tax_amount', $order?->tax_amount)])
+
+<p class="jb-form-section-title sm:col-span-2">Customer measurements</p>
+@include('admin.partials.form-input', ['label' => 'Height (cm)', 'name' => 'measure_height_cm', 'type' => 'number', 'min' => '50', 'max' => '250', 'value' => old('measure_height_cm', $order?->measure_height_cm)])
+@include('admin.partials.form-input', ['label' => 'Chest (cm)', 'name' => 'measure_chest_cm', 'type' => 'number', 'min' => '50', 'max' => '200', 'value' => old('measure_chest_cm', $order?->measure_chest_cm)])
+@include('admin.partials.form-input', ['label' => 'Waist (cm)', 'name' => 'measure_waist_cm', 'type' => 'number', 'min' => '40', 'max' => '200', 'value' => old('measure_waist_cm', $order?->measure_waist_cm)])
+
+<p class="jb-form-section-title sm:col-span-2">Damage & return</p>
+@include('admin.partials.form-input', ['label' => 'Damage note', 'name' => 'damage_note', 'value' => old('damage_note', $order?->damage_note), 'placeholder' => 'e.g. Missing parts'])
+@include('admin.partials.form-input', ['label' => 'Damage deduction (%)', 'name' => 'damage_deduct_percent', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('damage_deduct_percent', $order?->damage_deduct_percent)])
+
+<p class="jb-form-section-title sm:col-span-2">Images</p>
+@include('admin.partials.profile-photo-upload', [
+    'name' => 'item_image',
+    'label' => 'Outfit / product photo',
+    'currentUrl' => $order?->itemImageUrl(),
+    'initials' => '👗',
+])
+<div class="sm:col-span-2">
+    <label for="reference_images" class="jb-label">Reference images</label>
+    <p class="text-xs text-slate-500 mb-2">Upload styling or accessory reference photos (multiple allowed)</p>
+    <input type="file" id="reference_images" name="reference_images[]" accept="image/png,image/jpeg,image/jpg,image/webp" multiple class="jb-input">
+    @if ($order && count($order->referenceImageUrls()) > 0)
+        <div class="mt-3 flex flex-wrap gap-2">
+            @foreach ($order->referenceImageUrls() as $url)
+                <img src="{{ $url }}" alt="" class="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200">
+            @endforeach
+        </div>
+    @endif
+    @error('reference_images')
+        <p class="mt-1 text-xs font-medium text-rose-600">{{ $message }}</p>
+    @enderror
+    @error('reference_images.*')
+        <p class="mt-1 text-xs font-medium text-rose-600">{{ $message }}</p>
+    @enderror
+</div>
 
 <p class="jb-form-section-title sm:col-span-2">Notes</p>
 <div class="sm:col-span-2">
