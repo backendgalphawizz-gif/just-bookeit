@@ -1,4 +1,28 @@
 <style>
+    /* Admin create/edit/show: wide panels use full main area; compact panels stay centered */
+    .jb-main .jb-card.max-w-5xl,
+    .jb-main .jb-card.max-w-4xl,
+    .jb-main .jb-card.max-w-3xl,
+    .jb-main form.jb-card.max-w-5xl,
+    .jb-main form.jb-card.max-w-4xl,
+    .jb-main form.jb-card.max-w-3xl,
+    .jb-main .jb-detail-grid.max-w-3xl,
+    .jb-main .grid.max-w-5xl {
+        max-width: none;
+        width: 100%;
+    }
+
+    .jb-main .jb-card.max-w-2xl,
+    .jb-main form.jb-card.max-w-2xl,
+    .jb-main .jb-detail-card.max-w-2xl,
+    .jb-main .jb-detail-card.max-w-xl,
+    .jb-main .jb-panel--centered {
+        width: 100%;
+        max-width: 42rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
     @media (max-width: 639px) {
         .jb-topbar { flex-direction: column; align-items: stretch; gap: 0.75rem; }
         .jb-topbar-actions { width: 100%; justify-content: flex-start; }
@@ -285,5 +309,460 @@
 
     @media (min-width: 640px) {
         .jb-dl--grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* Booking detail page (mockup layout) */
+    .jb-booking-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .jb-booking-id {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        letter-spacing: -0.02em;
+    }
+
+    .jb-booking-header-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.375rem;
+    }
+
+    .jb-booking-booked-on {
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+        white-space: nowrap;
+    }
+
+    .jb-booking-layout {
+        display: grid;
+        gap: 1.25rem;
+    }
+
+    @media (min-width: 1024px) {
+        .jb-booking-layout {
+            grid-template-columns: minmax(0, 1fr) 22rem;
+            align-items: start;
+        }
+    }
+
+    .jb-booking-main,
+    .jb-booking-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .jb-booking-card {
+        background: #fff;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.875rem;
+        padding: 1.125rem 1.25rem;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    }
+
+    .jb-booking-card--compact {
+        padding: 1rem 1.125rem;
+    }
+
+    .jb-booking-card-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: rgb(100 116 139);
+        margin-bottom: 0.875rem;
+    }
+
+    .jb-booking-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.875rem;
+    }
+
+    .jb-booking-link {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--jb-primary, #be123c);
+        text-decoration: none;
+    }
+
+    .jb-booking-link:hover {
+        text-decoration: underline;
+    }
+
+    .jb-booking-split {
+        display: grid;
+        gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+        .jb-booking-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    .jb-booking-product-row {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .jb-booking-product-media {
+        flex-shrink: 0;
+    }
+
+    .jb-booking-product-img {
+        width: 5.5rem;
+        height: 5.5rem;
+        border-radius: 0.625rem;
+        object-fit: cover;
+        background: rgb(248 250 252);
+    }
+
+    .jb-booking-product-placeholder {
+        width: 5.5rem;
+        height: 5.5rem;
+        border-radius: 0.625rem;
+        background: rgb(248 250 252);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px dashed rgb(203 213 225);
+    }
+
+    .jb-booking-product-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        line-height: 1.3;
+    }
+
+    .jb-booking-product-meta {
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+        margin-top: 0.25rem;
+    }
+
+    .jb-booking-product-price {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        margin-top: 0.5rem;
+    }
+
+    .jb-booking-product-qty {
+        font-size: 0.75rem;
+        color: rgb(148 163 184);
+        margin-top: 0.125rem;
+    }
+
+    .jb-booking-designer {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .jb-booking-designer-name {
+        font-weight: 600;
+        color: rgb(15 23 42);
+        text-decoration: none;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .jb-booking-designer-name:hover {
+        color: var(--jb-primary, #be123c);
+    }
+
+    .jb-booking-designer-meta {
+        font-size: 0.75rem;
+        color: rgb(100 116 139);
+        margin-top: 0.125rem;
+    }
+
+    .jb-booking-call-btn {
+        flex-shrink: 0;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 9999px;
+        background: rgb(220 252 231);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+
+    .jb-booking-rental-dates {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-booking-rental-days {
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+        margin-top: 0.25rem;
+    }
+
+    .jb-booking-icon-pin {
+        margin-right: 0.25rem;
+    }
+
+    .jb-booking-address-name {
+        font-weight: 600;
+        color: rgb(15 23 42);
+        font-size: 0.9375rem;
+    }
+
+    .jb-booking-address-text {
+        font-size: 0.875rem;
+        color: rgb(71 85 105);
+        margin-top: 0.25rem;
+        line-height: 1.5;
+    }
+
+    .jb-booking-measures {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.625rem;
+    }
+
+    .jb-booking-measure {
+        background: rgb(248 250 252);
+        border-radius: 0.625rem;
+        padding: 0.75rem 0.625rem;
+        text-align: center;
+    }
+
+    .jb-booking-measure-label {
+        display: block;
+        font-size: 0.625rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgb(148 163 184);
+    }
+
+    .jb-booking-measure-value {
+        display: block;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        margin-top: 0.25rem;
+    }
+
+    .jb-booking-notes {
+        font-size: 0.875rem;
+        color: rgb(71 85 105);
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    .jb-booking-ref-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .jb-booking-ref-thumb {
+        display: block;
+        width: 4.5rem;
+        height: 4.5rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 1px solid rgb(226 232 240);
+    }
+
+    .jb-booking-ref-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .jb-booking-track {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .jb-booking-track-step {
+        display: flex;
+        gap: 0.75rem;
+        position: relative;
+        padding-bottom: 1.25rem;
+    }
+
+    .jb-booking-track-step:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 0.6875rem;
+        top: 1.375rem;
+        bottom: 0;
+        width: 2px;
+        background: rgb(226 232 240);
+    }
+
+    .jb-booking-track-step--done:not(:last-child)::before {
+        background: var(--jb-primary, #be123c);
+    }
+
+    .jb-booking-track-marker {
+        flex-shrink: 0;
+        width: 1.375rem;
+        height: 1.375rem;
+        border-radius: 9999px;
+        border: 2px solid rgb(226 232 240);
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .jb-booking-track-marker svg {
+        width: 0.75rem;
+        height: 0.75rem;
+        color: #fff;
+    }
+
+    .jb-booking-track-step--done .jb-booking-track-marker {
+        background: var(--jb-primary, #be123c);
+        border-color: var(--jb-primary, #be123c);
+    }
+
+    .jb-booking-track-step--current .jb-booking-track-marker {
+        border-color: var(--jb-primary, #be123c);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--jb-primary, #be123c) 20%, transparent);
+    }
+
+    .jb-booking-track-step--cancelled .jb-booking-track-marker {
+        background: rgb(248 250 252);
+        border-color: rgb(203 213 225);
+    }
+
+    .jb-booking-track-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: rgb(15 23 42);
+    }
+
+    .jb-booking-track-step--upcoming .jb-booking-track-label {
+        color: rgb(148 163 184);
+    }
+
+    .jb-booking-track-time {
+        font-size: 0.75rem;
+        color: rgb(100 116 139);
+        margin-top: 0.125rem;
+    }
+
+    .jb-booking-payment-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        margin: 0;
+    }
+
+    .jb-booking-payment-lines > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+        font-size: 0.875rem;
+    }
+
+    .jb-booking-payment-lines dt {
+        color: rgb(100 116 139);
+        font-weight: 500;
+    }
+
+    .jb-booking-payment-lines dd {
+        font-weight: 600;
+        color: rgb(15 23 42);
+        margin: 0;
+    }
+
+    .jb-booking-payment-damage dd {
+        color: rgb(225 29 72);
+    }
+
+    .jb-booking-payment-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgb(226 232 240);
+        font-size: 0.9375rem;
+    }
+
+    .jb-booking-payment-total strong {
+        font-size: 1.375rem;
+        font-weight: 800;
+        color: var(--jb-primary, #be123c);
+    }
+
+    .jb-booking-manage-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.875rem;
+    }
+
+    .jb-booking-quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .jb-order-type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .jb-order-type-badge--rental {
+        background: rgb(254 243 199);
+        color: rgb(146 64 14);
+    }
+
+    .jb-order-type-badge--sale {
+        background: rgb(219 234 254);
+        color: rgb(29 78 216);
+    }
+
+    @media (max-width: 639px) {
+        .jb-booking-measures {
+            grid-template-columns: 1fr;
+        }
+
+        .jb-booking-product-row {
+            flex-direction: column;
+        }
+
+        .jb-booking-product-img,
+        .jb-booking-product-placeholder {
+            width: 100%;
+            height: 10rem;
+        }
     }
 </style>

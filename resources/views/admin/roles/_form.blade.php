@@ -27,6 +27,10 @@
         <p class="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Super Admin always has full access to every module.
         </p>
+    @else
+        <p class="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            Sidebar menu items require the <strong>View</strong> permission (Create/Edit also enable View automatically when saved).
+        </p>
     @endif
     <div
         class="jb-table-wrap rounded-xl border border-slate-200"
@@ -40,6 +44,13 @@
                 document.querySelectorAll(`input[name^='permissions[${id}]']`).forEach((el) => {
                     if (! el.disabled) el.checked = checked;
                 });
+            },
+            ensureViewForRow(id) {
+                const view = document.querySelector(`input[name='permissions[${id}][can_view]']`);
+                const others = document.querySelectorAll(`input[name^='permissions[${id}]'][name$='can_create]'], input[name^='permissions[${id}]'][name$='can_edit]'], input[name^='permissions[${id}]'][name$='can_delete]'], input[name^='permissions[${id}]'][name$='can_export]']`);
+                if (view && [...others].some((el) => el.checked)) {
+                    view.checked = true;
+                }
             },
             selectAll(checked) {
                 document.querySelectorAll('input[name^=permissions]').forEach((el) => {
@@ -92,6 +103,9 @@
             </thead>
             <tbody>
                 @foreach ($permissions as $permission)
+                    @if ($isSuperAdmin && $permission->slug === 'categories')
+                        @continue
+                    @endif
                     @php
                         $flags = old("permissions.{$permission->id}", $rolePermissions[$permission->id] ?? []);
                     @endphp
@@ -111,6 +125,11 @@
                                     class="jb-checkbox-accent"
                                     @checked(! empty($flags[$key]))
                                     @disabled($isSuperAdmin)
+                                    @unless($isSuperAdmin)
+                                        @if($key !== 'can_view')
+                                            x-on:change="ensureViewForRow({{ $permission->id }})"
+                                        @endif
+                                    @endunless
                                 >
                             </td>
                         @endforeach

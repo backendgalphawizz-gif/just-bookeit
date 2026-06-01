@@ -19,6 +19,10 @@ class AdminLayoutComposer
     {
         $admin = Auth::guard('admin')->user();
 
+        if ($admin) {
+            $admin->load(['role.permissions', 'assignedCities']);
+        }
+
         $view->with([
             'adminMenu' => $admin ? $this->menuBuilder->build($admin) : collect(),
             'adminBranding' => [

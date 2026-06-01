@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\AdminUserRequest;
 use App\Models\Admin;
 use App\Models\Role;
+use App\Support\AdminCityScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
@@ -16,7 +17,7 @@ class AdminUserController extends AdminController
     public function index(): View
     {
         $admins = Admin::query()
-            ->with('role')
+            ->with(['role', 'assignedCities'])
             ->orderBy('name')
             ->paginate(15);
 
@@ -27,6 +28,7 @@ class AdminUserController extends AdminController
     {
         return view('admin.admins.create', [
             'roles' => Role::query()->where('is_active', true)->orderBy('name')->get(),
+            'cities' => AdminCityScope::availableCities(),
         ]);
     }
 
@@ -34,8 +36,10 @@ class AdminUserController extends AdminController
     {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
+        unset($data['city']);
 
-        Admin::query()->create($data);
+        $admin = Admin::query()->create($data);
+        $admin->syncAssignedCity($request->cityName());
 
         return redirect()->route('admin.admins.index')->with('success', 'Admin user created successfully.');
     }
@@ -43,14 +47,16 @@ class AdminUserController extends AdminController
     public function edit(Admin $admin): View
     {
         return view('admin.admins.edit', [
-            'admin' => $admin,
+            'admin' => $admin->load('assignedCities'),
             'roles' => Role::query()->where('is_active', true)->orderBy('name')->get(),
+            'cities' => AdminCityScope::availableCities(),
         ]);
     }
 
     public function update(AdminUserRequest $request, Admin $admin): RedirectResponse
     {
         $data = $request->validated();
+        unset($data['city']);
 
         if (! empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -59,8 +65,13 @@ class AdminUserController extends AdminController
         }
 
         $admin->update($data);
+        $admin->syncAssignedCity($request->cityName());
+        $admin->load(['role.permissions', 'assignedCities']);
 
-        return redirect()->route('admin.admins.index')->with('success', 'Admin user updated successfully.');
+        return redirect()->route('admin.admins.index')->with(
+            'success',
+            'Admin user updated successfully. Assigned role: '.($admin->role?->name ?? '—').'.'
+        );
     }
 
     public function destroy(Admin $admin): RedirectResponse

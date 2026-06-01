@@ -20,8 +20,18 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.auth' => \App\Http\Middleware\EnsureAdminIsAuthenticated::class,
             'admin.guest' => \App\Http\Middleware\RedirectIfAdminAuthenticated::class,
             'admin.module' => \App\Http\Middleware\AuthorizeAdminModule::class,
+            'customer.auth' => \App\Http\Middleware\EnsureCustomerIsAuthenticated::class,
+            'customer.guest' => \App\Http\Middleware\RedirectIfCustomerAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Session expired. Please refresh and try again.'], 419);
+            }
+
+            return redirect()->back()
+                ->withInput($request->except('_token'))
+                ->with('error', 'Session expired. Please try again.');
+        });
     })->create();

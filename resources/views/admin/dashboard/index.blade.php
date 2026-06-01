@@ -2,7 +2,7 @@
 
 @section('title', 'Dashboard')
 @section('page_title', 'Dashboard')
-@section('page_subtitle', 'Platform overview · Updated ' . now()->format('M d, Y h:i A'))
+@section('page_subtitle', $page_subtitle ?? 'Platform overview · Updated ' . now()->format('M d, Y h:i A'))
 
 @section('content')
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
@@ -24,22 +24,30 @@
             </div>
             <div class="jb-card-body">
                 <div class="grid gap-8 md:grid-cols-2">
+                    @if ($chart_visibility['monthly_revenue'] ?? true)
                     <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                         <h3 class="text-sm font-bold text-slate-700">Monthly revenue</h3>
                         <canvas id="chartMonthlyRevenue" class="mt-4 max-h-52" height="180"></canvas>
                     </div>
+                    @endif
+                    @if ($chart_visibility['orders_trend'] ?? true)
                     <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                         <h3 class="text-sm font-bold text-slate-700">Orders trend</h3>
                         <canvas id="chartOrdersTrend" class="mt-4 max-h-52" height="180"></canvas>
                     </div>
+                    @endif
+                    @if ($chart_visibility['vendor_growth'] ?? true)
                     <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                         <h3 class="text-sm font-bold text-slate-700">Vendor growth</h3>
                         <canvas id="chartVendorGrowth" class="mt-4 max-h-52" height="180"></canvas>
                     </div>
+                    @endif
+                    @if ($chart_visibility['category_bookings'] ?? true)
                     <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                         <h3 class="text-sm font-bold text-slate-700">Category bookings</h3>
                         <canvas id="chartCategoryBookings" class="mt-4 max-h-52" height="180"></canvas>
                     </div>
+                    @endif
                 </div>
             </div>
         </section>

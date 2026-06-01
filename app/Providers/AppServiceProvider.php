@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\GuestLayoutComposer;
+use App\View\Composers\WebLayoutComposer;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -19,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('admin.layouts.app', AdminLayoutComposer::class);
         View::composer(['admin.layouts.guest', 'admin.auth.login'], GuestLayoutComposer::class);
+        View::composer(['web.layouts.app', 'web.layouts.guest', 'web.layouts.profile'], WebLayoutComposer::class);
         Paginator::defaultView('vendor.pagination.admin');
         Paginator::defaultSimpleView('vendor.pagination.admin');
     }

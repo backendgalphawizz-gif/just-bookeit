@@ -1,0 +1,107 @@
+@extends('web.layouts.app')
+
+@section('title', 'Catalog')
+
+@section('content')
+@php
+    $fashionFallbacks = [
+        'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80',
+        'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=600&q=80',
+        'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80',
+        'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80',
+        'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&q=80',
+        'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&q=80',
+        'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80',
+        'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=600&q=80',
+    ];
+@endphp
+
+<div class="jbw-container">
+    <div class="jbw-page-head">
+        <span class="jbw-eyebrow">Catalog</span>
+        <h1 class="jbw-page-title">Designer Collection</h1>
+        <p class="jbw-page-subtitle">Browse premium outfits for every occasion</p>
+    </div>
+
+    <div class="jbw-catalog-layout" x-data="{ filterOpen: false }">
+
+        {{-- Mobile filter toggle button --}}
+        <button
+            type="button"
+            class="jbw-filter-toggle"
+            @click="filterOpen = !filterOpen"
+            :aria-expanded="filterOpen"
+        >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            <span x-text="filterOpen ? 'Hide Filters' : 'Show Filters'">Show Filters</span>
+            @if(request('search') || request('category'))
+                <span class="jbw-filter-badge">1</span>
+            @endif
+        </button>
+
+        {{-- Filter sidebar --}}
+        <aside class="jbw-filters" :class="{ 'is-open': filterOpen }">
+            <p class="jbw-filter-title">Filter</p>
+            <form method="GET" action="{{ route('web.catalog.index') }}">
+                <div class="jbw-field">
+                    <label class="jbw-label" for="search">Search</label>
+                    <input id="search" type="search" name="search" class="jbw-input" value="{{ request('search') }}" placeholder="Gown, lehenga...">
+                </div>
+                <div class="jbw-field" style="margin-top:1rem">
+                    <label class="jbw-label" for="category">Category</label>
+                    <select id="category" name="category" class="jbw-select">
+                        <option value="">All categories</option>
+                        @foreach ($categories as $cat)
+                            <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1.25rem;border-radius:10px">Apply filters</button>
+                @if(request('search') || request('category'))
+                    <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--ghost jbw-btn--block" style="margin-top:0.5rem;border-radius:10px">Clear filters</a>
+                @endif
+            </form>
+        </aside>
+
+        {{-- Product grid --}}
+        <div class="jbw-catalog-results">
+            @if(request('search') || request('category'))
+                <p class="jbw-catalog-count">
+                    {{ $items->total() }} result{{ $items->total() != 1 ? 's' : '' }}
+                    @if(request('search')) for "<strong>{{ request('search') }}</strong>"@endif
+                </p>
+            @endif
+
+            <div class="jbw-product-grid">
+                @forelse ($items as $item)
+                    @php $fallback = $fashionFallbacks[$item->id % count($fashionFallbacks)]; @endphp
+                    <a href="{{ route('web.catalog.show', $item) }}" class="jbw-product-card">
+                        <div class="jbw-product-card-img">
+                            <img
+                                src="{{ $item->displayImageUrl() ?: $fallback }}"
+                                alt="{{ $item->title }}"
+                                loading="lazy"
+                            >
+                        </div>
+                        <div class="jbw-product-card-body">
+                            <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
+                            <p class="jbw-product-title">{{ $item->title }}</p>
+                            <p class="jbw-product-price">{{ $item->rentalPriceLabel() }}</p>
+                        </div>
+                    </a>
+                @empty
+                    <div class="jbw-catalog-empty">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        <p>No outfits found.</p>
+                        <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">Clear filters</a>
+                    </div>
+                @endforelse
+            </div>
+
+            @if ($items->hasPages())
+                <div style="margin-top:2rem">{{ $items->links() }}</div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection

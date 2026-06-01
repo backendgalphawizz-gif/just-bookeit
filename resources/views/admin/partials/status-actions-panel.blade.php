@@ -1,7 +1,7 @@
 @props(['title' => 'Manage status', 'actions' => []])
 
 @if (count($actions) > 0)
-    <div class="jb-card mt-6 max-w-3xl">
+    <div class="jb-card mt-6">
         <div class="jb-card-header">
             <p class="jb-card-header-title">{{ $title }}</p>
         </div>

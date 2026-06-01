@@ -1,0 +1,98 @@
+@extends('web.layouts.app')
+
+@section('title', $item->title)
+
+@section('content')
+@php
+    $fashionFallbacks = [
+        'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=900&q=85',
+        'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=900&q=85',
+        'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=85',
+        'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=900&q=85',
+        'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=900&q=85',
+        'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=85',
+    ];
+    $fallbackImg = $fashionFallbacks[$item->id % count($fashionFallbacks)];
+@endphp
+
+<div class="jbw-container">
+    <nav class="jbw-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('web.catalog.index') }}" class="jbw-breadcrumb-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            Back to catalog
+        </a>
+    </nav>
+
+    <div class="jbw-product-detail">
+        {{-- Gallery --}}
+        <div class="jbw-gallery-main">
+            <img src="{{ $item->displayImageUrl() ?: $fallbackImg }}" alt="{{ $item->title }}">
+        </div>
+
+        {{-- Info --}}
+        <div class="jbw-detail-info">
+            <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
+            <h1 class="jbw-product-detail-title">{{ $item->title }}</h1>
+            <p class="jbw-detail-price">{{ $item->rentalPriceLabel() }}</p>
+
+            @if($item->description)
+                <p class="jbw-detail-desc">{{ $item->description }}</p>
+            @else
+                <p class="jbw-detail-desc">Premium designer outfit available for rent. Perfect for special occasions, weddings, and events.</p>
+            @endif
+
+            @if ($item->vendor)
+                <a href="{{ route('web.vendors.show', $item->vendor) }}" class="jbw-vendor-chip">
+                    @if ($item->vendor->profileImageUrl() || $item->vendor->shopLogoUrl())
+                        <img src="{{ $item->vendor->profileImageUrl() ?: $item->vendor->shopLogoUrl() }}" alt="{{ $item->vendor->brand_name }}" class="jbw-vendor-chip-avatar">
+                    @else
+                        <span class="jbw-vendor-chip-avatar jbw-designer-fallback">{{ strtoupper(substr($item->vendor->brand_name, 0, 1)) }}</span>
+                    @endif
+                    <div>
+                        <strong style="font-size:0.9375rem">{{ $item->vendor->brand_name }}</strong>
+                        <p style="margin:0.125rem 0 0;font-size:0.8125rem;color:var(--c-muted)">
+                            ★ {{ number_format($item->vendor->rating ?? 4.5, 1) }}
+                            @if($item->vendor->city) · {{ $item->vendor->city }} @endif
+                        </p>
+                    </div>
+                    <svg style="margin-left:auto;color:var(--c-muted)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+            @endif
+
+            <div class="jbw-detail-actions">
+                @auth('customer')
+                    <a href="{{ route('web.bookings.overview', $item) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Book now</a>
+                @else
+                    <a href="{{ route('web.login') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
+                @endauth
+                <a href="#" class="jbw-btn jbw-btn--outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Chat
+                </a>
+                <a href="#" class="jbw-btn jbw-btn--outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                    Video call
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if ($related->isNotEmpty())
+        <section class="jbw-section jbw-section--tight">
+            <h2 class="jbw-section-title" style="font-size:1.375rem;margin-bottom:1.25rem">More from {{ $item->vendor?->brand_name ?? 'this designer' }}</h2>
+            <div class="jbw-product-grid">
+                @foreach ($related as $rel)
+                    @php $rf = $fashionFallbacks[$rel->id % count($fashionFallbacks)]; @endphp
+                    <a href="{{ route('web.catalog.show', $rel) }}" class="jbw-product-card">
+                        <div class="jbw-product-card-img"><img src="{{ $rel->displayImageUrl() ?: $rf }}" alt="{{ $rel->title }}" loading="lazy"></div>
+                        <div class="jbw-product-card-body">
+                            <p class="jbw-product-title">{{ $rel->title }}</p>
+                            <p class="jbw-product-price">{{ $rel->rentalPriceLabel() }}</p>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+</div>
+@endsection

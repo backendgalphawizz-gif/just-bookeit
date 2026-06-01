@@ -52,7 +52,7 @@ class AdminAccessSeeder extends Seeder
                 continue;
             }
 
-            Admin::query()->updateOrCreate(
+            Admin::query()->firstOrCreate(
                 ['username' => $account['username']],
                 [
                     'role_id' => $role->id,

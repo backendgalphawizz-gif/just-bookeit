@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Vendor;
 use App\Http\Requests\Admin\VendorRequest;
+use App\Models\Category;
+use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
@@ -21,7 +23,9 @@ class VendorController extends AdminController
     {
         $this->validateListDateRange($request);
 
-        $vendors = $this->applyDateRange(Vendor::query(), $request)
+        $vendors = AdminCityScope::scopeVendors(
+            $this->applyDateRange(Vendor::query(), $request)
+        )
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->where(function ($q) use ($term) {
@@ -41,7 +45,9 @@ class VendorController extends AdminController
 
     public function create(): View
     {
-        return view('admin.vendors.create');
+        return view('admin.vendors.create', [
+            'categories' => Category::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+        ]);
     }
 
     public function store(VendorRequest $request): RedirectResponse
@@ -70,7 +76,10 @@ class VendorController extends AdminController
 
     public function edit(Vendor $vendor): View
     {
-        return view('admin.vendors.edit', compact('vendor'));
+        return view('admin.vendors.edit', [
+            'vendor' => $vendor,
+            'categories' => Category::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
+        ]);
     }
 
     public function update(VendorRequest $request, Vendor $vendor): RedirectResponse
@@ -128,19 +137,23 @@ class VendorController extends AdminController
 
     private function applyVendorImages(Vendor $vendor, VendorRequest $request): void
     {
-        if ($request->hasFile('profile_image')) {
-            $vendor->profile_image_path = StoresUploadedFiles::replace(
-                $request->file('profile_image'),
-                $vendor->profile_image_path,
-                'vendors/profile-images'
-            );
-        }
+        $files = [
+            'profile_image' => ['column' => 'profile_image_path', 'dir' => 'vendors/profile-images'],
+            'shop_logo' => ['column' => 'shop_logo_path', 'dir' => 'vendors/shop-logos'],
+            'aadhar_front' => ['column' => 'aadhar_front_path', 'dir' => 'vendors/aadhar/front'],
+            'aadhar_back' => ['column' => 'aadhar_back_path', 'dir' => 'vendors/aadhar/back'],
+            'pan_card' => ['column' => 'pan_card_path', 'dir' => 'vendors/pan-cards'],
+        ];
 
-        if ($request->hasFile('shop_logo')) {
-            $vendor->shop_logo_path = StoresUploadedFiles::replace(
-                $request->file('shop_logo'),
-                $vendor->shop_logo_path,
-                'vendors/shop-logos'
+        foreach ($files as $input => $config) {
+            if (! $request->hasFile($input)) {
+                continue;
+            }
+
+            $vendor->{$config['column']} = StoresUploadedFiles::replace(
+                $request->file($input),
+                $vendor->{$config['column']},
+                $config['dir']
             );
         }
     }

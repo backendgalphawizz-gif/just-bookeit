@@ -6,7 +6,7 @@
     <x-admin.button variant="secondary" :href="route('admin.faqs.index', ['audience' => $audience])">← Back</x-admin.button>
 @endsection
 @section('content')
-    <div class="jb-card max-w-3xl">
+    <div class="jb-card">
         <div class="jb-card-body">
             <form method="POST" action="{{ route('admin.faqs.store') }}">
                 @csrf

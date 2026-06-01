@@ -68,6 +68,11 @@ class Vendor extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    public function portfolioItems(): HasMany
+    {
+        return $this->hasMany(PortfolioItem::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');

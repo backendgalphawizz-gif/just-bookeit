@@ -42,6 +42,27 @@ class Admin extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    public function assignedCities(): HasMany
+    {
+        return $this->hasMany(AdminCity::class);
+    }
+
+    public function syncAssignedCity(?string $city): void
+    {
+        $city = filled($city) ? trim($city) : null;
+
+        $this->assignedCities()->delete();
+
+        if ($city) {
+            $this->assignedCities()->create(['city' => $city]);
+        }
+    }
+
+    public function assignedCity(): ?string
+    {
+        return $this->assignedCities()->value('city');
+    }
+
     public function loginLogs(): HasMany
     {
         return $this->hasMany(AdminLoginLog::class);

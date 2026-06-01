@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Customer;
 use App\Http\Requests\Admin\CustomerRequest;
+use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
@@ -21,7 +22,9 @@ class CustomerController extends AdminController
     {
         $this->validateListDateRange($request);
 
-        $customers = $this->applyDateRange(Customer::query(), $request, 'registered_at')
+        $customers = AdminCityScope::scopeCustomers(
+            $this->applyDateRange(Customer::query(), $request, 'registered_at')
+        )
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->where(function ($q) use ($term) {

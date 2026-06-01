@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\Admin\DriverRequest;
 use App\Models\Driver;
+use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
@@ -21,7 +22,9 @@ class DriverController extends AdminController
     {
         $this->validateListDateRange($request);
 
-        $drivers = $this->applyDateRange(Driver::query(), $request)
+        $drivers = AdminCityScope::scopeDrivers(
+            $this->applyDateRange(Driver::query(), $request)
+        )
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->where(function ($q) use ($term) {

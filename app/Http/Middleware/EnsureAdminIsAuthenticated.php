@@ -20,6 +20,8 @@ class EnsureAdminIsAuthenticated
                 ->with('error', 'Please sign in to continue.');
         }
 
+        $admin->loadMissing(['role.permissions', 'assignedCities']);
+
         return $next($request);
     }
 }

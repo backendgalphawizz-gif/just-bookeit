@@ -27,6 +27,7 @@ class Customer extends Authenticatable
 
     protected $hidden = [
         'profile_image_path',
+        'remember_token',
     ];
 
     protected function casts(): array

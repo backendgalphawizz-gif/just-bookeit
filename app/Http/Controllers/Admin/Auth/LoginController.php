@@ -51,8 +51,8 @@ class LoginController extends Controller
             'password' => $credentials['password'],
         ], $request->boolean('remember'))) {
             AdminLoginLog::query()->create([
-                'admin_id' => $admin?->id,
-                'email' => $loginField === 'email' ? $credentials['login'] : $admin?->email,
+                'admin_id' => $admin->id,
+                'email' => $loginField === 'email' ? $credentials['login'] : $admin->email,
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'status' => 'failed',
@@ -65,7 +65,10 @@ class LoginController extends Controller
                 ->with('error', 'Invalid username/email or password.');
         }
 
+        $request->session()->regenerate();
+
         $admin = Auth::guard('admin')->user();
+        $admin?->loadMissing(['role.permissions', 'assignedCities']);
 
         $admin->forceFill([
             'last_login_at' => now(),
@@ -81,8 +84,6 @@ class LoginController extends Controller
             'status' => 'success',
             'logged_in_at' => now(),
         ]);
-
-        $request->session()->regenerate();
 
         return redirect()->intended(route('admin.dashboard'));
     }

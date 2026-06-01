@@ -19,12 +19,22 @@ trait SyncsRolePermissions
 
         foreach (Permission::query()->pluck('id') as $permissionId) {
             $flags = $input[$permissionId] ?? [];
+            $canView = ! empty($flags['can_view']);
+            $canCreate = ! empty($flags['can_create']);
+            $canEdit = ! empty($flags['can_edit']);
+            $canDelete = ! empty($flags['can_delete']);
+            $canExport = ! empty($flags['can_export']);
+
+            if ($canCreate || $canEdit || $canDelete || $canExport) {
+                $canView = true;
+            }
+
             $sync[$permissionId] = [
-                'can_view' => ! empty($flags['can_view']),
-                'can_create' => ! empty($flags['can_create']),
-                'can_edit' => ! empty($flags['can_edit']),
-                'can_delete' => ! empty($flags['can_delete']),
-                'can_export' => ! empty($flags['can_export']),
+                'can_view' => $canView,
+                'can_create' => $canCreate,
+                'can_edit' => $canEdit,
+                'can_delete' => $canDelete,
+                'can_export' => $canExport,
             ];
         }
 

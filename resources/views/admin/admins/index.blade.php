@@ -24,6 +24,7 @@
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>City</th>
                         <th class="jb-col-status">Status</th>
                         <th class="jb-col-date">Last login</th>
                         <th class="jb-table-actions-col">Actions</th>
@@ -37,6 +38,13 @@
                             <td class="font-mono text-xs">{{ $admin->username }}</td>
                             <td>{{ $admin->email }}</td>
                             <td>{{ $admin->role?->name ?? '—' }}</td>
+                            <td class="text-sm text-slate-600">
+                                @if ($admin->role?->slug === 'super_admin')
+                                    All cities
+                                @else
+                                    {{ $admin->assignedCities->first()?->city ?? '—' }}
+                                @endif
+                            </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $admin->status])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ $admin->last_login_at?->format('M d, Y h:i A') ?? '—' }}</td>
                             <td class="jb-table-actions-col">
@@ -54,7 +62,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="jb-table-empty">No admin users found.</td></tr>
+                        <tr><td colspan="9" class="jb-table-empty">No admin users found.</td></tr>
                     @endforelse
                 </tbody>
             </table>
