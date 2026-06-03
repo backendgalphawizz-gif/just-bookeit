@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'New Dispute')
 @section('page_title', 'New Dispute')
-@section('header_actions')<x-admin.button variant="secondary" :href="route('admin.disputes.index')">← Back</x-admin.button>@endsection
+@section('back_href', route('admin.disputes.index'))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.disputes.store') }}">@csrf

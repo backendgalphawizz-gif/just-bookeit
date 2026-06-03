@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Add Category')
 @section('page_title', 'Add Category')
-@section('header_actions')<x-admin.button variant="secondary" :href="route('admin.categories.index')">← Back</x-admin.button>@endsection
+@section('back_href', route('admin.categories.index'))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.categories.store') }}">@csrf

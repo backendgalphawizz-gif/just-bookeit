@@ -1,6 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Dispute #'.$dispute->id)
 @section('page_title', $dispute->subject)
+@section('back_href', route('admin.disputes.index'))
 @section('header_actions')
     @if (auth('admin')->user()->hasPermission('disputes', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.disputes.edit', $dispute)">Edit</x-admin.button>

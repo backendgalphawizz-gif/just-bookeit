@@ -3,9 +3,7 @@
 @section('page_title', 'Add Customer')
 @section('page_subtitle', 'Create a new customer account')
 
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.customers.index')">← Back to list</x-admin.button>
-@endsection
+@section('back_href', route('admin.customers.index'))
 
 @section('content')
     <div class="jb-card">

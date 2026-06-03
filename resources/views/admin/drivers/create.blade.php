@@ -1,9 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Add Driver')
 @section('page_title', 'Add Driver')
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.drivers.index')">← Back</x-admin.button>
-@endsection
+@section('back_href', route('admin.drivers.index'))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.drivers.store') }}" enctype="multipart/form-data">@csrf

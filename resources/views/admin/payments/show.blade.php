@@ -2,6 +2,7 @@
 @section('title', 'Payment '.$order->order_number)
 @section('page_title', 'Payment details')
 @section('page_subtitle', $order->order_number)
+@section('back_href', route('admin.payments.index'))
 @section('header_actions')
     <x-admin.button variant="secondary" :href="route('admin.orders.show', $order)">View order</x-admin.button>
 @endsection

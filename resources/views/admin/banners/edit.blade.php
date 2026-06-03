@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Edit Banner')
 @section('page_title', 'Edit Banner')
-@section('header_actions')<x-admin.button variant="secondary" :href="route('admin.banners.index')">← Back</x-admin.button>@endsection
+@section('back_href', route('admin.banners.index'))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.banners.update', $banner) }}" enctype="multipart/form-data">@csrf @method('PUT')

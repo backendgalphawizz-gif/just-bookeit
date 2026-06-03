@@ -3,8 +3,8 @@
 @section('page_title', $portfolio->title)
 @section('page_subtitle', $portfolio->vendor->brand_name)
 
+@section('back_href', route('admin.portfolio.index'))
 @section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.portfolio.index')">← Back to list</x-admin.button>
     @if ($portfolio->status === 'pending' && auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <form method="POST" action="{{ route('admin.portfolio.approve', $portfolio) }}" class="inline-flex">@csrf
             <x-admin.action-btn variant="approve" type="submit" />

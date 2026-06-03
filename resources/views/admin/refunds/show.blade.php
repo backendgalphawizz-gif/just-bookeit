@@ -1,6 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Refund #'.$refund->id)
 @section('page_title', 'Refund #'.$refund->id)
+@section('back_href', route('admin.refunds.index'))
 @section('header_actions')
     @if (auth('admin')->user()->hasPermission('refunds', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.refunds.edit', $refund)">Edit</x-admin.button>

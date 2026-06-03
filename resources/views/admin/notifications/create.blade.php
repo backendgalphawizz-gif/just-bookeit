@@ -2,6 +2,7 @@
 @section('title', 'Send notification')
 @section('page_title', 'Send notification')
 @section('page_subtitle', 'Logged for delivery — connect FCM/SMS/email provider for live send')
+@section('back_href', route('admin.notifications.index'))
 @section('content')
     <form method="POST" action="{{ route('admin.notifications.store') }}" class="jb-card max-w-2xl">
         @csrf
