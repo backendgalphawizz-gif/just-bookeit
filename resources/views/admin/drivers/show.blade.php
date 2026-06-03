@@ -26,8 +26,8 @@
                 @include('admin.components.status-badge', ['status' => $driver->status])
             </x-admin.actor-profile-header>
             <dl class="jb-dl">
-                <div><dt>Mobile</dt><dd>{{ $driver->mobile }}</dd></div>
-                <div><dt>Email</dt><dd>{{ $driver->email ?? '—' }}</dd></div>
+                <div><dt>Mobile No</dt><dd>{{ $driver->mobile }}</dd></div>
+                <div><dt>Email ID</dt><dd>{{ $driver->email ?? '—' }}</dd></div>
                 <div><dt>City</dt><dd>{{ $driver->city ?? '—' }}</dd></div>
                 <div><dt>Vehicle no.</dt><dd>{{ $driver->vehicle_no ?? '—' }}</dd></div>
                 <div><dt>Verified</dt><dd>{{ $driver->is_verified ? 'Yes' : 'No' }}</dd></div>

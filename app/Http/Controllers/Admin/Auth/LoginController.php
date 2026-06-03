@@ -43,7 +43,7 @@ class LoginController extends Controller
 
             return back()
                 ->withInput($request->only('login', 'remember'))
-                ->with('error', $admin ? 'Your account is not active.' : 'Invalid username/email or password.');
+                ->with('error', $admin ? 'Your account is not active.' : 'Invalid username/email ID or password.');
         }
 
         if (! Auth::guard('admin')->attempt([
@@ -62,7 +62,7 @@ class LoginController extends Controller
 
             return back()
                 ->withInput($request->only('login', 'remember'))
-                ->with('error', 'Invalid username/email or password.');
+                ->with('error', 'Invalid username/email ID or password.');
         }
 
         $request->session()->regenerate();

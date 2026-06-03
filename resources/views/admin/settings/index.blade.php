@@ -60,8 +60,8 @@
                 </div>
             @elseif ($tab === 'contact')
                 <div class="grid gap-6 sm:grid-cols-2">
-                    @include('admin.partials.form-input', ['label' => 'Support email', 'name' => 'support_email', 'type' => 'email', 'value' => old('support_email', $values['support_email'] ?? ''), 'required' => true])
-                    @include('admin.partials.form-input', ['label' => 'Support phone', 'name' => 'support_phone', 'value' => old('support_phone', $values['support_phone'] ?? '')])
+                    @include('admin.partials.form-input', ['label' => 'Support Email ID', 'name' => 'support_email', 'type' => 'email', 'value' => old('support_email', $values['support_email'] ?? ''), 'required' => true])
+                    @include('admin.partials.form-input', ['label' => 'Support phone', 'name' => 'support_phone', 'value' => old('support_phone', $values['support_phone'] ?? ''), 'restrict' => 'phone', 'hint' => '10 digits'])
                     @include('admin.partials.form-input', ['label' => 'Office address', 'name' => 'contact_address', 'type' => 'textarea', 'rows' => 3, 'value' => old('contact_address', $values['contact_address'] ?? ''), 'full' => true])
                 </div>
             @elseif ($tab === 'legal')

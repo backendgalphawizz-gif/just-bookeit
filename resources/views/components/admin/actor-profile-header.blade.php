@@ -12,10 +12,10 @@
         'label' => $title,
         'size' => 'lg',
     ])
-    <div class="min-w-0">
-        <p class="text-lg font-bold text-slate-900">{{ $title }}</p>
+    <div class="min-w-0 flex-1">
+        <p class="truncate text-lg font-bold text-slate-900" title="{{ $title }}">{{ $title }}</p>
         @if ($subtitle)
-            <p class="mt-0.5 text-sm text-slate-500">{{ $subtitle }}</p>
+            <p class="mt-0.5 truncate text-sm text-slate-500" title="{{ $subtitle }}">{{ $subtitle }}</p>
         @endif
         @if ($slot->isNotEmpty())
             <div class="mt-2">{{ $slot }}</div>

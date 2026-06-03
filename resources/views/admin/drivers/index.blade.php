@@ -10,7 +10,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, mobile, code..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, mobile no, code..." class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
@@ -40,7 +40,7 @@
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-id">Driver ID</th>
                         <th class="jb-col-name">Name</th>
-                        <th>Mobile</th>
+                        <th>Mobile No</th>
                         <th class="jb-col-status">Status</th>
                         <th class="jb-table-actions-col">Actions</th>
                     </tr>

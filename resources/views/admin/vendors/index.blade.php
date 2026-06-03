@@ -13,7 +13,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, owner, email..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, owner, email ID..." class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
@@ -23,6 +23,10 @@
                         <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="jb-filters-field">
+                <label class="jb-label">City</label>
+                <input type="text" name="city" value="{{ request('city') }}" placeholder="City" class="jb-input">
             </div>
             @include('admin.partials.date-filter')
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.vendors.index')])
@@ -58,7 +62,7 @@
                                         'fallbackUrl' => $vendor->shopLogoUrl(),
                                         'label' => $vendor->brand_name,
                                     ])
-                                    <span class="font-semibold">{{ $vendor->brand_name }}</span>
+                                    <span class="font-semibold" title="{{ $vendor->brand_name }}">{{ $vendor->brand_name }}</span>
                                 </div>
                             </td>
                             <td>{{ $vendor->city ?? '—' }}</td>

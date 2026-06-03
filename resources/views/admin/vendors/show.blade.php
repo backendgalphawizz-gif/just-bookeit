@@ -1,6 +1,8 @@
 @extends('admin.layouts.app')
 @section('title', $vendor->brand_name)
-@section('page_title', $vendor->brand_name)
+@section('page_title')
+    <span class="block max-w-full truncate" title="{{ $vendor->brand_name }}">{{ $vendor->brand_name }}</span>
+@endsection
 @section('page_subtitle', $vendor->vendor_code)
 @section('header_actions')
     @if ($vendor->status === 'pending' && auth('admin')->user()->hasPermission('vendors', 'edit'))
@@ -28,7 +30,8 @@
             </x-admin.actor-profile-header>
             <dl class="jb-dl">
                 <div><dt>Owner</dt><dd>{{ $vendor->owner_name }}</dd></div>
-                <div><dt>Contact</dt><dd>{{ $vendor->mobile }}<br>{{ $vendor->email }}</dd></div>
+                <div><dt>Mobile No</dt><dd>{{ $vendor->mobile }}</dd></div>
+                <div><dt>Email ID</dt><dd>{{ $vendor->email ?? '—' }}</dd></div>
                 <div><dt>City</dt><dd>{{ $vendor->city ?? '—' }}</dd></div>
                 <div><dt>Service type</dt><dd>{{ $vendor->serviceType() ?? '—' }}</dd></div>
                 <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>

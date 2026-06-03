@@ -8,7 +8,7 @@
 
 @include('admin.partials.form-input', ['label' => 'Full name', 'name' => 'name', 'value' => old('name', $admin?->name), 'required' => true])
 @include('admin.partials.form-input', ['label' => 'Username', 'name' => 'username', 'value' => old('username', $admin?->username), 'required' => true])
-@include('admin.partials.form-input', ['label' => 'Email', 'name' => 'email', 'type' => 'email', 'value' => old('email', $admin?->email), 'required' => true])
+@include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $admin?->email), 'required' => true])
 
 <div>
     <label for="role_id" class="jb-label">Role</label>

@@ -10,9 +10,29 @@
     x-data="{
         current: @js($currentUrl),
         preview: null,
+        fileError: null,
+        _previewUrl: null,
+        maxBytes: 4 * 1024 * 1024,
         pickFile(event) {
-            const file = event.target.files[0];
+            const input = event.target;
+            const file = input.files && input.files[0];
+            this.fileError = null;
             if (!file) {
+                if (this._previewUrl) {
+                    URL.revokeObjectURL(this._previewUrl);
+                    this._previewUrl = null;
+                }
+                this.preview = null;
+                return;
+            }
+            if (file.size > this.maxBytes) {
+                const mb = (file.size / (1024 * 1024)).toFixed(1);
+                this.fileError = 'Image is too large. Maximum size is 4 MB (selected ' + mb + ' MB).';
+                input.value = '';
+                if (this._previewUrl) {
+                    URL.revokeObjectURL(this._previewUrl);
+                    this._previewUrl = null;
+                }
                 this.preview = null;
                 return;
             }
@@ -46,9 +66,18 @@
                 name="{{ $name }}"
                 accept="image/png,image/jpeg,image/jpg,image/webp"
                 class="jb-profile-file-input"
+                data-jb-max-mb="4"
+                data-jb-file-alpine="1"
                 @change="pickFile($event)"
             >
         </label>
+        <div
+            x-show="fileError"
+            x-cloak
+            class="jb-file-error-alert"
+            role="alert"
+            x-text="fileError"
+        ></div>
         @error($name)
             <p class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</p>
         @enderror

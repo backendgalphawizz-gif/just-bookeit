@@ -111,7 +111,7 @@
 </div>
 <div class="sm:col-span-2">
     <label for="admin_notes" class="jb-label">Admin notes (internal)</label>
-    <textarea id="admin_notes" name="admin_notes" rows="2" class="jb-input">{{ old('admin_notes', $order?->admin_notes) }}</textarea>
+    <textarea id="admin_notes" name="admin_notes" rows="2" class="jb-input jb-textarea-break">{{ old('admin_notes', $order?->admin_notes) }}</textarea>
 </div>
 
 <p class="jb-form-section-title sm:col-span-2">Status</p>

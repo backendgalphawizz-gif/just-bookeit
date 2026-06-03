@@ -8,7 +8,7 @@ class AdminValidationRules
 
     public const REGEX_CITY = '/^[\p{L}\s.\'\-]+$/u';
 
-    public const REGEX_PHONE = '/^[0-9]{10,15}$/';
+    public const REGEX_PHONE = '/^[0-9]{10}$/';
 
     public const REGEX_TITLE = '/^[\p{L}\p{N}\s.,\'&()\-]+$/u';
 
@@ -16,7 +16,13 @@ class AdminValidationRules
 
     public const REGEX_CURRENCY = '/^[A-Z]{3,10}$/';
 
-    public const REGEX_COMMA_LIST = '/^[\p{L}\p{N}\s,.\-]*$/u';
+    public const REGEX_GST = '/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/';
+
+    public const REGEX_VEHICLE_NO = '/^[A-Z0-9]{1,20}$/';
+
+    public const REGEX_IFSC = '/^[A-Z]{4}0[A-Z0-9]{6}$/';
+
+    public const REGEX_ACCOUNT_NUMBER = '/^[0-9]{1,20}$/';
 
     public static function listDateRange(): array
     {
@@ -37,23 +43,23 @@ class AdminValidationRules
         }
 
         return [
-            'shop_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
-            'brand_name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
-            'owner_name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
+            'shop_name' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'brand_name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'owner_name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE, $uniqueMobile],
             'email' => ['required', 'email', 'max:255', $uniqueEmail],
             'service_types' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
             'business_mobile' => ['nullable', 'string', 'regex:'.self::REGEX_PHONE],
             'business_email' => ['nullable', 'email', 'max:255'],
-            'gst_number' => ['nullable', 'string', 'max:15'],
+            'gst_number' => ['nullable', 'string', 'size:15', 'regex:'.self::REGEX_GST],
             'address' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
             'country' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'state' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'pincode' => ['nullable', 'string', 'max:10'],
             'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
-            'account_number' => ['nullable', 'string', 'max:20'],
-            'ifsc_code' => ['nullable', 'string', 'max:11'],
+            'account_number' => ['nullable', 'string', 'max:20', 'regex:'.self::REGEX_ACCOUNT_NUMBER],
+            'ifsc_code' => ['nullable', 'string', 'size:11', 'regex:'.self::REGEX_IFSC],
             'bank_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'account_type' => ['nullable', 'in:savings,current'],
             'status' => ['required', 'in:pending,active,suspended,rejected'],
@@ -79,14 +85,14 @@ class AdminValidationRules
         }
 
         return [
-            'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
+            'name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE, $uniqueMobile],
             'email' => ['nullable', 'email', 'max:255'],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
-            'vehicle_no' => ['nullable', 'string', 'max:20'],
+            'vehicle_no' => ['nullable', 'string', 'max:20', 'regex:'.self::REGEX_VEHICLE_NO],
             'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
-            'account_number' => ['nullable', 'string', 'max:20'],
-            'ifsc_code' => ['nullable', 'string', 'max:11'],
+            'account_number' => ['nullable', 'string', 'max:20', 'regex:'.self::REGEX_ACCOUNT_NUMBER],
+            'ifsc_code' => ['nullable', 'string', 'size:11', 'regex:'.self::REGEX_IFSC],
             'bank_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'account_type' => ['nullable', 'in:savings,current'],
             'status' => ['required', 'in:pending,active,suspended,rejected'],
@@ -102,7 +108,7 @@ class AdminValidationRules
     public static function customer(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
+            'name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE],
             'email' => ['nullable', 'email', 'max:255'],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
@@ -353,8 +359,15 @@ class AdminValidationRules
             'name.regex' => 'Name may only contain letters, spaces, dots, and hyphens.',
             'owner_name.regex' => 'Owner name may only contain letters, spaces, dots, and hyphens.',
             'brand_name.regex' => 'Brand name contains invalid characters.',
-            'mobile.regex' => 'Mobile must be 10–15 digits only.',
-            'support_phone.regex' => 'Phone must be 10–15 digits only.',
+            'mobile.regex' => 'Mobile no must be exactly 10 digits.',
+            'mobile.digits' => 'Mobile no must be exactly 10 digits.',
+            'business_mobile.regex' => 'Business mobile no must be exactly 10 digits.',
+            'business_mobile.digits' => 'Business mobile no must be exactly 10 digits.',
+            'gst_number.regex' => 'Enter a valid 15-character GSTIN.',
+            'gst_number.size' => 'GST number must be exactly 15 characters.',
+            'vehicle_no.regex' => 'Vehicle number may only contain letters and numbers (max 20).',
+            'support_phone.regex' => 'Phone no must be exactly 10 digits.',
+            'support_phone.digits' => 'Phone no must be exactly 10 digits.',
             'city.regex' => 'City may only contain letters, spaces, dots, and hyphens.',
             'title.regex' => 'This field contains invalid characters.',
             'subtitle.regex' => 'Subtitle contains invalid characters.',
@@ -365,9 +378,17 @@ class AdminValidationRules
             'category_ids.array' => 'Select at least one category for this sub-admin.',
             'city.required' => 'Select a city for this sub-admin.',
             'account_type.in' => 'Account type must be savings or current.',
+            'account_name.regex' => 'Account holder name may only contain letters, spaces, dots, and hyphens.',
+            'account_number.regex' => 'Account number must be 1–20 digits only.',
+            'account_number.max' => 'Account number must not exceed 20 digits.',
+            'ifsc_code.regex' => 'Enter a valid 11-character IFSC code.',
+            'ifsc_code.size' => 'IFSC code must be exactly 11 characters.',
+            'bank_name.regex' => 'Bank name contains invalid characters.',
             'currency.regex' => 'Currency must be 3–10 uppercase letters (e.g. INR).',
             'reason.regex' => 'Reason contains invalid characters.',
             'message.regex' => 'Message contains invalid characters.',
+            'profile_image.max' => 'Image is too large. Maximum size is 4 MB.',
+            'profile_image.uploaded' => 'Image is too large. Maximum size is 4 MB.',
             '*.regex' => 'This field contains invalid characters.',
         ];
     }
@@ -388,7 +409,11 @@ class AdminValidationRules
             'raised_by' => 'raised by',
             'global_commission_percent' => 'commission',
             'name' => 'full name',
-            'mobile' => 'mobile',
+            'mobile' => 'mobile no',
+            'email' => 'email ID',
+            'business_mobile' => 'business mobile no',
+            'business_email' => 'business email ID',
+            'support_email' => 'support email ID',
             'image' => 'banner image',
         ];
     }
@@ -398,6 +423,10 @@ class AdminValidationRules
     {
         return match ($name) {
             'owner_name' => 'person-name',
+            'account_name' => 'person-name',
+            'account_number' => 'account-number',
+            'ifsc_code' => 'ifsc',
+            'bank_name' => 'title',
             'name' => 'person-name',
             'mobile', 'support_phone' => 'phone',
             'city' => 'city',
@@ -405,7 +434,8 @@ class AdminValidationRules
             'email', 'support_email' => 'email',
             'redirect_url' => 'url',
             'currency' => 'currency',
-            'categories_text' => 'comma-list',
+            'gst_number' => 'gst',
+            'vehicle_no' => 'vehicle-no',
             'reason', 'message', 'contact_address',
             'terms_conditions_user', 'terms_conditions_vendor', 'terms_conditions_driver',
             'privacy_policy_user', 'privacy_policy_vendor', 'privacy_policy_driver',

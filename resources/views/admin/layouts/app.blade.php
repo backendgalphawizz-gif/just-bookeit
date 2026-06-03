@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        <nav class="jb-sidebar-nav px-2 pb-4">
+        <nav id="jb-sidebar-nav" class="jb-sidebar-nav px-2 pb-4">
             @foreach ($adminMenu as $group)
                 <p class="jb-nav-group-label">{{ $group['name'] }}</p>
                 @foreach ($group['items'] as $item)

@@ -1,6 +1,8 @@
 @extends('admin.layouts.app')
 @section('title', $customer->name)
-@section('page_title', $customer->name)
+@section('page_title')
+    <span class="block max-w-full truncate" title="{{ $customer->name }}">{{ $customer->name }}</span>
+@endsection
 @section('page_subtitle', $customer->customer_code)
 
 @section('header_actions')
@@ -45,8 +47,8 @@
                 @include('admin.components.status-badge', ['status' => $customer->status])
             </x-admin.actor-profile-header>
             <dl class="jb-dl">
-                <div><dt>Mobile</dt><dd>{{ $customer->mobile }}</dd></div>
-                <div><dt>Email</dt><dd>{{ $customer->email ?? '—' }}</dd></div>
+                <div><dt>Mobile No</dt><dd>{{ $customer->mobile }}</dd></div>
+                <div><dt>Email ID</dt><dd>{{ $customer->email ?? '—' }}</dd></div>
                 <div><dt>City</dt><dd>{{ $customer->city ?? '—' }}</dd></div>
                 <div><dt>Verified</dt><dd>{{ $customer->is_verified ? 'Yes' : 'No' }}</dd></div>
                 <div><dt>Registered</dt><dd>{{ $customer->registered_at?->format('M d, Y') }}</dd></div>
@@ -69,7 +71,9 @@
                             <tr>
                                 @include('admin.partials.table-index-cell')
                                 <td class="jb-col-id font-semibold">{{ $order->order_number }}</td>
-                                <td class="jb-col-name">{{ $order->vendor?->brand_name ?? 'Unassigned' }}</td>
+                                <td class="jb-col-name max-w-[14rem]">
+                                    <span class="block truncate font-medium" title="{{ $order->vendor?->brand_name ?? 'Unassigned' }}">{{ $order->vendor?->brand_name ?? 'Unassigned' }}</span>
+                                </td>
                                 <td class="jb-col-amount">₹{{ number_format($order->amount, 2) }}</td>
                                 <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
                                 <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" /></div></td>
