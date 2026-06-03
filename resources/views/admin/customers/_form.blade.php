@@ -9,9 +9,9 @@
     'currentUrl' => $customer?->profileImageUrl(),
     'initials' => $initials,
 ])
-@include('admin.partials.form-input', ['label' => 'Full Name', 'name' => 'name', 'value' => old('name', $customer?->name), 'required' => true])
-@include('admin.partials.form-input', ['label' => 'Mobile', 'name' => 'mobile', 'value' => old('mobile', $customer?->mobile), 'required' => true])
-@include('admin.partials.form-input', ['label' => 'Email', 'name' => 'email', 'type' => 'email', 'value' => old('email', $customer?->email)])
+@include('admin.partials.form-input', ['label' => 'Full Name', 'name' => 'name', 'value' => old('name', $customer?->name), 'required' => true, 'restrict' => 'person-name', 'maxChars' => 100])
+@include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $customer?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits required'])
+@include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $customer?->email)])
 @include('admin.partials.form-input', ['label' => 'City', 'name' => 'city', 'value' => old('city', $customer?->city)])
 <x-admin.form-select label="Status" name="status" :required="true">
     @foreach (['active', 'suspended', 'blocked'] as $s)

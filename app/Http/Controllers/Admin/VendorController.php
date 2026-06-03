@@ -36,6 +36,7 @@ class VendorController extends AdminController
                 });
             })
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('city'), fn ($q) => $q->where('city', 'like', '%'.$request->string('city').'%'))
             ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();

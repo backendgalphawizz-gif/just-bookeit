@@ -16,15 +16,15 @@
             @endif
         </div>
         <div class="jb-table-wrap">
-            <table class="jb-table jb-table--balanced">
+            <table class="jb-table jb-table--balanced jb-table--wide">
                 <thead>
                     <tr>
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-name">Name</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>City</th>
+                        <th class="jb-col-username">Username</th>
+                        <th class="jb-col-email">Email ID</th>
+                        <th class="jb-col-role">Role</th>
+                        <th class="jb-col-city">City</th>
                         <th class="jb-col-status">Status</th>
                         <th class="jb-col-date">Last login</th>
                         <th class="jb-table-actions-col">Actions</th>
@@ -34,16 +34,25 @@
                     @forelse ($admins as $admin)
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $admins])
-                            <td class="jb-col-name font-semibold">{{ $admin->name }}</td>
-                            <td class="font-mono text-xs">{{ $admin->username }}</td>
-                            <td>{{ $admin->email }}</td>
-                            <td>{{ $admin->role?->name ?? '—' }}</td>
-                            <td class="text-sm text-slate-600">
-                                @if ($admin->role?->slug === 'super_admin')
-                                    All cities
-                                @else
-                                    {{ $admin->assignedCities->first()?->city ?? '—' }}
-                                @endif
+                            <td class="jb-col-name">
+                                <span class="block truncate font-semibold" title="{{ $admin->name }}">{{ $admin->name }}</span>
+                            </td>
+                            <td class="jb-col-username">
+                                <span class="block truncate font-mono text-xs" title="{{ $admin->username }}">{{ $admin->username }}</span>
+                            </td>
+                            <td class="jb-col-email">
+                                <span class="block truncate" title="{{ $admin->email }}">{{ $admin->email }}</span>
+                            </td>
+                            <td class="jb-col-role">
+                                <span class="block truncate" title="{{ $admin->role?->name ?? '—' }}">{{ $admin->role?->name ?? '—' }}</span>
+                            </td>
+                            @php
+                                $adminCityLabel = $admin->role?->slug === 'super_admin'
+                                    ? 'All cities'
+                                    : ($admin->assignedCities->first()?->city ?? '—');
+                            @endphp
+                            <td class="jb-col-city text-sm text-slate-600">
+                                <span class="block truncate" title="{{ $adminCityLabel }}">{{ $adminCityLabel }}</span>
                             </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $admin->status])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ $admin->last_login_at?->format('M d, Y h:i A') ?? '—' }}</td>

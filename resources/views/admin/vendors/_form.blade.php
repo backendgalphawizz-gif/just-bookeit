@@ -28,15 +28,15 @@
 </div>
 
 <p class="jb-form-section-title sm:col-span-2">Business details</p>
-@include('admin.partials.form-input', ['label' => 'Shop name', 'name' => 'shop_name', 'value' => old('shop_name', $vendor?->shop_name ?? $vendor?->brand_name)])
-@include('admin.partials.form-input', ['label' => 'Brand name', 'name' => 'brand_name', 'value' => old('brand_name', $vendor?->brand_name), 'required' => true])
-@include('admin.partials.form-input', ['label' => 'Owner name', 'name' => 'owner_name', 'value' => old('owner_name', $vendor?->owner_name), 'required' => true])
-@include('admin.partials.form-input', ['label' => 'Mobile', 'name' => 'mobile', 'value' => old('mobile', $vendor?->mobile), 'required' => true, 'restrict' => 'phone'])
-@include('admin.partials.form-input', ['label' => 'Email', 'name' => 'email', 'type' => 'email', 'value' => old('email', $vendor?->email), 'required' => true])
+@include('admin.partials.form-input', ['label' => 'Shop name', 'name' => 'shop_name', 'value' => old('shop_name', $vendor?->shop_name ?? $vendor?->brand_name), 'maxChars' => 100, 'restrict' => 'title'])
+@include('admin.partials.form-input', ['label' => 'Brand name', 'name' => 'brand_name', 'value' => old('brand_name', $vendor?->brand_name), 'required' => true, 'maxChars' => 100, 'restrict' => 'title'])
+@include('admin.partials.form-input', ['label' => 'Owner name', 'name' => 'owner_name', 'value' => old('owner_name', $vendor?->owner_name), 'required' => true, 'maxChars' => 100, 'restrict' => 'person-name'])
+@include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $vendor?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits'])
+@include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $vendor?->email), 'required' => true])
 @include('admin.partials.form-input', ['label' => 'Service types', 'name' => 'service_types', 'value' => old('service_types', $vendor?->service_types), 'full' => true, 'placeholder' => 'Fashion Designer, Rented Dress, Rented Jewellery'])
-@include('admin.partials.form-input', ['label' => 'Business mobile', 'name' => 'business_mobile', 'value' => old('business_mobile', $vendor?->business_mobile), 'restrict' => 'phone'])
-@include('admin.partials.form-input', ['label' => 'Business email', 'name' => 'business_email', 'type' => 'email', 'value' => old('business_email', $vendor?->business_email)])
-@include('admin.partials.form-input', ['label' => 'GST number', 'name' => 'gst_number', 'value' => old('gst_number', $vendor?->gst_number)])
+@include('admin.partials.form-input', ['label' => 'Business Mobile No', 'name' => 'business_mobile', 'value' => old('business_mobile', $vendor?->business_mobile), 'restrict' => 'phone', 'hint' => '10 digits'])
+@include('admin.partials.form-input', ['label' => 'Business Email ID', 'name' => 'business_email', 'type' => 'email', 'value' => old('business_email', $vendor?->business_email)])
+@include('admin.partials.form-input', ['label' => 'GST number', 'name' => 'gst_number', 'value' => old('gst_number', $vendor?->gst_number), 'restrict' => 'gst', 'placeholder' => '15-character GSTIN'])
 
 @include('admin.partials.address-fields', ['values' => [
     'address' => $vendor?->address,

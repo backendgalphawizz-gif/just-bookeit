@@ -39,7 +39,7 @@
                     @include('admin.partials.table-index-header')
                     <th class="jb-col-name">Title</th>
                     <th class="jb-col-name">Vendor</th>
-                    <th>Category</th>
+                    <th class="jb-col-category">Category</th>
                     <th class="jb-col-status">Status</th>
                     <th class="jb-col-date">Submitted</th>
                     <th class="jb-table-actions-col">Actions</th>
@@ -48,9 +48,15 @@
                     @forelse ($items as $item)
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $items])
-                            <td class="jb-col-name font-medium">{{ $item->title }}</td>
-                            <td class="jb-col-name">{{ $item->vendor->brand_name }}</td>
-                            <td>{{ $item->category?->name ?? '—' }}</td>
+                            <td class="jb-col-name max-w-[10rem]">
+                                <span class="block truncate font-medium" title="{{ $item->title }}">{{ $item->title }}</span>
+                            </td>
+                            <td class="jb-col-name max-w-[10rem]">
+                                <span class="block truncate" title="{{ $item->vendor->brand_name }}">{{ $item->vendor->brand_name }}</span>
+                            </td>
+                            <td class="jb-col-category">
+                                <span class="block truncate text-sm" title="{{ $item->category?->name ?? '—' }}">{{ $item->category?->name ?? '—' }}</span>
+                            </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ $item->created_at->format('M d, Y') }}</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" /></div></td>

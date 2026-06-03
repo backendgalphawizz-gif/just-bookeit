@@ -67,7 +67,7 @@
                     <p class="jb-profile-section-title">Account details</p>
                     <div class="jb-form-grid">
                         @include('admin.partials.form-input', ['label' => 'Full name', 'name' => 'name', 'value' => old('name', $admin->name), 'required' => true])
-                        @include('admin.partials.form-input', ['label' => 'Email', 'name' => 'email', 'type' => 'email', 'value' => old('email', $admin->email), 'required' => true])
+                        @include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $admin->email), 'required' => true])
                         <div class="sm:col-span-2">
                             <label class="jb-label">Username</label>
                             <input type="text" class="jb-input cursor-not-allowed bg-slate-50 text-slate-600" value="{{ $admin->username }}" readonly disabled>

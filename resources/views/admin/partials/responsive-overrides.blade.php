@@ -1,5 +1,40 @@
 <style>
     /* Admin create/edit/show: wide panels use full main area; compact panels stay centered */
+    .jb-main {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .jb-main-column {
+        min-width: 0;
+    }
+
+    .jb-main > .jb-card,
+    .jb-main > form.jb-card,
+    .jb-main > .jb-filters {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .jb-card .jb-table-wrap {
+        margin-left: -0.25rem;
+        margin-right: -0.25rem;
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+
+    @media (min-width: 640px) {
+        .jb-card .jb-table-wrap {
+            margin-left: 0;
+            margin-right: 0;
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+
     .jb-main .jb-card.max-w-5xl,
     .jb-main .jb-card.max-w-4xl,
     .jb-main .jb-card.max-w-3xl,
@@ -65,6 +100,119 @@
 
     .jb-table-wrap::-webkit-scrollbar { height: 6px; }
     .jb-table-wrap::-webkit-scrollbar-thumb { background: rgb(203 213 225); border-radius: 9999px; }
+
+    /* Keep columns from overlapping when the main panel is narrow */
+    .jb-table-wrap .jb-table {
+        min-width: 56rem;
+    }
+
+    .jb-table-wrap .jb-table.jb-table--wide {
+        min-width: 72rem;
+    }
+
+    .jb-table th {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+
+    .jb-table td {
+        vertical-align: middle;
+    }
+
+    .jb-table--balanced {
+        table-layout: auto;
+    }
+
+    .jb-table--balanced .jb-col-name {
+        width: auto;
+        min-width: 6rem;
+        max-width: 11rem;
+    }
+
+    .jb-table th.jb-col-name,
+    .jb-table td.jb-col-name,
+    .jb-table th.jb-col-username,
+    .jb-table td.jb-col-username,
+    .jb-table th.jb-col-email,
+    .jb-table td.jb-col-email,
+    .jb-table th.jb-col-role,
+    .jb-table td.jb-col-role,
+    .jb-table th.jb-col-city,
+    .jb-table td.jb-col-city,
+    .jb-table th.jb-col-category,
+    .jb-table td.jb-col-category {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .jb-col-username {
+        width: 7.5rem;
+        min-width: 7rem;
+        max-width: 9rem;
+    }
+
+    .jb-col-email {
+        width: 12rem;
+        min-width: 10.5rem;
+        max-width: 15rem;
+    }
+
+    .jb-col-role {
+        width: 8.5rem;
+        min-width: 7.5rem;
+        max-width: 11rem;
+    }
+
+    .jb-col-city {
+        width: 6.5rem;
+        min-width: 6rem;
+        max-width: 8rem;
+        white-space: nowrap;
+    }
+
+    .jb-col-category {
+        width: 7rem;
+        min-width: 6.5rem;
+        max-width: 9rem;
+    }
+
+    .jb-table th.jb-col-date,
+    .jb-table td.jb-col-date {
+        width: 10.5rem;
+        min-width: 10rem;
+        max-width: 12rem;
+        white-space: nowrap;
+    }
+
+    .jb-table th.jb-col-status,
+    .jb-table td.jb-col-status {
+        width: 7.5rem;
+        min-width: 7.5rem;
+        max-width: 8.5rem;
+    }
+
+    .jb-table th.jb-table-actions-col,
+    .jb-table td.jb-table-actions-col {
+        width: 10rem;
+        min-width: 9.5rem;
+        max-width: 11rem;
+    }
+
+    .jb-table td.jb-col-status .jb-badge {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .jb-table td .jb-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+    }
 
     .jb-table-sticky-col {
         position: sticky;
@@ -159,6 +307,36 @@
         align-items: center;
         gap: 0.75rem;
         min-width: 0;
+    }
+
+    .jb-actor-cell > span,
+    .jb-actor-cell .font-semibold {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .jb-dl dd {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .jb-textarea-break {
+        overflow-wrap: anywhere;
+        word-wrap: break-word;
+    }
+
+    .jb-file-error-alert {
+        margin-top: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: rgb(185 28 28);
+        background: rgb(254 242 242);
+        border: 1px solid rgb(254 202 202);
     }
 
     .jb-actor-profile {
@@ -344,6 +522,8 @@
     .jb-booking-layout {
         display: grid;
         gap: 1.25rem;
+        min-width: 0;
+        max-width: 100%;
     }
 
     @media (min-width: 1024px) {
@@ -358,6 +538,8 @@
         display: flex;
         flex-direction: column;
         gap: 1rem;
+        min-width: 0;
+        max-width: 100%;
     }
 
     .jb-booking-card {
@@ -366,6 +548,9 @@
         border-radius: 0.875rem;
         padding: 1.125rem 1.25rem;
         box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
     }
 
     .jb-booking-card--compact {
@@ -387,6 +572,21 @@
         justify-content: space-between;
         gap: 0.75rem;
         margin-bottom: 0.875rem;
+        min-width: 0;
+    }
+
+    .jb-booking-card-head .jb-booking-card-title {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin-bottom: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .jb-booking-card-head .jb-booking-link {
+        flex-shrink: 0;
+        white-space: nowrap;
     }
 
     .jb-booking-link {
@@ -413,6 +613,12 @@
         display: flex;
         gap: 1rem;
         align-items: flex-start;
+        min-width: 0;
+    }
+
+    .jb-booking-product-info {
+        min-width: 0;
+        flex: 1 1 auto;
     }
 
     .jb-booking-product-media {
@@ -443,12 +649,16 @@
         font-weight: 700;
         color: rgb(15 23 42);
         line-height: 1.3;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .jb-booking-product-meta {
         font-size: 0.8125rem;
         color: rgb(100 116 139);
         margin-top: 0.25rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .jb-booking-product-price {
@@ -468,6 +678,7 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        min-width: 0;
     }
 
     .jb-booking-designer-name {
@@ -488,6 +699,8 @@
         font-size: 0.75rem;
         color: rgb(100 116 139);
         margin-top: 0.125rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .jb-booking-call-btn {
@@ -523,6 +736,9 @@
         font-weight: 600;
         color: rgb(15 23 42);
         font-size: 0.9375rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        max-width: 100%;
     }
 
     .jb-booking-address-text {
@@ -530,6 +746,9 @@
         color: rgb(71 85 105);
         margin-top: 0.25rem;
         line-height: 1.5;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        max-width: 100%;
     }
 
     .jb-booking-measures {
@@ -567,6 +786,8 @@
         color: rgb(71 85 105);
         line-height: 1.6;
         white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .jb-booking-ref-grid {

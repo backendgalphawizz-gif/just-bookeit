@@ -14,7 +14,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, email, mobile, ID..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, email ID, mobile no, ID..." class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
@@ -30,6 +30,10 @@
                 <input type="text" name="city" value="{{ request('city') }}" placeholder="City" class="jb-input">
             </div>
             @include('admin.partials.date-filter')
+            <div class="jb-filters-field jb-filters-field--date">
+                <label class="jb-label" for="filter-registered">Registered on</label>
+                <input type="date" id="filter-registered" name="registered_on" value="{{ request('registered_on') }}" class="jb-input">
+            </div>
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.customers.index')])
         </div>
     </form>
@@ -45,8 +49,9 @@
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-id">Customer ID</th>
                         <th class="jb-col-name">Name</th>
-                        <th>Mobile</th>
+                        <th>Mobile No</th>
                         <th>City</th>
+                        <th class="jb-col-date">Registered</th>
                         <th class="text-center">Orders</th>
                         <th class="jb-col-status">Status</th>
                         <th class="jb-table-actions-col">Actions</th>
@@ -63,11 +68,12 @@
                                         'imageUrl' => $customer->profileImageUrl(),
                                         'label' => $customer->name,
                                     ])
-                                    <span class="font-semibold text-slate-900">{{ $customer->name }}</span>
+                                    <span class="font-semibold text-slate-900" title="{{ $customer->name }}">{{ $customer->name }}</span>
                                 </div>
                             </td>
                             <td>{{ $customer->mobile }}</td>
                             <td>{{ $customer->city ?? '—' }}</td>
+                            <td class="jb-col-date text-sm text-slate-600">{{ $customer->registered_at?->format('M d, Y') ?? '—' }}</td>
                             <td class="text-center">{{ $customer->total_orders }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $customer->status])</td>
                             <td class="jb-table-actions-col">
@@ -80,7 +86,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="jb-table-empty">No customers match your filters.</td></tr>
+                        <tr><td colspan="9" class="jb-table-empty">No customers match your filters.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -72,7 +72,7 @@
                                 'label' => $order->vendor->brand_name,
                             ])
                             <div class="min-w-0 flex-1">
-                                <a href="{{ route('admin.vendors.show', $order->vendor) }}" class="jb-booking-designer-name">{{ $order->vendor->brand_name }}</a>
+                                <a href="{{ route('admin.vendors.show', $order->vendor) }}" class="jb-booking-designer-name" title="{{ $order->vendor->brand_name }}">{{ $order->vendor->brand_name }}</a>
                                 <p class="jb-booking-designer-meta">★ {{ number_format($order->vendor->rating, 1) }} · {{ $order->vendor->city ?? '—' }}</p>
                             </div>
                             <a href="tel:{{ $order->vendor->mobile }}" class="jb-booking-call-btn" title="Call vendor">📞</a>
@@ -100,7 +100,7 @@
                 <h3 class="jb-booking-card-title">
                     <span class="jb-booking-icon-pin" aria-hidden="true">📍</span> Shipping address
                 </h3>
-                <p class="jb-booking-address-name">{{ $order->customer->name }}</p>
+                <p class="jb-booking-address-name" title="{{ $order->customer->name }}">{{ $order->customer->name }}</p>
                 <p class="jb-booking-address-text">{{ $order->delivery_address ?? '—' }}</p>
                 @if ($order->city || $order->pincode)
                     <p class="jb-booking-address-text">{{ $order->city }}@if($order->pincode), {{ $order->pincode }}@endif</p>
@@ -110,7 +110,7 @@
             {{-- Measurements --}}
             <div class="jb-booking-card">
                 <div class="jb-booking-card-head">
-                    <h3 class="jb-booking-card-title mb-0">{{ $order->customer->name }}&apos;s profile</h3>
+                    <h3 class="jb-booking-card-title mb-0" title="{{ $order->customer->name }}&apos;s profile">{{ $order->customer->name }}&apos;s profile</h3>
                     <a href="{{ route('admin.customers.show', $order->customer) }}" class="jb-booking-link">View full profile</a>
                 </div>
                 <div class="jb-booking-measures">
@@ -161,7 +161,7 @@
                             'label' => $order->driver->name,
                         ])
                         <div class="min-w-0 flex-1">
-                            <a href="{{ route('admin.drivers.show', $order->driver) }}" class="jb-booking-designer-name">{{ $order->driver->name }}</a>
+                            <a href="{{ route('admin.drivers.show', $order->driver) }}" class="jb-booking-designer-name" title="{{ $order->driver->name }}">{{ $order->driver->name }}</a>
                             <p class="jb-booking-designer-meta">{{ $order->driver->vehicle_no ?? 'No vehicle' }} · {{ $order->driver->mobile }}</p>
                         </div>
                         <a href="tel:{{ $order->driver->mobile }}" class="jb-booking-call-btn" title="Call driver">📞</a>
@@ -197,14 +197,14 @@
             {{-- Billing --}}
             <div class="jb-booking-card">
                 <h3 class="jb-booking-card-title">Billing address</h3>
-                <p class="jb-booking-address-name">{{ $order->customer->name }}</p>
+                <p class="jb-booking-address-name" title="{{ $order->customer->name }}">{{ $order->customer->name }}</p>
                 <p class="jb-booking-address-text">{{ $order->billing_address ?? $order->delivery_address ?? '—' }}</p>
             </div>
 
             @if ($order->admin_notes)
                 <div class="jb-booking-card">
                     <h3 class="jb-booking-card-title">Admin comment</h3>
-                    <p class="jb-booking-notes">{{ $order->admin_notes }}</p>
+                    <p class="jb-booking-notes break-words">{{ $order->admin_notes }}</p>
                 </div>
             @endif
 
@@ -245,7 +245,7 @@
                         <p class="text-sm"><a href="{{ route('admin.refunds.show', $order->refund) }}" class="jb-link">Refund — {{ ucfirst($order->refund->status) }}</a></p>
                     @endif
                     @if ($order->dispute)
-                        <p class="text-sm mt-2"><a href="{{ route('admin.disputes.show', $order->dispute) }}" class="jb-link">{{ $order->dispute->subject }}</a></p>
+                        <p class="text-sm mt-2 break-words"><a href="{{ route('admin.disputes.show', $order->dispute) }}" class="jb-link">{{ $order->dispute->subject }}</a></p>
                     @endif
                 </div>
             @endif

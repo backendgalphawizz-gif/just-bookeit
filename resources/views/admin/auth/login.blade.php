@@ -43,7 +43,7 @@
                 @csrf
 
                 <div>
-                    <label for="login" class="jb-login-label">Email or username</label>
+                    <label for="login" class="jb-login-label">Email ID or username</label>
                     <input
                         id="login"
                         name="login"
