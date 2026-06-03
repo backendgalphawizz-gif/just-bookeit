@@ -1,7 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Add Vendor')
 @section('page_title', 'Add Vendor')
-@section('header_actions')<x-admin.button variant="secondary" :href="route('admin.vendors.index')">← Back</x-admin.button>@endsection
+@section('back_href', route('admin.vendors.index'))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.vendors.store') }}" enctype="multipart/form-data">@csrf

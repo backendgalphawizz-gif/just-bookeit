@@ -3,8 +3,8 @@
 @section('page_title', $payout->payout_code)
 @section('page_subtitle', $payout->vendor->brand_name)
 
+@section('back_href', route('admin.payouts.index'))
 @section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.payouts.index')">← Back to list</x-admin.button>
     @if ($payout->status !== 'paid' && auth('admin')->user()->hasPermission('payouts', 'edit'))
         <form method="POST" action="{{ route('admin.payouts.mark-paid', $payout) }}" class="inline-flex">
             @csrf

@@ -1,9 +1,7 @@
 @extends('admin.layouts.app')
 @section('title', 'Add Admin')
 @section('page_title', 'Add Admin User')
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.admins.index')">← Back</x-admin.button>
-@endsection
+@section('back_href', route('admin.admins.index'))
 @section('content')
     <div class="jb-card">
         <div class="jb-card-body">

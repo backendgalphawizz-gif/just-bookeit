@@ -4,6 +4,7 @@
     <span class="block max-w-full truncate" title="{{ $vendor->brand_name }}">{{ $vendor->brand_name }}</span>
 @endsection
 @section('page_subtitle', $vendor->vendor_code)
+@section('back_href', route('admin.vendors.index'))
 @section('header_actions')
     @if ($vendor->status === 'pending' && auth('admin')->user()->hasPermission('vendors', 'edit'))
         <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">Approve</x-admin.button></form>

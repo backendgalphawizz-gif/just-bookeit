@@ -2,9 +2,7 @@
 @section('title', 'Add FAQ')
 @section('page_title', 'Add FAQ')
 @section('page_subtitle', \App\Models\Faq::audienceLabel($audience))
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.faqs.index', ['audience' => $audience])">← Back</x-admin.button>
-@endsection
+@section('back_href', route('admin.faqs.index', ['audience' => $audience]))
 @section('content')
     <div class="jb-card">
         <div class="jb-card-body">

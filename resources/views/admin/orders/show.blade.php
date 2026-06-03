@@ -3,6 +3,7 @@
 @section('title', 'Booking '.$order->order_number)
 @section('page_title', 'Booking Detail')
 @section('page_subtitle', 'Booked '.$order->created_at->format('M d, Y · H:i'))
+@section('back_href', route('admin.orders.index'))
 
 @section('header_actions')
     @if (auth('admin')->user()->hasPermission('orders', 'edit'))

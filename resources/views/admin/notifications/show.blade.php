@@ -2,9 +2,7 @@
 @section('title', $notification->title)
 @section('page_title', $notification->title)
 @section('page_subtitle', 'Sent {{ $notification->sent_at?->diffForHumans() ?? "recently" }}')
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.notifications.index')">Back</x-admin.button>
-@endsection
+@section('back_href', route('admin.notifications.index'))
 @section('content')
     <div class="jb-card max-w-2xl">
         <div class="jb-card-body space-y-4">

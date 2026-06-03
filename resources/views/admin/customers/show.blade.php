@@ -4,6 +4,7 @@
     <span class="block max-w-full truncate" title="{{ $customer->name }}">{{ $customer->name }}</span>
 @endsection
 @section('page_subtitle', $customer->customer_code)
+@section('back_href', route('admin.customers.index'))
 
 @section('header_actions')
     @if (auth('admin')->user()->hasPermission('customers', 'edit'))

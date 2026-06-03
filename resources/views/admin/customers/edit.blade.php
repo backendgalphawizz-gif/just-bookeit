@@ -2,10 +2,7 @@
 @section('title', 'Edit Customer')
 @section('page_title', 'Edit Customer')
 @section('page_subtitle', $customer->customer_code)
-
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.customers.show', $customer)">← Back</x-admin.button>
-@endsection
+@section('back_href', route('admin.customers.index'))
 
 @section('content')
     <div class="jb-card">
@@ -15,7 +12,7 @@
                 <div class="jb-form-grid">@include('admin.customers._form')</div>
                 <div class="jb-form-actions">
                     <x-admin.button variant="primary" type="submit">Update Customer</x-admin.button>
-                    <x-admin.button variant="secondary" :href="route('admin.customers.show', $customer)">Cancel</x-admin.button>
+                    <x-admin.button variant="secondary" :href="route('admin.customers.index')">Cancel</x-admin.button>
                 </div>
             </form>
         </div>

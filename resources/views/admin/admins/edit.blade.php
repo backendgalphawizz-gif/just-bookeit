@@ -2,9 +2,7 @@
 @section('title', 'Edit Admin')
 @section('page_title', 'Edit Admin User')
 @section('page_subtitle', $admin->name)
-@section('header_actions')
-    <x-admin.button variant="secondary" :href="route('admin.admins.index')">← Back</x-admin.button>
-@endsection
+@section('back_href', route('admin.admins.index'))
 @section('content')
     <div class="jb-card">
         <div class="jb-card-body">

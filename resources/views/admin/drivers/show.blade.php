@@ -2,6 +2,7 @@
 @section('title', $driver->name)
 @section('page_title', $driver->name)
 @section('page_subtitle', $driver->driver_code)
+@section('back_href', route('admin.drivers.index'))
 @section('header_actions')
     @if ($driver->status === 'pending' && auth('admin')->user()->hasPermission('drivers', 'edit'))
         <form method="POST" action="{{ route('admin.drivers.approve', $driver) }}">@csrf<x-admin.button variant="success" type="submit">Approve</x-admin.button></form>
