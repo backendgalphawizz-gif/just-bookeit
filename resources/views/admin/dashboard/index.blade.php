@@ -117,8 +117,8 @@
                     labels,
                     datasets: [{
                         data,
-                        borderColor: '#e11d48',
-                        backgroundColor: type === 'line' ? 'rgba(225, 29, 72, 0.12)' : ['#fda4af','#fb7185','#f43f5e','#e11d48','#be123c','#9f1239','#881337','#4c0519'],
+                        borderColor: '#E95433',
+                        backgroundColor: type === 'line' ? 'rgba(239, 66, 0, 0.12)' : ['#e67244','#e24826','#EF4200','#ff471d','#e25a3b','#e24724','#e43711','#cc2500'],
                         borderWidth: 2,
                         fill: type === 'line',
                         tension: 0.4,
