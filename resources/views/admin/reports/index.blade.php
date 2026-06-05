@@ -29,7 +29,7 @@
     <div class="mt-6 flex flex-wrap gap-2">
         @foreach (['overview' => 'Overview', 'orders' => 'Orders', 'vendors' => 'Vendors', 'refunds' => 'Refunds'] as $key => $label)
             <a href="{{ route('admin.reports.index', array_merge(request()->except('report'), ['report' => $key])) }}"
-               class="rounded-lg px-4 py-2 text-sm font-semibold {{ ($report ?? 'overview') === $key ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">
+               class="rounded-lg px-4 py-2 text-sm font-semibold {{ ($report ?? 'overview') === $key ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200' }}">
                 {{ $label }}
             </a>
         @endforeach
@@ -173,7 +173,7 @@
             if (!el || !labels?.length) return;
             new Chart(el, {
                 type: 'line',
-                data: { labels, datasets: [{ data, borderColor: '#e11d48', backgroundColor: 'rgba(225,29,72,0.12)', fill: true, tension: 0.4 }] },
+                data: { labels, datasets: [{ data, borderColor: '#E95433', backgroundColor: 'rgba(239, 66, 0, 0.12)', fill: true, tension: 0.4 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } },
             });
         }

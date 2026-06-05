@@ -72,12 +72,13 @@
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $vendor->status])</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
-                                    <x-admin.action-btn variant="view" :href="route('admin.vendors.show', $vendor)" />
                                     @if ($vendor->status === 'pending' && auth('admin')->user()->hasPermission('vendors', 'edit'))
                                         <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}" class="jb-action-form">@csrf
                                             <x-admin.action-btn variant="approve" type="submit" />
                                         </form>
                                     @endif
+                                    <x-admin.action-btn variant="view" :href="route('admin.vendors.show', $vendor)" />
+
                                 </div>
                             </td>
                         </tr>
