@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Auth APIs for Customer (v1), Vendor (v2), and Driver (v3).\n\n**Base URL:** `{{base_url}}`\n\n**OTP:** Random 4-digit code returned in Send OTP response (`data.otp`); Postman saves it automatically.\n\n**Flow:** Send OTP → Verify OTP → (Register if new) → Me / Update Profile / Logout\n\n**Multipart:** Vendor register, driver register, and all profile updates use `form-data`. Image fields: JPG/PNG/WebP, max 4MB.\n\n**Vendor `service_types`:** Single string (e.g. `Fashion Designer, Rented Dress`).\n\nTokens and registration tokens are saved automatically when you use the **Just Book IT — Local** environment.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** `{{base_url}}`\n\n**Suggested v1 flow:** Guest session (or OTP login) → Home → Catalog → Catalog Detail → Booking Preview → Create Booking → Payment Summary → Pay Now → Booking History\n\n**OTP:** Random 4-digit code in Send OTP response (`data.otp`); saved to `v1_otp`.\n\n**Auto-saved IDs:** `v1_portfolio_item_id`, `v1_designer_id`, `v1_booking_id` from list/detail responses.\n\nImport with **Just Book IT — Local** environment. Tokens saved after Verify OTP / Register / Guest.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -16,216 +16,860 @@
 			"name": "v1 — User (Customer)",
 			"item": [
 				{
-					"name": "Get Config",
-					"event": [
+					"name": "Auth",
+					"item": [
 						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
-									"pm.test('user legal section exists', () => pm.expect(json.data?.user?.terms_and_conditions).to.be.a('string'));",
-									"pm.test('faq list returned', () => pm.expect(json.data?.user?.faq).to.be.an('array'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v1/config",
-						"description": "Public endpoint. Returns terms, privacy policy, and FAQ for user, vendor, and driver apps, plus contact, features, and branding."
-					}
-				},
-				{
-					"name": "Send OTP",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
-									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));",
-									"if (json.data?.otp) { pm.environment.set('v1_otp', json.data.otp); }"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
-						},
-						"url": "{{base_url}}/v1/auth/otp/send",
-						"description": "Send OTP to customer mobile. Response includes random `otp` (saved to v1_otp)."
-					}
-				},
-				{
-					"name": "Verify OTP",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v1_token', json.data.token);",
-									"}",
-									"if (json.data?.registration_token) {",
-									"    pm.environment.set('v1_registration_token', json.data.registration_token);",
-									"}"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
-						},
-						"url": "{{base_url}}/v1/auth/otp/verify",
-						"description": "Existing user → saves `v1_token`. New user → saves `v1_registration_token` for register."
-					}
-				},
-				{
-					"name": "Register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
-									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v1_token', json.data.token);",
-									"}"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"mobile_no\": \"{{v1_mobile}}\",\n  \"email\": \"customer@example.com\"\n}"
-						},
-						"url": "{{base_url}}/v1/auth/register",
-						"description": "Complete registration after OTP verify (new users only). `mobile_no` must match OTP verified number."
-					}
-				},
-				{
-					"name": "Guest session",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
-									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v1_token', json.data.token);",
-									"}"
-								]
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" }
-						],
-						"url": "{{base_url}}/v1/auth/guest",
-						"description": "Create a guest customer session (no OTP)."
-					}
-				},
-				{
-					"name": "Me",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
-						},
-						"method": "GET",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v1/auth/me"
-					}
-				},
-				{
-					"name": "Update Profile",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
-									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));"
-								]
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
-						},
-						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{ "key": "name", "value": "Updated Customer", "type": "text" },
-								{ "key": "mobile_no", "value": "{{v1_mobile}}", "type": "text" },
-								{ "key": "email", "value": "customer@example.com", "type": "text" },
+							"name": "Get Config",
+							"event": [
 								{
-									"key": "profile_image",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"pm.test('success is true', () => pm.expect(json.success).to.eql(true));"
+										]
+									}
 								}
-							]
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/config"
+							}
 						},
-						"url": "{{base_url}}/v1/auth/profile",
-						"description": "Update customer profile. Same fields as register (name, mobile_no, email) plus profile_image. All fields optional."
-					}
+						{
+							"name": "Send OTP",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"if (json.data?.otp) { pm.environment.set('v1_otp', json.data.otp); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+								},
+								"url": "{{base_url}}/v1/auth/otp/send"
+							}
+						},
+						{
+							"name": "Verify OTP",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"if (json.data?.token) { pm.environment.set('v1_token', json.data.token); }",
+											"if (json.data?.registration_token) { pm.environment.set('v1_registration_token', json.data.registration_token); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+								},
+								"url": "{{base_url}}/v1/auth/otp/verify"
+							}
+						},
+						{
+							"name": "Register",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+											"const json = pm.response.json();",
+											"if (json.data?.token) { pm.environment.set('v1_token', json.data.token); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"mobile_no\": \"{{v1_mobile}}\",\n  \"email\": \"customer@example.com\"\n}"
+								},
+								"url": "{{base_url}}/v1/auth/register"
+							}
+						},
+						{
+							"name": "Guest session",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+											"const json = pm.response.json();",
+											"if (json.data?.token) { pm.environment.set('v1_token', json.data.token); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/auth/guest"
+							}
+						},
+						{
+							"name": "Me",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/auth/me"
+							}
+						},
+						{
+							"name": "Update Profile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "name", "value": "Updated Customer", "type": "text" },
+										{ "key": "mobile_no", "value": "{{v1_mobile}}", "type": "text" },
+										{ "key": "email", "value": "customer@example.com", "type": "text" },
+										{ "key": "city", "value": "Indore", "type": "text" },
+										{ "key": "profile_image", "type": "file", "src": [] }
+									]
+								},
+								"url": "{{base_url}}/v1/auth/profile"
+							}
+						},
+						{
+							"name": "Logout",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/auth/logout"
+							}
+						}
+					]
 				},
 				{
-					"name": "Logout",
-					"request": {
-						"auth": {
-							"type": "bearer",
-
-							"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+					"name": "Home & Discovery",
+					"item": [
+						{
+							"name": "Home",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
+											"if (json.data?.featured_designers?.[0]?.id) {",
+											"    pm.environment.set('v1_designer_id', String(json.data.featured_designers[0].id));",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/home",
+								"description": "Public endpoint. Bearer token is optional — sends location when logged in."
+							}
 						},
-						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v1/auth/logout"
-					}
+						{
+							"name": "Categories",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/categories"
+							}
+						},
+						{
+							"name": "Categories (shop roots)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) {",
+											"    pm.environment.set('v1_category_id', String(json.data.items[0].id));",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/categories?roots=1"
+							}
+						},
+						{
+							"name": "Categories (services)",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/categories?type=service"
+							}
+						},
+						{
+							"name": "Search",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/search?q=pearl"
+							}
+						},
+						{
+							"name": "Catalog List",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) {",
+											"    pm.environment.set('v1_portfolio_item_id', String(json.data.items[0].id));",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/catalog?page=1&per_page=12"
+							}
+						},
+						{
+							"name": "Catalog List (filtered)",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/catalog?search=pearl&category_id={{v1_category_id}}&page=1"
+							}
+						},
+						{
+							"name": "Catalog Detail",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"if (json.data?.id) { pm.environment.set('v1_portfolio_item_id', String(json.data.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/catalog/{{v1_portfolio_item_id}}"
+							}
+						},
+						{
+							"name": "Designers List",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) {",
+											"    pm.environment.set('v1_designer_id', String(json.data.items[0].id));",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/designers?featured=1&page=1"
+							}
+						},
+						{
+							"name": "Designer Detail",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/designers/{{v1_designer_id}}"
+							}
+						}
+					]
+				},
+				{
+					"name": "Bookings",
+					"item": [
+						{
+							"name": "Saved Addresses",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings/addresses"
+							}
+						},
+						{
+							"name": "Booking Preview",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings/preview/{{v1_portfolio_item_id}}?shipment_required=1"
+							}
+						},
+						{
+							"name": "Create Booking (JSON)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+											"const json = pm.response.json();",
+											"if (json.data?.booking?.id) {",
+											"    pm.environment.set('v1_booking_id', String(json.data.booking.id));",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"size\": \"XL\",\n  \"measurement_type\": \"women\",\n  \"customer_notes\": \"Add custom notes for fitting.\",\n  \"delivery_address\": \"G-14 1st sabari nagar, sukhliya, Indore\",\n  \"billing_address\": \"G-14 1st sabari nagar, sukhliya, Indore\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452010\",\n  \"rental_start_date\": \"2026-06-15\",\n  \"rental_end_date\": \"2026-06-17\",\n  \"shipment_required\": true,\n  \"measure_height_cm\": 165,\n  \"measure_chest_cm\": 36,\n  \"measure_waist_cm\": 28\n}"
+								},
+								"url": "{{base_url}}/v1/bookings"
+							}
+						},
+						{
+							"name": "Create Booking (multipart + images)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+											"const json = pm.response.json();",
+											"if (json.data?.booking?.id) {",
+											"    pm.environment.set('v1_booking_id', String(json.data.booking.id));",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "portfolio_item_id", "value": "{{v1_portfolio_item_id}}", "type": "text" },
+										{ "key": "size", "value": "XL", "type": "text" },
+										{ "key": "measurement_type", "value": "women", "type": "text" },
+										{ "key": "customer_notes", "value": "Reference style attached.", "type": "text" },
+										{ "key": "delivery_address", "value": "G-14 1st sabari nagar, sukhliya, Indore", "type": "text" },
+										{ "key": "city", "value": "Indore", "type": "text" },
+										{ "key": "pincode", "value": "452010", "type": "text" },
+										{ "key": "shipment_required", "value": "1", "type": "text" },
+										{ "key": "reference_images[]", "description": "Optional — max 5, JPG/PNG/WebP, 4MB each", "type": "file", "src": [] }
+									]
+								},
+								"url": "{{base_url}}/v1/bookings"
+							}
+						},
+						{
+							"name": "Booking History (all)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings?page=1"
+							}
+						},
+						{
+							"name": "Booking History (designers tab)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings?tab=designers&page=1"
+							}
+						},
+						{
+							"name": "Booking History (rental dress tab)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings?tab=rental_dress&page=1"
+							}
+						},
+						{
+							"name": "Booking Detail",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.id) { pm.environment.set('v1_booking_id', String(json.data.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}"
+							}
+						},
+						{
+							"name": "Cancel Booking",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}/cancel"
+							}
+						}
+					]
+				},
+				{
+					"name": "Payment",
+					"item": [
+						{
+							"name": "Payment Methods",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/payment/methods"
+							}
+						},
+						{
+							"name": "Payment Summary",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}"
+							}
+						},
+						{
+							"name": "Pay Now (UPI)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"payment_method\": \"upi\"\n}"
+								},
+								"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}/pay"
+							}
+						},
+						{
+							"name": "Pay Now (COD)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+								},
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"payment_method\": \"cod\"\n}"
+								},
+								"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}/pay",
+								"description": "Requires `enable_cod` in admin platform settings."
+							}
+						}
+					]
+				},
+				{
+					"name": "Profile",
+					"item": [
+						{
+							"name": "Profile Home",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/profile"
+							}
+						},
+						{
+							"name": "Profile Pages (About, FAQ, Legal)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/profile/pages"
+							}
+						}
+					]
+				},
+				{
+					"name": "Addresses",
+					"item": [
+						{
+							"name": "List Addresses",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/addresses"
+							}
+						},
+						{
+							"name": "Create Address",
+							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+								"const json = pm.response.json();",
+								"if (json.data?.address?.id) { pm.environment.set('v1_address_id', String(json.data.address.id)); }"
+							] } }],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"label\": \"Home\",\n  \"name\": \"Shreya Shah\",\n  \"address_line\": \"1234, ABC Colony, Near Lal Bagh, Indore\",\n  \"city\": \"Indore\",\n  \"state\": \"M.P\",\n  \"pincode\": \"452005\",\n  \"is_default\": true\n}"
+								},
+								"url": "{{base_url}}/v1/addresses"
+							}
+						},
+						{
+							"name": "Update Address",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "PUT",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"label\": \"Office\",\n  \"address_line\": \"456 Business Park, Indore\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452001\"\n}"
+								},
+								"url": "{{base_url}}/v1/addresses/{{v1_address_id}}"
+							}
+						},
+						{
+							"name": "Delete Address",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "DELETE",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/addresses/{{v1_address_id}}"
+							}
+						}
+					]
+				},
+				{
+					"name": "Measurements",
+					"item": [
+						{
+							"name": "List Measurements",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/measurements"
+							}
+						},
+						{
+							"name": "Create Measurement Profile",
+							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+								"const json = pm.response.json();",
+								"if (json.data?.measurement?.id) { pm.environment.set('v1_measurement_id', String(json.data.measurement.id)); }"
+							] } }],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Sarah\",\n  \"measurement_type\": \"women\",\n  \"height_cm\": 172,\n  \"chest_cm\": 88,\n  \"waist_cm\": 68,\n  \"extra_measurements\": {\n    \"blouse_length\": \"24\",\n    \"shoulder\": \"14\",\n    \"sleeve_length\": \"22\",\n    \"hip\": \"92\"\n  }\n}"
+								},
+								"url": "{{base_url}}/v1/measurements"
+							}
+						},
+						{
+							"name": "Measurement Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}"
+							}
+						},
+						{
+							"name": "Update Measurement",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "PUT",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"height_cm\": 173,\n  \"chest_cm\": 89,\n  \"waist_cm\": 69\n}"
+								},
+								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}"
+							}
+						},
+						{
+							"name": "Delete Measurement",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "DELETE",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}"
+							}
+						}
+					]
+				},
+				{
+					"name": "Chats",
+					"item": [
+						{
+							"name": "Chat List",
+							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+								"const json = pm.response.json();",
+								"if (json.data?.items?.[0]?.id) { pm.environment.set('v1_chat_id', String(json.data.items[0].id)); }"
+							] } }],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/chats?search="
+							}
+						},
+						{
+							"name": "Start Chat",
+							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+								"const json = pm.response.json();",
+								"if (json.data?.chat?.id) { pm.environment.set('v1_chat_id', String(json.data.chat.id)); }"
+							] } }],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"vendor_id\": {{v1_designer_id}},\n  \"message\": \"Good morning! I have a question about the custom silk gown.\"\n}"
+								},
+								"url": "{{base_url}}/v1/chats"
+							}
+						},
+						{
+							"name": "Chat Messages",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/chats/{{v1_chat_id}}/messages"
+							}
+						},
+						{
+							"name": "Send Message",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"body\": \"Thank you! Can we explore emerald tone fabric options?\"\n}"
+								},
+								"url": "{{base_url}}/v1/chats/{{v1_chat_id}}/messages"
+							}
+						},
+						{
+							"name": "Send Message (with image)",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{ "key": "body", "value": "Reference image attached.", "type": "text" },
+										{ "key": "attachment", "type": "file", "src": [] }
+									]
+								},
+								"url": "{{base_url}}/v1/chats/{{v1_chat_id}}/messages"
+							}
+						}
+					]
+				},
+				{
+					"name": "Help & Support",
+					"item": [
+						{
+							"name": "List Support Tickets",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/support-tickets"
+							}
+						},
+						{
+							"name": "Create Support Ticket",
+							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+								"const json = pm.response.json();",
+								"if (json.data?.ticket?.id) { pm.environment.set('v1_support_ticket_id', String(json.data.ticket.id)); }"
+							] } }],
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "POST",
+								"header": [
+									{ "key": "Accept", "value": "application/json" },
+									{ "key": "Content-Type", "value": "application/json" }
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"subject\": \"App Issue\",\n  \"email\": \"abc@gmail.com\",\n  \"description\": \"Unable to complete checkout on booking overview screen.\"\n}"
+								},
+								"url": "{{base_url}}/v1/support-tickets"
+							}
+						},
+						{
+							"name": "Support Ticket Detail",
+							"request": {
+								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v1/support-tickets/{{v1_support_ticket_id}}"
+							}
+						}
+					]
 				}
 			]
 		},
@@ -270,12 +914,8 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v2_token', json.data.token);",
-									"}",
-									"if (json.data?.registration_token) {",
-									"    pm.environment.set('v2_registration_token', json.data.registration_token);",
-									"}"
+									"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }",
+									"if (json.data?.registration_token) { pm.environment.set('v2_registration_token', json.data.registration_token); }"
 								]
 							}
 						}
@@ -303,18 +943,14 @@
 								"exec": [
 									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
 									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v2_token', json.data.token);",
-									"}"
+									"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }"
 								]
 							}
 						}
 					],
 					"request": {
 						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" }
-						],
+						"header": [{ "key": "Accept", "value": "application/json" }],
 						"body": {
 							"mode": "formdata",
 							"formdata": [
@@ -335,35 +971,14 @@
 								{ "key": "account_no", "value": "123456789012", "type": "text" },
 								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
 								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
-								{ "key": "account_type", "value": "savings", "description": "savings or current", "type": "text" },
-								{
-									"key": "aadhar_front",
-									"description": "Aadhar front — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "aadhar_back",
-									"description": "Aadhar back — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "shop_logo",
-									"description": "Shop logo — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "pan_card",
-									"description": "PAN card — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								}
+								{ "key": "account_type", "value": "savings", "type": "text" },
+								{ "key": "aadhar_front", "type": "file", "src": [] },
+								{ "key": "aadhar_back", "type": "file", "src": [] },
+								{ "key": "shop_logo", "type": "file", "src": [] },
+								{ "key": "pan_card", "type": "file", "src": [] }
 							]
 						},
-						"url": "{{base_url}}/v2/auth/register",
-						"description": "Vendor registration (multipart). `service_types` is a single string."
+						"url": "{{base_url}}/v2/auth/register"
 					}
 				},
 				{
@@ -380,20 +995,6 @@
 				},
 				{
 					"name": "Update Profile",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
-									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));"
-								]
-							}
-						}
-					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -409,53 +1010,11 @@
 								{ "key": "email", "value": "vendor@example.com", "type": "text" },
 								{ "key": "mobile_no", "value": "{{v2_mobile}}", "type": "text" },
 								{ "key": "service_types", "value": "Fashion Designer, Rented Dress", "type": "text" },
-								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
-								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
-								{ "key": "gst_no", "value": "27AABCU9603R1ZM", "type": "text" },
-								{ "key": "address", "value": "123 Main Street, Andheri", "type": "text" },
-								{ "key": "country", "value": "India", "type": "text" },
-								{ "key": "state", "value": "Maharashtra", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
-								{ "key": "pincode", "value": "400001", "type": "text" },
-								{ "key": "account_name", "value": "Vendor Owner", "type": "text" },
-								{ "key": "account_no", "value": "123456789012", "type": "text" },
-								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
-								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
-								{ "key": "account_type", "value": "savings", "description": "savings or current", "type": "text" },
-								{
-									"key": "profile_image",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "aadhar_front",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "aadhar_back",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "shop_logo",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "pan_card",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								}
+								{ "key": "profile_image", "type": "file", "src": [] }
 							]
 						},
-						"url": "{{base_url}}/v2/auth/profile",
-						"description": "Update vendor profile. Same fields as register plus profile_image and mobile_no. All fields optional."
+						"url": "{{base_url}}/v2/auth/profile"
 					}
 				},
 				{
@@ -513,12 +1072,8 @@
 								"exec": [
 									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
 									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v3_token', json.data.token);",
-									"}",
-									"if (json.data?.registration_token) {",
-									"    pm.environment.set('v3_registration_token', json.data.registration_token);",
-									"}"
+									"if (json.data?.token) { pm.environment.set('v3_token', json.data.token); }",
+									"if (json.data?.registration_token) { pm.environment.set('v3_registration_token', json.data.registration_token); }"
 								]
 							}
 						}
@@ -546,9 +1101,7 @@
 								"exec": [
 									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
 									"const json = pm.response.json();",
-									"if (json.data?.token) {",
-									"    pm.environment.set('v3_token', json.data.token);",
-									"}"
+									"if (json.data?.token) { pm.environment.set('v3_token', json.data.token); }"
 								]
 							}
 						}
@@ -564,28 +1117,12 @@
 								{ "key": "email", "value": "driver@example.com", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
 								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
-								{
-									"key": "aadhar_front",
-									"description": "Aadhar front — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "aadhar_back",
-									"description": "Aadhar back — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "driving_licence",
-									"description": "Driving licence — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								}
+								{ "key": "aadhar_front", "type": "file", "src": [] },
+								{ "key": "aadhar_back", "type": "file", "src": [] },
+								{ "key": "driving_licence", "type": "file", "src": [] }
 							]
 						},
-						"url": "{{base_url}}/v3/auth/register",
-						"description": "Driver registration (multipart). Requires Aadhar front/back and driving licence images. Account stays `pending` until approved in admin → Drivers."
+						"url": "{{base_url}}/v3/auth/register"
 					}
 				},
 				{
@@ -602,20 +1139,6 @@
 				},
 				{
 					"name": "Update Profile",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"pm.test('success is true', () => pm.expect(json.success).to.eql(true));",
-									"pm.test('user object returned', () => pm.expect(json.data?.user).to.be.an('object'));"
-								]
-							}
-						}
-					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -631,39 +1154,10 @@
 								{ "key": "mobile_no", "value": "{{v3_mobile}}", "type": "text" },
 								{ "key": "city", "value": "Mumbai", "type": "text" },
 								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
-								{ "key": "account_name", "value": "Test Driver", "type": "text" },
-								{ "key": "account_no", "value": "123456789012", "type": "text" },
-								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
-								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
-								{ "key": "account_type", "value": "savings", "description": "savings or current", "type": "text" },
-								{
-									"key": "profile_image",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "aadhar_front",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "aadhar_back",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								},
-								{
-									"key": "driving_licence",
-									"description": "Optional — JPG/PNG/WebP, max 4MB",
-									"type": "file",
-									"src": []
-								}
+								{ "key": "profile_image", "type": "file", "src": [] }
 							]
 						},
-						"url": "{{base_url}}/v3/auth/profile",
-						"description": "Update driver profile. Same fields as register plus profile_image and mobile_no. All fields optional."
+						"url": "{{base_url}}/v3/auth/profile"
 					}
 				},
 				{

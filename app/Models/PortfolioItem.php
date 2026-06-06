@@ -50,10 +50,18 @@ class PortfolioItem extends Model
         return '/storage/'.ltrim($this->image_url, '/');
     }
 
+    public function rentalPriceAmount(): int
+    {
+        return 800 + (($this->id ?? 1) * 173) % 2700;
+    }
+
     public function rentalPriceLabel(): string
     {
-        $price = 800 + (($this->id ?? 1) * 173) % 2700;
+        return '₹'.number_format($this->rentalPriceAmount(), 0).' / day';
+    }
 
-        return '₹'.number_format($price, 0).' / day';
+    public function isApprovedForCatalog(): bool
+    {
+        return in_array($this->status, ['approved', 'pending'], true);
     }
 }

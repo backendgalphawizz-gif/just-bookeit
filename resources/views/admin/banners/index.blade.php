@@ -24,7 +24,7 @@
                     @include('admin.partials.table-index-header')
                     <th class="w-20">Image</th>
                     <th class="jb-col-name">Title</th>
-                    <th>CTA</th>
+                    {{-- <th>CTA</th> --}}
                     <th class="jb-col-date">Schedule</th>
                     <th class="text-center">Active</th>
                     <th class="jb-table-actions-col">Actions</th>
@@ -41,7 +41,7 @@
                                 @endif
                             </td>
                             <td class="jb-col-name"><p class="font-semibold">{{ $banner->title }}</p><p class="text-xs text-slate-500">{{ $banner->subtitle }}</p></td>
-                            <td>{{ $banner->cta_label ?? '—' }}</td>
+                            {{--<td>{{ $banner->cta_label ?? '—' }}</td>--}}
                             <td class="jb-col-date text-sm text-slate-600">{{ $banner->starts_at?->format('M d') ?? '—' }} – {{ $banner->ends_at?->format('M d, Y') ?? '—' }}</td>
                             <td class="text-center">@if($banner->is_active)<span class="jb-badge bg-emerald-100 text-emerald-800">Yes</span>@else<span class="jb-badge bg-slate-100 text-slate-600">No</span>@endif</td>
                             <td class="jb-table-actions-col"><div class="jb-actions">

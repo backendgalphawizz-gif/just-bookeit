@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
-@php
+<!-- @php
     $tabs = [
         'branding' => 'Branding & logos',
         'theme' => 'Admin theme',
@@ -8,17 +8,17 @@
         'features' => 'Features',
         'commission' => 'Commission',
     ];
-@endphp
+@endphp -->
 
-<!-- // @php
+// @php
 //     $tabs = [
 //         'branding' => 'Branding & logos',
 //         'contact' => 'Contact',
 //         'legal' => 'Legal & policies',
-//         'features' => 'Features',
+//         
 //         'commission' => 'Commission',
 //     ];
-// @endphp -->
+// @endphp
 
 @section('title', 'Settings')
 @section('page_title', 'System settings')

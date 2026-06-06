@@ -164,13 +164,14 @@ class UserAuthController extends ApiController
         return [
             'name' => [$rule, 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100'],
             'mobile_no' => $mobileRules,
         ];
     }
 
     private function mapCustomerAttributes(array $data): array
     {
-        $attributes = collect($data)->only(['name', 'email'])->all();
+        $attributes = collect($data)->only(['name', 'email', 'city'])->all();
 
         if (isset($data['mobile_no'])) {
             $attributes['mobile'] = $this->otp->normalizeMobile($data['mobile_no']);
