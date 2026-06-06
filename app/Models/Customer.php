@@ -44,9 +44,35 @@ class Customer extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(CustomerAddress::class);
+    }
+
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(CustomerMeasurement::class);
+    }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
+    }
+
+    public function defaultAddress(): ?CustomerAddress
+    {
+        return $this->addresses()->where('is_default', true)->first()
+            ?? $this->addresses()->latest('id')->first();
     }
 
     public function profileImageUrl(): ?string
