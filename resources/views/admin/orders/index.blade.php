@@ -4,9 +4,7 @@
 @section('page_subtitle', 'Booking and order lifecycle')
 @section('content')
     @push('filter_actions')
-        @if (auth('admin')->user()->hasPermission('orders', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.orders.create')">+ New Order</x-admin.button>
-        @endif
+        <x-admin.export-dropdown module="orders" :params="['search', 'status', 'payment_status', 'vendor_id', 'from', 'to']" />
     @endpush
     <form method="GET" class="jb-filters">
         <div class="jb-filters-grid">

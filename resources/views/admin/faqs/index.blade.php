@@ -25,6 +25,9 @@
         @endif
     </div>
 
+    @push('filter_actions')
+        <x-admin.export-dropdown module="faqs" :params="['audience', 'search']" />
+    @endpush
     <form method="GET" class="jb-filters">
         <input type="hidden" name="audience" value="{{ $audience }}">
         <div class="jb-filters-grid">

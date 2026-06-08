@@ -21,7 +21,7 @@
 @endphp
 
 @if ($src)
-    <img src="{{ $src }}" alt="{{ $label }}" class="{{ $sizeClass }}">
+    <img src="{{ $src }}" alt="{{ $label }}" class="{{ $sizeClass }} panel-lightbox-trigger">
 @else
     <span class="{{ $sizeClass }} jb-actor-avatar--initials" aria-hidden="true">{{ $initials }}</span>
 @endif

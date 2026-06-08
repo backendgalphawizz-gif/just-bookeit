@@ -355,6 +355,12 @@
         gap: 0.5rem;
     }
 
+    .jb-tabs-row--nested {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
     .jb-modal-alert {
         position: fixed;
         inset: 0;
@@ -730,6 +736,10 @@
     @media (min-width: 640px) {
         .jb-booking-split {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .jb-booking-split--single {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 
@@ -1109,5 +1119,135 @@
             width: 100%;
             height: 10rem;
         }
+    }
+
+    .jb-export-dropdown {
+        position: relative;
+        display: inline-flex;
+    }
+
+    .jb-export-menu {
+        position: absolute;
+        top: calc(100% + 0.35rem);
+        right: 0;
+        z-index: 30;
+        min-width: 7.5rem;
+        background: #fff;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.65rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+    }
+
+    .jb-export-menu-item {
+        display: block;
+        padding: 0.55rem 0.85rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgb(51 65 85);
+        text-decoration: none;
+    }
+
+    .jb-export-menu-item:hover {
+        background: rgb(248 250 252);
+        color: rgb(15 23 42);
+    }
+
+    .jb-wallet-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .jb-wallet-card {
+        background: #fff;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.85rem;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .jb-wallet-card--digital {
+        border-top: 4px solid rgb(245 158 11);
+    }
+
+    .jb-wallet-card--actual {
+        border-top: 4px solid rgb(21 128 61);
+    }
+
+    .jb-wallet-card-label {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: rgb(100 116 139);
+    }
+
+    .jb-wallet-card-value {
+        margin: 0.35rem 0 0;
+        font-size: 1.65rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: rgb(15 23 42);
+    }
+
+    .jb-wallet-card-note {
+        margin: 0.45rem 0 0;
+        font-size: 0.78rem;
+        color: rgb(100 116 139);
+    }
+
+    @media (max-width: 900px) {
+        .jb-wallet-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .jb-card-header--stack {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .jb-analytics-filters {
+        width: 100%;
+    }
+
+    .jb-analytics-filters-grid {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .jb-analytics-filters-grid .jb-filters-field--date {
+        min-width: 10.5rem;
+        flex: 1 1 10.5rem;
+        max-width: 12rem;
+    }
+
+    .jb-analytics-filters-grid .jb-filters-actions {
+        width: auto;
+        margin-left: 0;
+    }
+
+    .jb-col-check {
+        width: 2.75rem;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .jb-bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .jb-bulk-actions-count {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: rgb(100 116 139);
     }
 </style>

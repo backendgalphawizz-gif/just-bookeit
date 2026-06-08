@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Refund;
 use App\Http\Requests\Admin\RefundStoreRequest;
 use App\Http\Requests\Admin\RefundUpdateRequest;
+use App\Services\Vendor\VendorWalletService;
 use App\Support\AppliesListDateFilter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,7 +54,9 @@ class RefundController extends AdminController
 
     public function store(RefundStoreRequest $request): RedirectResponse
     {
-        Refund::query()->create($request->validated());
+        $refund = Refund::query()->create($request->validated());
+
+        $this->syncRefundWallet($refund->fresh());
 
         return redirect()->route('admin.refunds.index')->with('success', 'Refund request created.');
     }
@@ -73,12 +76,10 @@ class RefundController extends AdminController
     public function update(RefundUpdateRequest $request, Refund $refund): RedirectResponse
     {
         $data = $request->validated();
+        $previousStatus = $refund->status;
 
         $refund->update($data);
-
-        if ($data['status'] === 'processed') {
-            $refund->order?->update(['status' => 'refunded', 'payment_status' => 'refunded']);
-        }
+        $this->handleRefundStatusChange($refund->fresh(), $previousStatus);
 
         return redirect()->route('admin.refunds.show', $refund)->with('success', 'Refund updated successfully.');
     }
@@ -94,7 +95,9 @@ class RefundController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $refund->status;
         $refund->update(['status' => 'approved']);
+        $this->handleRefundStatusChange($refund->fresh(), $previousStatus);
 
         return back()->with('success', 'Refund approved.');
     }
@@ -103,7 +106,9 @@ class RefundController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $refund->status;
         $refund->update(['status' => 'rejected']);
+        $this->handleRefundStatusChange($refund->fresh(), $previousStatus);
 
         return back()->with('success', 'Refund rejected.');
     }
@@ -112,9 +117,42 @@ class RefundController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $refund->status;
         $refund->update(['status' => 'processed']);
-        $refund->order?->update(['status' => 'refunded', 'payment_status' => 'refunded']);
+        $this->handleRefundStatusChange($refund->fresh(), $previousStatus);
 
         return back()->with('success', 'Refund marked as processed.');
+    }
+
+    protected function syncRefundWallet(Refund $refund): void
+    {
+        $walletService = app(VendorWalletService::class);
+
+        if (in_array($refund->status, Refund::OPEN_STATUSES, true)) {
+            $walletService->debitForRefund($refund);
+        }
+    }
+
+    protected function handleRefundStatusChange(Refund $refund, string $previousStatus): void
+    {
+        $walletService = app(VendorWalletService::class);
+
+        if ($previousStatus === 'rejected' && in_array($refund->status, Refund::OPEN_STATUSES, true)) {
+            $walletService->debitForRefund($refund);
+        }
+
+        if ($refund->status === 'rejected' && in_array($previousStatus, Refund::OPEN_STATUSES, true)) {
+            $walletService->restoreForRejectedRefund($refund);
+        }
+
+        if ($refund->status === 'processed') {
+            $refund->order?->update(['status' => 'refunded', 'payment_status' => 'refunded']);
+
+            $order = $refund->order?->fresh();
+
+            if ($order && $order->vendor_wallet_held_amount <= 0) {
+                $order->update(['wallet_hold_status' => 'refunded']);
+            }
+        }
     }
 }

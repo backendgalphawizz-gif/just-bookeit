@@ -4,6 +4,7 @@
 @section('page_subtitle', 'Broadcast push, email, or SMS to users and vendors')
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="notifications" :params="['from', 'to']" />
         @if (auth('admin')->user()->hasPermission('notifications', 'create'))
             <x-admin.button variant="primary" size="sm" :href="route('admin.notifications.create')">+ Send notification</x-admin.button>
         @endif

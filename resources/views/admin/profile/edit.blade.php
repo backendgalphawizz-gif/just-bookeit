@@ -40,7 +40,7 @@
                     <p class="jb-profile-section-title">Profile photo</p>
                     <div class="jb-profile-photo-panel">
                         <template x-if="preview">
-                            <img :src="preview" alt="" class="jb-profile-avatar jb-profile-avatar--lg shrink-0 ring-4 ring-white shadow-md">
+                            <img :src="preview" alt="" class="jb-profile-avatar jb-profile-avatar--lg shrink-0 ring-4 ring-white shadow-md panel-lightbox-trigger">
                         </template>
                         <template x-if="!preview">
                             <span class="jb-profile-avatar jb-profile-avatar--lg jb-profile-avatar--initials shrink-0 ring-4 ring-white shadow-md">{{ $admin->initials() }}</span>

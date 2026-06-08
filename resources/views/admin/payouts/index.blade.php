@@ -7,6 +7,9 @@
         <div class="jb-stat-card"><p class="jb-stat-label">Open payouts</p><p class="jb-stat-value text-amber-700">₹{{ number_format($totals['pending'], 0) }}</p></div>
         <div class="jb-stat-card"><p class="jb-stat-label">Paid (all time)</p><p class="jb-stat-value text-emerald-700">₹{{ number_format($totals['paid'], 0) }}</p></div>
     </div>
+    @push('filter_actions')
+        <x-admin.export-dropdown module="payouts" :params="['search', 'status', 'vendor_id', 'from', 'to']" />
+    @endpush
     <form method="GET" class="jb-filters">
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">

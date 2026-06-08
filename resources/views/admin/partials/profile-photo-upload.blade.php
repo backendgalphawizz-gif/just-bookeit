@@ -51,7 +51,7 @@
     }"
 >
     <template x-if="hasImage()">
-        <img :src="displayUrl()" alt="" class="jb-profile-avatar jb-profile-avatar--lg shrink-0 ring-4 ring-white shadow-md">
+        <img :src="displayUrl()" alt="" class="jb-profile-avatar jb-profile-avatar--lg shrink-0 ring-4 ring-white shadow-md panel-lightbox-trigger">
     </template>
     <template x-if="!hasImage()">
         <span class="jb-profile-avatar jb-profile-avatar--lg jb-profile-avatar--initials shrink-0 ring-4 ring-white shadow-md">{{ $initials }}</span>

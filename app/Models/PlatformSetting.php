@@ -20,6 +20,7 @@ class PlatformSetting extends Model
 
         return match ($setting->type) {
             'boolean' => filter_var($setting->value, FILTER_VALIDATE_BOOLEAN),
+            'json' => json_decode($setting->value, true) ?? $default,
             default => $setting->value,
         };
     }
@@ -55,5 +56,46 @@ class PlatformSetting extends Model
         }
 
         return '/storage/'.ltrim(str_replace('\\', '/', $path), '/');
+    }
+
+    /** @return list<array{product_type: string, max_percent: float}> */
+    public static function damageDeductionRules(): array
+    {
+        $rules = static::get('refund_damage_deduction_rules', []);
+
+        if (! is_array($rules)) {
+            return [];
+        }
+
+        return collect($rules)
+            ->map(fn (array $rule) => [
+                'product_type' => trim((string) ($rule['product_type'] ?? '')),
+                'max_percent' => (float) ($rule['max_percent'] ?? 0),
+            ])
+            ->filter(fn (array $rule) => $rule['product_type'] !== '')
+            ->values()
+            ->all();
+    }
+
+    public static function maxDamagePercentForProduct(?string $productType): ?float
+    {
+        $needle = strtolower(trim((string) $productType));
+        $rules = static::damageDeductionRules();
+
+        if ($needle !== '') {
+            foreach ($rules as $rule) {
+                if (strtolower($rule['product_type']) === $needle) {
+                    return $rule['max_percent'];
+                }
+            }
+        }
+
+        foreach ($rules as $rule) {
+            if (strtolower($rule['product_type']) === 'other') {
+                return $rule['max_percent'];
+            }
+        }
+
+        return $rules[0]['max_percent'] ?? null;
     }
 }

@@ -66,6 +66,7 @@ class CustomerApiPresenter
             'slug' => $category->slug,
             'type' => $category->type,
             'parent_id' => $category->parent_id,
+            'image_url' => $category->imageUrl(),
         ];
     }
 
@@ -170,6 +171,9 @@ class CustomerApiPresenter
             'id' => $address->id,
             'label' => $address->label,
             'name' => $address->name,
+            'country' => $address->country,
+            'house_no' => $address->house_no,
+            'road_area' => $address->road_area,
             'pincode' => $address->pincode,
             'city' => $address->city,
             'state' => $address->state,

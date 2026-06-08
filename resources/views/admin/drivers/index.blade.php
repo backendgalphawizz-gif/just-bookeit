@@ -6,6 +6,9 @@
 @php $canCreateDriver = auth('admin')->user()->isSuperAdmin() || auth('admin')->user()->hasPermission('drivers', 'create'); @endphp
 
 @section('content')
+    @push('filter_actions')
+        <x-admin.export-dropdown module="drivers" :params="['search', 'status', 'from', 'to']" />
+    @endpush
     <form method="GET" class="jb-filters">
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">

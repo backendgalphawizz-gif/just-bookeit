@@ -28,7 +28,7 @@
     <label class="jb-label">{{ $label }}</label>
 
     <div class="jb-logo-preview" x-show="hasImage()" x-cloak>
-        <img :src="displayUrl()" :alt="{{ json_encode($label) }}" class="jb-logo-preview-img">
+        <img :src="displayUrl()" :alt="{{ json_encode($label) }}" class="jb-logo-preview-img panel-lightbox-trigger">
         <p class="text-xs text-slate-500" x-text="preview ? 'New upload preview' : 'Current logo'"></p>
     </div>
 

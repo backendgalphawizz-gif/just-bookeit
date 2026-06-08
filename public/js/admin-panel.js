@@ -326,6 +326,9 @@
         if (form.closest('.jb-login-form-panel, .jb-login-card')) {
             return;
         }
+        if (form.querySelector('[data-jb-quill-field]')) {
+            return;
+        }
         form.querySelectorAll('[data-jb-max-chars]').forEach(bindCharCounter);
         form.querySelectorAll('[data-jb-restrict="gst"]').forEach(bindGstValidation);
         form.querySelectorAll('[data-jb-restrict="phone"]').forEach(bindPhoneValidation);

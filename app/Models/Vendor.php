@@ -36,11 +36,17 @@ class Vendor extends Authenticatable
         'bank_name',
         'account_type',
         'profile_image_path',
+        'bio',
+        'cover_image_path',
+        'password',
+        'is_listing_active',
         'categories',
         'service_types',
         'rating',
         'orders_completed',
         'earnings',
+        'digital_wallet_balance',
+        'wallet_balance',
         'status',
         'approved_at',
     ];
@@ -51,6 +57,8 @@ class Vendor extends Authenticatable
         'shop_logo_path',
         'pan_card_path',
         'profile_image_path',
+        'cover_image_path',
+        'password',
     ];
 
     protected function casts(): array
@@ -59,7 +67,11 @@ class Vendor extends Authenticatable
             'categories' => 'array',
             'rating' => 'decimal:2',
             'earnings' => 'decimal:2',
+            'digital_wallet_balance' => 'decimal:2',
+            'wallet_balance' => 'decimal:2',
             'approved_at' => 'datetime',
+            'is_listing_active' => 'boolean',
+            'password' => 'hashed',
         ];
     }
 
@@ -71,6 +83,31 @@ class Vendor extends Authenticatable
     public function portfolioItems(): HasMany
     {
         return $this->hasMany(PortfolioItem::class);
+    }
+
+    public function portfolioImages(): HasMany
+    {
+        return $this->hasMany(VendorPortfolioImage::class);
+    }
+
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(VendorPayout::class);
+    }
+
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(VendorWalletTransaction::class);
+    }
+
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    public function displayName(): string
+    {
+        return $this->brand_name ?: $this->shop_name ?: $this->owner_name ?: 'Vendor';
     }
 
     public function scopeActive($query)
@@ -106,6 +143,35 @@ class Vendor extends Authenticatable
     public function profileImageUrl(): ?string
     {
         return StoresUploadedFiles::url($this->profile_image_path);
+    }
+
+    public function coverImageUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->cover_image_path);
+    }
+
+    /** Avatar for header — profile photo, then shop logo. Cover image is not used here. */
+    public function avatarUrl(): ?string
+    {
+        return $this->profileImageUrl() ?? $this->shopLogoUrl();
+    }
+
+    public function avatarInitial(): string
+    {
+        $name = $this->owner_name ?: $this->displayName();
+
+        return strtoupper(substr($name, 0, 1) ?: 'V');
+    }
+
+    /** @return array<int, string> */
+    public function selectedServiceTypes(): array
+    {
+        $raw = $this->service_types;
+        if (is_array($raw)) {
+            return array_values(array_filter(array_map('trim', $raw)));
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', (string) $raw))));
     }
 
     public function serviceType(): ?string

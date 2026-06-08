@@ -1,6 +1,7 @@
 @php
     $order = $order ?? null;
     $drivers = $drivers ?? collect();
+    $isRentalOrder = old('order_type', $order?->order_type ?? 'rental') !== 'sale';
 @endphp
 
 <p class="jb-form-section-title sm:col-span-2">Order type & service</p>
@@ -41,11 +42,32 @@
 @include('admin.partials.form-input', ['label' => 'Color', 'name' => 'color', 'value' => old('color', $order?->color)])
 @include('admin.partials.form-input', ['label' => 'Quantity', 'name' => 'quantity', 'type' => 'number', 'min' => '1', 'value' => old('quantity', $order?->quantity ?? 1)])
 
-<p class="jb-form-section-title sm:col-span-2">Dates (rental / event)</p>
+<p class="jb-form-section-title sm:col-span-2" data-order-dates-title>{{ $isRentalOrder ? 'Dates (rental / event)' : 'Dates (event)' }}</p>
 @include('admin.partials.form-input', ['label' => 'Event date', 'name' => 'event_date', 'type' => 'date', 'value' => old('event_date', $order?->event_date?->format('Y-m-d'))])
-@include('admin.partials.form-input', ['label' => 'Rental start', 'name' => 'rental_start_date', 'type' => 'date', 'value' => old('rental_start_date', $order?->rental_start_date?->format('Y-m-d'))])
-@include('admin.partials.form-input', ['label' => 'Rental end', 'name' => 'rental_end_date', 'type' => 'date', 'value' => old('rental_end_date', $order?->rental_end_date?->format('Y-m-d'))])
-@include('admin.partials.form-input', ['label' => 'Return due date', 'name' => 'return_due_date', 'type' => 'date', 'value' => old('return_due_date', $order?->return_due_date?->format('Y-m-d'))])
+<div class="jb-rental-only-fields contents" @unless ($isRentalOrder) hidden @endunless>
+    @include('admin.partials.form-input', ['label' => 'Rental start', 'name' => 'rental_start_date', 'type' => 'date', 'value' => old('rental_start_date', $order?->rental_start_date?->format('Y-m-d'))])
+    @include('admin.partials.form-input', ['label' => 'Rental end', 'name' => 'rental_end_date', 'type' => 'date', 'value' => old('rental_end_date', $order?->rental_end_date?->format('Y-m-d'))])
+    @include('admin.partials.form-input', ['label' => 'Return due date', 'name' => 'return_due_date', 'type' => 'date', 'value' => old('return_due_date', $order?->return_due_date?->format('Y-m-d'))])
+</div>
+<script>
+    (function () {
+        const orderType = document.getElementById('order_type');
+        const rentalFields = document.querySelector('.jb-rental-only-fields');
+        const datesTitle = document.querySelector('[data-order-dates-title]');
+        if (!orderType || !rentalFields) return;
+
+        const syncRentalFields = () => {
+            const isRental = orderType.value !== 'sale';
+            rentalFields.hidden = !isRental;
+            if (datesTitle) {
+                datesTitle.textContent = isRental ? 'Dates (rental / event)' : 'Dates (event)';
+            }
+        };
+
+        orderType.addEventListener('change', syncRentalFields);
+        syncRentalFields();
+    })();
+</script>
 
 <p class="jb-form-section-title sm:col-span-2">Delivery & address</p>
 <div class="sm:col-span-2">
@@ -92,7 +114,7 @@
     @if ($order && count($order->referenceImageUrls()) > 0)
         <div class="mt-3 flex flex-wrap gap-2">
             @foreach ($order->referenceImageUrls() as $url)
-                <img src="{{ $url }}" alt="" class="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200">
+                <img src="{{ $url }}" alt="" class="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
             @endforeach
         </div>
     @endif

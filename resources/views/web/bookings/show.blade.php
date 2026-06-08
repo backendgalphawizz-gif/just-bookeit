@@ -55,15 +55,17 @@
                         <p class="jbw-booking-product-meta">Not assigned</p>
                     @endif
                 </div>
-                <div class="jbw-booking-card">
-                    <h3 class="jbw-booking-card-title">Rental period</h3>
-                    @if ($order->rental_start_date)
-                        <p style="font-weight:800;margin:0">{{ $order->rental_start_date->format('d M') }} – {{ $order->rental_end_date?->format('d M') }}</p>
-                        <p class="jbw-booking-product-meta">{{ $order->rentalDurationDays() }} days duration</p>
-                    @else
-                        <p class="jbw-booking-product-meta">—</p>
-                    @endif
-                </div>
+                @if ($order->isRental())
+                    <div class="jbw-booking-card">
+                        <h3 class="jbw-booking-card-title">Rental period</h3>
+                        @if ($order->rental_start_date)
+                            <p style="font-weight:800;margin:0">{{ $order->rental_start_date->format('d M') }} – {{ $order->rental_end_date?->format('d M') }}</p>
+                            <p class="jbw-booking-product-meta">{{ $order->rentalDurationDays() }} days duration</p>
+                        @else
+                            <p class="jbw-booking-product-meta">—</p>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             <div class="jbw-booking-card">

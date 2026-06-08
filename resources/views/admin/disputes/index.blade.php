@@ -4,6 +4,7 @@
 @section('page_subtitle', 'Customer and vendor issue tracking')
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="disputes" :params="['status', 'from', 'to']" />
         @if (auth('admin')->user()->hasPermission('disputes', 'create'))
             <x-admin.button variant="primary" size="sm" :href="route('admin.disputes.create')">+ New Dispute</x-admin.button>
         @endif

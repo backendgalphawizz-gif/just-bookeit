@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\ListExportController;
 use App\Http\Controllers\Admin\VendorController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,8 +38,13 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
         Route::put('profile', [AdminProfileController::class, 'update'])->name('profile.update');
 
         Route::middleware('admin.module')->group(function () {
+            Route::get('list-export/{module}', ListExportController::class)
+                ->where('module', 'customers|vendors|drivers|categories|orders|refunds|disputes|payments|payouts|portfolio|banners|faqs|notifications|admins|roles')
+                ->name('list-export');
+
             Route::resource('customers', CustomerController::class);
             Route::resource('vendors', VendorController::class);
+            Route::post('vendors/bulk-approve', [VendorController::class, 'bulkApprove'])->name('vendors.bulk-approve');
             Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('vendors.approve');
             Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('vendors.reject');
             Route::post('vendors/{vendor}/suspend', [VendorController::class, 'suspend'])->name('vendors.suspend');

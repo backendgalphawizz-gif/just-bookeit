@@ -4,6 +4,7 @@
 @section('page_subtitle', 'Homepage banners and promotions')
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="banners" :params="['search', 'active', 'from', 'to']" />
         @if (auth('admin')->user()->hasPermission('banners', 'create'))
             <x-admin.button variant="primary" size="sm" :href="route('admin.banners.create')">+ Add Banner</x-admin.button>
         @endif
@@ -35,7 +36,7 @@
                             @include('admin.partials.table-index-cell', ['paginator' => $banners])
                             <td>
                                 @if ($banner->image_url)
-                                    <img src="{{ $banner->image_url }}" alt="" class="h-12 w-20 rounded-lg border border-slate-200 object-cover">
+                                    <img src="{{ $banner->image_url }}" alt="" class="h-12 w-20 rounded-lg border border-slate-200 object-cover panel-lightbox-trigger">
                                 @else
                                     <span class="text-xs text-slate-400">—</span>
                                 @endif

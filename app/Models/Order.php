@@ -59,6 +59,12 @@ class Order extends Model
         'measure_chest_cm',
         'measure_waist_cm',
         'payment_status',
+        'paid_at',
+        'wallet_release_at',
+        'wallet_settled_at',
+        'vendor_net_amount',
+        'vendor_wallet_held_amount',
+        'wallet_hold_status',
         'status',
     ];
 
@@ -79,6 +85,11 @@ class Order extends Model
             'rental_start_date' => 'date',
             'rental_end_date' => 'date',
             'return_due_date' => 'date',
+            'paid_at' => 'datetime',
+            'wallet_release_at' => 'datetime',
+            'wallet_settled_at' => 'datetime',
+            'vendor_net_amount' => 'decimal:2',
+            'vendor_wallet_held_amount' => 'decimal:2',
         ];
     }
 

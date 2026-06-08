@@ -11,9 +11,12 @@
     <div class="jb-card">
         <div class="jb-card-header">
             <p class="jb-card-header-title">{{ $admins->total() }} admin users</p>
-            @if ($canCreateAdmin)
-                <x-admin.button variant="primary" size="sm" :href="route('admin.admins.create')">+ Add Admin</x-admin.button>
-            @endif
+            <div class="flex flex-wrap items-center gap-2">
+                <x-admin.export-dropdown module="admins" :params="[]" />
+                @if ($canCreateAdmin)
+                    <x-admin.button variant="primary" size="sm" :href="route('admin.admins.create')">+ Add Admin</x-admin.button>
+                @endif
+            </div>
         </div>
         <div class="jb-table-wrap">
             <table class="jb-table jb-table--balanced jb-table--wide">

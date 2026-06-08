@@ -3,6 +3,9 @@
 @section('page_title', 'Portfolio')
 @section('page_subtitle', 'Vendor portfolio submissions and moderation')
 @section('content')
+    @push('filter_actions')
+        <x-admin.export-dropdown module="portfolio" :params="['search', 'status', 'vendor_id', 'from', 'to']" />
+    @endpush
     <form method="GET" class="jb-filters">
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">

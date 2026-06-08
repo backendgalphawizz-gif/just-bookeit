@@ -36,28 +36,51 @@
     </div>
 
     @if (($report ?? 'overview') === 'orders')
-        <div class="jb-card mt-4">
-            <form method="GET" class="jb-card-body border-b border-slate-100 pb-4">
-                <input type="hidden" name="report" value="orders">
-                <div class="jb-filters-grid">
-                    @include('admin.partials.date-filter')
-                    <div class="jb-filters-field">
-                        <label class="jb-label">Status</label>
-                        <select name="status" class="jb-select">
-                            <option value="">All</option>
-                            @foreach (['new','pending_acceptance','accepted','in_progress','in_transit','delivered','cancelled','refunded'] as $s)
-                                <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst(str_replace('_', ' ', $s)) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @push('filter_actions')
-                        @if (auth('admin')->user()->hasPermission('reports', 'export'))
-                            <x-admin.button variant="secondary" size="sm" :href="route('admin.reports.export', ['type' => 'orders', 'from' => request('from'), 'to' => request('to'), 'status' => request('status')])">Export CSV</x-admin.button>
-                        @endif
-                    @endpush
-                    @include('admin.partials.filters-end', ['resetUrl' => route('admin.reports.index', ['report' => 'orders'])])
+        @push('filter_actions')
+            <x-admin.export-dropdown module="orders" permission="reports" :params="['search', 'status', 'payment_status', 'vendor_id', 'from', 'to']" />
+        @endpush
+        <form method="GET" class="jb-filters mt-4">
+            <input type="hidden" name="report" value="orders">
+            <div class="jb-filters-grid">
+                <div class="jb-filters-field">
+                    <label class="jb-label">Order #</label>
+                    <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Search order number">
                 </div>
-            </form>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Status</label>
+                    <select name="status" class="jb-select">
+                        <option value="">All</option>
+                        @foreach (['new','pending_acceptance','accepted','in_progress','in_transit','delivered','cancelled','refunded'] as $s)
+                            <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst(str_replace('_', ' ', $s)) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Payment</label>
+                    <select name="payment_status" class="jb-select">
+                        <option value="">All</option>
+                        @foreach (['pending','success','failed','refunded'] as $s)
+                            <option value="{{ $s }}" @selected(request('payment_status') === $s)>{{ ucfirst($s) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Vendor</label>
+                    <select name="vendor_id" class="jb-select">
+                        <option value="">All</option>
+                        @foreach ($filterVendors as $vendor)
+                            <option value="{{ $vendor->id }}" @selected(request('vendor_id') == $vendor->id)>{{ $vendor->brand_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @include('admin.partials.date-filter')
+                @include('admin.partials.filters-end', ['resetUrl' => route('admin.reports.index', ['report' => 'orders'])])
+            </div>
+        </form>
+        <div class="jb-card">
+            <div class="jb-card-header">
+                <p class="jb-card-header-title">{{ $orders->total() }} orders</p>
+            </div>
             <div class="jb-table-wrap">
                 <table class="jb-table">
                     <thead><tr>
@@ -72,7 +95,7 @@
                     <tbody>
                         @forelse ($orders as $order)
                             <tr>
-                                @include('admin.partials.table-index-cell')
+                                @include('admin.partials.table-index-cell', ['paginator' => $orders])
                                 <td class="jb-col-id font-semibold">{{ $order->order_number }}</td>
                                 <td class="jb-col-name">{{ $order->customer->name }}</td>
                                 <td class="jb-col-name">{{ $order->vendor?->brand_name ?? '—' }}</td>
@@ -86,9 +109,42 @@
                     </tbody>
                 </table>
             </div>
+            @if ($orders->hasPages())
+                <div class="jb-card-pad">{{ $orders->links() }}</div>
+            @endif
         </div>
     @elseif (($report ?? '') === 'vendors')
-        <div class="jb-card mt-4">
+        @push('filter_actions')
+            <x-admin.export-dropdown module="vendors" permission="reports" :params="['search', 'status', 'city', 'from', 'to']" />
+        @endpush
+        <form method="GET" class="jb-filters mt-4">
+            <input type="hidden" name="report" value="vendors">
+            <div class="jb-filters-grid">
+                <div class="jb-filters-field jb-filters-field--wide">
+                    <label class="jb-label">Search</label>
+                    <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Brand, owner, email, code...">
+                </div>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Status</label>
+                    <select name="status" class="jb-select">
+                        <option value="">All</option>
+                        @foreach (['pending', 'active', 'suspended', 'rejected'] as $s)
+                            <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="jb-filters-field">
+                    <label class="jb-label">City</label>
+                    <input type="text" name="city" value="{{ request('city') }}" class="jb-input" placeholder="City">
+                </div>
+                @include('admin.partials.date-filter')
+                @include('admin.partials.filters-end', ['resetUrl' => route('admin.reports.index', ['report' => 'vendors'])])
+            </div>
+        </form>
+        <div class="jb-card">
+            <div class="jb-card-header">
+                <p class="jb-card-header-title">{{ $vendors->total() }} vendors</p>
+            </div>
             <div class="jb-table-wrap">
                 <table class="jb-table">
                     <thead><tr>
@@ -103,7 +159,7 @@
                     <tbody>
                         @forelse ($vendors as $vendor)
                             <tr>
-                                @include('admin.partials.table-index-cell')
+                                @include('admin.partials.table-index-cell', ['paginator' => $vendors])
                                 <td class="jb-col-id">{{ $vendor->vendor_code }}</td>
                                 <td class="jb-col-name font-semibold">{{ $vendor->brand_name }}</td>
                                 <td>{{ $vendor->city }}</td>
@@ -117,26 +173,54 @@
                     </tbody>
                 </table>
             </div>
+            @if ($vendors->hasPages())
+                <div class="jb-card-pad">{{ $vendors->links() }}</div>
+            @endif
         </div>
     @elseif (($report ?? '') === 'refunds')
-        <div class="jb-card mt-4">
-            <form method="GET" class="jb-card-body border-b border-slate-100 pb-4">
-                <input type="hidden" name="report" value="refunds">
-                <div class="jb-filters-grid">
-                    @include('admin.partials.date-filter')
-                    @push('filter_actions')
-                        @if (auth('admin')->user()->hasPermission('reports', 'export'))
-                            <x-admin.button variant="secondary" size="sm" :href="route('admin.reports.export', ['type' => 'refunds', 'from' => request('from'), 'to' => request('to')])">Export CSV</x-admin.button>
-                        @endif
-                    @endpush
-                    @include('admin.partials.filters-end', ['resetUrl' => route('admin.reports.index', ['report' => 'refunds'])])
+        @push('filter_actions')
+            <x-admin.export-dropdown module="refunds" permission="reports" :params="['status', 'search', 'vendor_id', 'from', 'to']" />
+        @endpush
+        <form method="GET" class="jb-filters mt-4">
+            <input type="hidden" name="report" value="refunds">
+            <div class="jb-filters-grid">
+                <div class="jb-filters-field">
+                    <label class="jb-label">Status</label>
+                    <select name="status" class="jb-select">
+                        <option value="">All</option>
+                        <option value="_open_" @selected(request('status') === '_open_')>Open only</option>
+                        @foreach (['requested', 'under_review', 'approved', 'rejected', 'processed'] as $s)
+                            <option value="{{ $s }}" @selected(request('status') === $s)>{{ str_replace('_', ' ', ucfirst($s)) }}</option>
+                        @endforeach
+                    </select>
                 </div>
-            </form>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Customer</label>
+                    <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Search customer name">
+                </div>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Vendor</label>
+                    <select name="vendor_id" class="jb-select">
+                        <option value="">All</option>
+                        @foreach ($filterVendors as $vendor)
+                            <option value="{{ $vendor->id }}" @selected(request('vendor_id') == $vendor->id)>{{ $vendor->brand_name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @include('admin.partials.date-filter')
+                @include('admin.partials.filters-end', ['resetUrl' => route('admin.reports.index', ['report' => 'refunds'])])
+            </div>
+        </form>
+        <div class="jb-card">
+            <div class="jb-card-header">
+                <p class="jb-card-header-title">{{ $refunds->total() }} refunds</p>
+            </div>
             <div class="jb-table-wrap">
                 <table class="jb-table">
                     <thead><tr>
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-name">Customer</th>
+                        <th class="jb-col-name">Vendor</th>
                         <th class="jb-col-id">Order</th>
                         <th class="jb-col-amount">Amount</th>
                         <th class="jb-col-status">Status</th>
@@ -145,19 +229,23 @@
                     <tbody>
                         @forelse ($refunds as $refund)
                             <tr>
-                                @include('admin.partials.table-index-cell')
+                                @include('admin.partials.table-index-cell', ['paginator' => $refunds])
                                 <td class="jb-col-name">{{ $refund->customer->name }}</td>
+                                <td class="jb-col-name">{{ $refund->order?->vendor?->brand_name ?? '—' }}</td>
                                 <td class="jb-col-id">{{ $refund->order?->order_number ?? '—' }}</td>
                                 <td class="jb-col-amount">₹{{ number_format($refund->amount, 2) }}</td>
                                 <td class="jb-col-status">{{ $refund->status }}</td>
                                 <td class="jb-col-date">{{ $refund->created_at->format('M d, Y') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="jb-table-empty">No refunds.</td></tr>
+                            <tr><td colspan="7" class="jb-table-empty">No refunds.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+            @if ($refunds->hasPages())
+                <div class="jb-card-pad">{{ $refunds->links() }}</div>
+            @endif
         </div>
     @else
         <p class="mt-4 text-sm text-slate-600">Select Orders, Vendors, or Refunds above for detailed tables. Use Export CSV for downloads.</p>

@@ -33,7 +33,7 @@
         </div>
         @if ($portfolio->image_url)
             <div class="jb-card overflow-hidden">
-                <img src="{{ $portfolio->image_url }}" alt="{{ $portfolio->title }}" class="h-full w-full object-cover min-h-[16rem]">
+                <img src="{{ $portfolio->image_url }}" alt="{{ $portfolio->title }}" class="h-full w-full object-cover min-h-[16rem] panel-lightbox-trigger">
             </div>
         @endif
     </div>
