@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Services\Booking\BookingPricingService;
+use App\Services\Vendor\VendorWalletService;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,8 +68,11 @@ class PaymentController extends ApiController
 
         $booking->update([
             'payment_status' => 'success',
+            'paid_at' => now(),
             'status' => $booking->status === 'new' ? 'pending_acceptance' : $booking->status,
         ]);
+
+        app(VendorWalletService::class)->creditFromPayment($booking->fresh());
 
         $booking->load(['vendor', 'category']);
 

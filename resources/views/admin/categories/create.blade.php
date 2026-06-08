@@ -4,7 +4,7 @@
 @section('back_href', route('admin.categories.index'))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
-        <form method="POST" action="{{ route('admin.categories.store') }}">@csrf
+        <form method="POST" action="{{ route('admin.categories.store') }}" enctype="multipart/form-data">@csrf
             <div class="jb-form-grid">@include('admin.categories._form')</div>
             <div class="jb-form-actions"><x-admin.button variant="primary" type="submit">Save</x-admin.button><x-admin.button variant="secondary" :href="route('admin.categories.index')">Cancel</x-admin.button></div>
         </form>

@@ -242,9 +242,8 @@
 										"type": "text/javascript",
 										"exec": [
 											"const json = pm.response.json();",
-											"if (json.data?.items?.[0]?.id) {",
-											"    pm.environment.set('v1_category_id', String(json.data.items[0].id));",
-											"}"
+											"const id = json.data?.categories?.[0]?.id || json.data?.items?.[0]?.id;",
+											"if (id) { pm.environment.set('v1_category_id', String(id)); }"
 										]
 									}
 								}
@@ -649,7 +648,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"label\": \"Home\",\n  \"name\": \"Shreya Shah\",\n  \"address_line\": \"1234, ABC Colony, Near Lal Bagh, Indore\",\n  \"city\": \"Indore\",\n  \"state\": \"M.P\",\n  \"pincode\": \"452005\",\n  \"is_default\": true\n}"
+									"raw": "{\n  \"label\": \"Home\",\n  \"name\": \"Shreya Shah\",\n  \"country\": \"India\",\n  \"house_no\": \"1234\",\n  \"road_area\": \"ABC Colony, Near Lal Bagh\",\n  \"city\": \"Indore\",\n  \"state\": \"M.P\",\n  \"pincode\": \"452005\",\n  \"is_default\": true\n}"
 								},
 								"url": "{{base_url}}/v1/addresses"
 							}
@@ -665,7 +664,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"label\": \"Office\",\n  \"address_line\": \"456 Business Park, Indore\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452001\"\n}"
+									"raw": "{\n  \"label\": \"Office\",\n  \"country\": \"India\",\n  \"house_no\": \"456\",\n  \"road_area\": \"Business Park\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452001\"\n}"
 								},
 								"url": "{{base_url}}/v1/addresses/{{v1_address_id}}"
 							}

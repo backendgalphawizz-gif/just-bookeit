@@ -47,7 +47,7 @@
     <label class="jb-label">{{ $label }}@if ($required)<span class="text-rose-600"> *</span>@endif</label>
 
     <div class="jb-logo-preview jb-logo-preview--banner" x-show="hasImage()" x-cloak>
-        <img :src="displayUrl()" :alt="{{ json_encode($label) }}" class="jb-logo-preview-img jb-logo-preview-img--banner">
+        <img :src="displayUrl()" :alt="{{ json_encode($label) }}" class="jb-logo-preview-img jb-logo-preview-img--banner panel-lightbox-trigger">
         <p class="text-xs text-slate-500" x-text="preview ? 'New upload preview' : 'Current banner image'"></p>
     </div>
 

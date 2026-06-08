@@ -42,24 +42,24 @@
                     @if ($driver->aadharFrontUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar front</p>
-                            <img src="{{ $driver->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image">
+                            <img src="{{ $driver->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @elseif ($driver->aadharUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar</p>
-                            <img src="{{ $driver->aadharUrl() }}" alt="Aadhar" class="jb-doc-image">
+                            <img src="{{ $driver->aadharUrl() }}" alt="Aadhar" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                     @if ($driver->aadharBackUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar back</p>
-                            <img src="{{ $driver->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image">
+                            <img src="{{ $driver->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                     @if ($driver->drivingLicenceUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Driving licence</p>
-                            <img src="{{ $driver->drivingLicenceUrl() }}" alt="Driving licence" class="jb-doc-image">
+                            <img src="{{ $driver->drivingLicenceUrl() }}" alt="Driving licence" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                 </div>

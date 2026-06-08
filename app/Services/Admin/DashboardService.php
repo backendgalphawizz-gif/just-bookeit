@@ -19,14 +19,18 @@ use Illuminate\Support\Collection;
 
 class DashboardService
 {
-    public function getData(Admin $admin): array
+    public function getData(Admin $admin, ?Carbon $from = null, ?Carbon $to = null): array
     {
         $stats = $this->stats($admin);
+        [$rangeFrom, $rangeTo] = $this->resolveChartRange($from, $to);
 
         return [
             'stats' => $stats,
             'stat_cards' => $this->statCards($stats, $admin),
-            'charts' => $this->charts($admin),
+            'charts' => $this->charts($admin, $rangeFrom, $rangeTo),
+            'analytics_from' => $rangeFrom->toDateString(),
+            'analytics_to' => $rangeTo->toDateString(),
+            'analytics_range_label' => $this->chartRangeLabel($from, $to, $rangeFrom, $rangeTo),
             'chart_visibility' => [
                 'monthly_revenue' => $admin->hasPermission('payments', 'view') || $admin->hasPermission('orders', 'view'),
                 'orders_trend' => $admin->hasPermission('orders', 'view'),
@@ -43,9 +47,11 @@ class DashboardService
         return $this->stats($admin);
     }
 
-    public function getCharts(?Admin $admin = null): array
+    public function getCharts(?Admin $admin = null, ?Carbon $from = null, ?Carbon $to = null): array
     {
-        return $this->charts($admin);
+        [$rangeFrom, $rangeTo] = $this->resolveChartRange($from, $to);
+
+        return $this->charts($admin, $rangeFrom, $rangeTo);
     }
 
     /** @return array<string, int> */
@@ -119,12 +125,11 @@ class DashboardService
             ->all();
     }
 
-    protected function charts(?Admin $admin): array
+    protected function charts(?Admin $admin, Carbon $rangeFrom, Carbon $rangeTo): array
     {
-        $months = collect(range(5, 0))->map(fn (int $i) => now()->subMonths($i)->startOfMonth());
+        $months = $this->chartMonths($rangeFrom, $rangeTo);
         $labels = $months->map(fn (Carbon $m) => $m->format('M Y'))->values()->all();
         $monthKeys = $months->map(fn (Carbon $m) => $m->format('Y-m'))->values();
-        $since = $months->first();
 
         $orderQuery = $this->scopedOrders($admin);
         $vendorQuery = $this->scopedVendors($admin);
@@ -133,25 +138,26 @@ class DashboardService
             ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, SUM(amount) as total')
             ->where('payment_status', 'success')
             ->whereNotIn('status', ['cancelled', 'refunded'])
-            ->where('created_at', '>=', $since)
+            ->whereBetween('created_at', [$rangeFrom, $rangeTo])
             ->groupBy('month_key')
             ->pluck('total', 'month_key');
 
         $ordersByMonth = (clone $orderQuery)
             ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, COUNT(*) as total')
-            ->where('created_at', '>=', $since)
+            ->whereBetween('created_at', [$rangeFrom, $rangeTo])
             ->groupBy('month_key')
             ->pluck('total', 'month_key');
 
         $vendorsByMonth = (clone $vendorQuery)
             ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, COUNT(*) as total')
-            ->where('created_at', '>=', $since)
+            ->whereBetween('created_at', [$rangeFrom, $rangeTo])
             ->groupBy('month_key')
             ->pluck('total', 'month_key');
 
         $categoryBookings = (clone $orderQuery)
             ->join('categories', 'orders.category_id', '=', 'categories.id')
             ->selectRaw('categories.name as label, COUNT(orders.id) as total')
+            ->whereBetween('orders.created_at', [$rangeFrom, $rangeTo])
             ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('total')
             ->limit(8)
@@ -175,6 +181,52 @@ class DashboardService
                 'data' => $categoryBookings->pluck('total')->map(fn ($v) => (int) $v)->all(),
             ],
         ];
+    }
+
+    /** @return array{0: Carbon, 1: Carbon} */
+    protected function resolveChartRange(?Carbon $from, ?Carbon $to): array
+    {
+        if (! $from && ! $to) {
+            return [
+                now()->copy()->subMonths(5)->startOfMonth()->startOfDay(),
+                now()->copy()->endOfDay(),
+            ];
+        }
+
+        $rangeTo = ($to ?? now())->copy()->endOfDay();
+        $rangeFrom = $from
+            ? $from->copy()->startOfDay()
+            : $rangeTo->copy()->subMonths(5)->startOfMonth()->startOfDay();
+
+        if ($rangeFrom->gt($rangeTo)) {
+            return [$rangeTo->copy()->startOfDay(), $rangeFrom->copy()->endOfDay()];
+        }
+
+        return [$rangeFrom, $rangeTo];
+    }
+
+    /** @return Collection<int, Carbon> */
+    protected function chartMonths(Carbon $rangeFrom, Carbon $rangeTo): Collection
+    {
+        $months = collect();
+        $cursor = $rangeFrom->copy()->startOfMonth();
+        $endMonth = $rangeTo->copy()->startOfMonth();
+
+        while ($cursor->lte($endMonth)) {
+            $months->push($cursor->copy());
+            $cursor->addMonth();
+        }
+
+        return $months;
+    }
+
+    protected function chartRangeLabel(?Carbon $requestFrom, ?Carbon $requestTo, Carbon $rangeFrom, Carbon $rangeTo): string
+    {
+        if (! $requestFrom && ! $requestTo) {
+            return 'Last 6 months · '.$rangeFrom->format('M Y').' – '.$rangeTo->format('M Y');
+        }
+
+        return $rangeFrom->format('M d, Y').' – '.$rangeTo->format('M d, Y');
     }
 
     protected function recentActivities(?Admin $admin): Collection

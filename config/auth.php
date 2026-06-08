@@ -3,6 +3,7 @@
 use App\Models\Admin;
 use App\Models\Customer;
 use App\Models\User;
+use App\Models\Vendor;
 
 return [
 
@@ -52,6 +53,10 @@ return [
             'driver' => 'session',
             'provider' => 'customers',
         ],
+        'vendor' => [
+            'driver' => 'session',
+            'provider' => 'vendors',
+        ],
     ],
 
     /*
@@ -83,6 +88,10 @@ return [
         'customers' => [
             'driver' => 'eloquent',
             'model' => Customer::class,
+        ],
+        'vendors' => [
+            'driver' => 'eloquent',
+            'model' => Vendor::class,
         ],
     ],
 

@@ -68,7 +68,22 @@ Auto-saved variables: `v1_token`, `v1_otp`, `v1_portfolio_item_id`, `v1_designer
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/v1/home` | Banners, services, shop categories, featured designers. `location.address` is set when a Bearer token is sent. |
-| GET | `/v1/categories` | `?type=service`, `?roots=1`, `?parent_id=` |
+| GET | `/v1/categories` | `?type=service`, `?roots=1`, `?parent_id=` — each category includes `image_url` |
+
+**`GET /v1/categories?roots=1`** returns shop categories and services separately:
+
+```json
+{
+  "categories": [
+    { "id": 1, "name": "Women", "slug": "women", "type": "main", "parent_id": null, "image_url": "..." }
+  ],
+  "services": [
+    { "id": 4, "name": "Fashion Designer", "slug": "fashion-designer", "type": "service", "parent_id": null, "image_url": "..." }
+  ]
+}
+```
+
+Upload images in **Admin → Categories** when creating or editing a category.
 | GET | `/v1/search` | `?q=` — catalog items + designers |
 | GET | `/v1/catalog` | `?search=`, `?category_id=`, `?vendor_id=`, `?service=`, `?page=`, `?per_page=` |
 | GET | `/v1/catalog/{id}` | Product detail, reviews, related items |
@@ -134,6 +149,24 @@ Reference images: `reference_images[]` (max 5, jpeg/png/webp, 4MB each).
 | POST | `/v1/addresses` | Create address |
 | PUT | `/v1/addresses/{id}` | Update address |
 | DELETE | `/v1/addresses/{id}` | Delete address |
+
+**Create / update address body:**
+
+```json
+{
+  "label": "Home",
+  "name": "Shreya Shah",
+  "country": "India",
+  "house_no": "1234",
+  "road_area": "ABC Colony, Near Lal Bagh",
+  "city": "Indore",
+  "state": "M.P",
+  "pincode": "452005",
+  "is_default": true
+}
+```
+
+`country`, `house_no`, and `road_area` are required on create. `address_line` is optional (auto-built from house no. + road/area when omitted). Response includes `country`, `house_no`, `road_area`, `line`, and `full_address`.
 
 ### Measurements (Bearer required)
 

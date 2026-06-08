@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Category;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Support\AppliesListDateFilter;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -43,7 +44,12 @@ class CategoryController extends AdminController
     public function store(CategoryRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        unset($data['image']);
         $data['slug'] = Str::slug($data['name']);
+
+        if ($request->hasFile('image')) {
+            $data['image_path'] = StoresUploadedFiles::store($request->file('image'), 'categories');
+        }
 
         Category::query()->create($data);
 
@@ -60,7 +66,14 @@ class CategoryController extends AdminController
     public function update(CategoryRequest $request, Category $category): RedirectResponse
     {
         $data = $request->validated();
+        unset($data['image']);
         $data['slug'] = Str::slug($data['name']);
+
+        $data['image_path'] = StoresUploadedFiles::replace(
+            $request->file('image'),
+            $category->image_path,
+            'categories'
+        );
 
         $category->update($data);
 
@@ -73,9 +86,9 @@ class CategoryController extends AdminController
             return back()->with('error', 'Cannot delete category used in orders.');
         }
 
+        StoresUploadedFiles::delete($category->image_path);
         $category->delete();
 
         return redirect()->route('admin.categories.index')->with('success', 'Category deleted successfully.');
     }
-
 }

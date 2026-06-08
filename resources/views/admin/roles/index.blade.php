@@ -11,9 +11,12 @@
     <div class="jb-card">
         <div class="jb-card-header">
             <p class="jb-card-header-title">{{ $roles->count() }} roles</p>
-            @if ($canCreateRole)
-                <x-admin.button variant="primary" size="sm" :href="route('admin.roles.create')">+ Add Role</x-admin.button>
-            @endif
+            <div class="flex flex-wrap items-center gap-2">
+                <x-admin.export-dropdown module="roles" :params="[]" />
+                @if ($canCreateRole)
+                    <x-admin.button variant="primary" size="sm" :href="route('admin.roles.create')">+ Add Role</x-admin.button>
+                @endif
+            </div>
         </div>
         <div class="jb-table-wrap">
             <table class="jb-table jb-table--balanced">

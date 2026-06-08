@@ -118,6 +118,30 @@ class VendorController extends AdminController
         return back()->with('success', "Vendor {$vendor->brand_name} approved.");
     }
 
+    public function bulkApprove(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin('edit');
+
+        $data = $request->validate([
+            'vendor_ids' => ['required', 'array', 'min:1'],
+            'vendor_ids.*' => ['integer', 'exists:vendors,id'],
+        ]);
+
+        $approved = AdminCityScope::scopeVendors(Vendor::query())
+            ->whereIn('id', $data['vendor_ids'])
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'active',
+                'approved_at' => now(),
+            ]);
+
+        if ($approved === 0) {
+            return back()->with('error', 'No pending vendors were selected for approval.');
+        }
+
+        return back()->with('success', $approved.' vendor(s) approved successfully.');
+    }
+
     public function reject(Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin('edit');

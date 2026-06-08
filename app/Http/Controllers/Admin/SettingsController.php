@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\PlatformSetting;
 use App\Support\AdminValidationRules;
+use App\Support\RichText;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,17 +17,24 @@ class SettingsController extends AdminController
     public function index(Request $request): View
     {
         $tab = $request->string('tab', 'branding')->toString();
-        $allowed = ['branding', 'theme', 'contact', 'legal', 'features', 'commission'];
+        $allowed = ['branding', 'theme', 'contact', 'legal', 'features', 'commission', 'refund_rules'];
         if (! in_array($tab, $allowed, true)) {
             $tab = 'branding';
+        }
+
+        $legalAudience = $request->string('audience', 'customer')->toString();
+        if (! in_array($legalAudience, ['customer', 'vendor', 'driver', 'general'], true)) {
+            $legalAudience = 'customer';
         }
 
         $settings = PlatformSetting::query()->get()->groupBy('group');
 
         return view('admin.settings.index', [
             'tab' => $tab,
+            'legalAudience' => $legalAudience,
             'settings' => $settings,
             'values' => PlatformSetting::query()->pluck('value', 'key'),
+            'damageDeductionRules' => PlatformSetting::damageDeductionRules(),
         ]);
     }
 
@@ -36,6 +44,8 @@ class SettingsController extends AdminController
 
         $tab = $request->string('tab', 'branding')->toString();
 
+        $legalAudience = $request->string('legal_audience', 'customer')->toString();
+
         match ($tab) {
             'branding' => $this->updateBranding($request),
             'theme' => $this->updateTheme($request),
@@ -43,11 +53,19 @@ class SettingsController extends AdminController
             'legal' => $this->updateLegal($request),
             'features' => $this->updateFeatures($request),
             'commission' => $this->updateCommission($request),
+            'refund_rules' => $this->updateRefundRules($request),
             default => null,
         };
 
+        $redirectParams = ['tab' => $tab];
+        if ($tab === 'legal') {
+            $redirectParams['audience'] = in_array($legalAudience, ['customer', 'vendor', 'driver', 'general'], true)
+                ? $legalAudience
+                : 'customer';
+        }
+
         return redirect()
-            ->route('admin.settings.index', ['tab' => $tab])
+            ->route('admin.settings.index', $redirectParams)
             ->with('success', 'Settings saved successfully.');
     }
 
@@ -102,15 +120,22 @@ class SettingsController extends AdminController
 
     protected function updateLegal(Request $request): void
     {
+        $audience = $request->string('legal_audience', 'customer')->toString();
+        if (! in_array($audience, ['customer', 'vendor', 'driver', 'general'], true)) {
+            $audience = 'customer';
+        }
+
         $data = $request->validate(
-            AdminValidationRules::settingsLegal(),
+            AdminValidationRules::settingsLegalAudience($audience),
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
 
         foreach ($data as $key => $value) {
-            PlatformSetting::set($key, $value ?? '', 'legal', 'textarea');
+            PlatformSetting::set($key, RichText::sanitize($value), 'legal', 'html');
         }
+
+        PlatformSetting::set('legal_updated_at', now()->format('F j, Y'), 'legal');
     }
 
     protected function updateFeatures(Request $request): void
@@ -137,5 +162,42 @@ class SettingsController extends AdminController
         );
 
         PlatformSetting::set('global_commission_percent', $data['global_commission_percent'], 'commission');
+    }
+
+    protected function updateRefundRules(Request $request): void
+    {
+        $data = $request->validate(
+            AdminValidationRules::settingsRefundRules(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        PlatformSetting::set('refund_enable_rental', $request->boolean('refund_enable_rental'), 'refund_rules', 'boolean');
+        PlatformSetting::set('refund_enable_sale', $request->boolean('refund_enable_sale'), 'refund_rules', 'boolean');
+
+        PlatformSetting::set('refund_policy_user', RichText::sanitize($data['refund_policy_user'] ?? ''), 'refund_rules', 'html');
+        PlatformSetting::set('return_policy_user', RichText::sanitize($data['return_policy_user'] ?? ''), 'refund_rules', 'html');
+
+        $damageRules = collect($data['damage_deduction_rules'])
+            ->map(fn (array $rule) => [
+                'product_type' => trim($rule['product_type']),
+                'max_percent' => (float) $rule['max_percent'],
+            ])
+            ->unique(fn (array $rule) => strtolower($rule['product_type']))
+            ->values()
+            ->all();
+
+        PlatformSetting::set('refund_damage_deduction_rules', json_encode($damageRules), 'refund_rules', 'json');
+
+        foreach ([
+            'refund_rental_cancel_days',
+            'refund_rental_late_fee_per_day',
+            'refund_rental_deposit_days',
+            'refund_sale_window_days',
+            'refund_sale_return_days',
+            'refund_sale_restocking_percent',
+        ] as $key) {
+            PlatformSetting::set($key, $data[$key], 'refund_rules');
+        }
     }
 }

@@ -32,7 +32,7 @@
                 <div class="jb-booking-product-row">
                     <div class="jb-booking-product-media">
                         @if ($order->itemImageUrl())
-                            <img src="{{ $order->itemImageUrl() }}" alt="" class="jb-booking-product-img">
+                            <img src="{{ $order->itemImageUrl() }}" alt="" class="jb-booking-product-img panel-lightbox-trigger">
                         @else
                             <div class="jb-booking-product-placeholder">
                                 <svg class="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -62,7 +62,7 @@
             </div>
 
             {{-- Designer + Rental period --}}
-            <div class="jb-booking-split">
+            <div @class(['jb-booking-split', 'jb-booking-split--single' => ! $order->isRental()])>
                 <div class="jb-booking-card jb-booking-card--compact">
                     <h3 class="jb-booking-card-title">Designer</h3>
                     @if ($order->vendor)
@@ -82,18 +82,20 @@
                         <p class="text-sm text-slate-500">No designer assigned</p>
                     @endif
                 </div>
-                <div class="jb-booking-card jb-booking-card--compact">
-                    <h3 class="jb-booking-card-title">Rental period</h3>
-                    @if ($order->rental_start_date || $order->rental_end_date)
-                        <p class="jb-booking-rental-dates">
-                            {{ $order->rental_start_date?->format('d M') ?? '—' }}
-                            – {{ $order->rental_end_date?->format('d M') ?? '—' }}
-                        </p>
-                        <p class="jb-booking-rental-days">{{ $order->rentalDurationDays() ?? '—' }} days duration</p>
-                    @else
-                        <p class="text-sm text-slate-500">{{ $order->isRental() ? 'Dates not set' : 'Purchase order' }}</p>
-                    @endif
-                </div>
+                @if ($order->isRental())
+                    <div class="jb-booking-card jb-booking-card--compact">
+                        <h3 class="jb-booking-card-title">Rental period</h3>
+                        @if ($order->rental_start_date || $order->rental_end_date)
+                            <p class="jb-booking-rental-dates">
+                                {{ $order->rental_start_date?->format('d M') ?? '—' }}
+                                – {{ $order->rental_end_date?->format('d M') ?? '—' }}
+                            </p>
+                            <p class="jb-booking-rental-days">{{ $order->rentalDurationDays() ?? '—' }} days duration</p>
+                        @else
+                            <p class="text-sm text-slate-500">Dates not set</p>
+                        @endif
+                    </div>
+                @endif
             </div>
 
             {{-- Shipping --}}
@@ -144,9 +146,9 @@
                     <h3 class="jb-booking-card-title">Reference images</h3>
                     <div class="jb-booking-ref-grid">
                         @foreach ($order->referenceImageUrls() as $url)
-                            <a href="{{ $url }}" target="_blank" rel="noopener" class="jb-booking-ref-thumb">
-                                <img src="{{ $url }}" alt="Reference">
-                            </a>
+                            <div class="jb-booking-ref-thumb">
+                                <img src="{{ $url }}" alt="Reference image" class="panel-lightbox-trigger">
+                            </div>
                         @endforeach
                     </div>
                 </div>

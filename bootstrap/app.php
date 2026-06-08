@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
         then: function () {
             require __DIR__.'/../routes/admin.php';
+            require __DIR__.'/../routes/vendor.php';
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -22,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.module' => \App\Http\Middleware\AuthorizeAdminModule::class,
             'customer.auth' => \App\Http\Middleware\EnsureCustomerIsAuthenticated::class,
             'customer.guest' => \App\Http\Middleware\RedirectIfCustomerAuthenticated::class,
+            'vendor.auth' => \App\Http\Middleware\EnsureVendorIsAuthenticated::class,
+            'vendor.guest' => \App\Http\Middleware\RedirectIfVendorAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

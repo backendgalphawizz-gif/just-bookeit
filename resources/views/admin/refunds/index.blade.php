@@ -4,8 +4,9 @@
 @section('page_subtitle', 'Refund requests and processing')
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="refunds" :params="['status', 'from', 'to', 'search']" />
         @if (auth('admin')->user()->hasPermission('refunds', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.refunds.create')">+ New Refund</x-admin.button>
+            <x-admin.button class="jb-btn-primary d-none" variant="primary" size="sm" :href="route('admin.refunds.create')">+ New Refund</x-admin.button>
         @endif
     @endpush
     <form method="GET" class="jb-filters">

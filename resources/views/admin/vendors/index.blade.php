@@ -3,8 +3,14 @@
 @section('page_title', 'Vendors')
 @section('page_subtitle', 'Designer onboarding and vendor operations')
 
+@php
+    $canBulkApprove = auth('admin')->user()->hasPermission('vendors', 'edit');
+    $pendingOnPage = $vendors->where('status', 'pending')->pluck('id')->values();
+@endphp
+
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="vendors" :params="['search', 'status', 'city', 'from', 'to']" />
         @if (auth('admin')->user()->hasPermission('vendors', 'create'))
             <x-admin.button variant="primary" size="sm" :href="route('admin.vendors.create')">+ Add Vendor</x-admin.button>
         @endif
@@ -33,12 +39,61 @@
         </div>
     </form>
 
-    <div class="jb-card">
-        <div class="jb-card-header"><p class="jb-card-header-title">{{ $vendors->total() }} vendors</p></div>
+    <div
+        class="jb-card"
+        x-data="{
+            pendingOnPage: @json($pendingOnPage),
+            selected: [],
+            toggleAll(checked) {
+                this.selected = checked ? this.pendingOnPage.map(String) : [];
+            },
+            get allPendingSelected() {
+                return this.pendingOnPage.length > 0 && this.selected.length === this.pendingOnPage.length;
+            },
+            get someSelected() {
+                return this.selected.length > 0 && !this.allPendingSelected;
+            }
+        }"
+    >
+        @if ($canBulkApprove)
+            <form
+                method="POST"
+                action="{{ route('admin.vendors.bulk-approve') }}"
+                id="vendor-bulk-approve-form"
+                data-jb-confirm="The selected pending vendors will be approved and activated."
+                data-jb-confirm-title="Approve selected vendors?"
+                data-jb-confirm-label="Approve selected"
+                @submit="if (selected.length === 0) $event.preventDefault()"
+            >
+                @csrf
+            </form>
+        @endif
+        <div class="jb-card-header">
+            <p class="jb-card-header-title">{{ $vendors->total() }} vendors</p>
+            @if ($canBulkApprove)
+                <div class="jb-bulk-actions" x-show="selected.length > 0" x-cloak>
+                    <span class="jb-bulk-actions-count" x-text="`${selected.length} selected`"></span>
+                    <x-admin.button variant="success" size="sm" type="submit" form="vendor-bulk-approve-form">Approve selected</x-admin.button>
+                </div>
+            @endif
+        </div>
         <div class="jb-table-wrap">
             <table class="jb-table">
                 <thead>
                     <tr>
+                        @if ($canBulkApprove)
+                            <th class="jb-col-check">
+                                <input
+                                    type="checkbox"
+                                    class="jb-checkbox-accent"
+                                    aria-label="Select all pending vendors on this page"
+                                    :checked="allPendingSelected"
+                                    :disabled="pendingOnPage.length === 0"
+                                    x-bind:indeterminate="someSelected"
+                                    @change="toggleAll($event.target.checked)"
+                                >
+                            </th>
+                        @endif
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-id">Vendor ID</th>
                         <th class="jb-col-name">Brand</th>
@@ -53,6 +108,21 @@
                 <tbody>
                     @forelse ($vendors as $vendor)
                         <tr>
+                            @if ($canBulkApprove)
+                                <td class="jb-col-check">
+                                    @if ($vendor->status === 'pending')
+                                        <input
+                                            type="checkbox"
+                                            name="vendor_ids[]"
+                                            value="{{ $vendor->id }}"
+                                            form="vendor-bulk-approve-form"
+                                            class="jb-checkbox-accent"
+                                            aria-label="Select {{ $vendor->brand_name }}"
+                                            x-model="selected"
+                                        >
+                                    @endif
+                                </td>
+                            @endif
                             @include('admin.partials.table-index-cell', ['paginator' => $vendors])
                             <td class="jb-col-id"><span class="font-mono text-xs font-semibold text-slate-500">{{ $vendor->vendor_code }}</span></td>
                             <td class="jb-col-name">
@@ -72,22 +142,25 @@
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $vendor->status])</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
-                                    @if ($vendor->status === 'pending' && auth('admin')->user()->hasPermission('vendors', 'edit'))
+                                    @if ($vendor->status === 'pending' && $canBulkApprove)
                                         <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}" class="jb-action-form">@csrf
                                             <x-admin.action-btn variant="approve" type="submit" />
                                         </form>
                                     @endif
                                     <x-admin.action-btn variant="view" :href="route('admin.vendors.show', $vendor)" />
-
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="jb-table-empty">No vendors found.</td></tr>
+                        <tr>
+                            <td colspan="{{ $canBulkApprove ? 10 : 9 }}" class="jb-table-empty">No vendors found.</td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        @if ($vendors->hasPages()) {{ $vendors->links() }} @endif
+        @if ($vendors->hasPages())
+            <div class="jb-card-pad">{{ $vendors->links() }}</div>
+        @endif
     </div>
 @endsection

@@ -218,6 +218,7 @@ class AdminValidationRules
             'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'type' => ['required', 'in:main,service'],
             'parent_id' => ['nullable', 'exists:categories,id'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
 
@@ -312,7 +313,7 @@ class AdminValidationRules
 
     public static function settingsLegal(): array
     {
-        $legalText = ['nullable', 'string', 'max:50000', 'regex:'.self::REGEX_TEXT];
+        $legalText = ['nullable', 'string', 'max:50000'];
 
         return [
             'terms_conditions_user' => $legalText,
@@ -326,6 +327,30 @@ class AdminValidationRules
         ];
     }
 
+    public static function settingsLegalAudience(string $audience): array
+    {
+        $legalText = ['nullable', 'string', 'max:50000'];
+
+        return match ($audience) {
+            'vendor' => [
+                'terms_conditions_vendor' => $legalText,
+                'privacy_policy_vendor' => $legalText,
+            ],
+            'driver' => [
+                'terms_conditions_driver' => $legalText,
+                'privacy_policy_driver' => $legalText,
+            ],
+            'general' => [
+                'about_us' => $legalText,
+                'help_support' => $legalText,
+            ],
+            default => [
+                'terms_conditions_user' => $legalText,
+                'privacy_policy_user' => $legalText,
+            ],
+        };
+    }
+
     public static function settingsFeatures(): array
     {
         return [
@@ -337,6 +362,28 @@ class AdminValidationRules
     {
         return [
             'global_commission_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+        ];
+    }
+
+    public static function settingsRefundRules(): array
+    {
+        $policyText = ['nullable', 'string', 'max:50000'];
+        $days = ['required', 'integer', 'min:0', 'max:365'];
+        $percent = ['required', 'numeric', 'min:0', 'max:100'];
+        $amount = ['required', 'numeric', 'min:0', 'max:999999'];
+
+        return [
+            'refund_policy_user' => $policyText,
+            'return_policy_user' => $policyText,
+            'refund_rental_cancel_days' => $days,
+            'refund_rental_late_fee_per_day' => $amount,
+            'damage_deduction_rules' => ['required', 'array', 'min:1'],
+            'damage_deduction_rules.*.product_type' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'damage_deduction_rules.*.max_percent' => $percent,
+            'refund_rental_deposit_days' => $days,
+            'refund_sale_window_days' => $days,
+            'refund_sale_return_days' => $days,
+            'refund_sale_restocking_percent' => $percent,
         ];
     }
 
@@ -356,6 +403,19 @@ class AdminValidationRules
             'earnings.min' => 'Earnings cannot be negative.',
             'global_commission_percent.min' => 'Commission cannot be negative.',
             'global_commission_percent.max' => 'Commission cannot exceed 100%.',
+            'refund_rental_cancel_days.min' => 'Cancellation notice cannot be negative.',
+            'refund_rental_cancel_days.max' => 'Cancellation notice cannot exceed 365 days.',
+            'refund_rental_late_fee_per_day.min' => 'Late return fee cannot be negative.',
+            'damage_deduction_rules.required' => 'Add at least one product type for damage deduction.',
+            'damage_deduction_rules.min' => 'Add at least one product type for damage deduction.',
+            'damage_deduction_rules.*.product_type.required' => 'Product type is required.',
+            'damage_deduction_rules.*.max_percent.min' => 'Damage deduction cannot be negative.',
+            'damage_deduction_rules.*.max_percent.max' => 'Damage deduction cannot exceed 100%.',
+            'refund_rental_deposit_days.min' => 'Deposit refund days cannot be negative.',
+            'refund_sale_window_days.min' => 'Refund window cannot be negative.',
+            'refund_sale_return_days.min' => 'Return window cannot be negative.',
+            'refund_sale_restocking_percent.min' => 'Restocking fee cannot be negative.',
+            'refund_sale_restocking_percent.max' => 'Restocking fee cannot exceed 100%.',
             'name.regex' => 'Name may only contain letters, spaces, dots, and hyphens.',
             'owner_name.regex' => 'Owner name may only contain letters, spaces, dots, and hyphens.',
             'brand_name.regex' => 'Brand name contains invalid characters.',
@@ -408,6 +468,14 @@ class AdminValidationRules
             'order_id' => 'order',
             'raised_by' => 'raised by',
             'global_commission_percent' => 'commission',
+            'refund_rental_cancel_days' => 'rental cancellation days',
+            'refund_rental_late_fee_per_day' => 'late return fee',
+            'damage_deduction_rules.*.product_type' => 'product type',
+            'damage_deduction_rules.*.max_percent' => 'max damage deduction',
+            'refund_rental_deposit_days' => 'security deposit refund days',
+            'refund_sale_window_days' => 'sale refund window',
+            'refund_sale_return_days' => 'sale return window',
+            'refund_sale_restocking_percent' => 'restocking fee',
             'name' => 'full name',
             'mobile' => 'mobile no',
             'email' => 'email ID',
@@ -439,7 +507,12 @@ class AdminValidationRules
             'reason', 'message', 'contact_address',
             'terms_conditions_user', 'terms_conditions_vendor', 'terms_conditions_driver',
             'privacy_policy_user', 'privacy_policy_vendor', 'privacy_policy_driver',
-            'about_us', 'help_support' => 'text',
+            'about_us', 'help_support',
+            'refund_policy_user', 'return_policy_user' => 'text',
+            'refund_rental_cancel_days', 'refund_rental_deposit_days',
+            'refund_sale_window_days', 'refund_sale_return_days' => 'integer',
+            'refund_rental_late_fee_per_day', 'damage_deduction_rules.*.max_percent',
+            'refund_sale_restocking_percent' => 'decimal',
             'amount', 'earnings', 'global_commission_percent', 'rating' => 'decimal',
             'orders_completed' => 'integer',
             default => ($type === 'email' ? 'email' : ($type === 'url' ? 'url' : null)),

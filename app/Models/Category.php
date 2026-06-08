@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,7 @@ class Category extends Model
         'parent_id',
         'name',
         'slug',
+        'image_path',
         'type',
         'is_active',
         'sort_order',
@@ -39,4 +41,8 @@ class Category extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function imageUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->image_path);
+    }
 }

@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\OrderRequest;
 use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
+use App\Services\Vendor\VendorWalletService;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -122,8 +123,11 @@ class OrderController extends AdminController
             'status' => ['required', 'in:new,pending_acceptance,accepted,in_progress,in_transit,delivered,cancelled,refunded'],
         ]);
 
+        $previousPaymentStatus = $order->payment_status;
+
         $order->update(['status' => $data['status']]);
         $this->applyStatusSideEffects($order, $data['status']);
+        $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
         return back()->with('success', 'Order status updated to '.str_replace('_', ' ', $data['status']).'.');
     }
@@ -139,16 +143,33 @@ class OrderController extends AdminController
             'admin_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $previousPaymentStatus = $order->payment_status;
+
         $order->update($data);
         $this->applyStatusSideEffects($order, $data['status'], $data['payment_status']);
+        $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
         return back()->with('success', 'Order updated successfully.');
+    }
+
+    protected function syncWalletOnPaymentSuccess(Order $order, string $previousPaymentStatus): void
+    {
+        if ($previousPaymentStatus !== 'success' && $order->payment_status === 'success') {
+            if (! $order->paid_at) {
+                $order->update(['paid_at' => now()]);
+            }
+
+            app(VendorWalletService::class)->creditFromPayment($order->fresh());
+        }
     }
 
     protected function applyStatusSideEffects(Order $order, string $status, ?string $paymentStatus = null): void
     {
         if ($status === 'delivered' && ($paymentStatus === 'pending' || $order->payment_status === 'pending')) {
-            $order->update(['payment_status' => 'success']);
+            $order->update([
+                'payment_status' => 'success',
+                'paid_at' => $order->paid_at ?? now(),
+            ]);
         }
 
         if ($status === 'refunded') {

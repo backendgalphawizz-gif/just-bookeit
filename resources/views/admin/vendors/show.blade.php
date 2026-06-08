@@ -18,6 +18,24 @@
     @endif
 @endsection
 @section('content')
+    <div class="jb-wallet-grid">
+        <div class="jb-wallet-card jb-wallet-card--digital">
+            <p class="jb-wallet-card-label">Digital Wallet</p>
+            <p class="jb-wallet-card-value">₹{{ number_format($vendor->digital_wallet_balance, 0) }}</p>
+            <p class="jb-wallet-card-note">Payments on 15-day hold</p>
+        </div>
+        <div class="jb-wallet-card jb-wallet-card--actual">
+            <p class="jb-wallet-card-label">Actual Wallet</p>
+            <p class="jb-wallet-card-value">₹{{ number_format($vendor->wallet_balance, 0) }}</p>
+            <p class="jb-wallet-card-note">Available for withdrawal</p>
+        </div>
+        <div class="jb-wallet-card">
+            <p class="jb-wallet-card-label">Total Earnings</p>
+            <p class="jb-wallet-card-value">₹{{ number_format($vendor->earnings, 0) }}</p>
+            <p class="jb-wallet-card-note">Lifetime recorded earnings</p>
+        </div>
+    </div>
+
     <div class="jb-detail-grid">
         <div class="jb-detail-card">
             <h2>Profile</h2>
@@ -36,7 +54,9 @@
                 <div><dt>City</dt><dd>{{ $vendor->city ?? '—' }}</dd></div>
                 <div><dt>Service type</dt><dd>{{ $vendor->serviceType() ?? '—' }}</dd></div>
                 <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>
-                <div><dt>Earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
+                <div><dt>Digital wallet</dt><dd>₹{{ number_format($vendor->digital_wallet_balance, 2) }}</dd></div>
+                <div><dt>Actual wallet</dt><dd>₹{{ number_format($vendor->wallet_balance, 2) }}</dd></div>
+                <div><dt>Total earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
             </dl>
         </div>
         @if ($vendor->shopLogoUrl() || $vendor->panCardUrl())
@@ -46,13 +66,13 @@
                     @if ($vendor->shopLogoUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
-                            <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image">
+                            <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                     @if ($vendor->panCardUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">PAN card</p>
-                            <img src="{{ $vendor->panCardUrl() }}" alt="PAN card" class="jb-doc-image">
+                            <img src="{{ $vendor->panCardUrl() }}" alt="PAN card" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                 </div>
@@ -65,13 +85,13 @@
                     @if ($vendor->aadharFrontUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Front</p>
-                            <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image">
+                            <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                     @if ($vendor->aadharBackUrl())
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Back</p>
-                            <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image">
+                            <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image panel-lightbox-trigger">
                         </div>
                     @endif
                 </div>

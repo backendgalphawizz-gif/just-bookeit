@@ -11,6 +11,9 @@ class CustomerAddress extends Model
         'customer_id',
         'label',
         'name',
+        'country',
+        'house_no',
+        'road_area',
         'address_line',
         'city',
         'state',
@@ -32,11 +35,17 @@ class CustomerAddress extends Model
 
     public function fullAddress(): string
     {
+        $street = $this->address_line ?: trim(implode(', ', array_filter([
+            $this->house_no,
+            $this->road_area,
+        ])));
+
         return trim(implode(', ', array_filter([
-            $this->address_line,
+            $street,
             $this->city,
             $this->state,
             $this->pincode,
+            $this->country,
         ])));
     }
 }

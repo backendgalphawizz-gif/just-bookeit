@@ -6,4 +6,5 @@
 @if ($cssUrl)
     <link rel="stylesheet" href="{{ $cssUrl }}">
 @endif
+@include('partials.panel-lightbox-assets')
 <script src="{{ asset('js/admin-panel.js') }}" defer></script>

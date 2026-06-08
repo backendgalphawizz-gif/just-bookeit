@@ -22,7 +22,7 @@
                     <p style="font-weight:700;margin:0">{{ $order->itemDisplayName() }}</p>
                     <p style="font-size:0.8125rem;color:var(--jbw-muted);margin:0.25rem 0">
                         {{ $order->vendor?->brand_name ?? 'Designer' }}
-                        @if ($order->rental_start_date)
+                        @if ($order->isRental() && $order->rental_start_date)
                             · {{ $order->rental_start_date->format('d M') }} – {{ $order->rental_end_date?->format('d M, Y') }}
                         @endif
                     </p>

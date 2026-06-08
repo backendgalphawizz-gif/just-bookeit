@@ -6,6 +6,7 @@
 
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="customers" :params="['search', 'status', 'city', 'from', 'to', 'registered_on']" />
         @if (auth('admin')->user()->hasPermission('customers', 'create'))
             <x-admin.button variant="primary" size="sm" :href="route('admin.customers.create')">+ Add Customer</x-admin.button>
         @endif

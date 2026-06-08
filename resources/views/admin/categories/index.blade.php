@@ -4,6 +4,7 @@
 @section('page_subtitle', 'Main and service categories')
 @section('content')
     @push('filter_actions')
+        <x-admin.export-dropdown module="categories" :params="['search', 'type', 'from', 'to']" />
         @if (auth('admin')->user()->hasPermission('categories', 'create'))
             <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create')">+ Add Category</x-admin.button>
         @endif

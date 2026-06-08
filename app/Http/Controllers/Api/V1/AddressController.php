@@ -28,23 +28,14 @@ class AddressController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        $data = $request->validate([
-            'label' => ['required', 'string', 'max:50'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'address_line' => ['required', 'string', 'max:500'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'state' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
-            'is_default' => ['nullable', 'boolean'],
-        ]);
+        $data = $this->validateAddress($request);
 
         if ($customer->addresses()->count() === 0) {
             $data['is_default'] = true;
         }
 
         $address = $customer->addresses()->create([
-            ...$data,
-            'name' => $data['name'] ?? $customer->name,
+            ...$this->prepareAddressAttributes($data, $customer),
         ]);
 
         if ($request->boolean('is_default')) {
@@ -63,17 +54,9 @@ class AddressController extends ApiController
         $customer = $request->user();
         abort_unless($address->customer_id === $customer->id, 403);
 
-        $data = $request->validate([
-            'label' => ['sometimes', 'string', 'max:50'],
-            'name' => ['nullable', 'string', 'max:255'],
-            'address_line' => ['sometimes', 'string', 'max:500'],
-            'city' => ['nullable', 'string', 'max:100'],
-            'state' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
-            'is_default' => ['nullable', 'boolean'],
-        ]);
+        $data = $this->validateAddress($request, updating: true);
 
-        $address->update($data);
+        $address->update($this->prepareAddressAttributes($data, $customer, $address));
 
         if ($request->boolean('is_default')) {
             $this->markDefault($customer->id, $address->id);
@@ -100,6 +83,53 @@ class AddressController extends ApiController
         }
 
         return $this->success(null, 'Address deleted.');
+    }
+
+    /** @return array<string, mixed> */
+    protected function validateAddress(Request $request, bool $updating = false): array
+    {
+        $sometimes = $updating ? 'sometimes' : 'required';
+
+        return $request->validate([
+            'label' => [$updating ? 'sometimes' : 'required', 'string', 'max:50'],
+            'name' => ['nullable', 'string', 'max:255'],
+            'country' => [$sometimes, 'string', 'max:100'],
+            'house_no' => [$sometimes, 'string', 'max:50'],
+            'road_area' => [$sometimes, 'string', 'max:255'],
+            'address_line' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'pincode' => ['nullable', 'string', 'max:10'],
+            'is_default' => ['nullable', 'boolean'],
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function prepareAddressAttributes(array $data, Customer $customer, ?CustomerAddress $existing = null): array
+    {
+        $houseNo = $data['house_no'] ?? $existing?->house_no;
+        $roadArea = $data['road_area'] ?? $existing?->road_area;
+        $addressLine = $data['address_line'] ?? $existing?->address_line;
+
+        if (empty($addressLine) && ($houseNo || $roadArea)) {
+            $addressLine = trim(implode(', ', array_filter([$houseNo, $roadArea])));
+        }
+
+        return [
+            'label' => $data['label'] ?? $existing?->label,
+            'name' => $data['name'] ?? $existing?->name ?? $customer->name,
+            'country' => $data['country'] ?? $existing?->country,
+            'house_no' => $houseNo,
+            'road_area' => $roadArea,
+            'address_line' => $addressLine,
+            'city' => $data['city'] ?? $existing?->city,
+            'state' => $data['state'] ?? $existing?->state,
+            'pincode' => $data['pincode'] ?? $existing?->pincode,
+            'is_default' => $data['is_default'] ?? $existing?->is_default,
+        ];
     }
 
     protected function markDefault(int $customerId, int $addressId): void

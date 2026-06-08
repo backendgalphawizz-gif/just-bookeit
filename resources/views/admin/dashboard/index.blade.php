@@ -16,11 +16,22 @@
 
     <div class="mt-8 grid gap-6 xl:grid-cols-3">
         <section class="jb-card xl:col-span-2">
-            <div class="jb-card-header">
+            <div class="jb-card-header jb-card-header--stack">
                 <div>
                     <p class="jb-card-header-title">Analytics</p>
-                    <p class="text-sm text-slate-500">Last 6 months</p>
+                    <p class="text-sm text-slate-500">{{ $analytics_range_label }}</p>
                 </div>
+                <form method="GET" class="jb-analytics-filters">
+                    <div class="jb-analytics-filters-grid">
+                        @include('admin.partials.date-filter')
+                        <div class="jb-filters-actions">
+                            <div class="jb-filters-actions-btns">
+                                <button type="submit" class="jb-btn jb-btn-primary jb-btn-sm">Apply</button>
+                                <a href="{{ route('admin.dashboard') }}" class="jb-btn jb-btn-secondary jb-btn-sm">Reset</a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="jb-card-body">
                 <div class="grid gap-8 md:grid-cols-2">
