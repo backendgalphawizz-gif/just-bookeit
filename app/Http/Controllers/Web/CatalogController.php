@@ -43,7 +43,7 @@ class CatalogController extends WebController
 
     public function show(PortfolioItem $item): View
     {
-        $item->load(['vendor', 'category']);
+        $item->load(['vendor', 'category', 'images']);
 
         $related = PortfolioItem::query()
             ->where('vendor_id', $item->vendor_id)

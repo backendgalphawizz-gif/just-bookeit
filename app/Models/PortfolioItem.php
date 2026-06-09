@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PortfolioItem extends Model
 {
@@ -15,6 +16,7 @@ class PortfolioItem extends Model
         'title',
         'description',
         'image_url',
+        'audience',
         'status',
         'rejection_reason',
         'reviewed_at',
@@ -35,6 +37,29 @@ class PortfolioItem extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(PortfolioItemImage::class)->orderBy('sort_order');
+    }
+
+    /** @return list<string> */
+    public function galleryImageUrls(): array
+    {
+        $urls = [];
+
+        if ($primary = $this->displayImageUrl()) {
+            $urls[] = $primary;
+        }
+
+        foreach ($this->images as $image) {
+            if ($url = $image->imageUrl()) {
+                $urls[] = $url;
+            }
+        }
+
+        return array_values(array_unique($urls));
     }
 
     public function displayImageUrl(): ?string

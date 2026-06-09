@@ -275,7 +275,12 @@ class OtpService
         }
 
         if (in_array($actor->status ?? 'active', ['suspended', 'blocked'], true)) {
-            throw ValidationException::withMessages(['mobile' => ['This account is suspended.']]);
+            $message = 'This account is suspended.';
+            if ($actorType === self::ACTOR_VENDOR && filled($actor->suspension_reason ?? null)) {
+                $message = 'This vendor account is suspended: '.$actor->suspension_reason;
+            }
+
+            throw ValidationException::withMessages(['mobile' => [$message]]);
         }
     }
 

@@ -117,20 +117,31 @@ class PlatformDataSeeder extends Seeder
                 $orderCount++;
                 $customer = $customers->random();
                 $status = fake()->randomElement($orderStatuses);
+                $orderType = fake()->randomElement(['rental', 'rental', 'rental', 'sale']);
+                $createdAt = $monthStart->copy()->addDays(rand(0, 27));
+                $amount = rand(1500, 45000);
                 $paymentStatus = in_array($status, ['cancelled', 'refunded'])
                     ? ($status === 'refunded' ? 'refunded' : 'failed')
                     : (in_array($status, ['delivered']) ? 'success' : fake()->randomElement(['pending', 'success']));
 
-                Order::query()->create([
+                Order::query()->create(array_merge([
                     'order_number' => 'JB'.now()->format('ym').str_pad((string) $orderCount, 5, '0', STR_PAD_LEFT),
                     'customer_id' => $customer->id,
                     'vendor_id' => $activeVendors->isNotEmpty() ? $activeVendors->random()->id : null,
                     'category_id' => $serviceIds->random(),
-                    'amount' => rand(1500, 45000),
+                    'amount' => $amount,
                     'payment_status' => $paymentStatus,
                     'status' => $status,
-                    'created_at' => $monthStart->copy()->addDays(rand(0, 27)),
-                ]);
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
+                ], OrderDemoSeeder::extrasForNewOrder(
+                    $status,
+                    $orderType,
+                    $createdAt,
+                    (float) $amount,
+                    $customer->city,
+                    $orderCount,
+                )));
             }
         }
 
@@ -155,16 +166,38 @@ class PlatformDataSeeder extends Seeder
         }
 
         $ordersForDisputes = Order::query()->inRandomOrder()->limit(7)->get();
-        foreach ($ordersForDisputes as $order) {
-            Dispute::query()->updateOrCreate(
+        foreach ($ordersForDisputes as $index => $order) {
+            $status = fake()->randomElement(['raised', 'under_review', 'resolved', 'closed']);
+            $dispute = Dispute::query()->updateOrCreate(
                 ['order_id' => $order->id],
                 [
                     'raised_by' => fake()->randomElement(['customer', 'vendor']),
                     'subject' => fake()->randomElement(['Delivery delay', 'Measurement mismatch', 'Payment dispute', 'Service quality']),
-                    'status' => fake()->randomElement(['raised', 'under_review', 'resolved', 'closed']),
+                    'status' => $status,
+                    'resolution_note' => in_array($status, ['resolved', 'closed'], true)
+                        ? 'Issue addressed after discussion with the customer.'
+                        : null,
                     'created_at' => $order->created_at->copy()->addDays(rand(2, 15)),
                 ]
             );
+
+            if ($dispute->messages()->count() === 0) {
+                $dispute->messages()->create([
+                    'sender_type' => \App\Models\DisputeMessage::SENDER_CUSTOMER,
+                    'sender_id' => $order->customer_id,
+                    'body' => 'I need help with this order. '.$dispute->subject.'.',
+                    'created_at' => $dispute->created_at,
+                ]);
+
+                if (in_array($status, ['under_review', 'resolved', 'closed'], true)) {
+                    $dispute->messages()->create([
+                        'sender_type' => \App\Models\DisputeMessage::SENDER_ADMIN,
+                        'sender_id' => 1,
+                        'body' => 'Thanks for reaching out. Our team is reviewing your dispute and will assist you shortly.',
+                        'created_at' => $dispute->created_at->copy()->addHours(2),
+                    ]);
+                }
+            }
         }
 
         $payoutStatuses = array_merge(
@@ -219,14 +252,35 @@ class PlatformDataSeeder extends Seeder
         }
 
         Banner::query()->updateOrCreate(
-            ['title' => 'Festive Collection 2026'],
+            ['title' => 'Festive Collection 2026', 'audience' => 'customer'],
             [
                 'subtitle' => 'Book top designers near you',
-                'cta_label' => 'Explore',
                 'redirect_url' => '/',
                 'is_active' => true,
                 'starts_at' => now()->subDays(5),
                 'ends_at' => now()->addDays(30),
+            ]
+        );
+
+        Banner::query()->updateOrCreate(
+            ['title' => 'Grow your studio bookings', 'audience' => 'vendor'],
+            [
+                'subtitle' => 'Complete your portfolio to get more customer orders',
+                'redirect_url' => '/vendor/products',
+                'is_active' => true,
+                'starts_at' => now()->subDays(3),
+                'ends_at' => now()->addDays(60),
+            ]
+        );
+
+        Banner::query()->updateOrCreate(
+            ['title' => 'Peak season bonus deliveries', 'audience' => 'driver'],
+            [
+                'subtitle' => 'Earn more on weekend outfit drop-offs and returns',
+                'redirect_url' => null,
+                'is_active' => true,
+                'starts_at' => now()->subDays(1),
+                'ends_at' => now()->addDays(45),
             ]
         );
     }

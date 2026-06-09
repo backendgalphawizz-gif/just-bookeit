@@ -61,6 +61,10 @@
                 </div>
             </div>
 
+            @if ($order->isRental())
+                @include('admin.orders.partials.rent-tracking')
+            @endif
+
             {{-- Designer + Rental period --}}
             <div @class(['jb-booking-split', 'jb-booking-split--single' => ! $order->isRental()])>
                 <div class="jb-booking-card jb-booking-card--compact">
@@ -175,9 +179,9 @@
 
         {{-- RIGHT SIDEBAR --}}
         <div class="jb-booking-sidebar">
-            {{-- Track booking --}}
+            {{-- Track booking (delivery) --}}
             <div class="jb-booking-card">
-                <h3 class="jb-booking-card-title">Track booking</h3>
+                <h3 class="jb-booking-card-title">{{ $order->isRental() ? 'Delivery tracking' : 'Track booking' }}</h3>
                 <ol class="jb-booking-track">
                     @foreach ($order->trackBookingSteps() as $step)
                         <li class="jb-booking-track-step jb-booking-track-step--{{ $step['state'] }}">
@@ -231,6 +235,9 @@
                     @if ($order->security_deposit)
                         <div><dt>Security deposit</dt><dd>₹{{ number_format($order->security_deposit, 0) }}</dd></div>
                     @endif
+                    @if ($order->isRental() && $order->rentalDurationDays())
+                        <div><dt>Rental duration</dt><dd>{{ $order->rentalDurationDays() }} days</dd></div>
+                    @endif
                 </dl>
                 <div class="jb-booking-payment-total">
                     <span>Total amount</span>
@@ -263,7 +270,7 @@
                             <label class="jb-label" for="status">Order status</label>
                             <select id="status" name="status" class="jb-select">
                                 @foreach (\App\Models\Order::STATUSES as $s)
-                                    <option value="{{ $s }}" @selected($order->status === $s)>{{ str_replace('_', ' ', ucfirst($s)) }}</option>
+                                    <option value="{{ $s }}" @selected($order->status === $s)>{{ \App\Models\Order::statusLabelFor($s) }}</option>
                                 @endforeach
                             </select>
                         </div>

@@ -129,7 +129,7 @@ class OrderController extends AdminController
         $this->applyStatusSideEffects($order, $data['status']);
         $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
-        return back()->with('success', 'Order status updated to '.str_replace('_', ' ', $data['status']).'.');
+        return back()->with('success', 'Order status updated to '.Order::statusLabelFor($data['status']).'.');
     }
 
     public function manage(Request $request, Order $order): RedirectResponse

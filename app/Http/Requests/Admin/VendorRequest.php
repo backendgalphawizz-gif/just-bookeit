@@ -28,7 +28,8 @@ class VendorRequest extends AdminFormRequest
         $data = $this->safe()->except([
             'category_ids',
             'profile_image',
-            'shop_logo',
+            'shop_logos',
+            'remove_shop_logo_ids',
             'aadhar_front',
             'aadhar_back',
             'pan_card',

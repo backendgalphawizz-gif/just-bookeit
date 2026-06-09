@@ -28,6 +28,7 @@
             aria-modal="true"
             aria-labelledby="jb-alert-title-{{ $loop->index }}"
             aria-describedby="jb-alert-desc-{{ $loop->index }}"
+            @keydown.enter.window="if (show) { $event.preventDefault(); show = false; }"
         >
             <div
                 class="jb-modal-alert-backdrop"
@@ -74,7 +75,7 @@
                 <h2 id="jb-alert-title-{{ $loop->index }}" class="jb-modal-alert-title">{{ $alert['title'] }}</h2>
                 <p id="jb-alert-desc-{{ $loop->index }}" class="jb-modal-alert-message">{{ $alert['message'] }}</p>
 
-                <button type="button" class="jb-modal-alert-btn" @click="show = false">OK</button>
+                <button type="button" class="jb-modal-alert-btn" @click="show = false" x-init="$nextTick(() => $el.focus())">OK</button>
             </div>
         </div>
     @endforeach

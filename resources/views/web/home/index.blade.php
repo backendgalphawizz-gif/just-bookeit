@@ -26,10 +26,10 @@
     <div class="jbw-container jbw-hero-content-wrap">
         <div class="jbw-hero-content">
             <p class="jbw-hero-kicker">Just Book IT</p>
-            <h1 class="jbw-hero-title">Your style,<br>your moment.</h1>
-            <p class="jbw-hero-text">India's premier platform for fashion designer bookings, rental dresses &amp; jewellery. Look extraordinary - without the price tag.</p>
+            <h1 class="jbw-hero-title">{!! nl2br(e($hero?->title ?? "Your style,\nyour moment.")) !!}</h1>
+            <p class="jbw-hero-text">{{ $hero?->subtitle ?? "India's premier platform for fashion designer bookings, rental dresses & jewellery. Look extraordinary - without the price tag." }}</p>
             <div class="jbw-hero-actions">
-                <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Explore collection</a>
+                <a href="{{ $hero?->redirect_url ?: route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Explore collection</a>
                 @guest('customer')
                     <a href="{{ route('web.login') }}" class="jbw-btn jbw-btn--outline" style="color:#fff;border-color:rgb(255 255 255/0.4);background:rgb(255 255 255/0.1);backdrop-filter:blur(4px)">Sign in</a>
                 @endguest

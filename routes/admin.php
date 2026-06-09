@@ -48,6 +48,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('vendors.approve');
             Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('vendors.reject');
             Route::post('vendors/{vendor}/suspend', [VendorController::class, 'suspend'])->name('vendors.suspend');
+            Route::post('vendors/{vendor}/activate', [VendorController::class, 'activate'])->name('vendors.activate');
 
             Route::resource('drivers', DriverController::class);
             Route::post('drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
@@ -58,6 +59,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::resource('orders', OrderController::class);
             Route::resource('refunds', RefundController::class);
             Route::resource('disputes', DisputeController::class);
+            Route::get('banners/{banner}/preview', [BannerController::class, 'preview'])->name('banners.preview');
             Route::resource('banners', BannerController::class)->except(['show']);
             Route::resource('faqs', FaqController::class)->except(['show']);
 
@@ -69,6 +71,9 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::post('payouts/{payout}/mark-paid', [PayoutController::class, 'markPaid'])->name('payouts.mark-paid');
 
             Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
+            Route::get('portfolio/{portfolio}/edit', [PortfolioController::class, 'edit'])->name('portfolio.edit');
+            Route::put('portfolio/{portfolio}', [PortfolioController::class, 'update'])->name('portfolio.update');
+            Route::delete('portfolio/{portfolio}/images/{image}', [PortfolioController::class, 'destroyImage'])->name('portfolio.images.destroy');
             Route::get('portfolio/{portfolio}', [PortfolioController::class, 'show'])->name('portfolio.show');
             Route::post('portfolio/{portfolio}/approve', [PortfolioController::class, 'approve'])->name('portfolio.approve');
             Route::post('portfolio/{portfolio}/reject', [PortfolioController::class, 'reject'])->name('portfolio.reject');
@@ -95,6 +100,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::post('refunds/{refund}/approve', [RefundController::class, 'approve'])->name('refunds.approve');
             Route::post('refunds/{refund}/reject', [RefundController::class, 'reject'])->name('refunds.reject');
             Route::post('refunds/{refund}/process', [RefundController::class, 'process'])->name('refunds.process');
+            Route::post('disputes/{dispute}/messages', [DisputeController::class, 'sendMessage'])->name('disputes.messages');
             Route::post('disputes/{dispute}/resolve', [DisputeController::class, 'resolve'])->name('disputes.resolve');
             Route::post('disputes/{dispute}/close', [DisputeController::class, 'close'])->name('disputes.close');
         });

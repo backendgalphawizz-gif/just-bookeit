@@ -52,7 +52,6 @@ class CustomerApiPresenter
             'id' => $banner->id,
             'title' => $banner->title,
             'subtitle' => $banner->subtitle,
-            'cta_label' => $banner->cta_label,
             'redirect_url' => $banner->redirect_url,
             'image_url' => self::fullUrl($banner->image_path) ?? $banner->image_url,
         ];

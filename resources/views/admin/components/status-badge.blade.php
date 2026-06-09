@@ -27,6 +27,6 @@
         'paid' => 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-600/10',
     ];
     $class = $styles[$status] ?? 'bg-slate-100 text-slate-700 ring-1 ring-slate-600/10';
-    $label = $label ?? str_replace('_', ' ', ucfirst($status));
+    $label = $label ?? \App\Models\Order::statusLabelFor($status);
 @endphp
 <span class="jb-badge {{ $class }}">{{ $label }}</span>

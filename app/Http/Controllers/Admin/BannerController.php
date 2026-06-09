@@ -19,20 +19,23 @@ class BannerController extends AdminController
     public function index(Request $request): View
     {
         $this->validateListDateRange($request);
+        $audience = $this->resolveAudience($request->string('audience', Banner::AUDIENCE_CUSTOMER)->toString());
 
-        $banners = $this->applyDateRange(Banner::query(), $request)
+        $banners = $this->applyDateRange(Banner::query()->forAudience($audience), $request)
             ->when($request->filled('search'), fn ($q) => $q->where('title', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
             ->orderByDesc('created_at')
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.banners.index', compact('banners'));
+        return view('admin.banners.index', compact('banners', 'audience'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('admin.banners.create');
+        $audience = $this->resolveAudience($request->string('audience', Banner::AUDIENCE_CUSTOMER)->toString());
+
+        return view('admin.banners.create', compact('audience'));
     }
 
     public function store(BannerRequest $request): RedirectResponse
@@ -46,12 +49,19 @@ class BannerController extends AdminController
 
         Banner::query()->create($data);
 
-        return redirect()->route('admin.banners.index')->with('success', 'Banner created successfully.');
+        return redirect()
+            ->route('admin.banners.index', ['audience' => $data['audience']])
+            ->with('success', 'Banner created successfully.');
     }
 
     public function edit(Banner $banner): View
     {
         return view('admin.banners.edit', compact('banner'));
+    }
+
+    public function preview(Banner $banner): View
+    {
+        return view('admin.banners.preview', compact('banner'));
     }
 
     public function update(BannerRequest $request, Banner $banner): RedirectResponse
@@ -66,15 +76,20 @@ class BannerController extends AdminController
 
         $banner->update($data);
 
-        return redirect()->route('admin.banners.index')->with('success', 'Banner updated successfully.');
+        return redirect()
+            ->route('admin.banners.index', ['audience' => $banner->audience])
+            ->with('success', 'Banner updated successfully.');
     }
 
     public function destroy(Banner $banner): RedirectResponse
     {
+        $audience = $banner->audience;
         $this->deleteImage($banner);
         $banner->delete();
 
-        return redirect()->route('admin.banners.index')->with('success', 'Banner deleted successfully.');
+        return redirect()
+            ->route('admin.banners.index', ['audience' => $audience])
+            ->with('success', 'Banner deleted successfully.');
     }
 
     protected function deleteImage(Banner $banner): void
@@ -82,5 +97,10 @@ class BannerController extends AdminController
         if ($banner->image_path && Storage::disk('public')->exists($banner->image_path)) {
             Storage::disk('public')->delete($banner->image_path);
         }
+    }
+
+    protected function resolveAudience(string $audience): string
+    {
+        return in_array($audience, Banner::AUDIENCES, true) ? $audience : Banner::AUDIENCE_CUSTOMER;
     }
 }

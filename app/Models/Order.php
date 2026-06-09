@@ -22,6 +22,18 @@ class Order extends Model
         'refunded',
     ];
 
+    /** @var array<string, string> */
+    public const STATUS_LABELS = [
+        'new' => 'New',
+        'pending_acceptance' => 'Pending acceptance',
+        'accepted' => 'Accepted',
+        'in_progress' => 'In progress',
+        'in_transit' => 'In Progress',
+        'delivered' => 'Delivered',
+        'cancelled' => 'Cancelled',
+        'refunded' => 'Refunded',
+    ];
+
     public const PAYMENT_STATUSES = ['pending', 'success', 'failed', 'refunded'];
 
     protected $fillable = [
@@ -133,9 +145,18 @@ class Order extends Model
         return $this->order_type === 'sale' ? 'Purchase' : 'Rental';
     }
 
+    public static function statusLabelFor(?string $status): string
+    {
+        if (! $status) {
+            return '—';
+        }
+
+        return self::STATUS_LABELS[$status] ?? str_replace('_', ' ', ucfirst($status));
+    }
+
     public function statusLabel(): string
     {
-        return str_replace('_', ' ', ucfirst($this->status));
+        return self::statusLabelFor($this->status);
     }
 
     public function itemDisplayName(): string
@@ -186,7 +207,224 @@ class Order extends Model
             return null;
         }
 
-        return $this->rental_start_date->diffInDays($this->rental_end_date) + 1;
+        return (int) ($this->rental_start_date->diffInDays($this->rental_end_date) + 1);
+    }
+
+    public function rentalDaysElapsed(): ?int
+    {
+        if (! $this->rental_start_date) {
+            return null;
+        }
+
+        $start = $this->rental_start_date->copy()->startOfDay();
+        $today = now()->startOfDay();
+
+        if ($today->lt($start)) {
+            return 0;
+        }
+
+        $end = $this->rental_end_date?->copy()->startOfDay() ?? $today;
+        $cap = $today->gt($end) ? $end : $today;
+
+        return (int) ($start->diffInDays($cap) + 1);
+    }
+
+    public function rentalDaysRemaining(): ?int
+    {
+        if (! $this->rental_end_date) {
+            return null;
+        }
+
+        $end = $this->rental_end_date->copy()->startOfDay();
+        $today = now()->startOfDay();
+
+        if ($today->gt($end)) {
+            return 0;
+        }
+
+        if ($this->rental_start_date && $today->lt($this->rental_start_date->copy()->startOfDay())) {
+            return $this->rentalDurationDays();
+        }
+
+        return (int) $today->diffInDays($end);
+    }
+
+    public function rentalProgressPercent(): ?int
+    {
+        $duration = $this->rentalDurationDays();
+        $elapsed = $this->rentalDaysElapsed();
+
+        if (! $duration || $elapsed === null || $duration <= 0) {
+            return null;
+        }
+
+        return (int) min(100, round(($elapsed / $duration) * 100));
+    }
+
+    public function rentalTrackingPhase(): string
+    {
+        if (! $this->isRental()) {
+            return 'not_rental';
+        }
+
+        if (in_array($this->status, ['cancelled', 'refunded'], true)) {
+            return 'cancelled';
+        }
+
+        if (! $this->rental_start_date || ! $this->rental_end_date) {
+            return 'unscheduled';
+        }
+
+        $today = now()->startOfDay();
+        $start = $this->rental_start_date->copy()->startOfDay();
+        $end = $this->rental_end_date->copy()->startOfDay();
+        $returnDue = ($this->return_due_date ?? $this->rental_end_date)->copy()->startOfDay();
+
+        if ($today->lt($start)) {
+            return 'upcoming';
+        }
+
+        if ($today->lte($end)) {
+            return 'active';
+        }
+
+        if ($today->lte($returnDue)) {
+            return 'awaiting_return';
+        }
+
+        return 'overdue';
+    }
+
+    public function rentalPhaseLabel(): string
+    {
+        return match ($this->rentalTrackingPhase()) {
+            'upcoming' => $this->rental_start_date
+                ? 'Starts '.$this->rental_start_date->diffForHumans(now()->startOfDay(), true).' from now'
+                : 'Rental upcoming',
+            'active' => 'Rental in progress',
+            'awaiting_return' => 'Awaiting return',
+            'overdue' => 'Return overdue',
+            'unscheduled' => 'Rental dates not set',
+            'cancelled' => 'Rental cancelled',
+            default => 'Rental',
+        };
+    }
+
+    /** @return array<string, mixed>|null */
+    public function rentalTrackingSummary(): ?array
+    {
+        if (! $this->isRental()) {
+            return null;
+        }
+
+        return [
+            'duration_days' => $this->rentalDurationDays(),
+            'days_elapsed' => $this->rentalDaysElapsed(),
+            'days_remaining' => $this->rentalDaysRemaining(),
+            'progress_percent' => $this->rentalProgressPercent(),
+            'phase' => $this->rentalTrackingPhase(),
+            'phase_label' => $this->rentalPhaseLabel(),
+            'start_date' => $this->rental_start_date?->format('M d, Y'),
+            'end_date' => $this->rental_end_date?->format('M d, Y'),
+            'return_due_date' => ($this->return_due_date ?? $this->rental_end_date)?->format('M d, Y'),
+            'event_date' => $this->event_date?->format('M d, Y'),
+        ];
+    }
+
+    /** @return array<int, array{label: string, time: ?string, state: string, detail: ?string}> */
+    public function trackRentalSteps(): array
+    {
+        if (! $this->isRental()) {
+            return [];
+        }
+
+        $cancelled = in_array($this->status, ['cancelled', 'refunded'], true);
+        $today = now()->startOfDay();
+        $start = $this->rental_start_date?->copy()->startOfDay();
+        $end = $this->rental_end_date?->copy()->startOfDay();
+        $returnDue = ($this->return_due_date ?? $this->rental_end_date)?->copy()->startOfDay();
+        $duration = $this->rentalDurationDays();
+
+        $steps = [
+            $this->rentalTrackStep(
+                'Booking placed',
+                $this->created_at->format('M d, Y · H:i'),
+                $cancelled ? 'cancelled' : 'done'
+            ),
+        ];
+
+        $deliveryState = match (true) {
+            $cancelled => 'cancelled',
+            $this->status === 'delivered' => 'done',
+            $this->status === 'in_transit' => 'current',
+            in_array($this->status, ['accepted', 'in_progress'], true) => 'upcoming',
+            default => 'upcoming',
+        };
+        $deliveryTime = match ($deliveryState) {
+            'done' => 'Delivered to customer',
+            'current' => 'Out for delivery',
+            default => null,
+        };
+        $steps[] = $this->rentalTrackStep('Outfit delivered', $deliveryTime, $deliveryState);
+
+        if (! $start || ! $end) {
+            $steps[] = $this->rentalTrackStep('Rental schedule', 'Dates not set', $cancelled ? 'cancelled' : 'upcoming', null);
+
+            return $steps;
+        }
+
+        $startState = $cancelled ? 'cancelled' : ($today->lt($start) ? 'upcoming' : 'done');
+        $steps[] = $this->rentalTrackStep('Rental starts', $start->format('M d, Y'), $startState);
+
+        $periodState = 'upcoming';
+        $periodTime = null;
+        $periodDetail = $duration ? $duration.' day rental duration' : null;
+
+        if ($cancelled) {
+            $periodState = 'cancelled';
+        } elseif ($today->gte($start) && $today->lte($end)) {
+            $periodState = 'current';
+            $elapsed = $this->rentalDaysElapsed();
+            $periodTime = 'Day '.$elapsed.' of '.$duration;
+        } elseif ($today->gt($end)) {
+            $periodState = 'done';
+            $periodTime = $duration.' days completed';
+        }
+
+        $steps[] = $this->rentalTrackStep('Rental period', $periodTime, $periodState, $periodDetail);
+
+        $returnState = 'upcoming';
+        $returnTime = $returnDue?->format('M d, Y');
+
+        if ($returnDue) {
+            if ($cancelled) {
+                $returnState = 'cancelled';
+            } elseif ($today->gt($returnDue)) {
+                $returnState = 'current';
+                $overdueDays = (int) $returnDue->diffInDays($today);
+                $returnTime = 'Overdue by '.$overdueDays.' day'.($overdueDays === 1 ? '' : 's');
+            } elseif ($today->equalTo($returnDue)) {
+                $returnState = 'current';
+                $returnTime = 'Due today';
+            } elseif ($today->gt($end)) {
+                $returnState = 'current';
+            }
+        }
+
+        $steps[] = $this->rentalTrackStep('Return due', $returnTime, $returnState);
+
+        return $steps;
+    }
+
+    /** @return array{label: string, time: ?string, state: string, detail: ?string} */
+    protected function rentalTrackStep(string $label, ?string $time, string $state, ?string $detail = null): array
+    {
+        return [
+            'label' => $label,
+            'time' => $time,
+            'state' => $state,
+            'detail' => $detail,
+        ];
     }
 
     /** @return array<int, array{label: string, time: ?string, state: string}> */
@@ -195,7 +433,7 @@ class Order extends Model
         $steps = [
             ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'in_transit', 'delivered'], 'label' => 'Booking placed', 'min' => 'new'],
             ['keys' => ['pending_acceptance', 'accepted', 'in_progress', 'in_transit', 'delivered'], 'label' => 'Accepted by designer', 'min' => 'pending_acceptance'],
-            ['keys' => ['in_transit', 'delivered'], 'label' => 'In transit', 'min' => 'in_transit'],
+            ['keys' => ['in_transit', 'delivered'], 'label' => 'In Progress', 'min' => 'in_transit'],
             ['keys' => ['delivered'], 'label' => 'Delivered', 'min' => 'delivered'],
         ];
 

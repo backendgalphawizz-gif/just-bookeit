@@ -139,7 +139,12 @@
                             <td class="text-center">{{ number_format($vendor->rating, 1) }}</td>
                             <td class="text-center">{{ $vendor->orders_completed }}</td>
                             <td class="jb-col-amount">₹{{ number_format($vendor->earnings, 0) }}</td>
-                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $vendor->status])</td>
+                            <td class="jb-col-status">
+                                @include('admin.components.status-badge', ['status' => $vendor->status])
+                                @if ($vendor->status === 'suspended' && $vendor->suspension_reason)
+                                    <p class="mt-1 max-w-[12rem] truncate text-xs text-orange-700" title="{{ $vendor->suspension_reason }}">{{ $vendor->suspension_reason }}</p>
+                                @endif
+                            </td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     @if ($vendor->status === 'pending' && $canBulkApprove)

@@ -20,7 +20,7 @@
                 default => 'default',
             };
         @endphp
-        <span class="jbw-status jbw-status--{{ $statusClass }}">{{ str_replace('_', ' ', $order->status) }}</span>
+        <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $order->statusLabel() }}</span>
     </div>
 
     <div class="jbw-booking-layout">

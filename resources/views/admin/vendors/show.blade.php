@@ -10,14 +10,40 @@
         <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">Approve</x-admin.button></form>
         <form method="POST" action="{{ route('admin.vendors.reject', $vendor) }}">@csrf<x-admin.button variant="danger" type="submit">Reject</x-admin.button></form>
     @endif
-    @if ($vendor->status === 'active' && auth('admin')->user()->hasPermission('vendors', 'edit'))
-        <form method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}">@csrf<x-admin.button variant="danger" type="submit">Suspend</x-admin.button></form>
+    @if ($vendor->status === 'suspended' && auth('admin')->user()->hasPermission('vendors', 'edit'))
+        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
     @endif
     @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.vendors.edit', $vendor)">Edit</x-admin.button>
     @endif
 @endsection
 @section('content')
+    @if ($vendor->isSuspended())
+        <div class="jb-card mb-6 border-orange-200 bg-orange-50/80">
+            <div class="jb-card-body">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold uppercase tracking-wide text-orange-800">Account suspended</p>
+                        <p class="mt-2 text-sm leading-relaxed text-orange-950">{{ $vendor->suspension_reason ?: 'No suspension reason recorded.' }}</p>
+                        <dl class="mt-4 grid gap-2 text-sm text-orange-900/80 sm:grid-cols-2">
+                            @if ($vendor->suspended_at)
+                                <div><dt class="font-semibold text-orange-900">Suspended on</dt><dd>{{ $vendor->suspended_at->format('M d, Y h:i A') }}</dd></div>
+                            @endif
+                            @if ($vendor->suspendedBy)
+                                <div><dt class="font-semibold text-orange-900">Suspended by</dt><dd>{{ $vendor->suspendedBy->name }}</dd></div>
+                            @endif
+                        </dl>
+                    </div>
+                    @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
+                        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}">@csrf
+                            <x-admin.button variant="success" type="submit">Activate account</x-admin.button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="jb-wallet-grid">
         <div class="jb-wallet-card jb-wallet-card--digital">
             <p class="jb-wallet-card-label">Digital Wallet</p>
@@ -59,14 +85,18 @@
                 <div><dt>Total earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
             </dl>
         </div>
-        @if ($vendor->shopLogoUrl() || $vendor->panCardUrl())
+        @if ($vendor->shopLogoUrls() !== [] || $vendor->panCardUrl())
             <div class="jb-detail-card lg:col-span-2">
                 <h2>Shop & documents</h2>
                 <div class="jb-doc-image-grid">
-                    @if ($vendor->shopLogoUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
-                            <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger">
+                    @if ($vendor->shopLogoUrls() !== [])
+                        <div class="sm:col-span-2">
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logos</p>
+                            <div class="flex flex-wrap gap-3">
+                                @foreach ($vendor->shopLogoUrls() as $logoUrl)
+                                    <img src="{{ $logoUrl }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                                @endforeach
+                            </div>
                         </div>
                     @endif
                     @if ($vendor->panCardUrl())
@@ -127,4 +157,27 @@
             </div>
         </div>
     </div>
+
+    @if ($vendor->status === 'active' && auth('admin')->user()->hasPermission('vendors', 'edit'))
+        <div class="jb-card mt-6 max-w-3xl">
+            <div class="jb-card-header"><p class="jb-card-header-title">Suspend vendor</p></div>
+            <div class="jb-card-body">
+                <p class="mb-4 text-sm text-slate-500">Suspending blocks vendor login and listings. A clear reason is required and will be stored on the account.</p>
+                <form method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}" class="space-y-4">
+                    @csrf
+                    @include('admin.partials.form-input', [
+                        'label' => 'Reason for suspension',
+                        'name' => 'suspension_reason',
+                        'type' => 'textarea',
+                        'rows' => 4,
+                        'value' => old('suspension_reason'),
+                        'required' => true,
+                        'full' => true,
+                        'hint' => 'Minimum 10 characters. Shown to admins and communicated to the vendor.',
+                    ])
+                    <x-admin.button variant="danger" type="submit">Suspend vendor</x-admin.button>
+                </form>
+            </div>
+        </div>
+    @endif
 @endsection

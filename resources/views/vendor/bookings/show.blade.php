@@ -71,7 +71,7 @@
         <div class="vp-actions">
             <select name="status" class="vp-select" style="max-width:240px;">
                 @foreach (\App\Models\Order::STATUSES as $status)
-                    <option value="{{ $status }}" @selected($booking->status === $status)>{{ ucfirst(str_replace('_',' ',$status)) }}</option>
+                    <option value="{{ $status }}" @selected($booking->status === $status)>{{ \App\Models\Order::statusLabelFor($status) }}</option>
                 @endforeach
             </select>
             <button type="submit" class="vp-btn vp-btn--outline">Update</button>

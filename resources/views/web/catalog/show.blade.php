@@ -23,10 +23,26 @@
         </a>
     </nav>
 
+    @php
+        $galleryUrls = $item->galleryImageUrls();
+        if ($galleryUrls === []) {
+            $galleryUrls = [$fallbackImg];
+        }
+    @endphp
+
     <div class="jbw-product-detail">
         {{-- Gallery --}}
         <div class="jbw-gallery-main">
-            <img src="{{ $item->displayImageUrl() ?: $fallbackImg }}" alt="{{ $item->title }}">
+            <img id="jbw-gallery-main" src="{{ $galleryUrls[0] }}" alt="{{ $item->title }}">
+            @if (count($galleryUrls) > 1)
+                <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
+                    @foreach ($galleryUrls as $url)
+                        <button type="button" onclick="document.getElementById('jbw-gallery-main').src='{{ $url }}'" style="border:2px solid transparent;border-radius:0.5rem;padding:0;background:none;cursor:pointer">
+                            <img src="{{ $url }}" alt="" style="width:4rem;height:4rem;object-fit:cover;border-radius:0.5rem">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         {{-- Info --}}
