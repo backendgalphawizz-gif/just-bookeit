@@ -97,6 +97,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::post('orders/{order}/manage', [OrderController::class, 'manage'])->name('orders.manage');
             Route::post('customers/{customer}/activate', [CustomerController::class, 'activate'])->name('customers.activate');
             Route::post('customers/{customer}/suspend', [CustomerController::class, 'suspend'])->name('customers.suspend');
+            Route::post('customers/{customer}/block', [CustomerController::class, 'block'])->name('customers.block');
             Route::post('refunds/{refund}/approve', [RefundController::class, 'approve'])->name('refunds.approve');
             Route::post('refunds/{refund}/reject', [RefundController::class, 'reject'])->name('refunds.reject');
             Route::post('refunds/{refund}/process', [RefundController::class, 'process'])->name('refunds.process');

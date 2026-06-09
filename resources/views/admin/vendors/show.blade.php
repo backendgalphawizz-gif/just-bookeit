@@ -8,10 +8,37 @@
 @section('header_actions')
     @if ($vendor->status === 'pending' && auth('admin')->user()->hasPermission('vendors', 'edit'))
         <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">Approve</x-admin.button></form>
-        <form method="POST" action="{{ route('admin.vendors.reject', $vendor) }}">@csrf<x-admin.button variant="danger" type="submit">Reject</x-admin.button></form>
+        <form
+            method="POST"
+            action="{{ route('admin.vendors.reject', $vendor) }}"
+            data-jb-confirm="This vendor will be rejected. The reason you enter will be visible to them."
+            data-jb-confirm-title="Reject vendor"
+            data-jb-confirm-variant="error"
+            data-jb-confirm-label="Reject"
+            data-jb-confirm-requires-reason="Rejection reason"
+        >
+            @csrf
+            <x-admin.button variant="danger" type="submit">Reject</x-admin.button>
+        </form>
     @endif
     @if ($vendor->status === 'suspended' && auth('admin')->user()->hasPermission('vendors', 'edit'))
-        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
+        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}" class="inline-flex">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
+    @endif
+    @if ($vendor->status === 'active' && auth('admin')->user()->hasPermission('vendors', 'edit'))
+        <form
+            method="POST"
+            action="{{ route('admin.vendors.suspend', $vendor) }}"
+            class="inline-flex"
+            data-jb-confirm="This vendor will be suspended. Login and listings will be blocked. The reason you enter will be visible to them."
+            data-jb-confirm-title="Suspend vendor"
+            data-jb-confirm-variant="error"
+            data-jb-confirm-label="Suspend"
+            data-jb-confirm-requires-reason="Reason for suspension"
+            data-jb-confirm-reason-name="suspension_reason"
+        >
+            @csrf
+            <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
+        </form>
     @endif
     @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.vendors.edit', $vendor)">Edit</x-admin.button>
@@ -40,6 +67,15 @@
                         </form>
                     @endif
                 </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($vendor->status === 'rejected')
+        <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
+            <div class="jb-card-body">
+                <p class="text-sm font-bold uppercase tracking-wide text-rose-800">Application rejected</p>
+                <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $vendor->rejection_reason ?: 'No rejection reason recorded.' }}</p>
             </div>
         </div>
     @endif
@@ -85,16 +121,22 @@
                 <div><dt>Total earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
             </dl>
         </div>
-        @if ($vendor->shopLogoUrls() !== [] || $vendor->panCardUrl())
+        @if ($vendor->shopLogoUrl() || $vendor->shopImageUrls() !== [] || $vendor->panCardUrl())
             <div class="jb-detail-card lg:col-span-2">
                 <h2>Shop & documents</h2>
                 <div class="jb-doc-image-grid">
-                    @if ($vendor->shopLogoUrls() !== [])
+                    @if ($vendor->shopLogoUrl())
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
+                            <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                        </div>
+                    @endif
+                    @if ($vendor->shopImageUrls() !== [])
                         <div class="sm:col-span-2">
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logos</p>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop images</p>
                             <div class="flex flex-wrap gap-3">
-                                @foreach ($vendor->shopLogoUrls() as $logoUrl)
-                                    <img src="{{ $logoUrl }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                                @foreach ($vendor->shopImageUrls() as $imageUrl)
+                                    <img src="{{ $imageUrl }}" alt="Shop image" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
                                 @endforeach
                             </div>
                         </div>
@@ -158,26 +200,4 @@
         </div>
     </div>
 
-    @if ($vendor->status === 'active' && auth('admin')->user()->hasPermission('vendors', 'edit'))
-        <div class="jb-card mt-6 max-w-3xl">
-            <div class="jb-card-header"><p class="jb-card-header-title">Suspend vendor</p></div>
-            <div class="jb-card-body">
-                <p class="mb-4 text-sm text-slate-500">Suspending blocks vendor login and listings. A clear reason is required and will be stored on the account.</p>
-                <form method="POST" action="{{ route('admin.vendors.suspend', $vendor) }}" class="space-y-4">
-                    @csrf
-                    @include('admin.partials.form-input', [
-                        'label' => 'Reason for suspension',
-                        'name' => 'suspension_reason',
-                        'type' => 'textarea',
-                        'rows' => 4,
-                        'value' => old('suspension_reason'),
-                        'required' => true,
-                        'full' => true,
-                        'hint' => 'Minimum 10 characters. Shown to admins and communicated to the vendor.',
-                    ])
-                    <x-admin.button variant="danger" type="submit">Suspend vendor</x-admin.button>
-                </form>
-            </div>
-        </div>
-    @endif
 @endsection

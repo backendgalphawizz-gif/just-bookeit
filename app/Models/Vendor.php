@@ -49,6 +49,7 @@ class Vendor extends Authenticatable
         'digital_wallet_balance',
         'wallet_balance',
         'status',
+        'rejection_reason',
         'approved_at',
         'suspension_reason',
         'suspended_at',
@@ -105,27 +106,19 @@ class Vendor extends Authenticatable
         return $this->hasMany(VendorPortfolioImage::class);
     }
 
-    public function shopLogos(): HasMany
+    public function shopImages(): HasMany
     {
-        return $this->hasMany(VendorShopLogo::class)->orderBy('sort_order');
+        return $this->hasMany(VendorShopImage::class)->orderBy('sort_order');
     }
 
     /** @return list<string> */
-    public function shopLogoUrls(): array
+    public function shopImageUrls(): array
     {
-        $urls = $this->shopLogos
-            ->map(fn (VendorShopLogo $logo) => $logo->imageUrl())
+        return $this->shopImages
+            ->map(fn (VendorShopImage $image) => $image->imageUrl())
             ->filter()
             ->values()
             ->all();
-
-        if ($urls !== []) {
-            return $urls;
-        }
-
-        $legacy = $this->shopLogoUrl();
-
-        return $legacy ? [$legacy] : [];
     }
 
     public function payouts(): HasMany
@@ -170,16 +163,6 @@ class Vendor extends Authenticatable
 
     public function shopLogoUrl(): ?string
     {
-        if ($this->relationLoaded('shopLogos') && $this->shopLogos->isNotEmpty()) {
-            return $this->shopLogos->first()->imageUrl();
-        }
-
-        $first = $this->shopLogos()->orderBy('sort_order')->first();
-
-        if ($first) {
-            return $first->imageUrl();
-        }
-
         return StoresUploadedFiles::url($this->shop_logo_path);
     }
 

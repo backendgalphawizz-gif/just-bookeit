@@ -371,6 +371,29 @@
         padding: 1rem;
     }
 
+    .jb-modal-alert-reason {
+        margin-top: 1rem;
+        text-align: left;
+    }
+
+    .jb-modal-alert-reason .jb-label {
+        display: block;
+        margin-bottom: 0.375rem;
+    }
+
+    .jb-modal-alert-reason-count {
+        margin: 0.375rem 0 0;
+        font-size: 0.75rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-modal-alert-reason-hint {
+        margin: 0.375rem 0 0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgb(225 29 72);
+    }
+
     .jb-modal-alert-actions {
         display: flex;
         gap: 0.75rem;

@@ -133,6 +133,41 @@
                 <div class="jbw-payment-total"><span>Total amount</span><strong>₹{{ number_format($order->grandTotal(), 0) }}</strong></div>
             </div>
 
+            <div class="jbw-booking-card">
+                <h3 class="jbw-booking-card-title">Dispute</h3>
+                @if ($order->category)
+                    <p class="jbw-booking-product-meta" style="margin-bottom:0.75rem">Category: <strong>{{ $order->category->name }}</strong></p>
+                @endif
+
+                @if ($order->dispute)
+                    <p style="margin:0 0 0.75rem;line-height:1.5;color:var(--jbw-muted)">{{ $order->dispute->subject }}</p>
+                    <a href="{{ route('web.bookings.dispute.show', $order) }}" class="jbw-btn jbw-btn--primary jbw-btn--block">
+                        {{ $order->dispute->isChatOpen() ? 'Open dispute chat' : 'View dispute' }}
+                    </a>
+                @else
+                    <form method="POST" action="{{ route('web.bookings.dispute.store', $order) }}" style="display:grid;gap:0.75rem">
+                        @csrf
+                        <div>
+                            <label for="dispute-subject" style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.35rem">Issue type</label>
+                            <select id="dispute-subject" name="subject" class="jbw-input" style="width:100%" required>
+                                <option value="">Select an issue</option>
+                                @foreach (\App\Models\Dispute::subjectOptionsForCategory($order->category) as $subject)
+                                    <option value="{{ $subject }}" @selected(old('subject') === $subject)>{{ $subject }}</option>
+                                @endforeach
+                            </select>
+                            @error('subject')
+                                <p style="margin:0.35rem 0 0;font-size:0.75rem;color:#e11d48">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="dispute-body" style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.35rem">Details (optional)</label>
+                            <textarea id="dispute-body" name="body" rows="3" class="jbw-input" style="width:100%;resize:vertical" placeholder="Tell us what went wrong...">{{ old('body') }}</textarea>
+                        </div>
+                        <button type="submit" class="jbw-btn jbw-btn--danger jbw-btn--block">Raise dispute</button>
+                    </form>
+                @endif
+            </div>
+
             @if (! in_array($order->status, ['cancelled', 'refunded', 'delivered'], true))
                 <button type="button" class="jbw-btn jbw-btn--danger jbw-btn--block">Cancel booking</button>
             @endif

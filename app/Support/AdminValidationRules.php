@@ -69,10 +69,11 @@ class AdminValidationRules
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-            'shop_logos' => ['nullable', 'array', 'max:12'],
-            'shop_logos.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-            'remove_shop_logo_ids' => ['nullable', 'array'],
-            'remove_shop_logo_ids.*' => ['integer', 'exists:vendor_shop_logos,id'],
+            'shop_logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'shop_images' => ['nullable', 'array', 'max:12'],
+            'shop_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'remove_shop_image_ids' => ['nullable', 'array'],
+            'remove_shop_image_ids.*' => ['integer', 'exists:vendor_shop_images,id'],
             'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'pan_card' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
@@ -372,7 +373,14 @@ class AdminValidationRules
     public static function vendorSuspend(): array
     {
         return [
-            'suspension_reason' => ['required', 'string', 'min:10', 'max:1000', 'regex:'.self::REGEX_TEXT],
+            'suspension_reason' => ['required', 'string', 'min:5', 'max:1000', 'regex:'.self::REGEX_TEXT],
+        ];
+    }
+
+    public static function accountRejection(): array
+    {
+        return [
+            'rejection_reason' => ['required', 'string', 'min:5', 'max:500', 'regex:'.self::REGEX_TEXT],
         ];
     }
 
@@ -501,6 +509,7 @@ class AdminValidationRules
             'damage_deduction_rules.*.product_type' => 'product type',
             'damage_deduction_rules.*.max_percent' => 'max damage deduction',
             'suspension_reason' => 'suspension reason',
+            'rejection_reason' => 'rejection reason',
             'refund_rental_deposit_days' => 'security deposit refund days',
             'refund_sale_window_days' => 'sale refund window',
             'refund_sale_return_days' => 'sale return window',

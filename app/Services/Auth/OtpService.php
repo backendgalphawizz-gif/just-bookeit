@@ -171,6 +171,7 @@ class OtpService
                 'email' => $actor->email,
                 'city' => $actor->city,
                 'status' => $actor->status,
+                'rejection_reason' => filled($actor->rejection_reason ?? null) ? $actor->rejection_reason : null,
                 'is_verified' => $actor->is_verified,
                 'is_guest' => $actor->is_guest,
                 'profile_image_url' => $actor->profileImageUrl(),
@@ -200,8 +201,11 @@ class OtpService
                 'bank_name' => $actor->bank_name,
                 'account_type' => $actor->account_type,
                 'status' => $actor->status,
+                'rejection_reason' => filled($actor->rejection_reason ?? null) ? $actor->rejection_reason : null,
+                'suspension_reason' => filled($actor->suspension_reason ?? null) ? $actor->suspension_reason : null,
                 'profile_image_url' => $actor->profileImageUrl(),
                 'shop_logo_url' => $actor->shopLogoUrl(),
+                'shop_image_urls' => $actor->shopImageUrls(),
                 'pan_card_url' => $actor->panCardUrl(),
                 'aadhar_front_url' => $actor->aadharFrontUrl(),
                 'aadhar_back_url' => $actor->aadharBackUrl(),
@@ -222,6 +226,7 @@ class OtpService
                 'bank_name' => $actor->bank_name,
                 'account_type' => $actor->account_type,
                 'status' => $actor->status,
+                'rejection_reason' => filled($actor->rejection_reason ?? null) ? $actor->rejection_reason : null,
                 'is_verified' => $actor->is_verified,
                 'profile_image_url' => $actor->profileImageUrl(),
                 'aadhar_front_url' => $actor->aadharFrontUrl(),
@@ -264,24 +269,53 @@ class OtpService
         return true;
     }
 
+    public function ensureActorCanAuthenticate(string $actorType, Customer|Vendor|Driver $actor): void
+    {
+        $this->assertActorCanAuthenticate($actorType, $actor);
+    }
+
     protected function assertActorCanAuthenticate(string $actorType, Customer|Vendor|Driver $actor): void
     {
         if ($actorType === self::ACTOR_VENDOR && $actor->status === 'rejected') {
-            throw ValidationException::withMessages(['mobile' => ['This vendor account was rejected.']]);
+            throw ValidationException::withMessages([
+                'mobile' => [$this->rejectionMessage('vendor application', $actor->rejection_reason)],
+            ]);
         }
 
         if ($actorType === self::ACTOR_DRIVER && $actor->status === 'rejected') {
-            throw ValidationException::withMessages(['mobile' => ['This driver account was rejected.']]);
+            throw ValidationException::withMessages([
+                'mobile' => [$this->rejectionMessage('driver application', $actor->rejection_reason)],
+            ]);
+        }
+
+        if ($actorType === self::ACTOR_CUSTOMER && $actor->status === 'blocked') {
+            throw ValidationException::withMessages([
+                'mobile' => [$this->rejectionMessage('account', $actor->rejection_reason, 'blocked')],
+            ]);
         }
 
         if (in_array($actor->status ?? 'active', ['suspended', 'blocked'], true)) {
             $message = 'This account is suspended.';
+
             if ($actorType === self::ACTOR_VENDOR && filled($actor->suspension_reason ?? null)) {
                 $message = 'This vendor account is suspended: '.$actor->suspension_reason;
+            } elseif ($actorType === self::ACTOR_CUSTOMER && filled($actor->rejection_reason ?? null)) {
+                $message = 'Your account is suspended: '.$actor->rejection_reason;
+            } elseif ($actorType === self::ACTOR_DRIVER && filled($actor->rejection_reason ?? null)) {
+                $message = 'Your driver account is suspended: '.$actor->rejection_reason;
             }
 
             throw ValidationException::withMessages(['mobile' => [$message]]);
         }
+    }
+
+    protected function rejectionMessage(string $subject, ?string $reason, string $action = 'rejected'): string
+    {
+        if (filled($reason)) {
+            return 'Your '.$subject.' was '.$action.': '.$reason;
+        }
+
+        return 'Your '.$subject.' was '.$action.'.';
     }
 
     protected function normalizeType(string $type): string

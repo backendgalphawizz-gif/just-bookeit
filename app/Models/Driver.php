@@ -31,6 +31,7 @@ class Driver extends Authenticatable
         'driving_licence_path',
         'profile_image_path',
         'status',
+        'rejection_reason',
         'is_verified',
         'approved_at',
         'registered_at',

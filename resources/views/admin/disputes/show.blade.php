@@ -12,6 +12,7 @@
         <div class="jb-detail-card">
             <h2>Dispute information</h2>
             <dl class="jb-dl">
+                <div><dt>Category</dt><dd>{{ $dispute->category?->name ?? $dispute->order->category?->name ?? '—' }}</dd></div>
                 <div><dt>Order</dt><dd><a href="{{ route('admin.orders.show', $dispute->order) }}" class="jb-link">{{ $dispute->order->order_number }}</a></dd></div>
                 <div><dt>Raised by</dt><dd>{{ ucfirst($dispute->raised_by) }}</dd></div>
                 <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $dispute->status])</dd></div>

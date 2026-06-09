@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Vendor;
-use App\Models\VendorShopLogo;
+use App\Models\VendorShopImage;
 use App\Http\Requests\Admin\VendorRequest;
 use App\Models\Category;
 use App\Support\AdminCityScope;
@@ -66,7 +66,7 @@ class VendorController extends AdminController
 
         $this->applyVendorImages($vendor, $request);
         $vendor->save();
-        $this->applyShopLogos($vendor, $request);
+        $this->applyShopImages($vendor, $request);
 
         return redirect()->route('admin.vendors.index')->with('success', 'Vendor created successfully.');
     }
@@ -75,7 +75,7 @@ class VendorController extends AdminController
     {
         $vendor->load([
             'suspendedBy',
-            'shopLogos',
+            'shopImages',
             'orders' => fn ($q) => $q->latest()->limit(10),
             'orders.customer',
         ]);
@@ -85,7 +85,7 @@ class VendorController extends AdminController
 
     public function edit(Vendor $vendor): View
     {
-        $vendor->load('shopLogos');
+        $vendor->load('shopImages');
 
         return view('admin.vendors.edit', [
             'vendor' => $vendor,
@@ -103,10 +103,17 @@ class VendorController extends AdminController
                 ->withInput();
         }
 
+        if (($data['status'] ?? '') === 'rejected' && $vendor->status !== 'rejected') {
+            return back()
+                ->with('error', 'Use the Reject button on the profile page so a reason is recorded for the vendor.')
+                ->withInput();
+        }
+
         if ($data['status'] === 'active') {
             if (! $vendor->approved_at) {
                 $data['approved_at'] = now();
             }
+            $data['rejection_reason'] = null;
             $data['suspension_reason'] = null;
             $data['suspended_at'] = null;
             $data['suspended_by'] = null;
@@ -115,7 +122,7 @@ class VendorController extends AdminController
         $vendor->fill($data);
         $this->applyVendorImages($vendor, $request);
         $vendor->save();
-        $this->applyShopLogos($vendor, $request);
+        $this->applyShopImages($vendor, $request);
 
         return redirect()->route('admin.vendors.show', $vendor)->with('success', 'Vendor updated successfully.');
     }
@@ -135,7 +142,11 @@ class VendorController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
-        $vendor->update(['status' => 'active', 'approved_at' => now()]);
+        $vendor->update([
+            'status' => 'active',
+            'approved_at' => now(),
+            'rejection_reason' => null,
+        ]);
 
         return back()->with('success', "Vendor {$vendor->brand_name} approved.");
     }
@@ -155,6 +166,7 @@ class VendorController extends AdminController
             ->update([
                 'status' => 'active',
                 'approved_at' => now(),
+                'rejection_reason' => null,
             ]);
 
         if ($approved === 0) {
@@ -164,11 +176,21 @@ class VendorController extends AdminController
         return back()->with('success', $approved.' vendor(s) approved successfully.');
     }
 
-    public function reject(Vendor $vendor): RedirectResponse
+    public function reject(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
-        $vendor->update(['status' => 'rejected', 'approved_at' => null]);
+        $data = $request->validate(
+            AdminValidationRules::accountRejection(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        $vendor->update([
+            'status' => 'rejected',
+            'approved_at' => null,
+            'rejection_reason' => $data['rejection_reason'],
+        ]);
 
         return back()->with('success', "Vendor {$vendor->brand_name} rejected.");
     }
@@ -199,6 +221,7 @@ class VendorController extends AdminController
 
         $vendor->update([
             'status' => 'active',
+            'rejection_reason' => null,
             'suspension_reason' => null,
             'suspended_at' => null,
             'suspended_by' => null,
@@ -212,6 +235,7 @@ class VendorController extends AdminController
     {
         $files = [
             'profile_image' => ['column' => 'profile_image_path', 'dir' => 'vendors/profile-images'],
+            'shop_logo' => ['column' => 'shop_logo_path', 'dir' => 'vendors/shop-logos'],
             'aadhar_front' => ['column' => 'aadhar_front_path', 'dir' => 'vendors/aadhar/front'],
             'aadhar_back' => ['column' => 'aadhar_back_path', 'dir' => 'vendors/aadhar/back'],
             'pan_card' => ['column' => 'pan_card_path', 'dir' => 'vendors/pan-cards'],
@@ -230,57 +254,37 @@ class VendorController extends AdminController
         }
     }
 
-    private function applyShopLogos(Vendor $vendor, VendorRequest $request): void
+    private function applyShopImages(Vendor $vendor, VendorRequest $request): void
     {
-        if ($request->filled('remove_shop_logo_ids')) {
-            $ids = collect($request->input('remove_shop_logo_ids'))
+        if ($request->filled('remove_shop_image_ids')) {
+            $ids = collect($request->input('remove_shop_image_ids'))
                 ->map(fn ($id) => (int) $id)
                 ->unique()
                 ->values();
 
-            VendorShopLogo::query()
+            VendorShopImage::query()
                 ->where('vendor_id', $vendor->id)
                 ->whereIn('id', $ids)
                 ->get()
-                ->each(function (VendorShopLogo $logo) {
-                    StoresUploadedFiles::delete($logo->image_path);
-                    $logo->delete();
+                ->each(function (VendorShopImage $image) {
+                    StoresUploadedFiles::delete($image->image_path);
+                    $image->delete();
                 });
         }
 
-        if ($request->hasFile('shop_logos')) {
-            $sortOrder = (int) ($vendor->shopLogos()->max('sort_order') ?? 0);
-
-            foreach ($request->file('shop_logos') as $file) {
-                $sortOrder++;
-                VendorShopLogo::query()->create([
-                    'vendor_id' => $vendor->id,
-                    'image_path' => StoresUploadedFiles::store($file, 'vendors/shop-logos'),
-                    'sort_order' => $sortOrder,
-                ]);
-            }
-        }
-
-        $this->syncPrimaryShopLogo($vendor);
-    }
-
-    private function syncPrimaryShopLogo(Vendor $vendor): void
-    {
-        $primary = $vendor->shopLogos()->orderBy('sort_order')->first();
-
-        if ($primary) {
-            if ($vendor->shop_logo_path && $vendor->shop_logo_path !== $primary->image_path) {
-                StoresUploadedFiles::delete($vendor->shop_logo_path);
-            }
-
-            $vendor->forceFill(['shop_logo_path' => $primary->image_path])->saveQuietly();
-
+        if (! $request->hasFile('shop_images')) {
             return;
         }
 
-        if ($vendor->shop_logo_path) {
-            StoresUploadedFiles::delete($vendor->shop_logo_path);
-            $vendor->forceFill(['shop_logo_path' => null])->saveQuietly();
+        $sortOrder = (int) ($vendor->shopImages()->max('sort_order') ?? 0);
+
+        foreach ($request->file('shop_images') as $file) {
+            $sortOrder++;
+            VendorShopImage::query()->create([
+                'vendor_id' => $vendor->id,
+                'image_path' => StoresUploadedFiles::store($file, 'vendors/shop-images'),
+                'sort_order' => $sortOrder,
+            ]);
         }
     }
 

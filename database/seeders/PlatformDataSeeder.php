@@ -171,6 +171,7 @@ class PlatformDataSeeder extends Seeder
             $dispute = Dispute::query()->updateOrCreate(
                 ['order_id' => $order->id],
                 [
+                    'category_id' => $order->category_id,
                     'raised_by' => fake()->randomElement(['customer', 'vendor']),
                     'subject' => fake()->randomElement(['Delivery delay', 'Measurement mismatch', 'Payment dispute', 'Service quality']),
                     'status' => $status,

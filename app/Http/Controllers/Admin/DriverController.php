@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Requests\Admin\DriverRequest;
 use App\Models\Driver;
 use App\Support\AdminCityScope;
+use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
@@ -81,9 +82,16 @@ class DriverController extends AdminController
     {
         $data = $this->driverData($request);
 
+        if (($data['status'] ?? '') === 'rejected' && $driver->status !== 'rejected') {
+            return back()
+                ->with('error', 'Use the Reject button on the profile page so a reason is recorded for the driver.')
+                ->withInput();
+        }
+
         if (($data['status'] ?? $driver->status) === 'active' && ! $driver->approved_at) {
             $data['approved_at'] = now();
             $data['is_verified'] = true;
+            $data['rejection_reason'] = null;
         }
 
         $driver->fill($data);
@@ -108,16 +116,32 @@ class DriverController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
-        $driver->update(['status' => 'active', 'approved_at' => now(), 'is_verified' => true]);
+        $driver->update([
+            'status' => 'active',
+            'approved_at' => now(),
+            'is_verified' => true,
+            'rejection_reason' => null,
+        ]);
 
         return back()->with('success', "Driver {$driver->name} approved.");
     }
 
-    public function reject(Driver $driver): RedirectResponse
+    public function reject(Request $request, Driver $driver): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
-        $driver->update(['status' => 'rejected', 'approved_at' => null, 'is_verified' => false]);
+        $data = $request->validate(
+            AdminValidationRules::accountRejection(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        $driver->update([
+            'status' => 'rejected',
+            'approved_at' => null,
+            'is_verified' => false,
+            'rejection_reason' => $data['rejection_reason'],
+        ]);
 
         return back()->with('success', "Driver {$driver->name} rejected.");
     }

@@ -6,7 +6,7 @@ use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class VendorShopLogo extends Model
+class VendorShopImage extends Model
 {
     protected $fillable = [
         'vendor_id',
