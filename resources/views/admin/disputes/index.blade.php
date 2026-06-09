@@ -16,9 +16,6 @@
                 </a>
             @endforeach
         </div>
-        @if (auth('admin')->user()->hasPermission('disputes', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.disputes.create')">+ New Dispute</x-admin.button>
-        @endif
     </div>
 
     @push('filter_actions')
