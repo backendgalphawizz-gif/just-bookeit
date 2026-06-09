@@ -12,15 +12,20 @@
 
     <div class="jb-card mt-6">
         <div class="jb-card-header">
-            <p class="jb-card-header-title">Charts</p>
+            <div>
+                <p class="jb-card-header-title">Charts</p>
+                @if (! empty($charts['range_label']))
+                    <p class="mt-0.5 text-xs font-medium text-slate-500">{{ $charts['range_label'] }}</p>
+                @endif
+            </div>
         </div>
         <div class="jb-card-body grid gap-6 md:grid-cols-2">
             <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                <h3 class="text-sm font-bold text-slate-700">Monthly revenue</h3>
+                <h3 class="text-sm font-bold text-slate-700">{{ $charts['titles']['monthly_revenue'] ?? 'Monthly revenue' }}</h3>
                 <canvas id="chartMonthlyRevenue" class="mt-4 max-h-52" height="180"></canvas>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                <h3 class="text-sm font-bold text-slate-700">Orders trend</h3>
+                <h3 class="text-sm font-bold text-slate-700">{{ $charts['titles']['orders_trend'] ?? 'Orders trend' }}</h3>
                 <canvas id="chartOrdersTrend" class="mt-4 max-h-52" height="180"></canvas>
             </div>
         </div>
@@ -50,8 +55,8 @@
                     <label class="jb-label">Status</label>
                     <select name="status" class="jb-select">
                         <option value="">All</option>
-                        @foreach (['new','pending_acceptance','accepted','in_progress','in_transit','delivered','cancelled','refunded'] as $s)
-                            <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst(str_replace('_', ' ', $s)) }}</option>
+                        @foreach (\App\Models\Order::STATUSES as $s)
+                            <option value="{{ $s }}" @selected(request('status') === $s)>{{ \App\Models\Order::statusLabelFor($s) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -100,7 +105,7 @@
                                 <td class="jb-col-name">{{ $order->customer->name }}</td>
                                 <td class="jb-col-name">{{ $order->vendor?->brand_name ?? '—' }}</td>
                                 <td class="jb-col-amount">₹{{ number_format($order->amount, 2) }}</td>
-                                <td class="jb-col-status"><span class="jb-badge bg-slate-100 text-slate-700">{{ $order->status }}</span></td>
+                                <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
                                 <td class="jb-col-date text-sm text-slate-500">{{ $order->created_at->format('M d, Y') }}</td>
                             </tr>
                         @empty

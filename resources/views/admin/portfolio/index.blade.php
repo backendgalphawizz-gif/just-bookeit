@@ -62,7 +62,14 @@
                             </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ $item->created_at->format('M d, Y') }}</td>
-                            <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" /></div></td>
+                            <td class="jb-table-actions-col">
+                                <div class="jb-actions">
+                                    <x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" />
+                                    @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
+                                        <x-admin.action-btn variant="edit" :href="route('admin.portfolio.edit', $item)" />
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="7" class="jb-table-empty">No portfolio items.</td></tr>

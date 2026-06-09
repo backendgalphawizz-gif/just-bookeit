@@ -69,7 +69,10 @@ class AdminValidationRules
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-            'shop_logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'shop_logos' => ['nullable', 'array', 'max:12'],
+            'shop_logos.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'remove_shop_logo_ids' => ['nullable', 'array'],
+            'remove_shop_logo_ids.*' => ['integer', 'exists:vendor_shop_logos,id'],
             'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'pan_card' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
@@ -196,15 +199,16 @@ class AdminValidationRules
             'raised_by' => ['required', 'in:customer,vendor'],
             'subject' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'status' => ['required', 'in:raised,under_review,resolved,closed'],
+            'resolution_note' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
     public static function banner(): array
     {
         return [
+            'audience' => ['required', 'in:customer,vendor,driver'],
             'title' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'subtitle' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
-            'cta_label' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'redirect_url' => ['nullable', 'url', 'max:500'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
@@ -365,6 +369,29 @@ class AdminValidationRules
         ];
     }
 
+    public static function vendorSuspend(): array
+    {
+        return [
+            'suspension_reason' => ['required', 'string', 'min:10', 'max:1000', 'regex:'.self::REGEX_TEXT],
+        ];
+    }
+
+    public static function portfolioItem(): array
+    {
+        return [
+            'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'title' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
+            'description' => ['nullable', 'string', 'max:5000', 'regex:'.self::REGEX_TEXT],
+            'audience' => ['required', 'in:women,men,kids'],
+            'status' => ['required', 'in:pending,approved,rejected'],
+            'rejection_reason' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
+            'image' => ['nullable', 'image', 'max:4096'],
+            'gallery_images' => ['nullable', 'array', 'max:12'],
+            'gallery_images.*' => ['image', 'max:4096'],
+        ];
+    }
+
     public static function settingsRefundRules(): array
     {
         $policyText = ['nullable', 'string', 'max:50000'];
@@ -411,6 +438,8 @@ class AdminValidationRules
             'damage_deduction_rules.*.product_type.required' => 'Product type is required.',
             'damage_deduction_rules.*.max_percent.min' => 'Damage deduction cannot be negative.',
             'damage_deduction_rules.*.max_percent.max' => 'Damage deduction cannot exceed 100%.',
+            'suspension_reason.required' => 'A suspension reason is required.',
+            'suspension_reason.min' => 'Suspension reason must be at least 10 characters.',
             'refund_rental_deposit_days.min' => 'Deposit refund days cannot be negative.',
             'refund_sale_window_days.min' => 'Refund window cannot be negative.',
             'refund_sale_return_days.min' => 'Return window cannot be negative.',
@@ -431,7 +460,6 @@ class AdminValidationRules
             'city.regex' => 'City may only contain letters, spaces, dots, and hyphens.',
             'title.regex' => 'This field contains invalid characters.',
             'subtitle.regex' => 'Subtitle contains invalid characters.',
-            'cta_label.regex' => 'CTA label contains invalid characters.',
             'subject.regex' => 'Subject contains invalid characters.',
             'platform_name.regex' => 'Platform name contains invalid characters.',
             'categories_text.regex' => 'Categories may only use letters, numbers, commas, and spaces.',
@@ -472,6 +500,7 @@ class AdminValidationRules
             'refund_rental_late_fee_per_day' => 'late return fee',
             'damage_deduction_rules.*.product_type' => 'product type',
             'damage_deduction_rules.*.max_percent' => 'max damage deduction',
+            'suspension_reason' => 'suspension reason',
             'refund_rental_deposit_days' => 'security deposit refund days',
             'refund_sale_window_days' => 'sale refund window',
             'refund_sale_return_days' => 'sale return window',
@@ -498,13 +527,13 @@ class AdminValidationRules
             'name' => 'person-name',
             'mobile', 'support_phone' => 'phone',
             'city' => 'city',
-            'brand_name', 'title', 'subtitle', 'cta_label', 'subject', 'platform_name' => 'title',
+            'brand_name', 'title', 'subtitle', 'subject', 'platform_name' => 'title',
             'email', 'support_email' => 'email',
             'redirect_url' => 'url',
             'currency' => 'currency',
             'gst_number' => 'gst',
             'vehicle_no' => 'vehicle-no',
-            'reason', 'message', 'contact_address',
+            'reason', 'message', 'contact_address', 'suspension_reason' => 'text',
             'terms_conditions_user', 'terms_conditions_vendor', 'terms_conditions_driver',
             'privacy_policy_user', 'privacy_policy_vendor', 'privacy_policy_driver',
             'about_us', 'help_support',

@@ -8,6 +8,7 @@ use App\Models\Refund;
 use App\Models\Vendor;
 use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -26,6 +27,144 @@ class ReportsService
     public function summary(): array
     {
         return $this->dashboard->getStats();
+    }
+
+    public function chartsForReport(Request $request): array
+    {
+        $report = $request->string('report', 'overview')->toString();
+        $admin = auth('admin')->user();
+        [$rangeFrom, $rangeTo] = $this->dashboard->chartRangeFromRequest($request);
+        $buckets = $this->dashboard->chartMonthBuckets($rangeFrom, $rangeTo);
+
+        $charts = match ($report) {
+            'orders' => $this->orderCharts($request, $rangeFrom, $rangeTo, $buckets),
+            'refunds' => $this->refundCharts($request, $rangeFrom, $rangeTo, $buckets),
+            'vendors' => $this->vendorCharts($request, $rangeFrom, $rangeTo, $buckets),
+            default => $this->dashboard->getCharts($admin, $rangeFrom, $rangeTo),
+        };
+
+        return array_merge($charts, [
+            'titles' => match ($report) {
+                'refunds' => [
+                    'monthly_revenue' => 'Refund amounts',
+                    'orders_trend' => 'Refunds trend',
+                ],
+                'vendors' => [
+                    'monthly_revenue' => 'Vendor signups',
+                    'orders_trend' => 'Orders from vendors',
+                ],
+                default => [
+                    'monthly_revenue' => 'Monthly revenue',
+                    'orders_trend' => 'Orders trend',
+                ],
+            },
+            'range_label' => $rangeFrom->format('M d, Y').' – '.$rangeTo->format('M d, Y'),
+        ]);
+    }
+
+    /** @param array{labels: list<string>, keys: list<string>} $buckets */
+    protected function orderCharts(Request $request, Carbon $rangeFrom, Carbon $rangeTo, array $buckets): array
+    {
+        $query = $this->chartScopedQuery($this->ordersReportQuery($request), $request, $rangeFrom, $rangeTo);
+
+        $revenueByMonth = (clone $query)->reorder()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, SUM(amount) as total')
+            ->where('payment_status', 'success')
+            ->whereNotIn('status', ['cancelled', 'refunded'])
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        $ordersByMonth = (clone $query)->reorder()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, COUNT(*) as total')
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        return $this->mapChartBuckets($buckets, $revenueByMonth, $ordersByMonth);
+    }
+
+    /** @param array{labels: list<string>, keys: list<string>} $buckets */
+    protected function refundCharts(Request $request, Carbon $rangeFrom, Carbon $rangeTo, array $buckets): array
+    {
+        $query = $this->chartScopedQuery($this->refundReportQuery($request), $request, $rangeFrom, $rangeTo);
+
+        $amountByMonth = (clone $query)->reorder()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, SUM(amount) as total')
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        $countByMonth = (clone $query)->reorder()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, COUNT(*) as total')
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        return $this->mapChartBuckets($buckets, $amountByMonth, $countByMonth);
+    }
+
+    /** @param array{labels: list<string>, keys: list<string>} $buckets */
+    protected function vendorCharts(Request $request, Carbon $rangeFrom, Carbon $rangeTo, array $buckets): array
+    {
+        $vendorQuery = $this->chartScopedQuery($this->vendorReportQuery($request), $request, $rangeFrom, $rangeTo);
+
+        $signupsByMonth = (clone $vendorQuery)->reorder()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, COUNT(*) as total')
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        $vendorIds = (clone $vendorQuery)->reorder()->select('id');
+        $ordersQuery = $this->chartScopedQuery(
+            AdminCityScope::scopeOrders(Order::query())->whereIn('vendor_id', $vendorIds),
+            $request,
+            $rangeFrom,
+            $rangeTo
+        );
+
+        $ordersByMonth = (clone $ordersQuery)->reorder()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month_key, COUNT(*) as total')
+            ->groupBy('month_key')
+            ->pluck('total', 'month_key');
+
+        return $this->mapChartBuckets($buckets, $signupsByMonth, $ordersByMonth);
+    }
+
+    protected function chartScopedQuery(
+        Builder $query,
+        Request $request,
+        Carbon $rangeFrom,
+        Carbon $rangeTo,
+        string $column = 'created_at'
+    ): Builder {
+        if ($request->filled('from') || $request->filled('to')) {
+            return $query;
+        }
+
+        return $query->whereBetween($column, [$rangeFrom, $rangeTo]);
+    }
+
+    /**
+     * @param array{labels: list<string>, keys: list<string>} $buckets
+     * @param \Illuminate\Support\Collection<string, mixed> $primaryByMonth
+     * @param \Illuminate\Support\Collection<string, mixed> $secondaryByMonth
+     *
+     * @return array{monthly_revenue: array{labels: list<string>, data: list<float>}, orders_trend: array{labels: list<string>, data: list<int>}}
+     */
+    protected function mapChartBuckets(array $buckets, $primaryByMonth, $secondaryByMonth): array
+    {
+        return [
+            'monthly_revenue' => [
+                'labels' => $buckets['labels'],
+                'data' => collect($buckets['keys'])
+                    ->map(fn (string $key) => (float) ($primaryByMonth[$key] ?? 0))
+                    ->values()
+                    ->all(),
+            ],
+            'orders_trend' => [
+                'labels' => $buckets['labels'],
+                'data' => collect($buckets['keys'])
+                    ->map(fn (string $key) => (int) ($secondaryByMonth[$key] ?? 0))
+                    ->values()
+                    ->all(),
+            ],
+        ];
     }
 
     public function ordersReport(Request $request): LengthAwarePaginator

@@ -20,10 +20,11 @@
     'label' => 'Profile photo',
 ])
 <div class="sm:col-span-2">
-    @include('admin.partials.image-upload', [
-        'label' => 'Shop logo',
-        'name' => 'shop_logo',
-        'currentUrl' => $vendor?->shopLogoUrl(),
+    @include('admin.partials.multi-image-upload', [
+        'label' => 'Shop logos',
+        'name' => 'shop_logos',
+        'existingImages' => $vendor?->shopLogos ?? collect(),
+        'removeField' => 'remove_shop_logo_ids',
     ])
 </div>
 

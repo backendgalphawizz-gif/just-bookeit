@@ -591,4 +591,52 @@ img { max-width: 100%; display: block; }
     .vp-earnings-grid { gap: 1.25rem; }
     .vp-page-title { font-size: 1.35rem; }
 }
+
+.vp-promo-banner {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    border-radius: var(--vp-radius-lg);
+    background: linear-gradient(135deg, var(--vp-orange-soft), #fff);
+    border: 1px solid var(--vp-orange-muted);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s, box-shadow .15s;
+}
+.vp-promo-banner:hover {
+    border-color: var(--vp-orange);
+    box-shadow: var(--vp-shadow);
+}
+.vp-promo-banner__img {
+    width: 7.5rem;
+    height: 5.5rem;
+    border-radius: 12px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.vp-promo-banner__body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.vp-promo-banner__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--vp-text);
+    line-height: 1.25;
+}
+.vp-promo-banner__sub {
+    margin: .35rem 0 0;
+    font-size: .84rem;
+    color: var(--vp-muted);
+    line-height: 1.45;
+}
+@media (max-width: 640px) {
+    .vp-promo-banner { flex-direction: column; }
+    .vp-promo-banner__img { width: 100%; height: 8rem; }
+}
 </style>

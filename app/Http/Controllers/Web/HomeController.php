@@ -12,13 +12,8 @@ class HomeController extends WebController
     public function index(): View
     {
         $banners = Banner::query()
-            ->where('is_active', true)
-            ->where(function ($q) {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
-            })
+            ->forAudience(Banner::AUDIENCE_CUSTOMER)
+            ->published()
             ->latest('id')
             ->limit(5)
             ->get();

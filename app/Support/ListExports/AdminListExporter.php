@@ -213,7 +213,7 @@ class AdminListExporter
                     $order->order_type === 'rental' ? 'Rental' : 'Sale',
                     $order->amount,
                     $order->payment_status,
-                    $order->status,
+                    $order->statusLabel(),
                     $order->created_at?->format('Y-m-d H:i') ?? '—',
                 ],
             ],
@@ -288,7 +288,7 @@ class AdminListExporter
                     $order->vendor?->brand_name ?? '—',
                     $order->amount,
                     $order->payment_status,
-                    $order->status,
+                    $order->statusLabel(),
                     $order->created_at?->format('Y-m-d H:i') ?? '—',
                 ],
             ],
@@ -354,12 +354,14 @@ class AdminListExporter
             'banners' => [
                 'title' => 'Banners Export',
                 'basename' => 'banners',
-                'headers' => ['Title', 'Subtitle', 'Active', 'Starts', 'Ends', 'Created'],
+                'headers' => ['Audience', 'Title', 'Subtitle', 'Active', 'Starts', 'Ends', 'Created'],
                 'query' => fn (Request $request) => $this->applyDateRange(Banner::query(), $request)
+                    ->when($request->filled('audience'), fn (Builder $q) => $q->where('audience', $request->string('audience')))
                     ->when($request->filled('search'), fn (Builder $q) => $q->where('title', 'like', '%'.$request->string('search').'%'))
                     ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
                     ->orderByDesc('created_at'),
                 'map' => fn (Banner $banner) => [
+                    Banner::audienceLabel($banner->audience),
                     $banner->title,
                     $banner->subtitle ?? '—',
                     $banner->is_active ? 'Yes' : 'No',

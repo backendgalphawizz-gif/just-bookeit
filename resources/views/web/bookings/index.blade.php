@@ -38,7 +38,7 @@
                             default => 'default',
                         };
                     @endphp
-                    <span class="jbw-status jbw-status--{{ $statusClass }}">{{ str_replace('_', ' ', $order->status) }}</span>
+                    <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $order->statusLabel() }}</span>
                     <p style="font-size:0.75rem;color:var(--jbw-muted);margin:0.5rem 0 0">#{{ $order->order_number }}</p>
                     <a href="{{ route('web.bookings.show', $order) }}" style="font-size:0.8125rem;font-weight:700;color:var(--jbw-primary)">View details</a>
                 </div>

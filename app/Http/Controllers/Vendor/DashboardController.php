@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Models\Banner;
 use App\Services\Vendor\VendorDashboardService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -20,6 +21,11 @@ class DashboardController extends VendorController
 
         return view('vendor.dashboard.index', [
             'vendor' => $vendor,
+            'promoBanner' => Banner::query()
+                ->forAudience(Banner::AUDIENCE_VENDOR)
+                ->published()
+                ->latest('id')
+                ->first(),
             'stats' => $this->dashboard->stats($vendor),
             'schedule' => $this->dashboard->deliverySchedule($vendor, $date),
             'recentBookings' => $this->dashboard->recentBookings($vendor),

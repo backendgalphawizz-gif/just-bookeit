@@ -54,6 +54,30 @@ class DashboardService
         return $this->charts($admin, $rangeFrom, $rangeTo);
     }
 
+    /** @return array{0: Carbon, 1: Carbon} */
+    public function chartRangeFromRequest(\Illuminate\Http\Request $request): array
+    {
+        $from = $request->filled('from')
+            ? Carbon::parse($request->date('from'))->startOfDay()
+            : null;
+        $to = $request->filled('to')
+            ? Carbon::parse($request->date('to'))->endOfDay()
+            : null;
+
+        return $this->resolveChartRange($from, $to);
+    }
+
+    /** @return array{labels: list<string>, keys: list<string>} */
+    public function chartMonthBuckets(Carbon $rangeFrom, Carbon $rangeTo): array
+    {
+        $months = $this->chartMonths($rangeFrom, $rangeTo);
+
+        return [
+            'labels' => $months->map(fn (Carbon $m) => $m->format('M Y'))->values()->all(),
+            'keys' => $months->map(fn (Carbon $m) => $m->format('Y-m'))->values()->all(),
+        ];
+    }
+
     /** @return array<string, int> */
     public function badgeCounts(?Admin $admin = null): array
     {

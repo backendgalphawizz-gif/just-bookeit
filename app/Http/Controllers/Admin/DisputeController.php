@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Dispute;
+use App\Models\DisputeMessage;
 use App\Models\Order;
 use App\Http\Requests\Admin\DisputeStoreRequest;
 use App\Http\Requests\Admin\DisputeUpdateRequest;
 use App\Support\AppliesListDateFilter;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -54,7 +56,12 @@ class DisputeController extends AdminController
 
     public function show(Dispute $dispute): View
     {
-        $dispute->load(['order.customer', 'order.vendor', 'order.category']);
+        $dispute->load(['order.customer', 'order.vendor', 'order.category', 'messages']);
+
+        $dispute->messages()
+            ->where('sender_type', DisputeMessage::SENDER_CUSTOMER)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
 
         return view('admin.disputes.show', compact('dispute'));
     }
@@ -78,13 +85,59 @@ class DisputeController extends AdminController
         return redirect()->route('admin.disputes.index')->with('success', 'Dispute deleted successfully.');
     }
 
-    public function resolve(Dispute $dispute): RedirectResponse
+    public function sendMessage(Request $request, Dispute $dispute): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
-        $dispute->update(['status' => 'resolved']);
+        if (! $dispute->isChatOpen()) {
+            return back()->with('error', 'This dispute chat is closed.');
+        }
 
-        return back()->with('success', 'Dispute marked as resolved.');
+        $data = $request->validate([
+            'body' => ['nullable', 'string', 'max:5000'],
+            'attachment' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+        ]);
+
+        if (blank($data['body']) && ! $request->hasFile('attachment')) {
+            return back()->withErrors(['body' => 'Enter a message or attach an image.'])->withInput();
+        }
+
+        $admin = auth('admin')->user();
+
+        $dispute->messages()->create([
+            'sender_type' => DisputeMessage::SENDER_ADMIN,
+            'sender_id' => $admin->id,
+            'body' => $data['body'] ?? null,
+            'attachment_path' => $request->hasFile('attachment')
+                ? StoresUploadedFiles::store($request->file('attachment'), 'disputes/chat')
+                : null,
+        ]);
+
+        if ($dispute->status === 'raised') {
+            $dispute->update(['status' => 'under_review']);
+        }
+
+        return back()->with('success', 'Message sent to customer.');
+    }
+
+    public function resolve(Request $request, Dispute $dispute): RedirectResponse
+    {
+        $this->authorizeAdmin('edit');
+
+        if (! in_array($dispute->status, Dispute::OPEN_STATUSES, true)) {
+            return back()->with('error', 'This dispute is already resolved or closed.');
+        }
+
+        $data = $request->validate([
+            'resolution_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $dispute->update([
+            'status' => 'resolved',
+            'resolution_note' => $data['resolution_note'] ?? $dispute->resolution_note,
+        ]);
+
+        return back()->with('success', 'Dispute resolved. Customer chat is now closed.');
     }
 
     public function close(Dispute $dispute): RedirectResponse
@@ -93,6 +146,6 @@ class DisputeController extends AdminController
 
         $dispute->update(['status' => 'closed']);
 
-        return back()->with('success', 'Dispute closed.');
+        return back()->with('success', 'Dispute closed. Chat is no longer available.');
     }
 }

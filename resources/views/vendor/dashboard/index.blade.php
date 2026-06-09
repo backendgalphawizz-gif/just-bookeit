@@ -7,6 +7,10 @@
     <div class="vp-pending-banner">Your account is pending admin approval. You can explore the panel, but some actions may be limited until approved.</div>
 @endif
 
+@if ($promoBanner)
+    @include('vendor.partials.promo-banner', ['banner' => $promoBanner])
+@endif
+
 <div class="vp-page-head">
     <div>
         <h1 class="vp-page-title">Welcome back, {{ $vendor->owner_name ?? $vendor->displayName() }}!</h1>

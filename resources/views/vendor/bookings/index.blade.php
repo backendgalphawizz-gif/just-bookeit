@@ -24,7 +24,7 @@
             <label class="vp-label" for="booking-status">Status</label>
             <select id="booking-status" name="status" class="vp-select">
                 <option value="">All</option>
-                @foreach (['new' => 'New', 'accepted' => 'Accepted', 'in_transit' => 'In transit', 'delivered' => 'Completed', 'cancelled' => 'Cancelled'] as $value => $label)
+                @foreach (['new' => 'New', 'accepted' => 'Accepted', 'in_transit' => 'In Progress', 'delivered' => 'Completed', 'cancelled' => 'Cancelled'] as $value => $label)
                     <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                 @endforeach
             </select>

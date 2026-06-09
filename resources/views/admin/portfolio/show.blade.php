@@ -5,6 +5,9 @@
 
 @section('back_href', route('admin.portfolio.index'))
 @section('header_actions')
+    @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
+        <x-admin.action-btn variant="edit" :href="route('admin.portfolio.edit', $portfolio)" />
+    @endif
     @if ($portfolio->status === 'pending' && auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <form method="POST" action="{{ route('admin.portfolio.approve', $portfolio) }}" class="inline-flex">@csrf
             <x-admin.action-btn variant="approve" type="submit" />
@@ -18,7 +21,9 @@
             <dl class="jb-detail-list">
                 <div><dt>Vendor</dt><dd>{{ $portfolio->vendor->brand_name }}</dd></div>
                 <div><dt>Category</dt><dd>{{ $portfolio->category?->name ?? '—' }}</dd></div>
+                <div><dt>Audience</dt><dd>{{ ucfirst($portfolio->audience ?? 'women') }}</dd></div>
                 <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $portfolio->status])</dd></div>
+                <div><dt>Photos</dt><dd>{{ count($portfolio->galleryImageUrls()) }}</dd></div>
                 <div><dt>Submitted</dt><dd>{{ $portfolio->created_at->format('M d, Y h:i A') }}</dd></div>
                 @if ($portfolio->reviewed_at)
                     <div><dt>Reviewed</dt><dd>{{ $portfolio->reviewed_at->format('M d, Y h:i A') }}</dd></div>
@@ -31,12 +36,24 @@
                 @endif
             </dl>
         </div>
-        @if ($portfolio->image_url)
+
+        @if (count($portfolio->galleryImageUrls()) > 0)
             <div class="jb-card overflow-hidden">
-                <img src="{{ $portfolio->image_url }}" alt="{{ $portfolio->title }}" class="h-full w-full object-cover min-h-[16rem] panel-lightbox-trigger">
+                <div class="jb-card-header">
+                    <p class="jb-card-header-title">Photos</p>
+                    @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
+                        <x-admin.button variant="secondary" size="sm" :href="route('admin.portfolio.edit', $portfolio)">Manage photos</x-admin.button>
+                    @endif
+                </div>
+                <div class="jb-card-body grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    @foreach ($portfolio->galleryImageUrls() as $url)
+                        <img src="{{ $url }}" alt="{{ $portfolio->title }}" class="aspect-square w-full rounded-xl object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
+                    @endforeach
+                </div>
             </div>
         @endif
     </div>
+
     @if ($portfolio->status === 'pending' && auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <div class="jb-card mt-6 max-w-2xl">
             <div class="jb-card-header"><p class="jb-card-header-title">Moderation</p></div>

@@ -37,7 +37,7 @@ class ReportController extends AdminController
 
         return view('admin.reports.index', [
             'summary' => $this->reports->summary(),
-            'charts' => $this->dashboard->getCharts(),
+            'charts' => $this->reports->chartsForReport($request),
             'report' => $report,
             'filterVendors' => $filterVendors,
             'orders' => $report === 'orders' ? $this->reports->ordersReport($request) : null,

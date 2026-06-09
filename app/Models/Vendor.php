@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\StoresUploadedFiles;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -49,6 +50,9 @@ class Vendor extends Authenticatable
         'wallet_balance',
         'status',
         'approved_at',
+        'suspension_reason',
+        'suspended_at',
+        'suspended_by',
     ];
 
     protected $hidden = [
@@ -70,14 +74,25 @@ class Vendor extends Authenticatable
             'digital_wallet_balance' => 'decimal:2',
             'wallet_balance' => 'decimal:2',
             'approved_at' => 'datetime',
+            'suspended_at' => 'datetime',
             'is_listing_active' => 'boolean',
             'password' => 'hashed',
         ];
     }
 
+    public function suspendedBy(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'suspended_by');
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === 'suspended';
     }
 
     public function portfolioItems(): HasMany
@@ -88,6 +103,29 @@ class Vendor extends Authenticatable
     public function portfolioImages(): HasMany
     {
         return $this->hasMany(VendorPortfolioImage::class);
+    }
+
+    public function shopLogos(): HasMany
+    {
+        return $this->hasMany(VendorShopLogo::class)->orderBy('sort_order');
+    }
+
+    /** @return list<string> */
+    public function shopLogoUrls(): array
+    {
+        $urls = $this->shopLogos
+            ->map(fn (VendorShopLogo $logo) => $logo->imageUrl())
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($urls !== []) {
+            return $urls;
+        }
+
+        $legacy = $this->shopLogoUrl();
+
+        return $legacy ? [$legacy] : [];
     }
 
     public function payouts(): HasMany
@@ -132,6 +170,16 @@ class Vendor extends Authenticatable
 
     public function shopLogoUrl(): ?string
     {
+        if ($this->relationLoaded('shopLogos') && $this->shopLogos->isNotEmpty()) {
+            return $this->shopLogos->first()->imageUrl();
+        }
+
+        $first = $this->shopLogos()->orderBy('sort_order')->first();
+
+        if ($first) {
+            return $first->imageUrl();
+        }
+
         return StoresUploadedFiles::url($this->shop_logo_path);
     }
 

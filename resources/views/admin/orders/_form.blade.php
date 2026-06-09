@@ -143,7 +143,7 @@
     @endforeach
 </x-admin.form-select>
 <x-admin.form-select label="Order status" name="status" :required="true">
-    @foreach (['new','pending_acceptance','accepted','in_progress','in_transit','delivered','cancelled','refunded'] as $s)
-        <option value="{{ $s }}" @selected(old('status', $order?->status ?? 'new') === $s)>{{ str_replace('_', ' ', ucfirst($s)) }}</option>
+    @foreach (\App\Models\Order::STATUSES as $s)
+        <option value="{{ $s }}" @selected(old('status', $order?->status ?? 'new') === $s)>{{ \App\Models\Order::statusLabelFor($s) }}</option>
     @endforeach
 </x-admin.form-select>

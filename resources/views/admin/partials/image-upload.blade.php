@@ -69,7 +69,12 @@
         @if ($required) required @endif
         @change="pickFile($event)"
     >
-    <p class="mt-1 text-xs text-slate-500">PNG, JPG, or WebP · max 4MB@if (! $required) · leave empty to keep current@endif</p>
+    <p class="mt-1 text-xs text-slate-500">
+        PNG, JPG, or WebP · max 4 MB
+        @unless ($required)
+            · leave empty to keep current
+        @endunless
+    </p>
     <div
         x-show="fileError"
         x-cloak
