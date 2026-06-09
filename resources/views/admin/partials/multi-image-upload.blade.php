@@ -89,7 +89,13 @@
         data-jb-max-mb="4"
         @change="pickFiles($event)"
     >
-    <p class="mt-1 text-xs text-slate-500">PNG, JPG, or WebP · max 4 MB each · up to {{ $maxFiles }} images</p>
+    <p class="mt-1 text-xs text-slate-500">
+        @if (! empty($hint))
+            {{ $hint }}
+        @else
+            PNG, JPG, or WebP · max 4 MB each · up to {{ $maxFiles }} images
+        @endif
+    </p>
 
     <div x-show="fileError" x-cloak class="jb-file-error-alert mt-2" role="alert" x-text="fileError"></div>
 

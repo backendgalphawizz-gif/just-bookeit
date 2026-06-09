@@ -4,10 +4,12 @@ namespace App\Support\Api;
 
 use App\Models\Banner;
 use App\Models\Category;
+use App\Models\Dispute;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
+use App\Models\Dispute;
 use App\Models\CustomerMeasurement;
 use App\Models\Order;
 use App\Models\PortfolioItem;
@@ -85,11 +87,14 @@ class CustomerApiPresenter
 
     public static function designerDetail(Vendor $vendor, ?Collection $portfolio = null): array
     {
+        $vendor->loadMissing('shopImages');
+
         return [
             ...self::designerSummary($vendor),
             'owner_name' => $vendor->owner_name,
             'service_type' => $vendor->serviceType(),
             'address' => $vendor->address,
+            'shop_image_urls' => $vendor->shopImageUrls(),
             'portfolio' => ($portfolio ?? collect())->map(fn (PortfolioItem $item) => self::catalogItem($item))->values()->all(),
         ];
     }
@@ -281,6 +286,8 @@ class CustomerApiPresenter
 
     public static function bookingDetail(Order $order): array
     {
+        $order->loadMissing(['category', 'dispute']);
+
         return [
             ...self::bookingSummary($order),
             'billing_address' => $order->billing_address,
@@ -298,6 +305,14 @@ class CustomerApiPresenter
             'payment_summary' => BookingPricingService::fromOrder($order),
             'tracking_steps' => $order->trackBookingSteps(),
             'category' => $order->category ? self::category($order->category) : null,
+            'dispute' => $order->dispute ? [
+                'id' => $order->dispute->id,
+                'subject' => $order->dispute->subject,
+                'status' => $order->dispute->status,
+                'chat_open' => $order->dispute->isChatOpen(),
+            ] : null,
+            'can_raise_dispute' => ! $order->dispute,
+            'dispute_subject_options' => Dispute::subjectOptionsForCategory($order->category),
         ];
     }
 

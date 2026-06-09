@@ -14,8 +14,31 @@
             </form>
         @endif
         @if ($customer->status === 'active')
-            <form method="POST" action="{{ route('admin.customers.suspend', $customer) }}" class="inline-flex">@csrf
+            <form
+                method="POST"
+                action="{{ route('admin.customers.suspend', $customer) }}"
+                class="inline-flex"
+                data-jb-confirm="This customer will be suspended. The reason you enter will be visible to them."
+                data-jb-confirm-title="Suspend customer"
+                data-jb-confirm-variant="error"
+                data-jb-confirm-label="Suspend"
+                data-jb-confirm-requires-reason="Reason for suspension"
+            >
+                @csrf
                 <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
+            </form>
+            <form
+                method="POST"
+                action="{{ route('admin.customers.block', $customer) }}"
+                class="inline-flex"
+                data-jb-confirm="This customer will be blocked. The reason you enter will be visible to them."
+                data-jb-confirm-title="Block customer"
+                data-jb-confirm-variant="error"
+                data-jb-confirm-label="Block"
+                data-jb-confirm-requires-reason="Reason for blocking"
+            >
+                @csrf
+                <x-admin.button variant="danger" type="submit">Block</x-admin.button>
             </form>
         @endif
         <x-admin.button variant="secondary" :href="route('admin.customers.edit', $customer)">Edit</x-admin.button>
@@ -37,6 +60,17 @@
 @endsection
 
 @section('content')
+    @if (in_array($customer->status, ['suspended', 'blocked'], true))
+        <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
+            <div class="jb-card-body">
+                <p class="text-sm font-bold uppercase tracking-wide text-rose-800">
+                    Account {{ $customer->status === 'blocked' ? 'blocked' : 'suspended' }}
+                </p>
+                <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $customer->rejection_reason ?: 'No reason recorded.' }}</p>
+            </div>
+        </div>
+    @endif
+
     <div class="jb-detail-grid">
         <div class="jb-detail-card">
             <h2>Basic Details</h2>

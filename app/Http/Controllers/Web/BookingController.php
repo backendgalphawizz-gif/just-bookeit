@@ -34,7 +34,7 @@ class BookingController extends WebController
         $customer = Auth::guard('customer')->user();
         abort_unless($order->customer_id === $customer->id, 403);
 
-        $order->load(['customer', 'vendor', 'driver', 'category']);
+        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute']);
 
         return view('web.bookings.show', compact('order'));
     }

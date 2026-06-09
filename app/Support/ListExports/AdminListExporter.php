@@ -253,9 +253,10 @@ class AdminListExporter
             'disputes' => [
                 'title' => 'Disputes Export',
                 'basename' => 'disputes',
-                'headers' => ['Order', 'Subject', 'Raised By', 'Status', 'Created'],
+                'headers' => ['Category', 'Order', 'Subject', 'Raised By', 'Status', 'Created'],
                 'query' => fn (Request $request) => $this->applyDateRange(Dispute::query(), $request)
-                    ->with(['order.customer', 'order.vendor'])
+                    ->with(['order.customer', 'order.vendor', 'category'])
+                    ->when($request->filled('category'), fn (Builder $q) => $q->where('category_id', $request->integer('category')))
                     ->when(
                         $request->get('status') === '_open_' || $request->boolean('open_only'),
                         fn (Builder $q) => $q->whereIn('status', Dispute::OPEN_STATUSES)
@@ -266,6 +267,7 @@ class AdminListExporter
                     )
                     ->orderByDesc('created_at'),
                 'map' => fn (Dispute $dispute) => [
+                    $dispute->category?->name ?? $dispute->order?->category?->name ?? '—',
                     $dispute->order?->order_number ?? '—',
                     $dispute->subject,
                     ucfirst($dispute->raised_by),

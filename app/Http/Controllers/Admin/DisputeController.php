@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Category;
 use App\Models\Dispute;
 use App\Models\DisputeMessage;
 use App\Models\Order;
@@ -23,8 +24,11 @@ class DisputeController extends AdminController
     {
         $this->validateListDateRange($request);
 
+        $categoryId = $request->filled('category') ? $request->integer('category') : null;
+
         $disputes = $this->applyDateRange(Dispute::query(), $request)
-            ->with(['order.customer', 'order.vendor'])
+            ->with(['order.customer', 'order.vendor', 'category'])
+            ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
             ->when(
                 $request->get('status') === '_open_' || $request->boolean('open_only'),
                 fn ($q) => $q->whereIn('status', Dispute::OPEN_STATUSES)
@@ -37,26 +41,37 @@ class DisputeController extends AdminController
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.disputes.index', compact('disputes'));
+        $categories = Category::query()
+            ->where('type', 'service')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.disputes.index', compact('disputes', 'categories', 'categoryId'));
     }
 
     public function create(): View
     {
         return view('admin.disputes.create', [
-            'orders' => Order::query()->with('customer')->orderByDesc('created_at')->limit(100)->get(),
+            'orders' => Order::query()->with(['customer', 'category'])->orderByDesc('created_at')->limit(100)->get(),
         ]);
     }
 
     public function store(DisputeStoreRequest $request): RedirectResponse
     {
-        Dispute::query()->create($request->validated());
+        $order = Order::query()->findOrFail($request->integer('order_id'));
 
-        return redirect()->route('admin.disputes.index')->with('success', 'Dispute created successfully.');
+        Dispute::createForOrder($order, collect($request->validated())->except('order_id')->all());
+
+        return redirect()
+            ->route('admin.disputes.index', array_filter(['category' => $order->category_id]))
+            ->with('success', 'Dispute created successfully.');
     }
 
     public function show(Dispute $dispute): View
     {
-        $dispute->load(['order.customer', 'order.vendor', 'order.category', 'messages']);
+        $dispute->load(['order.customer', 'order.vendor', 'order.category', 'category', 'messages']);
 
         $dispute->messages()
             ->where('sender_type', DisputeMessage::SENDER_CUSTOMER)

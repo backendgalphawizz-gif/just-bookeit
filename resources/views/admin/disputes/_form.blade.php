@@ -2,7 +2,9 @@
 @if (!isset($dispute) || $dispute === null)
     <x-admin.form-select label="Order" name="order_id" :required="true" class="sm:col-span-2">
         @foreach ($orders as $o)
-            <option value="{{ $o->id }}" @selected(old('order_id') == $o->id)>{{ $o->order_number }} — {{ $o->customer->name }}</option>
+            <option value="{{ $o->id }}" @selected(old('order_id') == $o->id)>
+                {{ $o->order_number }} — {{ $o->customer->name }}@if ($o->category) ({{ $o->category->name }})@endif
+            </option>
         @endforeach
     </x-admin.form-select>
 @endif

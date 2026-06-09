@@ -20,11 +20,20 @@
     'label' => 'Profile photo',
 ])
 <div class="sm:col-span-2">
+    @include('admin.partials.image-upload', [
+        'label' => 'Shop logo',
+        'name' => 'shop_logo',
+        'currentUrl' => $vendor?->shopLogoUrl(),
+        'hint' => 'Single brand/shop logo used across listings.',
+    ])
+</div>
+<div class="sm:col-span-2">
     @include('admin.partials.multi-image-upload', [
-        'label' => 'Shop logos',
-        'name' => 'shop_logos',
-        'existingImages' => $vendor?->shopLogos ?? collect(),
-        'removeField' => 'remove_shop_logo_ids',
+        'label' => 'Shop images',
+        'name' => 'shop_images',
+        'existingImages' => $vendor?->shopImages ?? collect(),
+        'removeField' => 'remove_shop_image_ids',
+        'hint' => 'Upload multiple photos of the shop interior, exterior, or workspace.',
     ])
 </div>
 

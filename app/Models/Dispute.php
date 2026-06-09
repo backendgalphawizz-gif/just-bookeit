@@ -14,6 +14,7 @@ class Dispute extends Model
 
     protected $fillable = [
         'order_id',
+        'category_id',
         'raised_by',
         'subject',
         'status',
@@ -23,6 +24,20 @@ class Dispute extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public static function createForOrder(Order $order, array $attributes): self
+    {
+        return self::query()->create([
+            ...$attributes,
+            'order_id' => $order->id,
+            'category_id' => $order->category_id,
+        ]);
     }
 
     public function messages(): HasMany
@@ -43,5 +58,39 @@ class Dispute extends Model
     public function statusLabel(): string
     {
         return str_replace('_', ' ', ucfirst($this->status));
+    }
+
+    /** @return list<string> */
+    public static function subjectOptionsForCategory(?Category $category): array
+    {
+        return match ($category?->slug) {
+            'fashion-designer' => [
+                'Measurement mismatch',
+                'Late delivery',
+                'Quality issue',
+                'Customization problem',
+                'Payment dispute',
+            ],
+            'rented-dress' => [
+                'Wrong size or fit',
+                'Dress condition issue',
+                'Late pickup or return',
+                'Security deposit dispute',
+                'Delivery problem',
+            ],
+            'rented-jewellery' => [
+                'Missing jewellery piece',
+                'Damage or wear claim',
+                'Late return',
+                'Deposit refund issue',
+                'Delivery problem',
+            ],
+            default => [
+                'Delivery delay',
+                'Payment dispute',
+                'Service quality',
+                'Other issue',
+            ],
+        };
     }
 }

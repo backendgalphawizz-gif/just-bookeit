@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Models\Dispute;
 use App\Models\DisputeMessage;
 use App\Models\Order;
 use App\Support\Api\CustomerApiPresenter;
@@ -12,6 +13,41 @@ use Illuminate\Http\Request;
 
 class DisputeController extends ApiController
 {
+    public function store(Request $request, Order $booking): JsonResponse
+    {
+        $customer = $request->user('sanctum');
+        abort_unless($booking->customer_id === $customer->id, 403);
+
+        if ($booking->dispute) {
+            return $this->error('A dispute already exists for this booking.', 409);
+        }
+
+        $data = $request->validate([
+            'subject' => ['required', 'string', 'max:255'],
+            'body' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $booking->loadMissing('category');
+
+        $dispute = Dispute::createForOrder($booking, [
+            'raised_by' => 'customer',
+            'subject' => $data['subject'],
+            'status' => 'raised',
+        ]);
+
+        if (filled($data['body'] ?? null)) {
+            $dispute->messages()->create([
+                'sender_type' => DisputeMessage::SENDER_CUSTOMER,
+                'sender_id' => $customer->id,
+                'body' => $data['body'],
+            ]);
+        }
+
+        return $this->success([
+            'dispute' => $this->presentDispute($dispute->fresh(['category', 'messages'])),
+        ], 'Dispute raised successfully.', 201);
+    }
+
     public function show(Request $request, Order $booking): JsonResponse
     {
         $customer = $request->user('sanctum');
@@ -22,7 +58,7 @@ class DisputeController extends ApiController
             return $this->error('No dispute found for this booking.', 404);
         }
 
-        $dispute->load('messages');
+        $dispute->load(['messages', 'category']);
 
         $dispute->messages()
             ->where('sender_type', DisputeMessage::SENDER_ADMIN)
@@ -30,13 +66,7 @@ class DisputeController extends ApiController
             ->update(['read_at' => now()]);
 
         return $this->success([
-            'dispute' => [
-                'id' => $dispute->id,
-                'subject' => $dispute->subject,
-                'status' => $dispute->status,
-                'chat_open' => $dispute->isChatOpen(),
-                'resolution_note' => $dispute->resolution_note,
-            ],
+            'dispute' => $this->presentDispute($dispute),
             'messages' => $dispute->messages->map(fn (DisputeMessage $message) => [
                 'id' => $message->id,
                 'sender_type' => $message->sender_type,
@@ -88,5 +118,23 @@ class DisputeController extends ApiController
                 'created_at' => $message->created_at?->toIso8601String(),
             ],
         ], 'Message sent.', 201);
+    }
+
+    protected function presentDispute(Dispute $dispute): array
+    {
+        $dispute->loadMissing('category');
+
+        return [
+            'id' => $dispute->id,
+            'subject' => $dispute->subject,
+            'status' => $dispute->status,
+            'chat_open' => $dispute->isChatOpen(),
+            'resolution_note' => $dispute->resolution_note,
+            'category' => $dispute->category ? [
+                'id' => $dispute->category->id,
+                'name' => $dispute->category->name,
+                'slug' => $dispute->category->slug,
+            ] : null,
+        ];
     }
 }

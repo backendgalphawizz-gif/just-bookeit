@@ -50,6 +50,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('bookings/{booking}/dispute', [DisputeController::class, 'store'])->name('bookings.dispute.store');
         Route::get('bookings/{booking}/dispute', [DisputeController::class, 'show'])->name('bookings.dispute.show');
         Route::post('bookings/{booking}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('bookings.dispute.messages');
 

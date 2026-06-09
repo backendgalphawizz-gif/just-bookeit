@@ -6,7 +6,18 @@
 @section('header_actions')
     @if ($driver->status === 'pending' && auth('admin')->user()->hasPermission('drivers', 'edit'))
         <form method="POST" action="{{ route('admin.drivers.approve', $driver) }}">@csrf<x-admin.button variant="success" type="submit">Approve</x-admin.button></form>
-        <form method="POST" action="{{ route('admin.drivers.reject', $driver) }}">@csrf<x-admin.button variant="danger" type="submit">Reject</x-admin.button></form>
+        <form
+            method="POST"
+            action="{{ route('admin.drivers.reject', $driver) }}"
+            data-jb-confirm="This driver will be rejected. The reason you enter will be visible to them."
+            data-jb-confirm-title="Reject driver"
+            data-jb-confirm-variant="error"
+            data-jb-confirm-label="Reject"
+            data-jb-confirm-requires-reason="Rejection reason"
+        >
+            @csrf
+            <x-admin.button variant="danger" type="submit">Reject</x-admin.button>
+        </form>
     @endif
     @if ($driver->status === 'active' && auth('admin')->user()->hasPermission('drivers', 'edit'))
         <form method="POST" action="{{ route('admin.drivers.suspend', $driver) }}">@csrf<x-admin.button variant="danger" type="submit">Suspend</x-admin.button></form>
@@ -16,6 +27,15 @@
     @endif
 @endsection
 @section('content')
+    @if ($driver->status === 'rejected')
+        <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
+            <div class="jb-card-body">
+                <p class="text-sm font-bold uppercase tracking-wide text-rose-800">Application rejected</p>
+                <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $driver->rejection_reason ?: 'No rejection reason recorded.' }}</p>
+            </div>
+        </div>
+    @endif
+
     <div class="jb-detail-grid">
         <div class="jb-detail-card">
             <h2>Profile</h2>

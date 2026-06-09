@@ -83,6 +83,14 @@ class LoginController extends VendorController
 
         if ($payload['type'] === OtpService::TYPE_LOGIN) {
             $vendor = $this->otp->findActor(OtpService::ACTOR_VENDOR, $otpSession['mobile']);
+
+            try {
+                $this->otp->ensureActorCanAuthenticate(OtpService::ACTOR_VENDOR, $vendor);
+            } catch (\Illuminate\Validation\ValidationException $exception) {
+                return redirect()->route('vendor.login')
+                    ->with('error', collect($exception->errors())->flatten()->first());
+            }
+
             Auth::guard('vendor')->login($vendor);
             $request->session()->forget('vendor_otp');
             $request->session()->regenerate();

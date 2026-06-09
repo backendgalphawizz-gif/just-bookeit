@@ -3,6 +3,7 @@
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\BookingController;
 use App\Http\Controllers\Web\CatalogController;
+use App\Http\Controllers\Web\DisputeController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\VendorController;
@@ -33,6 +34,9 @@ Route::middleware('customer.auth')->group(function () {
 
     Route::get('/bookings', [BookingController::class, 'index'])->name('web.bookings.index');
     Route::get('/bookings/{order}', [BookingController::class, 'show'])->name('web.bookings.show');
+    Route::post('/bookings/{order}/dispute', [DisputeController::class, 'store'])->name('web.bookings.dispute.store');
+    Route::get('/bookings/{order}/dispute', [DisputeController::class, 'show'])->name('web.bookings.dispute.show');
+    Route::post('/bookings/{order}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('web.bookings.dispute.messages');
     Route::get('/book/{item}', [BookingController::class, 'overview'])->name('web.bookings.overview');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('web.profile.edit');

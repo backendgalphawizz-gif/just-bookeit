@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Customer;
 use App\Http\Requests\Admin\CustomerRequest;
 use App\Support\AdminCityScope;
+use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
@@ -82,8 +83,19 @@ class CustomerController extends AdminController
     {
         $data = $request->validated();
 
+        if (in_array($data['status'] ?? '', ['suspended', 'blocked'], true) && $customer->status !== $data['status']) {
+            return back()
+                ->with('error', 'Use Suspend or Block on the profile page so a reason is recorded for the customer.')
+                ->withInput();
+        }
+
         $customer->fill(collect($data)->except(['profile_image'])->all());
         $customer->is_verified = $request->boolean('is_verified');
+
+        if ($customer->status === 'active') {
+            $customer->rejection_reason = null;
+        }
+
         $this->applyProfileImage($customer, $request);
         $customer->save();
 
@@ -105,18 +117,48 @@ class CustomerController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
-        $customer->update(['status' => 'active']);
+        $customer->update([
+            'status' => 'active',
+            'rejection_reason' => null,
+        ]);
 
         return back()->with('success', "Customer {$customer->name} activated.");
     }
 
-    public function suspend(Customer $customer): RedirectResponse
+    public function suspend(Request $request, Customer $customer): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
-        $customer->update(['status' => 'suspended']);
+        $data = $request->validate(
+            AdminValidationRules::accountRejection(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        $customer->update([
+            'status' => 'suspended',
+            'rejection_reason' => $data['rejection_reason'],
+        ]);
 
         return back()->with('success', "Customer {$customer->name} suspended.");
+    }
+
+    public function block(Request $request, Customer $customer): RedirectResponse
+    {
+        $this->authorizeAdmin('edit');
+
+        $data = $request->validate(
+            AdminValidationRules::accountRejection(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        $customer->update([
+            'status' => 'blocked',
+            'rejection_reason' => $data['rejection_reason'],
+        ]);
+
+        return back()->with('success', "Customer {$customer->name} blocked.");
     }
 
     private function applyProfileImage(Customer $customer, CustomerRequest $request): void

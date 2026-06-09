@@ -48,11 +48,33 @@
             <h2 class="jb-modal-alert-title" x-text="$store.jbConfirm.title"></h2>
             <p class="jb-modal-alert-message" x-show="$store.jbConfirm.message" x-text="$store.jbConfirm.message"></p>
 
+            <div class="jb-modal-alert-reason" x-show="$store.jbConfirm.requiresReason">
+                <label class="jb-label" :for="$store.jbConfirm.reasonInputId" x-text="$store.jbConfirm.reasonLabel"></label>
+                <textarea
+                    class="jb-textarea"
+                    rows="3"
+                    :id="$store.jbConfirm.reasonInputId"
+                    x-model="$store.jbConfirm.reason"
+                    x-init="$watch('$store.jbConfirm.open', open => { if (open && $store.jbConfirm.requiresReason) $nextTick(() => $el.focus()) })"
+                    @keydown.enter.prevent="$store.jbConfirm.confirm()"
+                    placeholder="Explain why this action is being taken..."
+                ></textarea>
+                <p class="jb-modal-alert-reason-count" x-show="$store.jbConfirm.requiresReason">
+                    <span x-text="$store.jbConfirm.reason.trim().length"></span> / 5 characters minimum
+                </p>
+                <p class="jb-modal-alert-reason-hint" x-show="$store.jbConfirm.reasonError" x-text="$store.jbConfirm.reasonError"></p>
+            </div>
+
             <div class="jb-modal-alert-actions">
                 <button type="button" class="jb-modal-alert-btn jb-modal-alert-btn--ghost" @click="$store.jbConfirm.close()">
                     Cancel
                 </button>
-                <button type="button" class="jb-modal-alert-btn" x-text="$store.jbConfirm.confirmLabel" @click="$store.jbConfirm.confirm()"></button>
+                <button
+                    type="button"
+                    class="jb-modal-alert-btn"
+                    x-text="$store.jbConfirm.confirmLabel"
+                    @click="$store.jbConfirm.confirm()"
+                ></button>
             </div>
         </div>
     </div>
@@ -66,6 +88,12 @@
             message: '',
             variant: 'warning',
             confirmLabel: 'Confirm',
+            requiresReason: false,
+            reasonLabel: 'Rejection reason',
+            reasonName: 'rejection_reason',
+            reasonInputId: 'jb-confirm-reason',
+            reason: '',
+            reasonError: '',
             _form: null,
 
             ask(form, options = {}) {
@@ -73,18 +101,53 @@
                 this.message = options.message || '';
                 this.variant = options.variant || 'warning';
                 this.confirmLabel = options.confirmLabel || 'Confirm';
+                this.requiresReason = Boolean(options.requiresReason);
+                this.reasonLabel = options.reasonLabel || 'Rejection reason';
+                this.reasonName = options.reasonName || 'rejection_reason';
+                this.reasonInputId = 'jb-confirm-reason-' + Date.now();
+                this.reason = '';
+                this.reasonError = '';
                 this._form = form;
                 this.open = true;
             },
 
             confirm() {
-                if (this._form) {
-                    this._form.dataset.jbConfirmed = '1';
-                    if (typeof this._form.requestSubmit === 'function') {
-                        this._form.requestSubmit();
-                    } else {
-                        this._form.submit();
+                if (this.requiresReason) {
+                    const reasonField = document.getElementById(this.reasonInputId);
+                    const reason = (reasonField?.value || this.reason || '').trim();
+                    this.reason = reason;
+
+                    if (reason.length < 5) {
+                        this.reasonError = 'Enter at least 5 characters.';
+                        reasonField?.focus();
+
+                        return;
                     }
+
+                    if (! this._form) {
+                        return;
+                    }
+
+                    this.reasonError = '';
+                    this._form.querySelectorAll(`input[name="${this.reasonName}"]`).forEach((input) => input.remove());
+
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = this.reasonName;
+                    input.value = reason;
+                    this._form.appendChild(input);
+                }
+
+                if (! this._form) {
+                    return;
+                }
+
+                this._form.dataset.jbConfirmed = '1';
+
+                if (typeof this._form.requestSubmit === 'function') {
+                    this._form.requestSubmit();
+                } else {
+                    this._form.submit();
                 }
 
                 this.close();
@@ -92,6 +155,9 @@
 
             close() {
                 this.open = false;
+                this.requiresReason = false;
+                this.reason = '';
+                this.reasonError = '';
                 this._form = null;
             },
         });
@@ -118,6 +184,9 @@
             message: form.dataset.jbConfirm,
             variant: form.dataset.jbConfirmVariant || 'warning',
             confirmLabel: form.dataset.jbConfirmLabel || 'Confirm',
+            requiresReason: form.dataset.jbConfirmRequiresReason || '',
+            reasonLabel: form.dataset.jbConfirmRequiresReason || 'Rejection reason',
+            reasonName: form.dataset.jbConfirmReasonName || 'rejection_reason',
         });
     }, true);
 </script>

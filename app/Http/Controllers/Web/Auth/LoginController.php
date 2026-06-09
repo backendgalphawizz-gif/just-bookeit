@@ -82,6 +82,14 @@ class LoginController extends WebController
 
         if ($payload['type'] === OtpService::TYPE_LOGIN) {
             $customer = $this->otp->findActor(OtpService::ACTOR_CUSTOMER, $otpSession['mobile']);
+
+            try {
+                $this->otp->ensureActorCanAuthenticate(OtpService::ACTOR_CUSTOMER, $customer);
+            } catch (\Illuminate\Validation\ValidationException $exception) {
+                return redirect()->route('web.login')
+                    ->with('error', collect($exception->errors())->flatten()->first());
+            }
+
             Auth::guard('customer')->login($customer, true);
             $request->session()->forget('web_otp');
             $request->session()->regenerate();

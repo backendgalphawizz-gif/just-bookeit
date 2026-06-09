@@ -19,6 +19,7 @@ class Customer extends Authenticatable
         'city',
         'profile_image_path',
         'status',
+        'rejection_reason',
         'is_verified',
         'is_guest',
         'total_orders',

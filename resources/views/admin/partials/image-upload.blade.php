@@ -70,10 +70,14 @@
         @change="pickFile($event)"
     >
     <p class="mt-1 text-xs text-slate-500">
-        PNG, JPG, or WebP · max 4 MB
-        @unless ($required)
-            · leave empty to keep current
-        @endunless
+        @if (! empty($hint))
+            {{ $hint }}
+        @else
+            PNG, JPG, or WebP · max 4 MB
+            @unless ($required)
+                · leave empty to keep current
+            @endunless
+        @endif
     </p>
     <div
         x-show="fileError"
