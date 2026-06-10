@@ -4,7 +4,9 @@
 (function () {
     const GST_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)[a-zA-Z0-9._%+\-]+(?<!\.)@(?!(?:\.|-))[a-zA-Z0-9]+(?:[.\-][a-zA-Z0-9]+)*(?<!\.)\.[a-zA-Z]{2,}$/i;
+    const EMAIL_HTML_PATTERN = '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,24}$';
+    const EMAIL_PATTERN = new RegExp(EMAIL_HTML_PATTERN, 'i');
+    const EMAIL_MESSAGE = 'Enter a valid email ID with domain extension (e.g. name@gmail.com or shop@company.in).';
     const PERSON_NAME_PATTERN = /^[\p{L}\s.'-]*$/u;
     const TITLE_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]*$/u;
     const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -205,6 +207,14 @@
         input.addEventListener('blur', validate);
     }
 
+    function hasValidEmailTld(domain) {
+        if (!domain || !domain.includes('.')) {
+            return false;
+        }
+        const tld = domain.split('.').pop() || '';
+        return tld.length >= 2 && tld.length <= 24 && /^[a-zA-Z]+$/.test(tld);
+    }
+
     function validateEmailField(input) {
         const value = input.value.trim();
         const required = input.hasAttribute('required');
@@ -218,16 +228,16 @@
         }
         const atCount = (value.match(/@/g) || []).length;
         if (atCount !== 1) {
-            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+            showFieldError(input, EMAIL_MESSAGE);
             return false;
         }
         const parts = value.split('@');
-        if (!parts[0] || !parts[1] || !parts[1].includes('.')) {
-            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+        if (!parts[0] || !parts[1] || !hasValidEmailTld(parts[1])) {
+            showFieldError(input, EMAIL_MESSAGE);
             return false;
         }
         if (!EMAIL_PATTERN.test(value)) {
-            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+            showFieldError(input, EMAIL_MESSAGE);
             return false;
         }
         clearFieldError(input);
@@ -260,9 +270,15 @@
     }
 
     function ensureEmailInputs(form) {
-        form.querySelectorAll('input[type="email"]').forEach((input) => {
+        form.querySelectorAll('[data-jb-restrict="email"], input[type="email"]').forEach((input) => {
             if (!input.dataset.jbRestrict) {
                 input.dataset.jbRestrict = 'email';
+            }
+            if (!input.getAttribute('pattern')) {
+                input.setAttribute('pattern', EMAIL_HTML_PATTERN);
+            }
+            if (!input.getAttribute('title')) {
+                input.setAttribute('title', EMAIL_MESSAGE);
             }
             bindRestriction(input);
             bindEmailValidation(input);
