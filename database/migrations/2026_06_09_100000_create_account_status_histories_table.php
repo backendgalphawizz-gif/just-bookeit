@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreignId('admin_id')->nullable()->constrained('admins')->nullOnDelete();
             $table->timestamps();
 
-            $table->index(['subject_type', 'subject_id', 'created_at']);
+            $table->index(['subject_type', 'subject_id', 'created_at'], 'acct_status_hist_subject_idx');
         });
     }
 
