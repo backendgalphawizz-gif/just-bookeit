@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V3;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Driver;
 use App\Services\Auth\OtpService;
+use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -131,7 +132,7 @@ class DriverAuthController extends ApiController
 
         return [
             'name' => [$rule, 'string', 'max:255'],
-            'email' => [$emailRule, 'nullable', 'email', 'max:255'],
+            'email' => array_merge([$emailRule], array_slice(AdminValidationRules::emailRules(false), 1)),
             'mobile_no' => $driverId ? $mobileRules : ['prohibited'],
             'city' => [$emailRule, 'nullable', 'string', 'max:100'],
             'vehicle_no' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:20'],

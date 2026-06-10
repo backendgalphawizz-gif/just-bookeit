@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Services\Auth\OtpService;
+use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -163,7 +164,7 @@ class UserAuthController extends ApiController
 
         return [
             'name' => [$rule, 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => AdminValidationRules::emailRules(false),
             'city' => ['nullable', 'string', 'max:100'],
             'mobile_no' => $mobileRules,
         ];

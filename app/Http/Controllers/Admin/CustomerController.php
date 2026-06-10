@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAccountStatusHistory;
+use App\Models\AccountStatusHistory;
 use App\Models\Customer;
 use App\Http\Requests\Admin\CustomerRequest;
 use App\Support\AdminCityScope;
@@ -16,6 +18,7 @@ use Illuminate\View\View;
 class CustomerController extends AdminController
 {
     use AppliesListDateFilter;
+    use RecordsAccountStatusHistory;
 
     protected string $permissionModule = 'customers';
 
@@ -69,7 +72,12 @@ class CustomerController extends AdminController
 
     public function show(Customer $customer): View
     {
-        $customer->load(['orders' => fn ($q) => $q->latest()->limit(10), 'orders.vendor', 'orders.category']);
+        $customer->load([
+            'orders' => fn ($q) => $q->latest()->limit(10),
+            'orders.vendor',
+            'orders.category',
+            'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
+        ]);
 
         return view('admin.customers.show', compact('customer'));
     }
@@ -89,6 +97,8 @@ class CustomerController extends AdminController
                 ->withInput();
         }
 
+        $previousStatus = $customer->status;
+
         $customer->fill(collect($data)->except(['profile_image'])->all());
         $customer->is_verified = $request->boolean('is_verified');
 
@@ -98,6 +108,15 @@ class CustomerController extends AdminController
 
         $this->applyProfileImage($customer, $request);
         $customer->save();
+
+        if ($previousStatus !== $customer->status) {
+            $this->recordAccountStatusHistory(
+                $customer,
+                AccountStatusHistory::ACTION_STATUS_UPDATE,
+                $previousStatus,
+                $customer->status,
+            );
+        }
 
         return redirect()->route('admin.customers.show', $customer)->with('success', 'Customer updated successfully.');
     }
@@ -117,10 +136,19 @@ class CustomerController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $customer->status;
+
         $customer->update([
             'status' => 'active',
             'rejection_reason' => null,
         ]);
+
+        $this->recordAccountStatusHistory(
+            $customer,
+            AccountStatusHistory::ACTION_ACTIVATE,
+            $previousStatus,
+            'active',
+        );
 
         return back()->with('success', "Customer {$customer->name} activated.");
     }
@@ -135,10 +163,20 @@ class CustomerController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        $previousStatus = $customer->status;
+
         $customer->update([
             'status' => 'suspended',
             'rejection_reason' => $data['rejection_reason'],
         ]);
+
+        $this->recordAccountStatusHistory(
+            $customer,
+            AccountStatusHistory::ACTION_SUSPEND,
+            $previousStatus,
+            'suspended',
+            $data['rejection_reason'],
+        );
 
         return back()->with('success', "Customer {$customer->name} suspended.");
     }
@@ -153,10 +191,20 @@ class CustomerController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        $previousStatus = $customer->status;
+
         $customer->update([
             'status' => 'blocked',
             'rejection_reason' => $data['rejection_reason'],
         ]);
+
+        $this->recordAccountStatusHistory(
+            $customer,
+            AccountStatusHistory::ACTION_BLOCK,
+            $previousStatus,
+            'blocked',
+            $data['rejection_reason'],
+        );
 
         return back()->with('success', "Customer {$customer->name} blocked.");
     }

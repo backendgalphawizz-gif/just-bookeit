@@ -7,6 +7,7 @@
 @section('back_href', route('admin.customers.index'))
 
 @section('header_actions')
+    <x-admin.account-history :histories="$customer->statusHistories" title="Customer account history" />
     @if (auth('admin')->user()->hasPermission('customers', 'edit'))
         @if ($customer->status !== 'active')
             <form method="POST" action="{{ route('admin.customers.activate', $customer) }}" class="inline-flex">@csrf

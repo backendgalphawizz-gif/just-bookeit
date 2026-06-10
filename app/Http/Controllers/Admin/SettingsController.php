@@ -107,6 +107,8 @@ class SettingsController extends AdminController
 
     protected function updateContact(Request $request): void
     {
+        $request->merge(AdminValidationRules::normalizeEmailFields($request->all()));
+
         $data = $request->validate(
             AdminValidationRules::settingsContact(),
             AdminValidationRules::messages(),

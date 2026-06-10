@@ -13,6 +13,10 @@
         $inputType = 'text';
     }
 
+    if ($restrict === 'email' && $inputType === 'text') {
+        $inputType = 'email';
+    }
+
     $inputMode = match ($restrict) {
         'phone', 'integer', 'account-number' => 'numeric',
         'decimal' => 'decimal',
@@ -64,6 +68,7 @@
             @if ($maxValue !== null) max="{{ $maxValue }}" @endif
             @if (!empty($step)) step="{{ $step }}" @endif
             @if (!empty($placeholder)) placeholder="{{ $placeholder }}" @endif
+            @if ($restrict === 'email') maxlength="255" @endif
             @if ($restrict === 'phone') maxlength="10" @endif
             @if ($restrict === 'currency') maxlength="10" @endif
             @if ($restrict === 'gst') maxlength="15" data-jb-max-chars="15" @endif

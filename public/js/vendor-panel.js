@@ -2,6 +2,8 @@
  * Vendor panel — live input restrictions (same rules as admin panel).
  */
 (function () {
+    const EMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+
     const VP_FILTERS = {
         'person-name': (v) => v.replace(/[^\p{L}\s.'-]/gu, ''),
         city: (v) => v.replace(/[^\p{L}\s.'-]/gu, ''),
@@ -20,6 +22,52 @@
         return VP_FILTERS[type] ? VP_FILTERS[type](value) : value;
     }
 
+    function maxLengthFor(input) {
+        const fromAttr = parseInt(input.getAttribute('maxlength'), 10);
+        return fromAttr > 0 ? fromAttr : null;
+    }
+
+    function clampToMaxLength(input, value) {
+        const max = maxLengthFor(input);
+        return max ? value.slice(0, max) : value;
+    }
+
+    function showFieldError(input, message) {
+        let el = input.parentElement?.querySelector('[data-vp-live-error]');
+        if (!el) {
+            el = document.createElement('p');
+            el.dataset.vpLiveError = '1';
+            el.className = 'vp-field-error';
+            input.parentElement?.appendChild(el);
+        }
+        el.textContent = message;
+        input.classList.add('vp-input--error');
+    }
+
+    function clearFieldError(input) {
+        input.parentElement?.querySelector('[data-vp-live-error]')?.remove();
+        input.classList.remove('vp-input--error');
+    }
+
+    function validateEmailField(input) {
+        const value = input.value.trim();
+        const required = input.hasAttribute('required');
+        if (value === '') {
+            if (required) {
+                showFieldError(input, 'This field is required.');
+                return false;
+            }
+            clearFieldError(input);
+            return true;
+        }
+        if (!EMAIL_PATTERN.test(value)) {
+            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    }
+
     function bindRestriction(input) {
         const type = input.dataset.vpRestrict;
         if (!type || !VP_FILTERS[type]) return;
@@ -27,7 +75,7 @@
         const apply = () => {
             const start = input.selectionStart;
             const before = input.value;
-            const after = filterValue(type, before);
+            const after = clampToMaxLength(input, filterValue(type, before));
             if (after !== before) {
                 input.value = after;
                 const delta = after.length - before.length;
@@ -43,14 +91,48 @@
             const filtered = filterValue(type, pasted);
             const start = input.selectionStart ?? input.value.length;
             const end = input.selectionEnd ?? input.value.length;
-            input.value = filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end));
-            const pos = start + filtered.length;
+            input.value = clampToMaxLength(
+                input,
+                filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end))
+            );
+            const pos = Math.min(start + filtered.length, input.value.length);
             input.setSelectionRange(pos, pos);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         });
-        if (input.value) input.value = filterValue(type, input.value);
+        if (input.value) input.value = clampToMaxLength(input, filterValue(type, input.value));
+
+        if (type === 'email') {
+            const validate = () => validateEmailField(input);
+            input.addEventListener('input', validate);
+            input.addEventListener('blur', validate);
+        }
     }
 
     document.querySelectorAll('[data-vp-restrict]').forEach(bindRestriction);
+
+    document.querySelectorAll('form[method="POST"], form[method="post"]').forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            let valid = true;
+            form.querySelectorAll('[data-vp-restrict="email"]').forEach((input) => {
+                if (!validateEmailField(input)) {
+                    valid = false;
+                }
+            });
+            form.querySelectorAll('[maxlength][data-vp-restrict]').forEach((input) => {
+                const max = maxLengthFor(input);
+                if (max && input.value.length > max) {
+                    showFieldError(
+                        input,
+                        'Must be at most ' + max + ' characters (' + input.value.length + '/' + max + ').'
+                    );
+                    valid = false;
+                }
+            });
+            if (!valid) {
+                event.preventDefault();
+            }
+        });
+    });
 
     const VP_DEFAULT_MAX_FILE_BYTES = 20 * 1024 * 1024;
 

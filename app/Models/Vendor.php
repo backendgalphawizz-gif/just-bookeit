@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -84,6 +85,11 @@ class Vendor extends Authenticatable
     public function suspendedBy(): BelongsTo
     {
         return $this->belongsTo(Admin::class, 'suspended_by');
+    }
+
+    public function statusHistories(): MorphMany
+    {
+        return $this->morphMany(AccountStatusHistory::class, 'subject');
     }
 
     public function orders(): HasMany

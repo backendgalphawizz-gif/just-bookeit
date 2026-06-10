@@ -7,6 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 abstract class AdminFormRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge(AdminValidationRules::normalizeEmailFields($this->all()));
+    }
+
     public function authorize(): bool
     {
         return true;

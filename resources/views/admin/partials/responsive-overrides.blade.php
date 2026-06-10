@@ -1347,6 +1347,141 @@
         }
     }
 
+    .jb-history-modal-card {
+        position: relative;
+        z-index: 10;
+        width: min(94vw, 72rem);
+        max-width: min(94vw, 72rem);
+        max-height: min(88vh, 44rem);
+        display: flex;
+        flex-direction: column;
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+        text-align: left;
+        overflow: hidden;
+    }
+
+    .jb-history-modal-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem 1rem;
+        border-bottom: 1px solid rgb(226 232 240);
+    }
+
+    .jb-history-modal-title {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-history-modal-subtitle {
+        margin: 0.35rem 0 0;
+        font-size: 0.82rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-history-modal-close {
+        border: 0;
+        background: transparent;
+        color: rgb(100 116 139);
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0.15rem 0.35rem;
+    }
+
+    .jb-history-modal-body {
+        padding: 0 1.5rem;
+        overflow-x: hidden;
+        overflow-y: auto;
+        flex: 1 1 auto;
+    }
+
+    .jb-history-modal-foot {
+        display: flex;
+        justify-content: flex-end;
+        padding: 1rem 1.5rem 1.25rem;
+        border-top: 1px solid rgb(226 232 240);
+    }
+
+    .jb-history-empty {
+        padding: 2rem 0;
+        text-align: center;
+        font-size: 0.9rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-history-table-wrap {
+        padding: 1rem 0 1.25rem;
+        overflow: visible;
+    }
+
+    .jb-history-table-wrap .jb-history-table {
+        width: 100%;
+        min-width: 0;
+        table-layout: fixed;
+    }
+
+    .jb-history-col-date { width: 17%; }
+    .jb-history-col-action { width: 12%; }
+    .jb-history-col-status { width: 9%; }
+    .jb-history-col-reason { width: 41%; }
+    .jb-history-col-admin { width: 12%; }
+
+    .jb-history-table th,
+    .jb-history-table td {
+        font-size: 0.8rem;
+        vertical-align: top;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .jb-history-table th {
+        white-space: nowrap;
+    }
+
+    .jb-history-reason,
+    .jb-history-admin {
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .jb-history-action {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 9999px;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .jb-history-action--success {
+        background: rgb(220 252 231);
+        color: rgb(21 128 61);
+    }
+
+    .jb-history-action--error {
+        background: rgb(255 228 230);
+        color: rgb(190 18 60);
+    }
+
+    .jb-history-action--warning {
+        background: rgb(254 243 199);
+        color: rgb(180 83 9);
+    }
+
+    .jb-history-action--neutral {
+        background: rgb(241 245 249);
+        color: rgb(71 85 105);
+    }
+
     .jb-export-dropdown {
         position: relative;
         display: inline-flex;

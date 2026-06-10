@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web\Auth;
 use App\Http\Controllers\Web\WebController;
 use App\Models\Customer;
 use App\Services\Auth\OtpService;
+use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
@@ -131,7 +132,7 @@ class LoginController extends WebController
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => AdminValidationRules::emailRules(false),
             'registration_token' => ['required', 'string'],
         ]);
 

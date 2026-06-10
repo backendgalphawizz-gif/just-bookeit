@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -43,6 +44,11 @@ class Customer extends Authenticatable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function statusHistories(): MorphMany
+    {
+        return $this->morphMany(AccountStatusHistory::class, 'subject');
     }
 
     public function addresses(): HasMany

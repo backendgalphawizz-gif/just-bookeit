@@ -22,13 +22,34 @@ const JB_FILTERS = {
     'comma-list': (value) => value.replace(/[^\p{L}\p{N}\s,.\-]/gu, ''),
     gst: (value) => value.replace(/[^0-9A-Za-z]/g, '').toUpperCase().slice(0, 15),
     'vehicle-no': (value) => value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 20),
-    email: (value) => value.replace(/[^\w.@+\-]/g, '').slice(0, 255),
+    email: (value) => {
+        let cleaned = value.replace(/\s/g, '').replace(/[^\w.@+\-]/g, '');
+        const firstAt = cleaned.indexOf('@');
+        if (firstAt !== -1) {
+            cleaned = cleaned.slice(0, firstAt + 1) + cleaned.slice(firstAt + 1).replace(/@/g, '');
+        }
+        return cleaned.slice(0, 255);
+    },
     url: (value) => value.replace(/[^\w.:\/?#@!$&'()*+,;=%\-\[\]]/g, '').slice(0, 500),
 };
 
 function filterValue(type, value) {
     const fn = JB_FILTERS[type];
     return fn ? fn(value) : value;
+}
+
+function maxLengthFor(input) {
+    const fromData = parseInt(input.dataset.jbMaxChars, 10);
+    if (fromData > 0) {
+        return fromData;
+    }
+    const fromAttr = parseInt(input.getAttribute('maxlength'), 10);
+    return fromAttr > 0 ? fromAttr : null;
+}
+
+function clampToMaxLength(input, value) {
+    const max = maxLengthFor(input);
+    return max ? value.slice(0, max) : value;
 }
 
 function bindRestriction(input) {
@@ -41,7 +62,7 @@ function bindRestriction(input) {
         const start = input.selectionStart;
         const end = input.selectionEnd;
         const before = input.value;
-        const after = filterValue(type, before);
+        const after = clampToMaxLength(input, filterValue(type, before));
 
         if (after !== before) {
             input.value = after;
@@ -59,8 +80,11 @@ function bindRestriction(input) {
         const filtered = filterValue(type, pasted);
         const start = input.selectionStart ?? input.value.length;
         const end = input.selectionEnd ?? input.value.length;
-        input.value = filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end));
-        const pos = start + filtered.length;
+        input.value = clampToMaxLength(
+            input,
+            filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end))
+        );
+        const pos = Math.min(start + filtered.length, input.value.length);
         input.setSelectionRange(pos, pos);
         input.dispatchEvent(new Event('input', { bubbles: true }));
     });
@@ -70,7 +94,7 @@ function bindRestriction(input) {
     });
 
     if (input.value) {
-        input.value = filterValue(type, input.value);
+        input.value = clampToMaxLength(input, filterValue(type, input.value));
     }
 }
 
