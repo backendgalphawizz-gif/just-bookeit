@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Models\SupportTicket;
+use App\Support\AdminValidationRules;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class SupportTicketController extends ApiController
 
         $data = $request->validate([
             'subject' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => AdminValidationRules::emailRules(true),
             'description' => ['required', 'string', 'max:5000'],
         ]);
 

@@ -40,6 +40,7 @@
             <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
         </form>
     @endif
+    <x-admin.account-history :histories="$vendor->statusHistories" title="Vendor account history" />
     @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.vendors.edit', $vendor)">Edit</x-admin.button>
     @endif
@@ -99,8 +100,8 @@
     </div>
 
     <div class="jb-detail-grid">
-        <div class="jb-detail-card">
-            <h2>Profile</h2>
+        <div class="jb-detail-card lg:col-span-2">
+            <h2>Profile & branding</h2>
             <x-admin.actor-profile-header
                 :image-url="$vendor->profileImageUrl()"
                 :fallback-url="$vendor->shopLogoUrl()"
@@ -109,66 +110,119 @@
             >
                 @include('admin.components.status-badge', ['status' => $vendor->status])
             </x-admin.actor-profile-header>
+            <div class="jb-doc-image-grid mt-4">
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Profile photo</p>
+                    @if ($vendor->profileImageUrl())
+                        <img src="{{ $vendor->profileImageUrl() }}" alt="Profile photo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                    @else
+                        <p class="text-sm text-slate-500">Not uploaded</p>
+                    @endif
+                </div>
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
+                    @if ($vendor->shopLogoUrl())
+                        <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                    @else
+                        <p class="text-sm text-slate-500">Not uploaded</p>
+                    @endif
+                </div>
+                <div class="sm:col-span-2">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop images</p>
+                    @if ($vendor->shopImageUrls() !== [])
+                        <div class="flex flex-wrap gap-3">
+                            @foreach ($vendor->shopImageUrls() as $imageUrl)
+                                <img src="{{ $imageUrl }}" alt="Shop image" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-slate-500">Not uploaded</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="jb-detail-card">
+            <h2>Business details</h2>
             <dl class="jb-dl">
-                <div><dt>Owner</dt><dd>{{ $vendor->owner_name }}</dd></div>
+                <div><dt>Shop name</dt><dd>{{ $vendor->shop_name ?? '—' }}</dd></div>
+                <div><dt>Brand name</dt><dd>{{ $vendor->brand_name }}</dd></div>
+                <div><dt>Owner name</dt><dd>{{ $vendor->owner_name }}</dd></div>
                 <div><dt>Mobile No</dt><dd>{{ $vendor->mobile }}</dd></div>
                 <div><dt>Email ID</dt><dd>{{ $vendor->email ?? '—' }}</dd></div>
-                <div><dt>City</dt><dd>{{ $vendor->city ?? '—' }}</dd></div>
-                <div><dt>Service type</dt><dd>{{ $vendor->serviceType() ?? '—' }}</dd></div>
-                <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>
-                <div><dt>Digital wallet</dt><dd>₹{{ number_format($vendor->digital_wallet_balance, 2) }}</dd></div>
-                <div><dt>Actual wallet</dt><dd>₹{{ number_format($vendor->wallet_balance, 2) }}</dd></div>
-                <div><dt>Total earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
+                <div><dt>Service types</dt><dd>{{ $vendor->serviceType() ?? '—' }}</dd></div>
+                <div><dt>Business Mobile No</dt><dd>{{ $vendor->business_mobile ?? '—' }}</dd></div>
+                <div><dt>Business Email ID</dt><dd>{{ $vendor->business_email ?? '—' }}</dd></div>
+                <div><dt>GST number</dt><dd>{{ $vendor->gst_number ?? '—' }}</dd></div>
             </dl>
         </div>
-        @if ($vendor->shopLogoUrl() || $vendor->shopImageUrls() !== [] || $vendor->panCardUrl())
-            <div class="jb-detail-card lg:col-span-2">
-                <h2>Shop & documents</h2>
-                <div class="jb-doc-image-grid">
-                    @if ($vendor->shopLogoUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
-                            <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
-                        </div>
-                    @endif
-                    @if ($vendor->shopImageUrls() !== [])
-                        <div class="sm:col-span-2">
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop images</p>
-                            <div class="flex flex-wrap gap-3">
-                                @foreach ($vendor->shopImageUrls() as $imageUrl)
-                                    <img src="{{ $imageUrl }}" alt="Shop image" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-                    @if ($vendor->panCardUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">PAN card</p>
-                            <img src="{{ $vendor->panCardUrl() }}" alt="PAN card" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
-                    @endif
-                </div>
-            </div>
-        @endif
-        @if ($vendor->aadharFrontUrl() || $vendor->aadharBackUrl())
-            <div class="jb-detail-card lg:col-span-2">
-                <h2>Aadhar</h2>
-                <div class="jb-doc-image-grid">
+
+        <div class="jb-detail-card">
+            <h2>Address</h2>
+            <dl class="jb-dl">
+                <div class="sm:col-span-2"><dt>Address</dt><dd>{{ $vendor->address ?? '—' }}</dd></div>
+                <div><dt>Country</dt><dd>{{ $vendor->country ?? '—' }}</dd></div>
+                <div><dt>State</dt><dd>{{ $vendor->state ?? '—' }}</dd></div>
+                <div><dt>City</dt><dd>{{ $vendor->city ?? '—' }}</dd></div>
+                <div><dt>Pincode</dt><dd>{{ $vendor->pincode ?? '—' }}</dd></div>
+            </dl>
+        </div>
+
+        <div class="jb-detail-card lg:col-span-2">
+            <h2>KYC documents</h2>
+            <div class="jb-doc-image-grid">
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar front</p>
                     @if ($vendor->aadharFrontUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Front</p>
-                            <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
+                        <img src="{{ $vendor->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image panel-lightbox-trigger">
+                    @else
+                        <p class="text-sm text-slate-500">Not uploaded</p>
                     @endif
+                </div>
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar back</p>
                     @if ($vendor->aadharBackUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Back</p>
-                            <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
+                        <img src="{{ $vendor->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image panel-lightbox-trigger">
+                    @else
+                        <p class="text-sm text-slate-500">Not uploaded</p>
+                    @endif
+                </div>
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">PAN card</p>
+                    @if ($vendor->panCardUrl())
+                        <img src="{{ $vendor->panCardUrl() }}" alt="PAN card" class="jb-doc-image panel-lightbox-trigger">
+                    @else
+                        <p class="text-sm text-slate-500">Not uploaded</p>
                     @endif
                 </div>
             </div>
-        @endif
+        </div>
+
+        <div class="jb-detail-card">
+            <h2>Bank details</h2>
+            <dl class="jb-dl">
+                <div><dt>Account holder name</dt><dd>{{ $vendor->account_name ?? '—' }}</dd></div>
+                <div><dt>Account number</dt><dd>{{ $vendor->account_number ?? '—' }}</dd></div>
+                <div><dt>IFSC code</dt><dd>{{ $vendor->ifsc_code ?? '—' }}</dd></div>
+                <div><dt>Bank name</dt><dd>{{ $vendor->bank_name ?? '—' }}</dd></div>
+                <div><dt>Account type</dt><dd>{{ $vendor->account_type ? ucfirst($vendor->account_type) : '—' }}</dd></div>
+            </dl>
+        </div>
+
+        <div class="jb-detail-card">
+            <h2>Categories & admin stats</h2>
+            <dl class="jb-dl">
+                <div class="sm:col-span-2">
+                    <dt>Categories</dt>
+                    <dd>{{ filled($vendor->categories) ? implode(', ', $vendor->categories) : '—' }}</dd>
+                </div>
+                <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $vendor->status])</dd></div>
+                <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>
+                <div><dt>Orders completed</dt><dd>{{ number_format($vendor->orders_completed) }}</dd></div>
+                <div><dt>Earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
+            </dl>
+        </div>
+
         <div class="jb-detail-card lg:col-span-2">
             <h2>Recent Orders</h2>
             <div class="jb-table-wrap mt-4">

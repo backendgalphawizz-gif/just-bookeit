@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAccountStatusHistory;
+use App\Models\AccountStatusHistory;
 use App\Models\Vendor;
 use App\Models\VendorShopImage;
 use App\Http\Requests\Admin\VendorRequest;
@@ -18,6 +20,7 @@ use Illuminate\View\View;
 class VendorController extends AdminController
 {
     use AppliesListDateFilter;
+    use RecordsAccountStatusHistory;
 
     protected string $permissionModule = 'vendors';
 
@@ -78,6 +81,7 @@ class VendorController extends AdminController
             'shopImages',
             'orders' => fn ($q) => $q->latest()->limit(10),
             'orders.customer',
+            'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
         ]);
 
         return view('admin.vendors.show', compact('vendor'));
@@ -119,9 +123,19 @@ class VendorController extends AdminController
             $data['suspended_by'] = null;
         }
 
+        $previousStatus = $vendor->status;
         $vendor->fill($data);
         $this->applyVendorImages($vendor, $request);
         $vendor->save();
+
+        if ($previousStatus !== $vendor->status) {
+            $this->recordAccountStatusHistory(
+                $vendor,
+                AccountStatusHistory::ACTION_STATUS_UPDATE,
+                $previousStatus,
+                $vendor->status,
+            );
+        }
         $this->applyShopImages($vendor, $request);
 
         return redirect()->route('admin.vendors.show', $vendor)->with('success', 'Vendor updated successfully.');
@@ -142,11 +156,20 @@ class VendorController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $vendor->status;
+
         $vendor->update([
             'status' => 'active',
             'approved_at' => now(),
             'rejection_reason' => null,
         ]);
+
+        $this->recordAccountStatusHistory(
+            $vendor,
+            AccountStatusHistory::ACTION_APPROVE,
+            $previousStatus,
+            'active',
+        );
 
         return back()->with('success', "Vendor {$vendor->brand_name} approved.");
     }
@@ -160,9 +183,26 @@ class VendorController extends AdminController
             'vendor_ids.*' => ['integer', 'exists:vendors,id'],
         ]);
 
-        $approved = AdminCityScope::scopeVendors(Vendor::query())
+        $pendingVendors = AdminCityScope::scopeVendors(Vendor::query())
             ->whereIn('id', $data['vendor_ids'])
             ->where('status', 'pending')
+            ->get(['id', 'status']);
+
+        if ($pendingVendors->isEmpty()) {
+            return back()->with('error', 'No pending vendors were selected for approval.');
+        }
+
+        foreach ($pendingVendors as $pendingVendor) {
+            $this->recordAccountStatusHistory(
+                $pendingVendor,
+                AccountStatusHistory::ACTION_BULK_APPROVE,
+                'pending',
+                'active',
+            );
+        }
+
+        $approved = Vendor::query()
+            ->whereIn('id', $pendingVendors->pluck('id'))
             ->update([
                 'status' => 'active',
                 'approved_at' => now(),
@@ -186,11 +226,21 @@ class VendorController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        $previousStatus = $vendor->status;
+
         $vendor->update([
             'status' => 'rejected',
             'approved_at' => null,
             'rejection_reason' => $data['rejection_reason'],
         ]);
+
+        $this->recordAccountStatusHistory(
+            $vendor,
+            AccountStatusHistory::ACTION_REJECT,
+            $previousStatus,
+            'rejected',
+            $data['rejection_reason'],
+        );
 
         return back()->with('success', "Vendor {$vendor->brand_name} rejected.");
     }
@@ -205,6 +255,8 @@ class VendorController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        $previousStatus = $vendor->status;
+
         $vendor->update([
             'status' => 'suspended',
             'suspension_reason' => $data['suspension_reason'],
@@ -212,12 +264,22 @@ class VendorController extends AdminController
             'suspended_by' => auth('admin')->id(),
         ]);
 
+        $this->recordAccountStatusHistory(
+            $vendor,
+            AccountStatusHistory::ACTION_SUSPEND,
+            $previousStatus,
+            'suspended',
+            $data['suspension_reason'],
+        );
+
         return back()->with('success', "Vendor {$vendor->brand_name} suspended.");
     }
 
     public function activate(Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+
+        $previousStatus = $vendor->status;
 
         $vendor->update([
             'status' => 'active',
@@ -227,6 +289,13 @@ class VendorController extends AdminController
             'suspended_by' => null,
             'approved_at' => $vendor->approved_at ?? now(),
         ]);
+
+        $this->recordAccountStatusHistory(
+            $vendor,
+            AccountStatusHistory::ACTION_ACTIVATE,
+            $previousStatus,
+            'active',
+        );
 
         return back()->with('success', "Vendor {$vendor->brand_name} reactivated.");
     }

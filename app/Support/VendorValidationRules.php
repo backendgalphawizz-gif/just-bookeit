@@ -46,7 +46,7 @@ class VendorValidationRules
     {
         return [
             'owner_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
-            'email' => ['required', 'email', 'max:255', Rule::unique('vendors', 'email')->ignore($vendorId)],
+            'email' => AdminValidationRules::emailRules(true, [Rule::unique('vendors', 'email')->ignore($vendorId)]),
             'mobile' => ['nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE, Rule::unique('vendors', 'mobile')->ignore($vendorId)],
             'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB],
             'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB],
@@ -60,7 +60,7 @@ class VendorValidationRules
             'service_types' => ['nullable', 'array', 'min:1'],
             'service_types.*' => ['string', 'max:100', Rule::in(self::SERVICE_TYPES)],
             'business_mobile' => ['nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE],
-            'business_mail' => ['nullable', 'email', 'max:255'],
+            'business_mail' => AdminValidationRules::emailRules(false),
             'gst_no' => ['nullable', 'string', 'size:15', 'regex:'.AdminValidationRules::REGEX_GST],
             'address' => ['nullable', 'string', 'max:500', 'regex:'.AdminValidationRules::REGEX_TEXT],
         ];
@@ -82,7 +82,7 @@ class VendorValidationRules
         return [
             'shop_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'owner_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
-            'email' => ['required', 'email', 'max:255', 'unique:vendors,email'],
+            'email' => AdminValidationRules::emailRules(true, ['unique:vendors,email']),
             'city' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
             'service_types' => ['required', 'string', 'max:500', 'regex:'.AdminValidationRules::REGEX_TEXT],
             'aadhar_front' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],

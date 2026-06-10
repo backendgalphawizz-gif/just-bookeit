@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V2;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Vendor;
 use App\Services\Auth\OtpService;
+use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -129,11 +130,11 @@ class VendorAuthController extends ApiController
             'shop_name' => [$required ? 'required_without:brand_name' : 'sometimes', 'nullable', 'string', 'max:255'],
             'brand_name' => [$required ? 'required_without:shop_name' : 'sometimes', 'nullable', 'string', 'max:255'],
             'owner_name' => [$rule, 'string', 'max:255'],
-            'email' => [$rule, 'email', 'max:255'],
+            'email' => array_merge([$rule], array_slice(AdminValidationRules::emailRules(false), 1)),
             'mobile_no' => $vendorId ? $mobileRules : ['prohibited'],
             'service_types' => [$rule, 'string', 'max:500'],
             'business_mobile' => [$rule, 'string', 'max:20'],
-            'business_mail' => [$rule, 'email', 'max:255'],
+            'business_mail' => array_merge([$rule], array_slice(AdminValidationRules::emailRules(false), 1)),
             'gst_no' => ['nullable', 'string', 'max:15'],
             'address' => [$rule, 'string', 'max:500'],
             'country' => [$rule, 'string', 'max:100'],

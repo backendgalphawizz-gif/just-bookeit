@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\RecordsAccountStatusHistory;
 use App\Http\Requests\Admin\DriverRequest;
+use App\Models\AccountStatusHistory;
 use App\Models\Driver;
 use App\Support\AdminCityScope;
 use App\Support\AdminValidationRules;
@@ -16,6 +18,7 @@ use Illuminate\View\View;
 class DriverController extends AdminController
 {
     use AppliesListDateFilter;
+    use RecordsAccountStatusHistory;
 
     protected string $permissionModule = 'drivers';
 
@@ -68,7 +71,10 @@ class DriverController extends AdminController
 
     public function show(Driver $driver): View
     {
-        $driver->load(['orders' => fn ($q) => $q->latest()->limit(10)]);
+        $driver->load([
+            'orders' => fn ($q) => $q->latest()->limit(10),
+            'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
+        ]);
 
         return view('admin.drivers.show', compact('driver'));
     }
@@ -94,9 +100,20 @@ class DriverController extends AdminController
             $data['rejection_reason'] = null;
         }
 
+        $previousStatus = $driver->status;
+
         $driver->fill($data);
         $this->applyDriverImages($driver, $request);
         $driver->save();
+
+        if ($previousStatus !== $driver->status) {
+            $this->recordAccountStatusHistory(
+                $driver,
+                AccountStatusHistory::ACTION_STATUS_UPDATE,
+                $previousStatus,
+                $driver->status,
+            );
+        }
 
         return redirect()->route('admin.drivers.show', $driver)->with('success', 'Driver updated successfully.');
     }
@@ -116,12 +133,21 @@ class DriverController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $driver->status;
+
         $driver->update([
             'status' => 'active',
             'approved_at' => now(),
             'is_verified' => true,
             'rejection_reason' => null,
         ]);
+
+        $this->recordAccountStatusHistory(
+            $driver,
+            AccountStatusHistory::ACTION_APPROVE,
+            $previousStatus,
+            'active',
+        );
 
         return back()->with('success', "Driver {$driver->name} approved.");
     }
@@ -136,12 +162,22 @@ class DriverController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        $previousStatus = $driver->status;
+
         $driver->update([
             'status' => 'rejected',
             'approved_at' => null,
             'is_verified' => false,
             'rejection_reason' => $data['rejection_reason'],
         ]);
+
+        $this->recordAccountStatusHistory(
+            $driver,
+            AccountStatusHistory::ACTION_REJECT,
+            $previousStatus,
+            'rejected',
+            $data['rejection_reason'],
+        );
 
         return back()->with('success', "Driver {$driver->name} rejected.");
     }
@@ -150,7 +186,16 @@ class DriverController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
+        $previousStatus = $driver->status;
+
         $driver->update(['status' => 'suspended']);
+
+        $this->recordAccountStatusHistory(
+            $driver,
+            AccountStatusHistory::ACTION_SUSPEND,
+            $previousStatus,
+            'suspended',
+        );
 
         return back()->with('success', "Driver {$driver->name} suspended.");
     }

@@ -24,6 +24,64 @@ class AdminValidationRules
 
     public const REGEX_ACCOUNT_NUMBER = '/^[0-9]{1,20}$/';
 
+    public const REGEX_EMAIL = '/^(?!\.)(?!.*\.\.)[a-zA-Z0-9._%+\-]+(?<!\.)@(?!(?:\.|-))[a-zA-Z0-9]+(?:[.\-][a-zA-Z0-9]+)*(?<!\.)\.[a-zA-Z]{2,}$/i';
+
+    /** @var list<string> */
+    public const EMAIL_FIELD_NAMES = [
+        'email',
+        'business_email',
+        'business_mail',
+        'support_email',
+        'login',
+    ];
+
+    public static function isValidEmail(?string $value): bool
+    {
+        $value = trim((string) ($value ?? ''));
+
+        if ($value === '') {
+            return false;
+        }
+
+        return (bool) preg_match(self::REGEX_EMAIL, $value);
+    }
+
+    public static function looksLikeEmail(string $value): bool
+    {
+        return str_contains($value, '@');
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function normalizeEmailFields(array $data): array
+    {
+        foreach (self::EMAIL_FIELD_NAMES as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $value = trim((string) ($data[$field] ?? ''));
+            $data[$field] = $value === '' ? null : $value;
+        }
+
+        return $data;
+    }
+
+    /** @param array<int, string|\Illuminate\Contracts\Validation\ValidationRule> $additional */
+    public static function emailRules(bool $required = true, array $additional = []): array
+    {
+        $prefix = $required ? ['required'] : ['nullable'];
+
+        return array_merge($prefix, ['string', 'max:255', 'regex:'.self::REGEX_EMAIL], $additional);
+    }
+
+    public static function adminLogin(): array
+    {
+        return [
+            'login' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string'],
+        ];
+    }
+
     public static function listDateRange(): array
     {
         return [
@@ -47,10 +105,10 @@ class AdminValidationRules
             'brand_name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'owner_name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE, $uniqueMobile],
-            'email' => ['required', 'email', 'max:255', $uniqueEmail],
+            'email' => self::emailRules(true, [$uniqueEmail]),
             'service_types' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
             'business_mobile' => ['nullable', 'string', 'regex:'.self::REGEX_PHONE],
-            'business_email' => ['nullable', 'email', 'max:255'],
+            'business_email' => self::emailRules(false),
             'gst_number' => ['nullable', 'string', 'size:15', 'regex:'.self::REGEX_GST],
             'address' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
             'country' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
@@ -91,7 +149,7 @@ class AdminValidationRules
         return [
             'name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE, $uniqueMobile],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => self::emailRules(false),
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'vehicle_no' => ['nullable', 'string', 'max:20', 'regex:'.self::REGEX_VEHICLE_NO],
             'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
@@ -114,7 +172,7 @@ class AdminValidationRules
         return [
             'name' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.self::REGEX_PHONE],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => self::emailRules(false),
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'status' => ['required', 'in:active,suspended,blocked'],
             'is_verified' => ['nullable', 'boolean'],
@@ -268,7 +326,7 @@ class AdminValidationRules
             'role_id' => ['required', 'exists:roles,id'],
             'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'username' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9._-]+$/', $uniqueUsername],
-            'email' => ['required', 'email', 'max:255', $uniqueEmail],
+            'email' => self::emailRules(true, [$uniqueEmail]),
             'password' => [$adminId ? 'nullable' : 'required', 'string', 'min:8', 'max:128'],
             'status' => ['required', 'in:active,inactive,suspended'],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
@@ -310,7 +368,7 @@ class AdminValidationRules
     public static function settingsContact(): array
     {
         return [
-            'support_email' => ['required', 'email', 'max:255'],
+            'support_email' => self::emailRules(true),
             'support_phone' => ['nullable', 'string', 'regex:'.self::REGEX_PHONE],
             'contact_address' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
         ];
@@ -486,6 +544,11 @@ class AdminValidationRules
             'profile_image.max' => 'Image is too large. Maximum size is 4 MB.',
             'profile_image.uploaded' => 'Image is too large. Maximum size is 4 MB.',
             '*.regex' => 'This field contains invalid characters.',
+            'email.regex' => 'Enter a valid email ID (e.g. name@example.com).',
+            'business_email.regex' => 'Enter a valid business email ID (e.g. name@example.com).',
+            'business_mail.regex' => 'Enter a valid business email ID (e.g. name@example.com).',
+            'support_email.regex' => 'Enter a valid support email ID (e.g. name@example.com).',
+            'login.regex' => 'Enter a valid email ID (e.g. name@example.com).',
         ];
     }
 
@@ -520,6 +583,7 @@ class AdminValidationRules
             'business_mobile' => 'business mobile no',
             'business_email' => 'business email ID',
             'support_email' => 'support email ID',
+            'login' => 'email ID or username',
             'image' => 'banner image',
         ];
     }
@@ -537,7 +601,7 @@ class AdminValidationRules
             'mobile', 'support_phone' => 'phone',
             'city' => 'city',
             'brand_name', 'title', 'subtitle', 'subject', 'platform_name' => 'title',
-            'email', 'support_email' => 'email',
+            'email', 'business_email', 'business_mail', 'support_email' => 'email',
             'redirect_url' => 'url',
             'currency' => 'currency',
             'gst_number' => 'gst',

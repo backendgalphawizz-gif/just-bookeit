@@ -53,6 +53,8 @@
                         autofocus
                         autocomplete="username"
                         placeholder="admin@justbookit.com"
+                        maxlength="255"
+                        data-jb-restrict="login-or-username"
                         class="jb-login-input"
                     >
                     @error('login')

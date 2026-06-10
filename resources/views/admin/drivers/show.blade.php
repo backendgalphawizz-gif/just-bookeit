@@ -22,6 +22,7 @@
     @if ($driver->status === 'active' && auth('admin')->user()->hasPermission('drivers', 'edit'))
         <form method="POST" action="{{ route('admin.drivers.suspend', $driver) }}">@csrf<x-admin.button variant="danger" type="submit">Suspend</x-admin.button></form>
     @endif
+    <x-admin.account-history :histories="$driver->statusHistories" title="Driver account history" />
     @if (auth('admin')->user()->hasPermission('drivers', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.drivers.edit', $driver)">Edit</x-admin.button>
     @endif

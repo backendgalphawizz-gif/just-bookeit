@@ -52,15 +52,57 @@ class ListExportService
     public function pdf(string $title, array $headers, array $rows, string $basename): Response
     {
         $filename = $this->filename($basename, 'pdf');
+        $layout = $this->pdfLayoutForColumns(count($headers));
 
         return Pdf::loadView('exports.table-pdf', [
             'title' => $title,
             'headers' => $headers,
             'rows' => $rows,
             'generatedAt' => now()->format('M d, Y h:i A'),
+            'columnCount' => count($headers),
+            'fontSize' => $layout['fontSize'],
+            'headerFontSize' => $layout['headerFontSize'],
+            'cellPadding' => $layout['cellPadding'],
         ])
-            ->setPaper('a4', 'landscape')
+            ->setPaper($layout['paper'], $layout['orientation'])
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('defaultFont', 'DejaVu Sans')
             ->download($filename);
+    }
+
+    /** @return array{paper: string, orientation: string, fontSize: int, headerFontSize: int, cellPadding: string} */
+    protected function pdfLayoutForColumns(int $columnCount): array
+    {
+        return match (true) {
+            $columnCount >= 11 => [
+                'paper' => 'a3',
+                'orientation' => 'landscape',
+                'fontSize' => 6,
+                'headerFontSize' => 6,
+                'cellPadding' => '2px 3px',
+            ],
+            $columnCount >= 9 => [
+                'paper' => 'a3',
+                'orientation' => 'landscape',
+                'fontSize' => 7,
+                'headerFontSize' => 7,
+                'cellPadding' => '3px 4px',
+            ],
+            $columnCount >= 7 => [
+                'paper' => 'a3',
+                'orientation' => 'landscape',
+                'fontSize' => 8,
+                'headerFontSize' => 8,
+                'cellPadding' => '3px 5px',
+            ],
+            default => [
+                'paper' => 'a4',
+                'orientation' => 'landscape',
+                'fontSize' => 9,
+                'headerFontSize' => 8,
+                'cellPadding' => '4px 6px',
+            ],
+        };
     }
 
     protected function filename(string $basename, string $extension): string

@@ -4,6 +4,7 @@
 (function () {
     const GST_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+    const EMAIL_PATTERN = /^(?!\.)(?!.*\.\.)[a-zA-Z0-9._%+\-]+(?<!\.)@(?!(?:\.|-))[a-zA-Z0-9]+(?:[.\-][a-zA-Z0-9]+)*(?<!\.)\.[a-zA-Z]{2,}$/i;
     const PERSON_NAME_PATTERN = /^[\p{L}\s.'-]*$/u;
     const TITLE_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]*$/u;
     const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -29,12 +30,34 @@
         'vehicle-no': (value) => value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 20),
         'account-number': (value) => value.replace(/\D/g, '').slice(0, 20),
         ifsc: (value) => value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 11),
-        email: (value) => value.replace(/[^\w.@+\-]/g, '').slice(0, 255),
+        email: (value) => {
+            let cleaned = value.replace(/\s/g, '').replace(/[^\w.@+\-]/g, '');
+            const firstAt = cleaned.indexOf('@');
+            if (firstAt !== -1) {
+                cleaned = cleaned.slice(0, firstAt + 1) + cleaned.slice(firstAt + 1).replace(/@/g, '');
+            }
+            return cleaned.slice(0, 255);
+        },
+        'login-or-username': (value) => value.replace(/\s/g, '').slice(0, 255),
         url: (value) => value.replace(/[^\w.:\/?#@!$&'()*+,;=%\-\[\]]/g, '').slice(0, 500),
     };
 
     function filterValue(type, value) {
         return JB_FILTERS[type] ? JB_FILTERS[type](value) : value;
+    }
+
+    function maxLengthFor(input) {
+        const fromData = parseInt(input.dataset.jbMaxChars, 10);
+        if (fromData > 0) {
+            return fromData;
+        }
+        const fromAttr = parseInt(input.getAttribute('maxlength'), 10);
+        return fromAttr > 0 ? fromAttr : null;
+    }
+
+    function clampToMaxLength(input, value) {
+        const max = maxLengthFor(input);
+        return max ? value.slice(0, max) : value;
     }
 
     function bindRestriction(input) {
@@ -46,7 +69,7 @@
         const apply = () => {
             const start = input.selectionStart;
             const before = input.value;
-            const after = filterValue(type, before);
+            const after = clampToMaxLength(input, filterValue(type, before));
             if (after !== before) {
                 input.value = after;
                 const delta = after.length - before.length;
@@ -62,14 +85,17 @@
             const filtered = filterValue(type, pasted);
             const start = input.selectionStart ?? input.value.length;
             const end = input.selectionEnd ?? input.value.length;
-            input.value = filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end));
-            const pos = start + filtered.length;
+            input.value = clampToMaxLength(
+                input,
+                filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end))
+            );
+            const pos = Math.min(start + filtered.length, input.value.length);
             input.setSelectionRange(pos, pos);
             input.dispatchEvent(new Event('input', { bubbles: true }));
         });
         input.addEventListener('drop', (event) => event.preventDefault());
         if (input.value) {
-            input.value = filterValue(type, input.value);
+            input.value = clampToMaxLength(input, filterValue(type, input.value));
         }
     }
 
@@ -177,6 +203,70 @@
         const validate = () => validatePhoneValue(input);
         input.addEventListener('input', validate);
         input.addEventListener('blur', validate);
+    }
+
+    function validateEmailField(input) {
+        const value = input.value.trim();
+        const required = input.hasAttribute('required');
+        if (value === '') {
+            if (required) {
+                showFieldError(input, 'This field is required.');
+                return false;
+            }
+            clearFieldError(input);
+            return true;
+        }
+        const atCount = (value.match(/@/g) || []).length;
+        if (atCount !== 1) {
+            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+            return false;
+        }
+        const parts = value.split('@');
+        if (!parts[0] || !parts[1] || !parts[1].includes('.')) {
+            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+            return false;
+        }
+        if (!EMAIL_PATTERN.test(value)) {
+            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    }
+
+    function validateLoginField(input) {
+        const value = input.value.trim();
+        if (value === '') {
+            showFieldError(input, 'This field is required.');
+            return false;
+        }
+        if (value.includes('@') && !validateEmailField(input)) {
+            return false;
+        }
+        clearFieldError(input);
+        return true;
+    }
+
+    function bindEmailValidation(input) {
+        const validate = () => validateEmailField(input);
+        input.addEventListener('input', validate);
+        input.addEventListener('blur', validate);
+    }
+
+    function bindLoginValidation(input) {
+        const validate = () => validateLoginField(input);
+        input.addEventListener('input', validate);
+        input.addEventListener('blur', validate);
+    }
+
+    function ensureEmailInputs(form) {
+        form.querySelectorAll('input[type="email"]').forEach((input) => {
+            if (!input.dataset.jbRestrict) {
+                input.dataset.jbRestrict = 'email';
+            }
+            bindRestriction(input);
+            bindEmailValidation(input);
+        });
     }
 
     function bindFileSizeLimit(input) {
@@ -322,6 +412,22 @@
         sync();
     }
 
+    function bindLoginForm(form) {
+        form.querySelectorAll('[data-jb-restrict="login-or-username"]').forEach(bindLoginValidation);
+
+        form.addEventListener('submit', (event) => {
+            let valid = true;
+            form.querySelectorAll('[data-jb-restrict="login-or-username"]').forEach((input) => {
+                if (!validateLoginField(input)) {
+                    valid = false;
+                }
+            });
+            if (!valid) {
+                event.preventDefault();
+            }
+        });
+    }
+
     function bindAdminForm(form) {
         if (form.closest('.jb-login-form-panel, .jb-login-card')) {
             return;
@@ -329,9 +435,11 @@
         if (form.querySelector('[data-jb-quill-field]')) {
             return;
         }
+        ensureEmailInputs(form);
         form.querySelectorAll('[data-jb-max-chars]').forEach(bindCharCounter);
         form.querySelectorAll('[data-jb-restrict="gst"]').forEach(bindGstValidation);
         form.querySelectorAll('[data-jb-restrict="phone"]').forEach(bindPhoneValidation);
+        form.querySelectorAll('[data-jb-restrict="email"]').forEach(bindEmailValidation);
         form.querySelectorAll('input[type="file"][data-jb-max-mb]').forEach(bindFileSizeLimit);
         bindBankDetailsValidation(form);
         bindVehicleAccountType(form);
@@ -354,6 +462,21 @@
             });
             form.querySelectorAll('[data-jb-restrict="phone"]').forEach((input) => {
                 if (!validatePhoneValue(input)) {
+                    valid = false;
+                }
+            });
+            form.querySelectorAll('[data-jb-restrict="email"], input[type="email"]').forEach((input) => {
+                if (!validateEmailField(input)) {
+                    valid = false;
+                }
+            });
+            form.querySelectorAll('[data-jb-max-chars]').forEach((input) => {
+                const max = parseInt(input.dataset.jbMaxChars, 10);
+                if (max && input.value.length > max) {
+                    showFieldError(
+                        input,
+                        'Must be at most ' + max + ' characters (' + input.value.length + '/' + max + ').'
+                    );
                     valid = false;
                 }
             });
@@ -399,7 +522,13 @@
 
     function init(root) {
         root.querySelectorAll('[data-jb-restrict]').forEach(bindRestriction);
-        root.querySelectorAll('form[method="POST"], form[method="post"]').forEach(bindAdminForm);
+        root.querySelectorAll('form[method="POST"], form[method="post"]').forEach((form) => {
+            if (form.classList.contains('jb-login-form')) {
+                bindLoginForm(form);
+                return;
+            }
+            bindAdminForm(form);
+        });
     }
 
     const SIDEBAR_SCROLL_KEY = 'jb-admin-sidebar-scroll';
