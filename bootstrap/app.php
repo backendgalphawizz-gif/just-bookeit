@@ -1,8 +1,10 @@
 <?php
 
+use App\Support\UploadLimits;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,5 +38,15 @@ return Application::configure(basePath: dirname(__DIR__))
             return redirect()->back()
                 ->withInput($request->except('_token'))
                 ->with('error', 'Session expired. Please try again.');
+        });
+
+        $exceptions->render(function (PostTooLargeException $e, \Illuminate\Http\Request $request) {
+            $message = UploadLimits::postTooLargeMessage();
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 413);
+            }
+
+            return redirect()->back()->with('error', $message);
         });
     })->create();

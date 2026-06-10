@@ -2,7 +2,16 @@
  * Vendor panel — live input restrictions (same rules as admin panel).
  */
 (function () {
-    const EMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    const ALLOWED_EMAIL_TLDS = [
+        'co.in', 'co.uk', 'com.au', 'ac.in', 'edu.in', 'gov.in', 'net.in', 'org.in', 'nic.in', 'res.in', 'gen.in',
+        'com', 'in', 'org', 'net', 'edu', 'gov', 'io', 'co', 'uk', 'us', 'au', 'ca', 'de', 'fr', 'info', 'biz',
+        'me', 'app', 'dev', 'ai', 'xyz', 'pro', 'int', 'mil',
+    ].sort((a, b) => b.length - a.length);
+
+    const EMAIL_TLD_PATTERN = ALLOWED_EMAIL_TLDS.map((tld) => tld.replace(/\./g, '\\.')).join('|');
+    const EMAIL_HTML_PATTERN = '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+(?:' + EMAIL_TLD_PATTERN + ')$';
+    const EMAIL_PATTERN = new RegExp(EMAIL_HTML_PATTERN, 'i');
+    const EMAIL_MESSAGE = 'Enter a valid email ID ending with .com, .in, .org, or another recognised domain (e.g. name@gmail.com).';
 
     const VP_FILTERS = {
         'person-name': (v) => v.replace(/[^\p{L}\s.'-]/gu, ''),
@@ -60,8 +69,11 @@
             clearFieldError(input);
             return true;
         }
-        if (!EMAIL_PATTERN.test(value)) {
-            showFieldError(input, 'Enter a valid email ID (e.g. name@example.com).');
+        const domain = value.split('@')[1] || '';
+        const lowerDomain = domain.toLowerCase();
+        const hasAllowedTld = ALLOWED_EMAIL_TLDS.some((tld) => lowerDomain.endsWith('.' + tld));
+        if (!EMAIL_PATTERN.test(value) || !hasAllowedTld) {
+            showFieldError(input, EMAIL_MESSAGE);
             return false;
         }
         clearFieldError(input);

@@ -4,12 +4,20 @@
 (function () {
     const GST_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
-    const EMAIL_HTML_PATTERN = '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,24}$';
+    const ALLOWED_EMAIL_TLDS = [
+        'co.in', 'co.uk', 'com.au', 'ac.in', 'edu.in', 'gov.in', 'net.in', 'org.in', 'nic.in', 'res.in', 'gen.in',
+        'com', 'in', 'org', 'net', 'edu', 'gov', 'io', 'co', 'uk', 'us', 'au', 'ca', 'de', 'fr', 'info', 'biz',
+        'me', 'app', 'dev', 'ai', 'xyz', 'pro', 'int', 'mil',
+    ].sort((a, b) => b.length - a.length);
+
+    const EMAIL_TLD_PATTERN = ALLOWED_EMAIL_TLDS.map((tld) => tld.replace(/\./g, '\\.')).join('|');
+    const EMAIL_HTML_PATTERN = '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+(?:' + EMAIL_TLD_PATTERN + ')$';
     const EMAIL_PATTERN = new RegExp(EMAIL_HTML_PATTERN, 'i');
-    const EMAIL_MESSAGE = 'Enter a valid email ID with domain extension (e.g. name@gmail.com or shop@company.in).';
+    const EMAIL_MESSAGE = 'Enter a valid email ID ending with .com, .in, .org, or another recognised domain (e.g. name@gmail.com).';
     const PERSON_NAME_PATTERN = /^[\p{L}\s.'-]*$/u;
     const TITLE_PATTERN = /^[\p{L}\p{N}\s.,'&()\-]*$/u;
     const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+    const DEFAULT_SAFE_TOTAL_BYTES = 7 * 1024 * 1024;
 
     const JB_FILTERS = {
         'person-name': (value) => value.replace(/[^\p{L}\s.'-]/gu, ''),
@@ -211,8 +219,8 @@
         if (!domain || !domain.includes('.')) {
             return false;
         }
-        const tld = domain.split('.').pop() || '';
-        return tld.length >= 2 && tld.length <= 24 && /^[a-zA-Z]+$/.test(tld);
+        const lowerDomain = domain.toLowerCase();
+        return ALLOWED_EMAIL_TLDS.some((tld) => lowerDomain.endsWith('.' + tld));
     }
 
     function validateEmailField(input) {
@@ -285,27 +293,118 @@
         });
     }
 
+    function readUploadLimits() {
+        const postMeta = document.querySelector('meta[name="jb-post-max-bytes"]');
+        const perFileMeta = document.querySelector('meta[name="jb-per-file-max-bytes"]');
+        const safeTotal = postMeta ? parseInt(postMeta.content, 10) : DEFAULT_SAFE_TOTAL_BYTES;
+        const perFileMax = perFileMeta ? parseInt(perFileMeta.content, 10) : MAX_IMAGE_BYTES;
+
+        return {
+            safeTotal: Number.isFinite(safeTotal) && safeTotal > 0 ? safeTotal : DEFAULT_SAFE_TOTAL_BYTES,
+            perFileMax: Number.isFinite(perFileMax) && perFileMax > 0 ? perFileMax : MAX_IMAGE_BYTES,
+        };
+    }
+
+    function formatUploadMb(bytes) {
+        return (bytes / (1024 * 1024)).toFixed(1);
+    }
+
+    function filesFromInput(input) {
+        return input.files ? Array.from(input.files) : [];
+    }
+
+    function maxBytesForFileInput(input) {
+        const maxMb = parseFloat(input.dataset.jbMaxMb || '4');
+        return maxMb * 1024 * 1024;
+    }
+
+    function showFormUploadBanner(form, message) {
+        let banner = form.querySelector('[data-jb-form-upload-error]');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.dataset.jbFormUploadError = '1';
+            banner.className = 'jb-file-error-alert mb-4';
+            banner.setAttribute('role', 'alert');
+            form.insertBefore(banner, form.firstChild);
+        }
+        banner.textContent = message;
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearFormUploadBanner(form) {
+        form.querySelector('[data-jb-form-upload-error]')?.remove();
+    }
+
+    function validateFormUploads(form) {
+        const limits = readUploadLimits();
+        let totalBytes = 0;
+        let blocked = false;
+
+        clearFormUploadBanner(form);
+
+        form.querySelectorAll('input[type="file"]').forEach((input) => {
+            const maxBytes = maxBytesForFileInput(input);
+            const maxMb = maxBytes / (1024 * 1024);
+
+            filesFromInput(input).forEach((file) => {
+                totalBytes += file.size;
+                if (file.size > maxBytes) {
+                    showFieldError(
+                        input,
+                        file.name + ' is too large. Maximum size is ' + maxMb + ' MB (selected ' + formatUploadMb(file.size) + ' MB).'
+                    );
+                    input.value = '';
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    blocked = true;
+                }
+            });
+        });
+
+        if (blocked) {
+            return false;
+        }
+
+        if (totalBytes > limits.safeTotal) {
+            showFormUploadBanner(
+                form,
+                'Total upload size (' +
+                    formatUploadMb(totalBytes) +
+                    ' MB) exceeds the server limit (~' +
+                    formatUploadMb(limits.safeTotal) +
+                    ' MB per save). Upload fewer images at once or use smaller files, then try again.'
+            );
+            return false;
+        }
+
+        return true;
+    }
+
     function bindFileSizeLimit(input) {
         if (input.dataset.jbFileAlpine) {
             return;
         }
-        const maxMb = parseFloat(input.dataset.jbMaxMb || '4');
-        const maxBytes = maxMb * 1024 * 1024;
+        const maxBytes = maxBytesForFileInput(input);
+        const maxMb = maxBytes / (1024 * 1024);
+
         input.addEventListener('change', () => {
-            const file = input.files && input.files[0];
-            if (!file) {
+            const files = filesFromInput(input);
+            if (!files.length) {
                 clearFieldError(input);
                 return;
             }
-            if (file.size > maxBytes) {
-                showFieldError(
-                    input,
-                    'Image is too large. Maximum size is ' + maxMb + ' MB (selected ' + (file.size / (1024 * 1024)).toFixed(1) + ' MB).'
-                );
-                input.value = '';
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-                return;
+
+            for (const file of files) {
+                if (file.size > maxBytes) {
+                    showFieldError(
+                        input,
+                        file.name + ' is too large. Maximum size is ' + maxMb + ' MB (selected ' + formatUploadMb(file.size) + ' MB).'
+                    );
+                    input.value = '';
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                    return;
+                }
             }
+
             clearFieldError(input);
         });
     }
@@ -462,6 +561,12 @@
 
         form.addEventListener('submit', (event) => {
             let valid = true;
+
+            if (!validateFormUploads(form)) {
+                event.preventDefault();
+                return;
+            }
+
             form.querySelectorAll('[data-jb-restrict="gst"]').forEach((input) => {
                 const value = input.value.trim();
                 if (value !== '' && (!GST_PATTERN.test(value) || value.length !== 15)) {
@@ -469,12 +574,19 @@
                     valid = false;
                 }
             });
-            form.querySelectorAll('input[type="file"][data-jb-max-mb]').forEach((input) => {
-                const file = input.files && input.files[0];
-                if (file && file.size > MAX_IMAGE_BYTES) {
-                    showFieldError(input, 'Image is too large. Maximum size is 4 MB.');
-                    valid = false;
-                }
+            form.querySelectorAll('input[type="file"]').forEach((input) => {
+                const maxBytes = maxBytesForFileInput(input);
+                const maxMb = maxBytes / (1024 * 1024);
+
+                filesFromInput(input).forEach((file) => {
+                    if (file.size > maxBytes) {
+                        showFieldError(
+                            input,
+                            file.name + ' is too large. Maximum size is ' + maxMb + ' MB (selected ' + formatUploadMb(file.size) + ' MB).'
+                        );
+                        valid = false;
+                    }
+                });
             });
             form.querySelectorAll('[data-jb-restrict="phone"]').forEach((input) => {
                 if (!validatePhoneValue(input)) {
