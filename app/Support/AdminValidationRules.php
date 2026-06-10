@@ -24,7 +24,8 @@ class AdminValidationRules
 
     public const REGEX_ACCOUNT_NUMBER = '/^[0-9]{1,20}$/';
 
-    public const REGEX_EMAIL = '/^(?!\.)(?!.*\.\.)[a-zA-Z0-9._%+\-]+(?<!\.)@(?!(?:\.|-))[a-zA-Z0-9]+(?:[.\-][a-zA-Z0-9]+)*(?<!\.)\.[a-zA-Z]{2,}$/i';
+    /** Requires local@domain.tld — e.g. name@gmail.com, shop@company.in */
+    public const REGEX_EMAIL = '/^(?!\.)(?!.*\.\.)[a-zA-Z0-9._%+\-]+(?<!\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,24}$/i';
 
     /** @var list<string> */
     public const EMAIL_FIELD_NAMES = [
@@ -35,6 +36,22 @@ class AdminValidationRules
         'login',
     ];
 
+    public static function emailValidationMessage(): string
+    {
+        return 'Enter a valid email ID with domain extension (e.g. name@gmail.com or shop@company.in).';
+    }
+
+    public static function emailFieldHint(): string
+    {
+        return 'Must include @ and a domain extension such as .com or .in (e.g. name@gmail.com).';
+    }
+
+    /** HTML5 pattern attribute (no delimiters/flags). */
+    public static function htmlEmailPattern(): string
+    {
+        return '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,24}$';
+    }
+
     public static function isValidEmail(?string $value): bool
     {
         $value = trim((string) ($value ?? ''));
@@ -43,7 +60,21 @@ class AdminValidationRules
             return false;
         }
 
-        return (bool) preg_match(self::REGEX_EMAIL, $value);
+        if (! preg_match(self::REGEX_EMAIL, $value)) {
+            return false;
+        }
+
+        $domain = substr(strrchr($value, '@') ?: '', 1);
+        $tld = strrchr($domain, '.') ? substr(strrchr($domain, '.'), 1) : '';
+
+        return $tld !== '' && strlen($tld) >= 2 && strlen($tld) <= 24 && ctype_alpha($tld);
+    }
+
+    public static function isEmailFieldName(string $name): bool
+    {
+        return in_array($name, self::EMAIL_FIELD_NAMES, true)
+            || str_ends_with($name, '_email')
+            || $name === 'business_mail';
     }
 
     public static function looksLikeEmail(string $value): bool
@@ -544,11 +575,11 @@ class AdminValidationRules
             'profile_image.max' => 'Image is too large. Maximum size is 4 MB.',
             'profile_image.uploaded' => 'Image is too large. Maximum size is 4 MB.',
             '*.regex' => 'This field contains invalid characters.',
-            'email.regex' => 'Enter a valid email ID (e.g. name@example.com).',
-            'business_email.regex' => 'Enter a valid business email ID (e.g. name@example.com).',
-            'business_mail.regex' => 'Enter a valid business email ID (e.g. name@example.com).',
-            'support_email.regex' => 'Enter a valid support email ID (e.g. name@example.com).',
-            'login.regex' => 'Enter a valid email ID (e.g. name@example.com).',
+            'email.regex' => 'Enter a valid email ID with domain extension (e.g. name@gmail.com or shop@company.in).',
+            'business_email.regex' => 'Enter a valid business email ID with domain extension (e.g. shop@company.in).',
+            'business_mail.regex' => 'Enter a valid business email ID with domain extension (e.g. shop@company.in).',
+            'support_email.regex' => 'Enter a valid support email ID with domain extension (e.g. support@company.com).',
+            'login.regex' => 'Enter a valid email ID with domain extension (e.g. name@gmail.com).',
         ];
     }
 

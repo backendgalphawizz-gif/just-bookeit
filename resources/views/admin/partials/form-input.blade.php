@@ -13,8 +13,8 @@
         $inputType = 'text';
     }
 
-    if ($restrict === 'email' && $inputType === 'text') {
-        $inputType = 'email';
+    if ($restrict === 'email') {
+        $inputType = 'text';
     }
 
     $inputMode = match ($restrict) {
@@ -24,6 +24,9 @@
         'url' => 'url',
         default => null,
     };
+
+    $emailPattern = $restrict === 'email' ? AdminValidationRules::htmlEmailPattern() : null;
+    $emailTitle = $restrict === 'email' ? AdminValidationRules::emailValidationMessage() : null;
 
     $autocomplete = match ($restrict) {
         'person-name' => 'name',
@@ -68,7 +71,7 @@
             @if ($maxValue !== null) max="{{ $maxValue }}" @endif
             @if (!empty($step)) step="{{ $step }}" @endif
             @if (!empty($placeholder)) placeholder="{{ $placeholder }}" @endif
-            @if ($restrict === 'email') maxlength="255" @endif
+            @if ($restrict === 'email') maxlength="255" pattern="{{ $emailPattern }}" title="{{ $emailTitle }}" @endif
             @if ($restrict === 'phone') maxlength="10" @endif
             @if ($restrict === 'currency') maxlength="10" @endif
             @if ($restrict === 'gst') maxlength="15" data-jb-max-chars="15" @endif
@@ -83,6 +86,8 @@
     @endif
     @if (!empty($hint))
         <p class="mt-1 text-xs text-slate-500">{{ $hint }}</p>
+    @elseif ($restrict === 'email')
+        <p class="mt-1 text-xs text-slate-500">{{ AdminValidationRules::emailFieldHint() }}</p>
     @endif
     @error($name)
         <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>

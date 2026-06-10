@@ -43,7 +43,7 @@ class AdminLoginRequest extends FormRequest
             }
 
             if (! AdminValidationRules::isValidEmail($login)) {
-                $validator->errors()->add('login', 'Enter a valid email ID (e.g. name@example.com).');
+                $validator->errors()->add('login', AdminValidationRules::emailValidationMessage());
             }
         });
     }
