@@ -27,6 +27,13 @@ class AdminValidationRules
     /** Requires local@domain.tld — e.g. name@gmail.com, shop@company.in */
     public const REGEX_EMAIL = '/^(?!\.)(?!.*\.\.)[a-zA-Z0-9._%+\-]+(?<!\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,24}$/i';
 
+    /** @var list<string> Allowed domain endings (longest match first when validating). */
+    public const ALLOWED_EMAIL_TLDS = [
+        'co.in', 'co.uk', 'com.au', 'ac.in', 'edu.in', 'gov.in', 'net.in', 'org.in', 'nic.in', 'res.in', 'gen.in',
+        'com', 'in', 'org', 'net', 'edu', 'gov', 'io', 'co', 'uk', 'us', 'au', 'ca', 'de', 'fr', 'info', 'biz',
+        'me', 'app', 'dev', 'ai', 'xyz', 'pro', 'int', 'mil',
+    ];
+
     /** @var list<string> */
     public const EMAIL_FIELD_NAMES = [
         'email',
@@ -38,18 +45,49 @@ class AdminValidationRules
 
     public static function emailValidationMessage(): string
     {
-        return 'Enter a valid email ID with domain extension (e.g. name@gmail.com or shop@company.in).';
+        return 'Enter a valid email ID ending with a recognised domain such as .com, .in, or .org (e.g. name@gmail.com).';
     }
 
     public static function emailFieldHint(): string
     {
-        return 'Must include @ and a domain extension such as .com or .in (e.g. name@gmail.com).';
+        return 'Must end with a valid domain extension such as .com, .in, or .org (e.g. name@gmail.com, shop@company.in).';
     }
 
     /** HTML5 pattern attribute (no delimiters/flags). */
     public static function htmlEmailPattern(): string
     {
-        return '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,24}$';
+        $tldPattern = implode('|', array_map(
+            static fn (string $tld) => str_replace('.', '\\.', preg_quote($tld, '/')),
+            self::allowedEmailTldsLongestFirst()
+        ));
+
+        return '^(?!\\.)(?!.*\\.\\.)[a-zA-Z0-9._%+\\-]+(?<!\\.)@(?:[a-zA-Z0-9](?:[a-zA-Z0-9\\-]*[a-zA-Z0-9])?\\.)+(?:'.$tldPattern.')$';
+    }
+
+    /** @return list<string> */
+    public static function allowedEmailTldsLongestFirst(): array
+    {
+        $tlds = self::ALLOWED_EMAIL_TLDS;
+        usort($tlds, static fn (string $a, string $b) => strlen($b) <=> strlen($a));
+
+        return $tlds;
+    }
+
+    public static function hasAllowedEmailTld(string $email): bool
+    {
+        $domain = strtolower(substr(strrchr($email, '@') ?: '', 1));
+
+        if ($domain === '' || ! str_contains($domain, '.')) {
+            return false;
+        }
+
+        foreach (self::allowedEmailTldsLongestFirst() as $tld) {
+            if (str_ends_with($domain, '.'.$tld)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function isValidEmail(?string $value): bool
@@ -64,10 +102,7 @@ class AdminValidationRules
             return false;
         }
 
-        $domain = substr(strrchr($value, '@') ?: '', 1);
-        $tld = strrchr($domain, '.') ? substr(strrchr($domain, '.'), 1) : '';
-
-        return $tld !== '' && strlen($tld) >= 2 && strlen($tld) <= 24 && ctype_alpha($tld);
+        return self::hasAllowedEmailTld($value);
     }
 
     public static function isEmailFieldName(string $name): bool
@@ -575,11 +610,11 @@ class AdminValidationRules
             'profile_image.max' => 'Image is too large. Maximum size is 4 MB.',
             'profile_image.uploaded' => 'Image is too large. Maximum size is 4 MB.',
             '*.regex' => 'This field contains invalid characters.',
-            'email.regex' => 'Enter a valid email ID with domain extension (e.g. name@gmail.com or shop@company.in).',
-            'business_email.regex' => 'Enter a valid business email ID with domain extension (e.g. shop@company.in).',
-            'business_mail.regex' => 'Enter a valid business email ID with domain extension (e.g. shop@company.in).',
-            'support_email.regex' => 'Enter a valid support email ID with domain extension (e.g. support@company.com).',
-            'login.regex' => 'Enter a valid email ID with domain extension (e.g. name@gmail.com).',
+            'email.regex' => 'Enter a valid email ID ending with .com, .in, .org, or another recognised domain (e.g. name@gmail.com).',
+            'business_email.regex' => 'Enter a valid business email ID ending with .com, .in, .org, or another recognised domain.',
+            'business_mail.regex' => 'Enter a valid business email ID ending with .com, .in, .org, or another recognised domain.',
+            'support_email.regex' => 'Enter a valid support email ID ending with .com, .in, .org, or another recognised domain.',
+            'login.regex' => 'Enter a valid email ID ending with .com, .in, .org, or another recognised domain.',
         ];
     }
 
