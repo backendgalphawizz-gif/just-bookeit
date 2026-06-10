@@ -36,9 +36,31 @@
             }
 
             this.newPreviews = files.map((file) => ({
+                id: crypto.randomUUID(),
                 name: file.name,
                 url: URL.createObjectURL(file),
+                file: file,
             }));
+        },
+        removeNewPreview(index) {
+            const item = this.newPreviews[index];
+            if (!item) {
+                return;
+            }
+            URL.revokeObjectURL(item.url);
+            this.newPreviews.splice(index, 1);
+            this.syncInputFiles();
+            this.fileError = null;
+        },
+        syncInputFiles() {
+            const input = this.$refs.fileInput;
+            if (!input) {
+                return;
+            }
+            const transfer = new DataTransfer();
+            this.newPreviews.forEach((item) => transfer.items.add(item.file));
+            input.files = transfer.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
         },
         clearNewPreviews() {
             this.newPreviews.forEach((item) => URL.revokeObjectURL(item.url));
@@ -47,20 +69,40 @@
     }"
 >
     <label class="jb-label">{{ $label }}</label>
-    <p class="mb-3 text-sm text-slate-500">Upload one or more shop logos. New selections show a small preview before you save.</p>
+    <p class="mb-3 text-sm text-slate-500">Upload one or more images. Previews appear below — use × to remove any image before you save.</p>
 
     @if ($existingImages->isNotEmpty())
         <div class="mb-4">
             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Current images</p>
             <div class="jb-multi-image-upload-grid">
                 @foreach ($existingImages as $image)
-                    <label class="jb-multi-image-upload-item cursor-pointer">
-                        <img src="{{ $image->imageUrl() }}" alt="Shop logo" class="panel-lightbox-trigger">
-                        <span class="jb-multi-image-upload-item__remove">
-                            <input type="checkbox" name="{{ $removeField }}[]" value="{{ $image->id }}" class="jb-checkbox-accent">
-                            Remove
-                        </span>
-                    </label>
+                    <div
+                        class="jb-multi-image-upload-item"
+                        x-data="{ marked: false }"
+                        :class="{ 'jb-multi-image-upload-item--marked': marked }"
+                    >
+                        <div class="jb-multi-image-upload-item__media">
+                            <img src="{{ $image->imageUrl() }}" alt="Shop image" class="panel-lightbox-trigger">
+                            <button
+                                type="button"
+                                class="jb-multi-image-upload-item__dismiss"
+                                :class="{ 'jb-multi-image-upload-item__dismiss--active': marked }"
+                                :title="marked ? 'Undo remove' : 'Remove image'"
+                                :aria-label="marked ? 'Undo remove' : 'Remove image'"
+                                @click="marked = !marked; $refs.removeCheckbox.checked = marked"
+                            >
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <input
+                            type="checkbox"
+                            x-ref="removeCheckbox"
+                            name="{{ $removeField }}[]"
+                            value="{{ $image->id }}"
+                            class="jb-sr-only"
+                        >
+                        <span class="jb-multi-image-upload-item__status" x-show="marked" x-cloak>Will remove</span>
+                    </div>
                 @endforeach
             </div>
         </div>
@@ -70,9 +112,20 @@
         <div class="mb-4">
             <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">New upload preview</p>
             <div class="jb-multi-image-upload-grid">
-                <template x-for="item in newPreviews" :key="item.url">
+                <template x-for="(item, index) in newPreviews" :key="item.id">
                     <div class="jb-multi-image-upload-item jb-multi-image-upload-item--preview">
-                        <img :src="item.url" :alt="item.name">
+                        <div class="jb-multi-image-upload-item__media">
+                            <img :src="item.url" :alt="item.name">
+                            <button
+                                type="button"
+                                class="jb-multi-image-upload-item__dismiss"
+                                title="Remove from upload"
+                                aria-label="Remove from upload"
+                                @click="removeNewPreview(index)"
+                            >
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
                         <span class="jb-multi-image-upload-item__label" x-text="item.name"></span>
                     </div>
                 </template>
@@ -81,6 +134,7 @@
     </template>
 
     <input
+        x-ref="fileInput"
         type="file"
         name="{{ $name }}[]"
         accept="image/png,image/jpeg,image/jpg,image/webp"

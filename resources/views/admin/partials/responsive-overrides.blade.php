@@ -517,24 +517,41 @@
         object-fit: contain;
     }
 
+    .jb-sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
     .jb-multi-image-upload-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+        gap: 1rem;
     }
 
     .jb-multi-image-upload-item {
-        width: 5.5rem;
+        position: relative;
         overflow: hidden;
-        border-radius: 0.625rem;
+        border-radius: 0.75rem;
         border: 1px solid rgb(226 232 240);
         background: rgb(248 250 252);
+        transition: opacity 0.15s ease, border-color 0.15s ease;
+    }
+
+    .jb-multi-image-upload-item__media {
+        position: relative;
     }
 
     .jb-multi-image-upload-item img {
         display: block;
         width: 100%;
-        height: 5.5rem;
+        height: 9.5rem;
         object-fit: cover;
     }
 
@@ -543,22 +560,63 @@
         background: rgb(236 253 245);
     }
 
-    .jb-multi-image-upload-item__label,
-    .jb-multi-image-upload-item__remove {
+    .jb-multi-image-upload-item--marked {
+        opacity: 0.55;
+        border-color: rgb(252 165 165);
+        background: rgb(254 242 242);
+    }
+
+    .jb-multi-image-upload-item__dismiss {
+        position: absolute;
+        top: 0.4rem;
+        right: 0.4rem;
+        z-index: 2;
         display: flex;
         align-items: center;
-        gap: 0.25rem;
-        padding: 0.3rem 0.4rem;
-        font-size: 0.625rem;
-        font-weight: 600;
-        line-height: 1.2;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border: none;
+        border-radius: 9999px;
+        background: rgb(15 23 42 / 0.88);
         color: rgb(255 255 255);
-        background: rgb(15 23 42 / 0.82);
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgb(15 23 42 / 0.25);
+        transition: background-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .jb-multi-image-upload-item__dismiss:hover {
+        background: rgb(220 38 38);
+        transform: scale(1.05);
+    }
+
+    .jb-multi-image-upload-item__dismiss--active {
+        background: rgb(220 38 38);
+    }
+
+    .jb-multi-image-upload-item__label,
+    .jb-multi-image-upload-item__status {
+        display: block;
+        padding: 0.45rem 0.5rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        line-height: 1.25;
+        text-align: center;
     }
 
     .jb-multi-image-upload-item__label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
         color: rgb(71 85 105);
         background: rgb(241 245 249);
+    }
+
+    .jb-multi-image-upload-item__status {
+        color: rgb(185 28 28);
+        background: rgb(254 226 226);
     }
 
     .jb-form-section-title {
