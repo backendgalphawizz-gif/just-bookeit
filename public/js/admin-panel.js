@@ -323,7 +323,7 @@
         if (!banner) {
             banner = document.createElement('div');
             banner.dataset.jbFormUploadError = '1';
-            banner.className = 'jb-file-error-alert mb-4';
+            banner.className = 'jb-upload-hint-alert mb-4';
             banner.setAttribute('role', 'alert');
             form.insertBefore(banner, form.firstChild);
         }
@@ -349,10 +349,7 @@
             filesFromInput(input).forEach((file) => {
                 totalBytes += file.size;
                 if (file.size > maxBytes) {
-                    showFieldError(
-                        input,
-                        file.name + ' is too large. Maximum size is ' + maxMb + ' MB (selected ' + formatUploadMb(file.size) + ' MB).'
-                    );
+                    showFieldError(input, 'One of the images is too large. Please choose a smaller photo.');
                     input.value = '';
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                     blocked = true;
@@ -365,14 +362,7 @@
         }
 
         if (totalBytes > limits.safeTotal) {
-            showFormUploadBanner(
-                form,
-                'Total upload size (' +
-                    formatUploadMb(totalBytes) +
-                    ' MB) exceeds the server limit (~' +
-                    formatUploadMb(limits.safeTotal) +
-                    ' MB per save). Upload fewer images at once or use smaller files, then try again.'
-            );
+            showFormUploadBanner(form, 'Too many images selected. Remove a few photos and try again.');
             return false;
         }
 
@@ -395,10 +385,7 @@
 
             for (const file of files) {
                 if (file.size > maxBytes) {
-                    showFieldError(
-                        input,
-                        file.name + ' is too large. Maximum size is ' + maxMb + ' MB (selected ' + formatUploadMb(file.size) + ' MB).'
-                    );
+                    showFieldError(input, 'One of the images is too large. Please choose a smaller photo.');
                     input.value = '';
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                     return;
@@ -580,10 +567,7 @@
 
                 filesFromInput(input).forEach((file) => {
                     if (file.size > maxBytes) {
-                        showFieldError(
-                            input,
-                            file.name + ' is too large. Maximum size is ' + maxMb + ' MB (selected ' + formatUploadMb(file.size) + ' MB).'
-                        );
+                        showFieldError(input, 'One of the images is too large. Please choose a smaller photo.');
                         valid = false;
                     }
                 });

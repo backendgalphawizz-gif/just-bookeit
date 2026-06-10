@@ -486,6 +486,17 @@
         border: 1px solid rgb(254 202 202);
     }
 
+    .jb-upload-hint-alert {
+        padding: 0.75rem 1rem;
+        border-radius: 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.5;
+        color: rgb(146 64 14);
+        background: rgb(255 251 235);
+        border: 1px solid rgb(253 230 138);
+    }
+
     .jb-actor-profile {
         display: flex;
         align-items: center;
@@ -561,39 +572,44 @@
     }
 
     .jb-multi-image-upload-item--marked {
-        opacity: 0.55;
-        border-color: rgb(252 165 165);
-        background: rgb(254 242 242);
+        opacity: 0.65;
+        border-color: rgb(253 186 116);
+        background: rgb(255 251 235);
     }
 
     .jb-multi-image-upload-item__dismiss {
         position: absolute;
-        top: 0.4rem;
-        right: 0.4rem;
+        top: 0.3rem;
+        right: 0.3rem;
         z-index: 2;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 1.75rem;
-        height: 1.75rem;
-        border: none;
+        width: 1.125rem;
+        height: 1.125rem;
+        padding: 0;
+        border: 1px solid rgb(226 232 240);
         border-radius: 9999px;
-        background: rgb(15 23 42 / 0.88);
-        color: rgb(255 255 255);
-        font-size: 1.25rem;
+        background: rgb(255 255 255 / 0.96);
+        color: rgb(100 116 139);
+        font-size: 0.6875rem;
+        font-weight: 700;
         line-height: 1;
         cursor: pointer;
-        box-shadow: 0 2px 6px rgb(15 23 42 / 0.25);
-        transition: background-color 0.15s ease, transform 0.15s ease;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.1);
+        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
 
     .jb-multi-image-upload-item__dismiss:hover {
-        background: rgb(220 38 38);
-        transform: scale(1.05);
+        background: rgb(254 242 242);
+        color: rgb(220 38 38);
+        border-color: rgb(254 202 202);
     }
 
     .jb-multi-image-upload-item__dismiss--active {
-        background: rgb(220 38 38);
+        background: rgb(254 226 226);
+        color: rgb(220 38 38);
+        border-color: rgb(252 165 165);
     }
 
     .jb-multi-image-upload-item__label,
@@ -615,8 +631,8 @@
     }
 
     .jb-multi-image-upload-item__status {
-        color: rgb(185 28 28);
-        background: rgb(254 226 226);
+        color: rgb(180 83 9);
+        background: rgb(254 243 199);
     }
 
     .jb-form-section-title {
@@ -1650,6 +1666,218 @@
     .jb-analytics-filters-grid .jb-filters-actions {
         width: auto;
         margin-left: 0;
+    }
+
+    /* Orders list — structured filter panel + table polish */
+    .jb-orders-filters {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .jb-orders-filters__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgb(241 245 249);
+    }
+
+    .jb-orders-filters__title {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-orders-filters__hint {
+        margin: 0.25rem 0 0;
+        font-size: 0.8125rem;
+        line-height: 1.45;
+        color: rgb(100 116 139);
+    }
+
+    .jb-orders-filters__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    .jb-orders-filters__body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .jb-orders-filters__search {
+        max-width: 18rem;
+    }
+
+    .jb-orders-filters__grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .jb-orders-filters__grid .jb-filters-field {
+        min-width: 0;
+        width: 100%;
+        flex: none;
+    }
+
+    .jb-orders-filters__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    .jb-orders-filters__dates {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0.75rem;
+        flex: 1 1 auto;
+    }
+
+    .jb-orders-filters__dates .jb-filters-field--date {
+        min-width: 9.5rem;
+        flex: 0 1 9.5rem;
+    }
+
+    .jb-orders-filters__footer .jb-filters-actions {
+        margin-left: 0;
+    }
+
+    .jb-orders-filters__active {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgb(241 245 249);
+    }
+
+    .jb-orders-filters__active-label {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgb(148 163 184);
+    }
+
+    .jb-orders-filter-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.3rem 0.65rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.2;
+        color: rgb(190 18 60);
+        background: rgb(255 241 242);
+        border: 1px solid rgb(254 205 211);
+    }
+
+    .jb-orders-card__header {
+        align-items: flex-start;
+    }
+
+    .jb-orders-card__subtitle {
+        margin: 0.2rem 0 0;
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-orders-table tbody tr:hover {
+        background: rgb(248 250 252);
+    }
+
+    .jb-orders-id {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        letter-spacing: 0.02em;
+    }
+
+    .jb-orders-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: rgb(30 41 59);
+    }
+
+    .jb-orders-category {
+        display: inline-block;
+        max-width: 9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 0.25rem 0.55rem;
+        border-radius: 0.375rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: rgb(67 56 202);
+        background: rgb(238 242 255);
+        vertical-align: middle;
+    }
+
+    .jb-orders-type {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgb(100 116 139);
+    }
+
+    .jb-orders-amount {
+        font-variant-numeric: tabular-nums;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-orders-date {
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+    }
+
+    @media (max-width: 1023px) {
+        .jb-orders-filters__grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 639px) {
+        .jb-orders-filters {
+            padding: 1rem;
+        }
+
+        .jb-orders-filters__search {
+            max-width: none;
+        }
+
+        .jb-orders-filters__grid {
+            grid-template-columns: 1fr;
+        }
+
+        .jb-orders-filters__footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .jb-orders-filters__footer .jb-filters-actions-btns {
+            width: 100%;
+        }
+
+        .jb-orders-filters__footer .jb-filters-actions .jb-btn {
+            flex: 1 1 auto;
+        }
     }
 
     .jb-col-check {

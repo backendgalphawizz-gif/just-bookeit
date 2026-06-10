@@ -20,15 +20,14 @@
             this.clearNewPreviews();
 
             if (files.length > this.maxFiles) {
-                this.fileError = 'You can upload up to ' + this.maxFiles + ' images at once.';
+                this.fileError = 'You can add up to ' + this.maxFiles + ' photos at a time.';
                 input.value = '';
                 return;
             }
 
             for (const file of files) {
                 if (file.size > this.maxBytes) {
-                    const mb = (file.size / (1024 * 1024)).toFixed(1);
-                    this.fileError = file.name + ' is too large. Maximum size is 4 MB (selected ' + mb + ' MB).';
+                    this.fileError = 'One of the photos is too large. Please choose a smaller image.';
                     input.value = '';
                     this.clearNewPreviews();
                     return;
@@ -69,7 +68,7 @@
     }"
 >
     <label class="jb-label">{{ $label }}</label>
-    <p class="mb-3 text-sm text-slate-500">Upload one or more images. Previews appear below — use × to remove any image before you save.</p>
+    <p class="mb-3 text-sm text-slate-500">Add shop photos below. Tap the small × on a photo to remove it before saving.</p>
 
     @if ($existingImages->isNotEmpty())
         <div class="mb-4">
@@ -91,7 +90,7 @@
                                 :aria-label="marked ? 'Undo remove' : 'Remove image'"
                                 @click="marked = !marked; $refs.removeCheckbox.checked = marked"
                             >
-                                <span aria-hidden="true">&times;</span>
+                                <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
                             </button>
                         </div>
                         <input
@@ -101,7 +100,7 @@
                             value="{{ $image->id }}"
                             class="jb-sr-only"
                         >
-                        <span class="jb-multi-image-upload-item__status" x-show="marked" x-cloak>Will remove</span>
+                        <span class="jb-multi-image-upload-item__status" x-show="marked" x-cloak>Removed</span>
                     </div>
                 @endforeach
             </div>
@@ -123,7 +122,7 @@
                                 aria-label="Remove from upload"
                                 @click="removeNewPreview(index)"
                             >
-                                <span aria-hidden="true">&times;</span>
+                                <svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1l6 6M7 1L1 7" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
                             </button>
                         </div>
                         <span class="jb-multi-image-upload-item__label" x-text="item.name"></span>
@@ -151,7 +150,7 @@
         @endif
     </p>
 
-    <div x-show="fileError" x-cloak class="jb-file-error-alert mt-2" role="alert" x-text="fileError"></div>
+    <div x-show="fileError" x-cloak class="jb-upload-hint-alert mt-2" role="alert" x-text="fileError"></div>
 
     @error($name)
         <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
