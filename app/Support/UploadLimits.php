@@ -37,12 +37,7 @@ class UploadLimits
 
     public static function postTooLargeMessage(): string
     {
-        $postMb = self::formatMegabytes(self::postMaxSizeBytes());
-        $perFileMb = (int) round(self::perFileMaxBytes() / (1024 * 1024));
-
-        return 'Total upload size exceeds the server limit ('.$postMb.' MB per request). '
-            .'Each image may be up to '.$perFileMb.' MB, but uploading many images at once can exceed that limit. '
-            .'Remove some files or save with fewer new uploads, then try again.';
+        return 'Too many images were selected. Please remove a few and try saving again.';
     }
 
     public static function formatMegabytes(int $bytes): string

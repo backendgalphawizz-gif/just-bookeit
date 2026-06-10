@@ -204,6 +204,7 @@ class AdminListExporter
                     ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
                     ->when($request->filled('payment_status'), fn (Builder $q) => $q->where('payment_status', $request->string('payment_status')))
                     ->when($request->filled('vendor_id'), fn (Builder $q) => $q->where('vendor_id', $request->integer('vendor_id')))
+                    ->when($request->filled('category_id'), fn (Builder $q) => $q->where('category_id', $request->integer('category_id')))
                     ->orderByDesc('created_at'),
                 'map' => fn (Order $order) => [
                     $order->order_number,
