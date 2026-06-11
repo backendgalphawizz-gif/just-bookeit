@@ -13,7 +13,7 @@
 <div class="vp-page-head">
     <div>
         <h1 class="vp-page-title">{{ $typeLabel }}</h1>
-        <p class="vp-page-sub">Manage your catalog items and approval status</p>
+        <p class="vp-page-sub">Items you want to sell or rent. For previous work photos, use <a href="{{ route('vendor.portfolio.index') }}" style="color:var(--vp-orange);font-weight:600;">Portfolio</a>.</p>
     </div>
 </div>
 

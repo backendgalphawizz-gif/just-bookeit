@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Chats / Profile\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\nImport with **Just Book IT — Local** environment.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\nImport with **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -699,7 +699,7 @@
 							}
 						},
 						{
-							"name": "Booking History (designers tab)",
+							"name": "Booking History (fashion designer tab)",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -718,7 +718,22 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings?tab=designers&page=1"
+								"url": {
+									"raw": "{{base_url}}/v1/bookings?tab=fashion_designer&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "bookings"],
+									"query": [
+										{
+											"key": "tab",
+											"value": "fashion_designer",
+											"description": "fashion_designer | rental_dress | rental_jewellery (aliases: designers, fashion-designer, rental, jewellery)"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
 							}
 						},
 						{
@@ -741,7 +756,60 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings?tab=rental_dress&page=1"
+								"url": {
+									"raw": "{{base_url}}/v1/bookings?tab=rental_dress&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "bookings"],
+									"query": [
+										{
+											"key": "tab",
+											"value": "rental_dress",
+											"description": "fashion_designer | rental_dress | rental_jewellery"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Booking History (rental jewellery tab)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/v1/bookings?tab=rental_jewellery&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "bookings"],
+									"query": [
+										{
+											"key": "tab",
+											"value": "rental_jewellery",
+											"description": "fashion_designer | rental_dress | rental_jewellery"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
 							}
 						},
 						{
@@ -2018,6 +2086,7 @@
 				},
 				{
 					"name": "Products",
+					"description": "Items the vendor wants to sell or rent (dresses, jewellery, designer services). Stored as `portfolio_items`. New products are **pending** until approved in admin **Products** (Content menu).\n\nNot the same as **Portfolio** — the vendor's previous work (`/v2/portfolio`).",
 					"item": [
 						{
 							"name": "List (Rental Dresses)",
@@ -2750,6 +2819,7 @@
 				},
 				{
 					"name": "Portfolio Gallery",
+					"description": "The vendor's **previous work** — showcase photos (women / men / kids). Stored in `vendor_portfolio_images`. Managed by the vendor in profile settings. **No admin approval**.\n\nFor items they want to sell or rent, use **Products** (`/v2/products`) instead.",
 					"item": [
 						{
 							"name": "List (Women)",

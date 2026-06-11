@@ -6,18 +6,19 @@ use App\Http\Controllers\Vendor\BookingController;
 use App\Http\Controllers\Vendor\ChatController;
 use App\Http\Controllers\Vendor\DashboardController;
 use App\Http\Controllers\Vendor\PaymentController;
+use App\Http\Controllers\Vendor\PortfolioController;
 use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\SettingsController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
-    // Route::get('/', function () {
-    //     return Auth::guard('vendor')->check()
-    //         ? redirect()->route('vendor.dashboard')
-    //         : redirect()->route('vendor.login');
-    // });
-    Route::get('/', fn () => redirect('/admin'));
+    Route::get('/', function () {
+        return Auth::guard('vendor')->check()
+            ? redirect()->route('vendor.dashboard')
+            : redirect()->route('vendor.login');
+    });
+    // Route::get('/', fn () => redirect('/admin'));
 
     Route::middleware('vendor.guest')->group(function () {
         Route::get('login', [LoginController::class, 'showLogin'])->name('login');
@@ -43,11 +44,16 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::post('bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
         Route::post('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
 
+        Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
+        Route::post('portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');
+        Route::delete('portfolio/{portfolioImage}', [PortfolioController::class, 'destroy'])->name('portfolio.destroy');
+
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
         Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
         Route::post('products', [ProductController::class, 'store'])->name('products.store');
         Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('products/{product}/images/{image}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
         Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
@@ -60,6 +66,5 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('settings/toggle-active', [SettingsController::class, 'toggleActive'])->name('settings.toggle-active');
         Route::post('settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
-        Route::delete('settings/portfolio/{portfolioImage}', [SettingsController::class, 'destroyPortfolio'])->name('settings.portfolio.destroy');
     });
 });

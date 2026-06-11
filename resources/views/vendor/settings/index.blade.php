@@ -23,7 +23,7 @@
     <div class="vp-card vp-settings-nav-card">
         <nav class="vp-settings-nav">
             @foreach ($settingsTabs as $navTab)
-                <a href="{{ route('vendor.settings.index', array_filter(['tab' => $navTab['key'], 'audience' => $navTab['key'] === 'portfolio' ? request('audience', 'women') : null])) }}"
+                <a href="{{ route('vendor.settings.index', ['tab' => $navTab['key']]) }}"
                    class="{{ $tab === $navTab['key'] ? 'active' : '' }}">
                     @include('vendor.partials.nav-icon', ['icon' => $navTab['icon']])
                     {{ $navTab['label'] }}

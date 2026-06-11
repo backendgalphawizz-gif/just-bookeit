@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\PortfolioItem;
 use App\Services\Booking\BookingPricingService;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\Api\CustomerBookingTab;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -20,27 +21,23 @@ class BookingController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        $orders = Order::query()
-            ->with(['vendor', 'category'])
-            ->where('customer_id', $customer->id)
-            ->when($request->filled('tab'), function ($q) use ($request) {
-                $tab = $request->string('tab')->toString();
+        $request->validate([
+            'tab' => CustomerBookingTab::validationRule(),
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
 
-                if ($tab === 'rental_dress' || $tab === 'rental') {
-                    $q->where('order_type', 'rental')
-                        ->whereHas('category', fn ($category) => $category->where('name', 'like', '%dress%'));
-                } elseif ($tab === 'rental_jewellery' || $tab === 'jewellery') {
-                    $q->where('order_type', 'rental')
-                        ->whereHas('category', fn ($category) => $category->where('name', 'like', '%jewel%'));
-                } elseif ($tab === 'designers') {
-                    $q->whereHas('category', fn ($category) => $category->where('type', 'service'));
-                }
-            })
+        $orders = CustomerBookingTab::applyToQuery(
+            Order::query()
+                ->with(['vendor', 'category', 'customer', 'dispute'])
+                ->where('customer_id', $customer->id),
+            $request->input('tab')
+        )
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 10));
 
         return $this->success(
-            CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingSummary($order))
+            CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingDetail($order))
         );
     }
 

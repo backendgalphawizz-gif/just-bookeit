@@ -1019,6 +1019,188 @@
         margin-top: 0.125rem;
     }
 
+    .jb-product-hero {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        align-items: flex-start;
+        padding: 1.25rem;
+        background: #fff;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.875rem;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+        margin-bottom: 1.25rem;
+        min-width: 0;
+    }
+
+    .jb-product-hero-cover {
+        flex-shrink: 0;
+        width: 9rem;
+        height: 9rem;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        background: rgb(248 250 252);
+        border: 1px solid rgb(226 232 240);
+    }
+
+    .jb-product-hero-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .jb-product-hero-cover--empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(148 163 184);
+    }
+
+    .jb-product-hero-body {
+        flex: 1 1 16rem;
+        min-width: 0;
+    }
+
+    .jb-product-hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .jb-product-type-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.55rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        background: rgb(241 245 249);
+        color: rgb(71 85 105);
+    }
+
+    .jb-product-hero-price {
+        font-size: 1.375rem;
+        font-weight: 800;
+        color: rgb(15 23 42);
+        line-height: 1.2;
+    }
+
+    .jb-product-hero-price span {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: rgb(100 116 139);
+    }
+
+    .jb-product-hero-vendor {
+        margin-top: 0.45rem;
+        font-size: 0.875rem;
+        color: rgb(71 85 105);
+    }
+
+    .jb-product-hero-vendor a {
+        font-weight: 600;
+        color: var(--jb-primary, #be123c);
+        text-decoration: none;
+    }
+
+    .jb-product-hero-vendor a:hover {
+        text-decoration: underline;
+    }
+
+    .jb-product-hero-desc {
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.55;
+        color: rgb(71 85 105);
+        overflow-wrap: anywhere;
+    }
+
+    .jb-product-layout {
+        display: grid;
+        gap: 1.25rem;
+        min-width: 0;
+    }
+
+    @media (min-width: 1024px) {
+        .jb-product-layout {
+            grid-template-columns: minmax(0, 1fr) 20rem;
+            align-items: start;
+        }
+    }
+
+    .jb-product-main,
+    .jb-product-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-width: 0;
+    }
+
+    .jb-product-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+        gap: 0.75rem;
+    }
+
+    .jb-product-gallery-item {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: rgb(248 250 252);
+        aspect-ratio: 1;
+    }
+
+    .jb-product-gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        cursor: zoom-in;
+    }
+
+    .jb-product-facts {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .jb-product-fact {
+        display: grid;
+        gap: 0.2rem;
+    }
+
+    .jb-product-fact dt {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgb(100 116 139);
+    }
+
+    .jb-product-fact dd {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: rgb(15 23 42);
+        margin: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .jb-product-reject-box {
+        margin-top: 0.75rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 0.625rem;
+        background: rgb(255 241 242);
+        border: 1px solid rgb(254 205 211);
+        font-size: 0.8125rem;
+        color: rgb(190 18 60);
+        line-height: 1.45;
+    }
+
     .jb-booking-designer {
         display: flex;
         align-items: center;

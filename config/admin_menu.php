@@ -19,7 +19,8 @@ return [
             ['label' => 'Payouts', 'route' => 'admin.payouts.index', 'route_is' => 'admin.payouts.*', 'permission' => 'payouts', 'badge' => 'open_payouts', 'icon' => 'wallet'],
         ],
         'Content' => [
-            ['label' => 'Portfolio', 'route' => 'admin.portfolio.index', 'route_is' => 'admin.portfolio.*', 'permission' => 'portfolio', 'badge' => 'pending_portfolio', 'icon' => 'image'],
+            ['label' => 'Products', 'route' => 'admin.portfolio.index', 'route_is' => 'admin.portfolio.*', 'permission' => 'portfolio', 'badge' => 'pending_portfolio', 'icon' => 'grid'],
+            ['label' => 'Portfolio', 'route' => 'admin.vendor-portfolio.index', 'route_is' => 'admin.vendor-portfolio.*', 'permission' => 'portfolio', 'badge' => null, 'icon' => 'image'],
             ['label' => 'Banners & CMS', 'route' => 'admin.banners.index', 'route_is' => 'admin.banners.*', 'permission' => 'banners', 'badge' => null, 'icon' => 'banner'],
             ['label' => 'FAQs', 'route' => 'admin.faqs.index', 'route_is' => 'admin.faqs.*', 'permission' => 'faqs', 'badge' => null, 'icon' => 'grid'],
         ],

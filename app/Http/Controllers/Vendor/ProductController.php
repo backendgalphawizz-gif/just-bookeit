@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Vendor;
 
 use App\Models\Category;
 use App\Models\PortfolioItem;
+use App\Models\PortfolioItemImage;
 use App\Support\AppliesListDateFilter;
+use App\Support\ManagesPortfolioProducts;
 use App\Support\StoresUploadedFiles;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +16,8 @@ use Illuminate\View\View;
 class ProductController extends VendorController
 {
     use AppliesListDateFilter;
+    use ManagesPortfolioProducts;
+
     protected array $typeMap = [
         'fashion-designer' => 'Fashion Designer',
         'rented-dress' => 'Rented Dress',
@@ -52,7 +56,7 @@ class ProductController extends VendorController
         $category = Category::query()->where('slug', $type)->firstOrFail();
 
         return view('vendor.products.form', [
-            'item' => new PortfolioItem(['status' => 'pending']),
+            'item' => new PortfolioItem(['status' => 'pending', 'audience' => 'women']),
             'type' => $type,
             'typeLabel' => $this->typeMap[$type] ?? 'Product',
             'category' => $category,
@@ -65,18 +69,29 @@ class ProductController extends VendorController
         $type = $request->string('type', 'fashion-designer')->toString();
         $category = Category::query()->where('slug', $type)->firstOrFail();
 
-        $data = $this->validateVendor($request, VendorValidationRules::product(true));
+        $this->normalizeProductFormInput($request);
+        $data = $this->validateVendor($request, array_merge(
+            VendorValidationRules::product(true),
+            $this->productUploadRules(true)
+        ));
 
         $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
 
-        PortfolioItem::query()->create([
+        $product = PortfolioItem::query()->create([
             'vendor_id' => $vendor->id,
             'category_id' => $category->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'price_per_day' => $data['price_per_day'],
+            'advance_amount' => $data['advance_amount'] ?? null,
+            'audience' => $data['audience'] ?? 'women',
             'image_url' => $imagePath,
             'status' => 'pending',
         ]);
+
+        $this->storeProductGalleryImages($request, $product, $request->file('image'));
+        $this->syncProductVariants($request, $product, $data['variants'] ?? []);
+        $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
 
         return redirect()->route('vendor.products.index', ['type' => $type])
             ->with('success', 'Product submitted for approval.');
@@ -85,7 +100,7 @@ class ProductController extends VendorController
     public function edit(PortfolioItem $product): View
     {
         abort_unless($product->vendor_id === $this->vendor()->id, 403);
-        $product->load('category');
+        $product->load(['category', 'images', 'variants', 'damageDeductions']);
         $type = $product->category?->slug ?? 'fashion-designer';
 
         return view('vendor.products.form', [
@@ -100,11 +115,18 @@ class ProductController extends VendorController
     {
         abort_unless($product->vendor_id === $this->vendor()->id, 403);
 
-        $data = $this->validateVendor($request, VendorValidationRules::product(false));
+        $this->normalizeProductFormInput($request);
+        $data = $this->validateVendor($request, array_merge(
+            VendorValidationRules::product(false),
+            $this->productUploadRules(false)
+        ));
 
         $product->fill([
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'price_per_day' => $data['price_per_day'] ?? $product->price_per_day,
+            'advance_amount' => array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $product->advance_amount,
+            'audience' => $data['audience'] ?? $product->audience,
             'status' => 'pending',
             'rejection_reason' => null,
         ]);
@@ -118,6 +140,11 @@ class ProductController extends VendorController
         }
 
         $product->save();
+
+        $this->storeProductGalleryImages($request, $product);
+        $this->syncProductVariants($request, $product, $data['variants'] ?? [], true);
+        $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? [], true);
+
         $type = $product->category?->slug ?? 'fashion-designer';
 
         return redirect()->route('vendor.products.index', ['type' => $type])
@@ -132,5 +159,31 @@ class ProductController extends VendorController
 
         return redirect()->route('vendor.products.index', ['type' => $type])
             ->with('success', 'Product removed.');
+    }
+
+    public function destroyImage(PortfolioItem $product, PortfolioItemImage $image): RedirectResponse
+    {
+        abort_unless($product->vendor_id === $this->vendor()->id, 403);
+        abort_unless($image->portfolio_item_id === $product->id, 404);
+
+        StoresUploadedFiles::delete($image->image_path);
+        $image->delete();
+
+        return back()->with('success', 'Gallery image removed.');
+    }
+
+    /** @return array<string, mixed> */
+    protected function productUploadRules(bool $creating): array
+    {
+        $imageRule = $creating ? 'required' : 'nullable';
+        $fileRule = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB];
+
+        return [
+            'image' => [$imageRule, ...$fileRule],
+            'gallery_images' => ['nullable', 'array', 'max:10'],
+            'gallery_images.*' => $fileRule,
+            'variant_images' => ['nullable', 'array', 'max:50'],
+            'variant_images.*' => ['nullable', ...$fileRule],
+        ];
     }
 }

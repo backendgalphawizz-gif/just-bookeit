@@ -8,6 +8,7 @@ use App\Models\PortfolioItemImage;
 use App\Models\Vendor;
 use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
+use App\Support\ManagesPortfolioProducts;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ use Illuminate\View\View;
 class PortfolioController extends AdminController
 {
     use AppliesListDateFilter;
+    use ManagesPortfolioProducts;
 
     protected string $permissionModule = 'portfolio';
 
@@ -43,9 +45,55 @@ class PortfolioController extends AdminController
         return view('admin.portfolio.index', compact('items', 'vendors'));
     }
 
+    public function create(): View
+    {
+        $this->authorizeAdmin('create');
+
+        return view('admin.portfolio.create', $this->formViewData(new PortfolioItem([
+            'status' => 'pending',
+            'audience' => 'women',
+        ])));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->authorizeAdmin('create');
+
+        $this->normalizeProductFormInput($request);
+        $data = $request->validate(
+            AdminValidationRules::portfolioItem(true),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
+
+        $product = PortfolioItem::query()->create([
+            'vendor_id' => $data['vendor_id'],
+            'category_id' => $data['category_id'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'price_per_day' => $data['price_per_day'],
+            'advance_amount' => $data['advance_amount'] ?? null,
+            'audience' => $data['audience'],
+            'image_url' => $imagePath,
+            'status' => $data['status'],
+            'rejection_reason' => $data['status'] === 'rejected' ? ($data['rejection_reason'] ?? null) : null,
+            'reviewed_at' => in_array($data['status'], ['approved', 'rejected'], true) ? now() : null,
+        ]);
+
+        $this->storeProductGalleryImages($request, $product, $request->file('image'));
+        $this->syncProductVariants($request, $product, $data['variants'] ?? []);
+        $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
+
+        return redirect()
+            ->route('admin.portfolio.show', $product)
+            ->with('success', 'Product created successfully.');
+    }
+
     public function show(PortfolioItem $portfolio): View
     {
-        $portfolio->load(['vendor', 'category', 'images']);
+        $portfolio->load(['vendor', 'category', 'images', 'variants', 'damageDeductions']);
 
         return view('admin.portfolio.show', compact('portfolio'));
     }
@@ -54,30 +102,30 @@ class PortfolioController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
-        $portfolio->load(['vendor', 'category', 'images']);
+        $portfolio->load(['vendor', 'category', 'images', 'variants', 'damageDeductions']);
 
-        return view('admin.portfolio.edit', [
-            'portfolio' => $portfolio,
-            'vendors' => Vendor::query()->orderBy('brand_name')->get(['id', 'brand_name']),
-            'categories' => Category::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(),
-        ]);
+        return view('admin.portfolio.edit', $this->formViewData($portfolio));
     }
 
     public function update(Request $request, PortfolioItem $portfolio): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
+        $this->normalizeProductFormInput($request);
+
         $data = $request->validate(
-            AdminValidationRules::portfolioItem(),
+            AdminValidationRules::portfolioItem(false),
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
 
         $portfolio->fill([
             'vendor_id' => $data['vendor_id'],
-            'category_id' => $data['category_id'] ?? null,
+            'category_id' => $data['category_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'price_per_day' => $data['price_per_day'] ?? $portfolio->price_per_day,
+            'advance_amount' => array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $portfolio->advance_amount,
             'audience' => $data['audience'],
             'status' => $data['status'],
             'rejection_reason' => $data['status'] === 'rejected' ? ($data['rejection_reason'] ?? null) : null,
@@ -97,22 +145,13 @@ class PortfolioController extends AdminController
 
         $portfolio->save();
 
-        if ($request->hasFile('gallery_images')) {
-            $sortOrder = (int) ($portfolio->images()->max('sort_order') ?? 0);
-
-            foreach ($request->file('gallery_images') as $file) {
-                $sortOrder++;
-                PortfolioItemImage::query()->create([
-                    'portfolio_item_id' => $portfolio->id,
-                    'image_path' => StoresUploadedFiles::store($file, 'portfolio/images'),
-                    'sort_order' => $sortOrder,
-                ]);
-            }
-        }
+        $this->storeProductGalleryImages($request, $portfolio);
+        $this->syncProductVariants($request, $portfolio, $data['variants'] ?? [], true);
+        $this->syncProductDamageDeductions($portfolio, $data['damage_deductions'] ?? [], true);
 
         return redirect()
             ->route('admin.portfolio.show', $portfolio)
-            ->with('success', 'Portfolio item updated successfully.');
+            ->with('success', 'Product updated successfully.');
     }
 
     public function destroyImage(PortfolioItem $portfolio, PortfolioItemImage $image): RedirectResponse
@@ -137,7 +176,7 @@ class PortfolioController extends AdminController
             'reviewed_at' => now(),
         ]);
 
-        return back()->with('success', 'Portfolio item approved.');
+        return back()->with('success', 'Product approved.');
     }
 
     public function reject(Request $request, PortfolioItem $portfolio): RedirectResponse
@@ -154,6 +193,26 @@ class PortfolioController extends AdminController
             'reviewed_at' => now(),
         ]);
 
-        return back()->with('success', 'Portfolio item rejected.');
+        return back()->with('success', 'Product rejected.');
+    }
+
+    /** @return array<string, mixed> */
+    protected function formViewData(PortfolioItem $portfolio): array
+    {
+        return [
+            'portfolio' => $portfolio,
+            'vendors' => Vendor::query()->orderBy('brand_name')->get(['id', 'brand_name']),
+            'categories' => $this->productCategories(),
+        ];
+    }
+
+    protected function productCategories()
+    {
+        return Category::query()
+            ->where('is_active', true)
+            ->whereIn('slug', ['fashion-designer', 'rented-dress', 'rented-jewellery'])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
     }
 }
