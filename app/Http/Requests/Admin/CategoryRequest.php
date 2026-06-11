@@ -18,6 +18,7 @@ class CategoryRequest extends AdminFormRequest
     {
         $this->merge([
             'is_active' => $this->boolean('is_active', true),
+            'sort_order' => (int) ($this->input('sort_order') ?? 0),
         ]);
     }
 }

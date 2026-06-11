@@ -2903,4 +2903,104 @@
         font-weight: 700;
         color: rgb(15 23 42);
     }
+
+    .jb-multi-select {
+        position: relative;
+    }
+
+    .jb-multi-select-trigger {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: #fff;
+        padding: 0.625rem 0.875rem;
+        text-align: left;
+        font-size: 0.875rem;
+        color: rgb(15 23 42);
+        box-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .jb-multi-select-trigger:hover {
+        border-color: rgb(203 213 225);
+    }
+
+    .jb-multi-select-trigger.is-open,
+    .jb-multi-select-trigger:focus {
+        border-color: color-mix(in srgb, var(--jb-primary, #be123c) 40%, #e2e8f0);
+        outline: none;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--jb-primary, #be123c) 12%, transparent);
+    }
+
+    .jb-multi-select-trigger-text {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .jb-multi-select-chevron {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        color: rgb(148 163 184);
+        transition: transform 0.15s ease;
+    }
+
+    .jb-multi-select-trigger.is-open .jb-multi-select-chevron {
+        transform: rotate(180deg);
+    }
+
+    .jb-multi-select-menu {
+        position: absolute;
+        z-index: 30;
+        margin-top: 0.25rem;
+        max-height: 14rem;
+        width: 100%;
+        overflow-y: auto;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: #fff;
+        padding: 0.5rem;
+        box-shadow: 0 10px 25px -12px rgb(15 23 42 / 0.25);
+    }
+
+    .jb-multi-select-option {
+        display: flex;
+        cursor: pointer;
+        align-items: center;
+        gap: 0.625rem;
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.625rem;
+        font-size: 0.875rem;
+        color: rgb(51 65 85);
+    }
+
+    .jb-multi-select-option:hover {
+        background: rgb(248 250 252);
+    }
+
+    .jb-multi-select-option input {
+        width: 1rem;
+        height: 1rem;
+        border-radius: 0.25rem;
+        accent-color: var(--jb-primary, #be123c);
+    }
+
+    .jb-multi-select-empty {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.875rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-location-picker .jb-select:disabled {
+        background: rgb(248 250 252);
+        color: rgb(148 163 184);
+        cursor: not-allowed;
+    }
 </style>

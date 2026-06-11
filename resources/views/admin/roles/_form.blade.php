@@ -103,9 +103,6 @@
             </thead>
             <tbody>
                 @foreach ($permissions as $permission)
-                    @if ($isSuperAdmin && $permission->slug === 'categories')
-                        @continue
-                    @endif
                     @php
                         $flags = old("permissions.{$permission->id}", $rolePermissions[$permission->id] ?? []);
                     @endphp

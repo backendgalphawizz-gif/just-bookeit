@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminAccessSeeder::class,
+            LocationSeeder::class,
             PlatformDataSeeder::class,
             OrderDemoSeeder::class,
             PlatformSettingsSeeder::class,

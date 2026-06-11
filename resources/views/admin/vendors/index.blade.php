@@ -19,7 +19,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, owner, email ID..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, owner, email ID, mobile no..." class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
@@ -97,6 +97,7 @@
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-id">Vendor ID</th>
                         <th class="jb-col-name">Brand</th>
+                        <th>Mobile</th>
                         <th>City</th>
                         <th class="text-center">Rating</th>
                         <th class="text-center">Orders</th>
@@ -135,6 +136,7 @@
                                     <span class="font-semibold" title="{{ $vendor->brand_name }}">{{ $vendor->brand_name }}</span>
                                 </div>
                             </td>
+                            <td>{{ $vendor->mobile ?? '—' }}</td>
                             <td>{{ $vendor->city ?? '—' }}</td>
                             <td class="text-center">{{ number_format($vendor->rating, 1) }}</td>
                             <td class="text-center">{{ $vendor->orders_completed }}</td>
@@ -158,7 +160,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canBulkApprove ? 10 : 9 }}" class="jb-table-empty">No vendors found.</td>
+                            <td colspan="{{ $canBulkApprove ? 11 : 10 }}" class="jb-table-empty">No vendors found.</td>
                         </tr>
                     @endforelse
                 </tbody>

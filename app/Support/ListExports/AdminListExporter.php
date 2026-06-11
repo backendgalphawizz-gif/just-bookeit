@@ -114,7 +114,7 @@ class AdminListExporter
             'vendors' => [
                 'title' => 'Vendors Export',
                 'basename' => 'vendors',
-                'headers' => ['Code', 'Brand', 'Owner', 'Email', 'City', 'Status', 'Rating', 'Orders Completed', 'Digital Wallet', 'Actual Wallet', 'Earnings'],
+                'headers' => ['Code', 'Brand', 'Owner', 'Email', 'Mobile', 'Business Mobile', 'City', 'Status', 'Rating', 'Orders Completed', 'Digital Wallet', 'Actual Wallet', 'Earnings'],
                 'query' => fn (Request $request) => AdminCityScope::scopeVendors(
                     $this->applyDateRange(Vendor::query(), $request)
                 )
@@ -124,6 +124,8 @@ class AdminListExporter
                             $q->where('brand_name', 'like', $term)
                                 ->orWhere('owner_name', 'like', $term)
                                 ->orWhere('email', 'like', $term)
+                                ->orWhere('mobile', 'like', $term)
+                                ->orWhere('business_mobile', 'like', $term)
                                 ->orWhere('vendor_code', 'like', $term);
                         });
                     })
@@ -135,6 +137,8 @@ class AdminListExporter
                     $vendor->brand_name,
                     $vendor->owner_name,
                     $vendor->email,
+                    $vendor->mobile ?? '—',
+                    $vendor->business_mobile ?? '—',
                     $vendor->city ?? '—',
                     $vendor->status,
                     $vendor->rating,
@@ -181,6 +185,8 @@ class AdminListExporter
                     ->with('parent')
                     ->when($request->filled('type'), fn (Builder $q) => $q->where('type', $request->string('type')))
                     ->when($request->filled('search'), fn (Builder $q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
+                    ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
+                    ->orderBy('sort_order')
                     ->orderBy('name'),
                 'map' => fn (Category $category) => [
                     $category->name,

@@ -59,7 +59,6 @@
             const transfer = new DataTransfer();
             this.newPreviews.forEach((item) => transfer.items.add(item.file));
             input.files = transfer.files;
-            input.dispatchEvent(new Event('change', { bubbles: true }));
         },
         clearNewPreviews() {
             this.newPreviews.forEach((item) => URL.revokeObjectURL(item.url));

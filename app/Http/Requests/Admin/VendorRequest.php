@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Models\Category;
 use App\Models\Role;
 use App\Support\AdminValidationRules;
+use App\Support\LocationResolver;
 use Illuminate\Validation\Validator;
 
 class VendorRequest extends AdminFormRequest
@@ -27,6 +28,14 @@ class VendorRequest extends AdminFormRequest
     {
         $data = $this->safe()->except([
             'category_ids',
+            'audience_category_ids',
+            'service_category_ids',
+            'country_id',
+            'country_other',
+            'state_id',
+            'state_other',
+            'city_id',
+            'city_other',
             'profile_image',
             'shop_logo',
             'shop_images',
@@ -35,6 +44,11 @@ class VendorRequest extends AdminFormRequest
             'aadhar_back',
             'pan_card',
         ]);
+
+        if ($this->filled('country_id') || $this->filled('state_id') || $this->filled('city_id')
+            || $this->filled('country_other') || $this->filled('state_other') || $this->filled('city_other')) {
+            $data = array_merge($data, LocationResolver::resolve($this->all()));
+        }
 
         $shopName = trim((string) ($data['shop_name'] ?? ''));
         $brandName = trim((string) ($data['brand_name'] ?? ''));
@@ -48,6 +62,8 @@ class VendorRequest extends AdminFormRequest
         }
 
         $categoryIds = collect($this->input('category_ids', []))
+            ->merge($this->input('audience_category_ids', []))
+            ->merge($this->input('service_category_ids', []))
             ->filter(fn ($id) => filled($id))
             ->map(fn ($id) => (int) $id)
             ->unique()

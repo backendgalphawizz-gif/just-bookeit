@@ -7,6 +7,7 @@ use App\Models\Vendor;
 use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
+use App\Support\LocationResolver;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -137,9 +138,15 @@ class VendorAuthController extends ApiController
             'business_mail' => array_merge([$rule], array_slice(AdminValidationRules::emailRules(false), 1)),
             'gst_no' => ['nullable', 'string', 'max:15'],
             'address' => [$rule, 'string', 'max:500'],
-            'country' => [$rule, 'string', 'max:100'],
-            'state' => [$rule, 'string', 'max:100'],
-            'city' => [$rule, 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'country_id' => ['nullable'],
+            'country_other' => ['nullable', 'required_if:country_id,other', 'string', 'max:100'],
+            'state_id' => ['nullable'],
+            'state_other' => ['nullable', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100'],
+            'city_id' => ['nullable'],
+            'city_other' => ['nullable', 'required_if:city_id,other', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100'],
             'pincode' => [$rule, 'string', 'max:10'],
             'aadhar_front' => [$rule, ...self::IMAGE_RULE],
             'aadhar_back' => [$rule, ...self::IMAGE_RULE],
@@ -155,6 +162,11 @@ class VendorAuthController extends ApiController
 
     private function mapVendorAttributes(array $data): array
     {
+        if (isset($data['country_id']) || isset($data['state_id']) || isset($data['city_id'])
+            || isset($data['country_other']) || isset($data['state_other']) || isset($data['city_other'])) {
+            $data = array_merge($data, LocationResolver::resolve($data));
+        }
+
         $attributes = collect($data)->only([
             'owner_name',
             'email',
