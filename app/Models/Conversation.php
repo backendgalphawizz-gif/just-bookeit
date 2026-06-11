@@ -45,7 +45,15 @@ class Conversation extends Model
     public function unreadCountForCustomer(): int
     {
         return $this->messages()
-            ->where('sender_type', 'vendor')
+            ->where('sender_type', ChatMessage::SENDER_VENDOR)
+            ->whereNull('read_at')
+            ->count();
+    }
+
+    public function unreadCountForVendor(): int
+    {
+        return $this->messages()
+            ->where('sender_type', ChatMessage::SENDER_CUSTOMER)
             ->whereNull('read_at')
             ->count();
     }

@@ -92,11 +92,40 @@ class VendorValidationRules
 
     public static function product(bool $creating): array
     {
+        $priceRule = $creating ? 'required' : 'sometimes';
+
         return [
             'title' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'description' => ['nullable', 'string', 'max:5000', 'regex:'.AdminValidationRules::REGEX_TEXT],
-            'image' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
+            'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'audience' => ['nullable', 'in:women,men,kids'],
+            'variants' => ['nullable', 'array', 'max:50'],
+            'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
+            'damage_deductions' => ['nullable', 'array', 'max:20'],
+            'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],
         ];
+    }
+
+    /** @return array<string, int> */
+    public static function productUploadLimits(): array
+    {
+        return [
+            'image' => 1,
+            'product_image' => 1,
+            'gallery_images' => 10,
+            'images' => 10,
+            'variant_images' => 50,
+        ];
+    }
+
+    /** @return list<string> */
+    public static function productUploadRules(): array
+    {
+        return ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB];
     }
 
     public static function portfolioUpload(): array

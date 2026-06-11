@@ -1,0 +1,561 @@
+{
+	"name": "v2 — Vendor App",
+	"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.",
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Send OTP",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+						"const json = pm.response.json();",
+						"if (json.data?.otp) { pm.environment.set('v2_otp', json.data.otp); }"
+					] } }],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}" },
+						"url": "{{base_url}}/v2/auth/otp/send"
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+						"const json = pm.response.json();",
+						"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }",
+						"if (json.data?.registration_token) { pm.environment.set('v2_registration_token', json.data.registration_token); }"
+					] } }],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}" },
+						"url": "{{base_url}}/v2/auth/otp/verify"
+					}
+				},
+				{
+					"name": "Register",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+						"const json = pm.response.json();",
+						"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }"
+					] } }],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "registration_token", "value": "{{v2_registration_token}}", "type": "text" },
+								{ "key": "shop_name", "value": "Riya Rathore Studio", "type": "text" },
+								{ "key": "owner_name", "value": "Riya Rathore", "type": "text" },
+								{ "key": "email", "value": "riya.vendor@example.com", "type": "text" },
+								{ "key": "service_types", "value": "Fashion Designer, Rented Dress", "type": "text" },
+								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
+								{ "key": "business_mail", "value": "business@riyastudio.com", "type": "text" },
+								{ "key": "city", "value": "Indore", "type": "text" },
+								{ "key": "aadhar_front", "type": "file", "src": [] },
+								{ "key": "aadhar_back", "type": "file", "src": [] }
+							]
+						},
+						"url": "{{base_url}}/v2/auth/register"
+					}
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/auth/me"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "owner_name", "value": "Riya Rathore", "type": "text" },
+								{ "key": "shop_name", "value": "Riya Rathore Studio", "type": "text" },
+								{ "key": "email", "value": "riya.vendor@example.com", "type": "text" },
+								{ "key": "city", "value": "Indore", "type": "text" },
+								{ "key": "profile_image", "type": "file", "src": [] }
+							]
+						},
+						"url": "{{base_url}}/v2/auth/profile"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/auth/logout"
+					}
+				}
+			]
+		},
+		{
+			"name": "Config",
+			"item": [
+				{
+					"name": "Get Config",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/config"
+					}
+				}
+			]
+		},
+		{
+			"name": "Home",
+			"item": [
+				{
+					"name": "Dashboard",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"const json = pm.response.json();",
+						"const booking = json.data?.new_bookings?.[0];",
+						"if (booking?.id) { pm.environment.set('v2_booking_id', String(booking.id)); }"
+					] } }],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/home?date=2026-06-27"
+					}
+				}
+			]
+		},
+		{
+			"name": "Bookings",
+			"item": [
+				{
+					"name": "List (Accepted)",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"const json = pm.response.json();",
+						"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_booking_id', String(json.data.items[0].id)); }"
+					] } }],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings?tab=accepted"
+					}
+				},
+				{
+					"name": "List (In Transit)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings?tab=in_transit"
+					}
+				},
+				{
+					"name": "List (New)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings?tab=new"
+					}
+				},
+				{
+					"name": "Booking Detail",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}"
+					}
+				},
+				{
+					"name": "Accept Booking",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/accept"
+					}
+				},
+				{
+					"name": "Reject Booking",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/reject"
+					}
+				},
+				{
+					"name": "Update Status",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"status\": \"in_transit\"\n}" },
+						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status"
+					}
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "List (Rental Dresses)",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"const json = pm.response.json();",
+						"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_product_id', String(json.data.items[0].id)); }"
+					] } }],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/products?type=rented-dress"
+					}
+				},
+				{
+					"name": "List (Rental Jewellery)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/products?type=rented-jewellery"
+					}
+				},
+				{
+					"name": "Product Detail",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+					}
+				},
+				{
+					"name": "Create Product",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"const json = pm.response.json();",
+						"if (json.data?.product?.id) { pm.environment.set('v2_product_id', String(json.data.product.id)); }"
+					] } }],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "type", "value": "rented-dress", "type": "text", "description": "Product tab: rented-dress | rented-jewellery | fashion-designer" },
+								{ "key": "title", "value": "Velvet Gown", "type": "text" },
+								{ "key": "description", "value": "Premium velvet evening gown for rent.", "type": "text" },
+								{ "key": "price_per_day", "value": "1500", "type": "text", "description": "Product price per day (required)" },
+								{ "key": "advance_amount", "value": "500", "type": "text", "description": "Optional advance/booking amount" },
+								{ "key": "audience", "value": "women", "type": "text", "description": "Category dropdown: women | men | kids" },
+								{ "key": "image", "type": "file", "src": [], "description": "Primary product image (required if no gallery_images)" },
+								{ "key": "gallery_images", "type": "file", "src": [], "description": "Extra product images (add multiple rows with same key)" },
+								{ "key": "variants", "value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200}]", "type": "text", "description": "JSON array of variants (size, color, price)" },
+								{ "key": "variant_images", "type": "file", "src": [], "description": "Variant image — index 0 matches variants[0]" },
+								{ "key": "damage_deductions", "value": "[{\"damage_type\":\"Tear\",\"percent\":10},{\"damage_type\":\"Stain\",\"percent\":5}]", "type": "text", "description": "JSON array of damage rules (damage_type, percent)" }
+							]
+						},
+						"url": "{{base_url}}/v2/products"
+					}
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "title", "value": "Velvet Gown Updated", "type": "text" },
+								{ "key": "description", "value": "Updated description.", "type": "text" },
+								{ "key": "price_per_day", "value": "1600", "type": "text" },
+								{ "key": "variants", "value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]", "type": "text" },
+								{ "key": "damage_deductions", "value": "[{\"damage_type\":\"Tear\",\"percent\":12}]", "type": "text" }
+							]
+						},
+						"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "DELETE",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "Chats",
+			"item": [
+				{
+					"name": "Chat List",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"const json = pm.response.json();",
+						"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_chat_id', String(json.data.items[0].id)); }",
+						"if (json.data?.items?.[0]?.customer_id) { pm.environment.set('v2_customer_id', String(json.data.items[0].customer_id)); }"
+					] } }],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/chats?search="
+					}
+				},
+				{
+					"name": "Chat Detail",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/chats/{{v2_chat_id}}"
+					}
+				},
+				{
+					"name": "Chat Messages",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/chats/{{v2_chat_id}}/messages"
+					}
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"body\": \"Good morning! I have received your inquiry about the custom silk gown.\"\n}"
+						},
+						"url": "{{base_url}}/v2/chats/{{v2_chat_id}}/messages"
+					}
+				},
+				{
+					"name": "Send Message (with image)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "body", "value": "Here is the fabric reference.", "type": "text" },
+								{ "key": "attachment", "type": "file", "src": [] }
+							]
+						},
+						"url": "{{base_url}}/v2/chats/{{v2_chat_id}}/messages"
+					}
+				}
+			]
+		},
+		{
+			"name": "Payments",
+			"item": [
+				{
+					"name": "Payment History",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/payments?search="
+					}
+				},
+				{
+					"name": "Payment History (Credits)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/payments?type=credit"
+					}
+				}
+			]
+		},
+		{
+			"name": "Profile & Settings",
+			"item": [
+				{
+					"name": "Profile Menu",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/profile"
+					}
+				},
+				{
+					"name": "Legal Pages",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/profile/pages"
+					}
+				},
+				{
+					"name": "Get Business Info",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/profile/business"
+					}
+				},
+				{
+					"name": "Update Business Info",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"shop_name\": \"Riya Rathore Studio\",\n  \"service_types\": [\"Fashion Designer\", \"Rental Dresses\"],\n  \"business_mobile\": \"9876543211\",\n  \"business_mail\": \"business@riyastudio.com\",\n  \"address\": \"123 MG Road, Indore\"\n}"
+						},
+						"url": "{{base_url}}/v2/profile/business"
+					}
+				},
+				{
+					"name": "Get Bank Info",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/profile/bank"
+					}
+				},
+				{
+					"name": "Update Bank Info",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"account_name\": \"Riya Rathore\",\n  \"account_no\": \"123456789012\",\n  \"bank_name\": \"State Bank of India\",\n  \"ifsc_code\": \"SBIN0001234\",\n  \"account_type\": \"savings\"\n}"
+						},
+						"url": "{{base_url}}/v2/profile/bank"
+					}
+				},
+				{
+					"name": "Update Bio",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "bio", "value": "Fashion designer specialising in bridal and evening wear.", "type": "text" },
+								{ "key": "cover_image", "type": "file", "src": [] }
+							]
+						},
+						"url": "{{base_url}}/v2/profile/bio"
+					}
+				},
+				{
+					"name": "Toggle Availability",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"is_available\": true\n}" },
+						"url": "{{base_url}}/v2/profile/availability"
+					}
+				},
+				{
+					"name": "Update Password",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+						},
+						"url": "{{base_url}}/v2/profile/password"
+					}
+				}
+			]
+		},
+		{
+			"name": "Portfolio Gallery",
+			"item": [
+				{
+					"name": "List (Women)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/portfolio?audience=women"
+					}
+				},
+				{
+					"name": "Upload Image",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "audience", "value": "women", "type": "text" },
+								{ "key": "portfolio_image", "type": "file", "src": [] }
+							]
+						},
+						"url": "{{base_url}}/v2/portfolio"
+					}
+				},
+				{
+					"name": "Delete Image",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "DELETE",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/portfolio/1"
+					}
+				}
+			]
+		}
+	]
+}

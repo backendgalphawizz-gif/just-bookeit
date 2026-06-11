@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** `{{base_url}}`\n\n**Suggested v1 flow:** Guest session (or OTP login) → Home → Catalog → Catalog Detail → Booking Preview → Create Booking → Payment Summary → Pay Now → Booking History\n\n**OTP:** Random 4-digit code in Send OTP response (`data.otp`); saved to `v1_otp`.\n\n**Auto-saved IDs:** `v1_portfolio_item_id`, `v1_designer_id`, `v1_booking_id` from list/detail responses.\n\nImport with **Just Book IT — Local** environment. Tokens saved after Verify OTP / Register / Guest.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Chats / Profile\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\nImport with **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -35,7 +35,12 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/config"
 							}
 						},
@@ -57,8 +62,14 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -86,8 +97,14 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -114,8 +131,14 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -141,7 +164,12 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/auth/guest"
 							}
 						},
@@ -150,10 +178,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/auth/me"
 							}
 						},
@@ -162,18 +201,49 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"body": {
 									"mode": "formdata",
 									"formdata": [
-										{ "key": "name", "value": "Updated Customer", "type": "text" },
-										{ "key": "mobile_no", "value": "{{v1_mobile}}", "type": "text" },
-										{ "key": "email", "value": "customer@example.com", "type": "text" },
-										{ "key": "city", "value": "Indore", "type": "text" },
-										{ "key": "profile_image", "type": "file", "src": [] }
+										{
+											"key": "name",
+											"value": "Updated Customer",
+											"type": "text"
+										},
+										{
+											"key": "mobile_no",
+											"value": "{{v1_mobile}}",
+											"type": "text"
+										},
+										{
+											"key": "email",
+											"value": "customer@example.com",
+											"type": "text"
+										},
+										{
+											"key": "city",
+											"value": "Indore",
+											"type": "text"
+										},
+										{
+											"key": "profile_image",
+											"type": "file",
+											"src": []
+										}
 									]
 								},
 								"url": "{{base_url}}/v1/auth/profile"
@@ -184,10 +254,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/auth/logout"
 							}
 						}
@@ -217,10 +298,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/home",
 								"description": "Public endpoint. Bearer token is optional — sends location when logged in."
 							}
@@ -229,7 +321,12 @@
 							"name": "Categories",
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/categories"
 							}
 						},
@@ -250,7 +347,12 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/categories?roots=1"
 							}
 						},
@@ -258,7 +360,12 @@
 							"name": "Categories (services)",
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/categories?type=service"
 							}
 						},
@@ -266,7 +373,12 @@
 							"name": "Search",
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/search?q=pearl"
 							}
 						},
@@ -289,7 +401,12 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/catalog?page=1&per_page=12"
 							}
 						},
@@ -297,7 +414,12 @@
 							"name": "Catalog List (filtered)",
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/catalog?search=pearl&category_id={{v1_category_id}}&page=1"
 							}
 						},
@@ -318,7 +440,12 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/catalog/{{v1_portfolio_item_id}}"
 							}
 						},
@@ -340,7 +467,12 @@
 							],
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/designers?featured=1&page=1"
 							}
 						},
@@ -348,7 +480,12 @@
 							"name": "Designer Detail",
 							"request": {
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/designers/{{v1_designer_id}}"
 							}
 						}
@@ -362,10 +499,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings/addresses"
 							}
 						},
@@ -374,10 +522,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings/preview/{{v1_portfolio_item_id}}?shipment_required=1"
 							}
 						},
@@ -401,12 +560,24 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -435,22 +606,70 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"body": {
 									"mode": "formdata",
 									"formdata": [
-										{ "key": "portfolio_item_id", "value": "{{v1_portfolio_item_id}}", "type": "text" },
-										{ "key": "size", "value": "XL", "type": "text" },
-										{ "key": "measurement_type", "value": "women", "type": "text" },
-										{ "key": "customer_notes", "value": "Reference style attached.", "type": "text" },
-										{ "key": "delivery_address", "value": "G-14 1st sabari nagar, sukhliya, Indore", "type": "text" },
-										{ "key": "city", "value": "Indore", "type": "text" },
-										{ "key": "pincode", "value": "452010", "type": "text" },
-										{ "key": "shipment_required", "value": "1", "type": "text" },
-										{ "key": "reference_images[]", "description": "Optional — max 5, JPG/PNG/WebP, 4MB each", "type": "file", "src": [] }
+										{
+											"key": "portfolio_item_id",
+											"value": "{{v1_portfolio_item_id}}",
+											"type": "text"
+										},
+										{
+											"key": "size",
+											"value": "XL",
+											"type": "text"
+										},
+										{
+											"key": "measurement_type",
+											"value": "women",
+											"type": "text"
+										},
+										{
+											"key": "customer_notes",
+											"value": "Reference style attached.",
+											"type": "text"
+										},
+										{
+											"key": "delivery_address",
+											"value": "G-14 1st sabari nagar, sukhliya, Indore",
+											"type": "text"
+										},
+										{
+											"key": "city",
+											"value": "Indore",
+											"type": "text"
+										},
+										{
+											"key": "pincode",
+											"value": "452010",
+											"type": "text"
+										},
+										{
+											"key": "shipment_required",
+											"value": "1",
+											"type": "text"
+										},
+										{
+											"key": "reference_images[]",
+											"description": "Optional — max 5, JPG/PNG/WebP, 4MB each",
+											"type": "file",
+											"src": []
+										}
 									]
 								},
 								"url": "{{base_url}}/v1/bookings"
@@ -461,10 +680,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings?page=1"
 							}
 						},
@@ -473,10 +703,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings?tab=designers&page=1"
 							}
 						},
@@ -485,10 +726,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings?tab=rental_dress&page=1"
 							}
 						},
@@ -509,10 +761,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}"
 							}
 						},
@@ -521,10 +784,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}/cancel"
 							}
 						}
@@ -538,10 +812,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/payment/methods"
 							}
 						},
@@ -550,10 +835,21 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}"
 							}
 						},
@@ -562,12 +858,24 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -581,12 +889,24 @@
 							"request": {
 								"auth": {
 									"type": "bearer",
-									"bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }]
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
 								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -604,18 +924,46 @@
 						{
 							"name": "Profile Home",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/profile"
 							}
 						},
 						{
 							"name": "Profile Pages (About, FAQ, Legal)",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/profile/pages"
 							}
 						}
@@ -627,28 +975,65 @@
 						{
 							"name": "List Addresses",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/addresses"
 							}
 						},
 						{
 							"name": "Create Address",
-							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-								"const json = pm.response.json();",
-								"if (json.data?.address?.id) { pm.environment.set('v1_address_id', String(json.data.address.id)); }"
-							] } }],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.address?.id) { pm.environment.set('v1_address_id', String(json.data.address.id)); }"
+										]
+									}
+								}
+							],
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"label\": \"Home\",\n  \"name\": \"Shreya Shah\",\n  \"country\": \"India\",\n  \"house_no\": \"1234\",\n  \"road_area\": \"ABC Colony, Near Lal Bagh\",\n  \"city\": \"Indore\",\n  \"state\": \"M.P\",\n  \"pincode\": \"452005\",\n  \"is_default\": true\n}"
+									"raw": "{\n  \"label\": \"Home\",\n  \"name\": \"Shreya Shah\",\n  \"mobile_number\": \"9876543210\",\n  \"country\": \"India\",\n  \"house_no\": \"1234\",\n  \"road_area\": \"ABC Colony, Near Lal Bagh\",\n  \"city\": \"Indore\",\n  \"state\": \"M.P\",\n  \"pincode\": \"452005\",\n  \"is_default\": true\n}"
 								},
 								"url": "{{base_url}}/v1/addresses"
 							}
@@ -656,15 +1041,30 @@
 						{
 							"name": "Update Address",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "PUT",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"label\": \"Office\",\n  \"country\": \"India\",\n  \"house_no\": \"456\",\n  \"road_area\": \"Business Park\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452001\"\n}"
+									"raw": "{\n  \"label\": \"Office\",\n  \"mobile_number\": \"9876543210\",\n  \"country\": \"India\",\n  \"house_no\": \"456\",\n  \"road_area\": \"Business Park\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452001\"\n}"
 								},
 								"url": "{{base_url}}/v1/addresses/{{v1_address_id}}"
 							}
@@ -672,9 +1072,23 @@
 						{
 							"name": "Delete Address",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "DELETE",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/addresses/{{v1_address_id}}"
 							}
 						}
@@ -686,24 +1100,61 @@
 						{
 							"name": "List Measurements",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/measurements"
 							}
 						},
 						{
 							"name": "Create Measurement Profile",
-							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-								"const json = pm.response.json();",
-								"if (json.data?.measurement?.id) { pm.environment.set('v1_measurement_id', String(json.data.measurement.id)); }"
-							] } }],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.measurement?.id) { pm.environment.set('v1_measurement_id', String(json.data.measurement.id)); }"
+										]
+									}
+								}
+							],
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -715,20 +1166,49 @@
 						{
 							"name": "Measurement Detail",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}"
 							}
 						},
 						{
 							"name": "Update Measurement",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "PUT",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -740,9 +1220,23 @@
 						{
 							"name": "Delete Measurement",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "DELETE",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}"
 							}
 						}
@@ -753,29 +1247,74 @@
 					"item": [
 						{
 							"name": "Chat List",
-							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-								"const json = pm.response.json();",
-								"if (json.data?.items?.[0]?.id) { pm.environment.set('v1_chat_id', String(json.data.items[0].id)); }"
-							] } }],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) { pm.environment.set('v1_chat_id', String(json.data.items[0].id)); }"
+										]
+									}
+								}
+							],
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/chats?search="
 							}
 						},
 						{
 							"name": "Start Chat",
-							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-								"const json = pm.response.json();",
-								"if (json.data?.chat?.id) { pm.environment.set('v1_chat_id', String(json.data.chat.id)); }"
-							] } }],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.chat?.id) { pm.environment.set('v1_chat_id', String(json.data.chat.id)); }"
+										]
+									}
+								}
+							],
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -787,20 +1326,49 @@
 						{
 							"name": "Chat Messages",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/chats/{{v1_chat_id}}/messages"
 							}
 						},
 						{
 							"name": "Send Message",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -812,14 +1380,36 @@
 						{
 							"name": "Send Message (with image)",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"body": {
 									"mode": "formdata",
 									"formdata": [
-										{ "key": "body", "value": "Reference image attached.", "type": "text" },
-										{ "key": "attachment", "type": "file", "src": [] }
+										{
+											"key": "body",
+											"value": "Reference image attached.",
+											"type": "text"
+										},
+										{
+											"key": "attachment",
+											"type": "file",
+											"src": []
+										}
 									]
 								},
 								"url": "{{base_url}}/v1/chats/{{v1_chat_id}}/messages"
@@ -833,24 +1423,61 @@
 						{
 							"name": "List Support Tickets",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/support-tickets"
 							}
 						},
 						{
 							"name": "Create Support Ticket",
-							"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-								"const json = pm.response.json();",
-								"if (json.data?.ticket?.id) { pm.environment.set('v1_support_ticket_id', String(json.data.ticket.id)); }"
-							] } }],
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.ticket?.id) { pm.environment.set('v1_support_ticket_id', String(json.data.ticket.id)); }"
+										]
+									}
+								}
+							],
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "POST",
 								"header": [
-									{ "key": "Accept", "value": "application/json" },
-									{ "key": "Content-Type", "value": "application/json" }
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
 								],
 								"body": {
 									"mode": "raw",
@@ -862,9 +1489,23 @@
 						{
 							"name": "Support Ticket Detail",
 							"request": {
-								"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v1_token}}", "type": "string" }] },
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
 								"method": "GET",
-								"header": [{ "key": "Accept", "value": "application/json" }],
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
 								"url": "{{base_url}}/v1/support-tickets/{{v1_support_ticket_id}}"
 							}
 						}
@@ -873,160 +1514,1328 @@
 			]
 		},
 		{
-			"name": "v2 — Vendor",
+			"name": "v2 — Vendor App",
+			"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.",
 			"item": [
 				{
-					"name": "Send OTP",
-					"event": [
+					"name": "Auth",
+					"item": [
 						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"if (json.data?.otp) { pm.environment.set('v2_otp', json.data.otp); }"
-								]
+							"name": "Send OTP",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"if (json.data?.otp) { pm.environment.set('v2_otp', json.data.otp); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+								},
+								"url": "{{base_url}}/v2/auth/otp/send"
+							}
+						},
+						{
+							"name": "Verify OTP",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }",
+											"if (json.data?.registration_token) { pm.environment.set('v2_registration_token', json.data.registration_token); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+								},
+								"url": "{{base_url}}/v2/auth/otp/verify"
+							}
+						},
+						{
+							"name": "Register",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+											"const json = pm.response.json();",
+											"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "registration_token",
+											"value": "{{v2_registration_token}}",
+											"type": "text"
+										},
+										{
+											"key": "shop_name",
+											"value": "Riya Rathore Studio",
+											"type": "text"
+										},
+										{
+											"key": "owner_name",
+											"value": "Riya Rathore",
+											"type": "text"
+										},
+										{
+											"key": "email",
+											"value": "riya.vendor@example.com",
+											"type": "text"
+										},
+										{
+											"key": "service_types",
+											"value": "Fashion Designer, Rented Dress",
+											"type": "text"
+										},
+										{
+											"key": "business_mobile",
+											"value": "9876543211",
+											"type": "text"
+										},
+										{
+											"key": "business_mail",
+											"value": "business@riyastudio.com",
+											"type": "text"
+										},
+										{
+											"key": "city",
+											"value": "Indore",
+											"type": "text"
+										},
+										{
+											"key": "aadhar_front",
+											"type": "file",
+											"src": []
+										},
+										{
+											"key": "aadhar_back",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/auth/register"
+							}
+						},
+						{
+							"name": "Me",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/auth/me"
+							}
+						},
+						{
+							"name": "Update Profile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "owner_name",
+											"value": "Riya Rathore",
+											"type": "text"
+										},
+										{
+											"key": "shop_name",
+											"value": "Riya Rathore Studio",
+											"type": "text"
+										},
+										{
+											"key": "email",
+											"value": "riya.vendor@example.com",
+											"type": "text"
+										},
+										{
+											"key": "city",
+											"value": "Indore",
+											"type": "text"
+										},
+										{
+											"key": "profile_image",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/auth/profile"
+							}
+						},
+						{
+							"name": "Logout",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/auth/logout"
 							}
 						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
-						},
-						"url": "{{base_url}}/v2/auth/otp/send"
-					}
+					]
 				},
 				{
-					"name": "Verify OTP",
-					"event": [
+					"name": "Config",
+					"item": [
 						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-									"const json = pm.response.json();",
-									"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }",
-									"if (json.data?.registration_token) { pm.environment.set('v2_registration_token', json.data.registration_token); }"
-								]
+							"name": "Get Config",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/config"
 							}
 						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
-						},
-						"url": "{{base_url}}/v2/auth/otp/verify"
-					}
+					]
 				},
 				{
-					"name": "Register",
-					"event": [
+					"name": "Home",
+					"item": [
 						{
-							"listen": "test",
-							"script": {
-								"type": "text/javascript",
-								"exec": [
-									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
-									"const json = pm.response.json();",
-									"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }"
-								]
+							"name": "Dashboard",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const booking = json.data?.new_bookings?.[0];",
+											"if (booking?.id) { pm.environment.set('v2_booking_id', String(booking.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/home?date=2026-06-27"
 							}
 						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{ "key": "registration_token", "value": "{{v2_registration_token}}", "type": "text" },
-								{ "key": "shop_name", "value": "Demo Salon", "type": "text" },
-								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
-								{ "key": "email", "value": "vendor@example.com", "type": "text" },
-								{ "key": "service_types", "value": "Fashion Designer, Rented Dress", "type": "text" },
-								{ "key": "business_mobile", "value": "9876543211", "type": "text" },
-								{ "key": "business_mail", "value": "business@demosalon.com", "type": "text" },
-								{ "key": "gst_no", "value": "27AABCU9603R1ZM", "type": "text" },
-								{ "key": "address", "value": "123 Main Street, Andheri", "type": "text" },
-								{ "key": "country", "value": "India", "type": "text" },
-								{ "key": "state", "value": "Maharashtra", "type": "text" },
-								{ "key": "city", "value": "Mumbai", "type": "text" },
-								{ "key": "pincode", "value": "400001", "type": "text" },
-								{ "key": "account_name", "value": "Vendor Owner", "type": "text" },
-								{ "key": "account_no", "value": "123456789012", "type": "text" },
-								{ "key": "ifsc_code", "value": "SBIN0001234", "type": "text" },
-								{ "key": "bank_name", "value": "State Bank of India", "type": "text" },
-								{ "key": "account_type", "value": "savings", "type": "text" },
-								{ "key": "aadhar_front", "type": "file", "src": [] },
-								{ "key": "aadhar_back", "type": "file", "src": [] },
-								{ "key": "shop_logo", "type": "file", "src": [] },
-								{ "key": "pan_card", "type": "file", "src": [] }
-							]
-						},
-						"url": "{{base_url}}/v2/auth/register"
-					}
+					]
 				},
 				{
-					"name": "Me",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }]
+					"name": "Bookings",
+					"item": [
+						{
+							"name": "List (Accepted)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_booking_id', String(json.data.items[0].id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings?tab=accepted"
+							}
 						},
-						"method": "GET",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v2/auth/me"
-					}
+						{
+							"name": "List (In Transit)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings?tab=in_transit"
+							}
+						},
+						{
+							"name": "List (New)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings?tab=new"
+							}
+						},
+						{
+							"name": "Booking Detail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}"
+							}
+						},
+						{
+							"name": "Accept Booking",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/accept"
+							}
+						},
+						{
+							"name": "Reject Booking",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/reject"
+							}
+						},
+						{
+							"name": "Update Status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"status\": \"in_transit\"\n}"
+								},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status"
+							}
+						}
+					]
 				},
 				{
-					"name": "Update Profile",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }]
+					"name": "Products",
+					"item": [
+						{
+							"name": "List (Rental Dresses)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_product_id', String(json.data.items[0].id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products?type=rented-dress"
+							}
 						},
-						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{ "key": "shop_name", "value": "Updated Demo Salon", "type": "text" },
-								{ "key": "owner_name", "value": "Vendor Owner", "type": "text" },
-								{ "key": "email", "value": "vendor@example.com", "type": "text" },
-								{ "key": "mobile_no", "value": "{{v2_mobile}}", "type": "text" },
-								{ "key": "service_types", "value": "Fashion Designer, Rented Dress", "type": "text" },
-								{ "key": "city", "value": "Mumbai", "type": "text" },
-								{ "key": "profile_image", "type": "file", "src": [] }
-							]
+						{
+							"name": "List (Rental Jewellery)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products?type=rented-jewellery"
+							}
 						},
-						"url": "{{base_url}}/v2/auth/profile"
-					}
+						{
+							"name": "Product Detail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+							}
+						},
+						{
+							"name": "Create Product",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.product?.id) { pm.environment.set('v2_product_id', String(json.data.product.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "type",
+											"value": "rented-dress",
+											"type": "text",
+											"description": "Product tab: rented-dress | rented-jewellery | fashion-designer"
+										},
+										{
+											"key": "title",
+											"value": "Velvet Gown",
+											"type": "text"
+										},
+										{
+											"key": "description",
+											"value": "Premium velvet evening gown for rent.",
+											"type": "text"
+										},
+										{
+											"key": "price_per_day",
+											"value": "1500",
+											"type": "text",
+											"description": "Product price per day (required)"
+										},
+										{
+											"key": "advance_amount",
+											"value": "500",
+											"type": "text",
+											"description": "Optional advance/booking amount"
+										},
+										{
+											"key": "audience",
+											"value": "women",
+											"type": "text",
+											"description": "Category dropdown: women | men | kids"
+										},
+										{
+											"key": "image",
+											"type": "file",
+											"src": [],
+											"description": "Primary product image (required if no gallery_images)"
+										},
+										{
+											"key": "gallery_images",
+											"type": "file",
+											"src": [],
+											"description": "Extra product images (add multiple rows with same key)"
+										},
+										{
+											"key": "variants",
+											"value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200}]",
+											"type": "text",
+											"description": "JSON array of variants (size, color, price)"
+										},
+										{
+											"key": "variant_images",
+											"type": "file",
+											"src": [],
+											"description": "Variant image — index 0 matches variants[0]"
+										},
+										{
+											"key": "damage_deductions",
+											"value": "[{\"damage_type\":\"Tear\",\"percent\":10},{\"damage_type\":\"Stain\",\"percent\":5}]",
+											"type": "text",
+											"description": "JSON array of damage rules (damage_type, percent)"
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/products"
+							}
+						},
+						{
+							"name": "Update Product",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "title",
+											"value": "Velvet Gown Updated",
+											"type": "text"
+										},
+										{
+											"key": "description",
+											"value": "Updated description.",
+											"type": "text"
+										},
+										{
+											"key": "price_per_day",
+											"value": "1600",
+											"type": "text"
+										},
+										{
+											"key": "variants",
+											"value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]",
+											"type": "text"
+										},
+										{
+											"key": "damage_deductions",
+											"value": "[{\"damage_type\":\"Tear\",\"percent\":12}]",
+											"type": "text"
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+							}
+						},
+						{
+							"name": "Delete Product",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+							}
+						}
+					]
 				},
 				{
-					"name": "Logout",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }]
+					"name": "Chats",
+					"item": [
+						{
+							"name": "Chat List",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_chat_id', String(json.data.items[0].id)); }",
+											"if (json.data?.items?.[0]?.customer_id) { pm.environment.set('v2_customer_id', String(json.data.items[0].customer_id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/chats?search="
+							}
 						},
-						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v2/auth/logout"
-					}
+						{
+							"name": "Chat Detail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/chats/{{v2_chat_id}}"
+							}
+						},
+						{
+							"name": "Chat Messages",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/chats/{{v2_chat_id}}/messages"
+							}
+						},
+						{
+							"name": "Send Message",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"body\": \"Good morning! I have received your inquiry about the custom silk gown.\"\n}"
+								},
+								"url": "{{base_url}}/v2/chats/{{v2_chat_id}}/messages"
+							}
+						},
+						{
+							"name": "Send Message (with image)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "body",
+											"value": "Here is the fabric reference.",
+											"type": "text"
+										},
+										{
+											"key": "attachment",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/chats/{{v2_chat_id}}/messages"
+							}
+						}
+					]
+				},
+				{
+					"name": "Payments",
+					"item": [
+						{
+							"name": "Payment History",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/payments?search="
+							}
+						},
+						{
+							"name": "Payment History (Credits)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/payments?type=credit"
+							}
+						}
+					]
+				},
+				{
+					"name": "Profile & Settings",
+					"item": [
+						{
+							"name": "Profile Menu",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/profile"
+							}
+						},
+						{
+							"name": "Legal Pages",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/profile/pages"
+							}
+						},
+						{
+							"name": "Get Business Info",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/profile/business"
+							}
+						},
+						{
+							"name": "Update Business Info",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"shop_name\": \"Riya Rathore Studio\",\n  \"service_types\": [\"Fashion Designer\", \"Rental Dresses\"],\n  \"business_mobile\": \"9876543211\",\n  \"business_mail\": \"business@riyastudio.com\",\n  \"address\": \"123 MG Road, Indore\"\n}"
+								},
+								"url": "{{base_url}}/v2/profile/business"
+							}
+						},
+						{
+							"name": "Get Bank Info",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/profile/bank"
+							}
+						},
+						{
+							"name": "Update Bank Info",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"account_name\": \"Riya Rathore\",\n  \"account_no\": \"123456789012\",\n  \"bank_name\": \"State Bank of India\",\n  \"ifsc_code\": \"SBIN0001234\",\n  \"account_type\": \"savings\"\n}"
+								},
+								"url": "{{base_url}}/v2/profile/bank"
+							}
+						},
+						{
+							"name": "Update Bio",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "bio",
+											"value": "Fashion designer specialising in bridal and evening wear.",
+											"type": "text"
+										},
+										{
+											"key": "cover_image",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/profile/bio"
+							}
+						},
+						{
+							"name": "Toggle Availability",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"is_available\": true\n}"
+								},
+								"url": "{{base_url}}/v2/profile/availability"
+							}
+						},
+						{
+							"name": "Update Password",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+								},
+								"url": "{{base_url}}/v2/profile/password"
+							}
+						}
+					]
+				},
+				{
+					"name": "Portfolio Gallery",
+					"item": [
+						{
+							"name": "List (Women)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/portfolio?audience=women"
+							}
+						},
+						{
+							"name": "Upload Image",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "audience",
+											"value": "women",
+											"type": "text"
+										},
+										{
+											"key": "portfolio_image",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": "{{base_url}}/v2/portfolio"
+							}
+						},
+						{
+							"name": "Delete Image",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/portfolio/1"
+							}
+						}
+					]
 				}
 			]
 		},
@@ -1051,8 +2860,14 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
 						],
 						"body": {
 							"mode": "raw",
@@ -1080,8 +2895,14 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{ "key": "Accept", "value": "application/json" },
-							{ "key": "Content-Type", "value": "application/json" }
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
 						],
 						"body": {
 							"mode": "raw",
@@ -1107,18 +2928,55 @@
 					],
 					"request": {
 						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "formdata",
 							"formdata": [
-								{ "key": "registration_token", "value": "{{v3_registration_token}}", "type": "text" },
-								{ "key": "name", "value": "Test Driver", "type": "text" },
-								{ "key": "email", "value": "driver@example.com", "type": "text" },
-								{ "key": "city", "value": "Mumbai", "type": "text" },
-								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
-								{ "key": "aadhar_front", "type": "file", "src": [] },
-								{ "key": "aadhar_back", "type": "file", "src": [] },
-								{ "key": "driving_licence", "type": "file", "src": [] }
+								{
+									"key": "registration_token",
+									"value": "{{v3_registration_token}}",
+									"type": "text"
+								},
+								{
+									"key": "name",
+									"value": "Test Driver",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "driver@example.com",
+									"type": "text"
+								},
+								{
+									"key": "city",
+									"value": "Mumbai",
+									"type": "text"
+								},
+								{
+									"key": "vehicle_no",
+									"value": "MH01AB1234",
+									"type": "text"
+								},
+								{
+									"key": "aadhar_front",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "aadhar_back",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "driving_licence",
+									"type": "file",
+									"src": []
+								}
 							]
 						},
 						"url": "{{base_url}}/v3/auth/register"
@@ -1129,10 +2987,21 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v3_token}}", "type": "string" }]
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{v3_token}}",
+									"type": "string"
+								}
+							]
 						},
 						"method": "GET",
-						"header": [{ "key": "Accept", "value": "application/json" }],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
 						"url": "{{base_url}}/v3/auth/me"
 					}
 				},
@@ -1141,19 +3010,54 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v3_token}}", "type": "string" }]
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{v3_token}}",
+									"type": "string"
+								}
+							]
 						},
 						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
 						"body": {
 							"mode": "formdata",
 							"formdata": [
-								{ "key": "name", "value": "Updated Driver", "type": "text" },
-								{ "key": "email", "value": "driver@example.com", "type": "text" },
-								{ "key": "mobile_no", "value": "{{v3_mobile}}", "type": "text" },
-								{ "key": "city", "value": "Mumbai", "type": "text" },
-								{ "key": "vehicle_no", "value": "MH01AB1234", "type": "text" },
-								{ "key": "profile_image", "type": "file", "src": [] }
+								{
+									"key": "name",
+									"value": "Updated Driver",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "driver@example.com",
+									"type": "text"
+								},
+								{
+									"key": "mobile_no",
+									"value": "{{v3_mobile}}",
+									"type": "text"
+								},
+								{
+									"key": "city",
+									"value": "Mumbai",
+									"type": "text"
+								},
+								{
+									"key": "vehicle_no",
+									"value": "MH01AB1234",
+									"type": "text"
+								},
+								{
+									"key": "profile_image",
+									"type": "file",
+									"src": []
+								}
 							]
 						},
 						"url": "{{base_url}}/v3/auth/profile"
@@ -1164,10 +3068,21 @@
 					"request": {
 						"auth": {
 							"type": "bearer",
-							"bearer": [{ "key": "token", "value": "{{v3_token}}", "type": "string" }]
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{v3_token}}",
+									"type": "string"
+								}
+							]
 						},
 						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
 						"url": "{{base_url}}/v3/auth/logout"
 					}
 				}

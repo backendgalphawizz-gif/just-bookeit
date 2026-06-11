@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
+use App\Support\AdminValidationRules;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,7 @@ class AddressController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
+        $this->mergeAddressAliases($request);
         $data = $this->validateAddress($request);
 
         if ($customer->addresses()->count() === 0) {
@@ -54,6 +56,7 @@ class AddressController extends ApiController
         $customer = $request->user();
         abort_unless($address->customer_id === $customer->id, 403);
 
+        $this->mergeAddressAliases($request);
         $data = $this->validateAddress($request, updating: true);
 
         $address->update($this->prepareAddressAttributes($data, $customer, $address));
@@ -93,6 +96,7 @@ class AddressController extends ApiController
         return $request->validate([
             'label' => [$updating ? 'sometimes' : 'required', 'string', 'max:50'],
             'name' => ['nullable', 'string', 'max:255'],
+            'mobile_number' => ['nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE],
             'country' => [$sometimes, 'string', 'max:100'],
             'house_no' => [$sometimes, 'string', 'max:50'],
             'road_area' => [$sometimes, 'string', 'max:255'],
@@ -121,6 +125,7 @@ class AddressController extends ApiController
         return [
             'label' => $data['label'] ?? $existing?->label,
             'name' => $data['name'] ?? $existing?->name ?? $customer->name,
+            'mobile_number' => $data['mobile_number'] ?? $existing?->mobile_number ?? $customer->mobile,
             'country' => $data['country'] ?? $existing?->country,
             'house_no' => $houseNo,
             'road_area' => $roadArea,
@@ -130,6 +135,13 @@ class AddressController extends ApiController
             'pincode' => $data['pincode'] ?? $existing?->pincode,
             'is_default' => $data['is_default'] ?? $existing?->is_default,
         ];
+    }
+
+    protected function mergeAddressAliases(Request $request): void
+    {
+        if ($request->filled('mobile') && ! $request->filled('mobile_number')) {
+            $request->merge(['mobile_number' => $request->input('mobile')]);
+        }
     }
 
     protected function markDefault(int $customerId, int $addressId): void

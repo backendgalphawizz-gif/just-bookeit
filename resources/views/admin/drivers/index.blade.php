@@ -67,9 +67,9 @@
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.drivers.show', $driver)" />
-                                    @if ($driver->status === 'pending' && auth('admin')->user()->hasPermission('drivers', 'edit'))
+                                    @if (in_array($driver->status, ['pending', 'rejected'], true) && auth('admin')->user()->hasPermission('drivers', 'edit'))
                                         <form method="POST" action="{{ route('admin.drivers.approve', $driver) }}" class="jb-action-form">@csrf
-                                            <x-admin.action-btn variant="approve" type="submit" />
+                                            <x-admin.action-btn variant="approve" type="submit" title="{{ $driver->status === 'rejected' ? 'Approve again' : 'Approve' }}" />
                                         </form>
                                     @endif
                                 </div>

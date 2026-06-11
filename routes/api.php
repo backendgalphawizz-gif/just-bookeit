@@ -15,6 +15,14 @@ use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\UserAuthController;
+use App\Http\Controllers\Api\V2\BookingController as VendorBookingController;
+use App\Http\Controllers\Api\V2\ConfigController as VendorConfigController;
+use App\Http\Controllers\Api\V2\ChatController as VendorChatController;
+use App\Http\Controllers\Api\V2\HomeController as VendorHomeController;
+use App\Http\Controllers\Api\V2\PaymentController as VendorPaymentController;
+use App\Http\Controllers\Api\V2\PortfolioController as VendorPortfolioController;
+use App\Http\Controllers\Api\V2\ProductController as VendorProductController;
+use App\Http\Controllers\Api\V2\ProfileController as VendorProfileController;
 use App\Http\Controllers\Api\V2\VendorAuthController;
 use App\Http\Controllers\Api\V3\DriverAuthController;
 use Illuminate\Support\Facades\Route;
@@ -94,6 +102,45 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
             Route::post('profile', [VendorAuthController::class, 'updateProfile']);
             Route::post('logout', [VendorAuthController::class, 'logout']);
         });
+    });
+
+    Route::get('config', [VendorConfigController::class, 'index'])->name('config');
+
+    Route::middleware(['auth:sanctum', 'vendor.api'])->group(function () {
+        Route::get('home', [VendorHomeController::class, 'index'])->name('home');
+
+        Route::get('bookings', [VendorBookingController::class, 'index'])->name('bookings.index');
+        Route::get('bookings/{booking}', [VendorBookingController::class, 'show'])->name('bookings.show');
+        Route::post('bookings/{booking}/accept', [VendorBookingController::class, 'accept'])->name('bookings.accept');
+        Route::post('bookings/{booking}/reject', [VendorBookingController::class, 'reject'])->name('bookings.reject');
+        Route::post('bookings/{booking}/status', [VendorBookingController::class, 'updateStatus'])->name('bookings.status');
+
+        Route::get('products', [VendorProductController::class, 'index'])->name('products.index');
+        Route::post('products', [VendorProductController::class, 'store'])->name('products.store');
+        Route::get('products/{product}', [VendorProductController::class, 'show'])->name('products.show');
+        Route::match(['put', 'post'], 'products/{product}', [VendorProductController::class, 'update'])->name('products.update');
+        Route::delete('products/{product}', [VendorProductController::class, 'destroy'])->name('products.destroy');
+
+        Route::get('chats', [VendorChatController::class, 'index'])->name('chats.index');
+        Route::get('chats/{chat}', [VendorChatController::class, 'show'])->name('chats.show');
+        Route::get('chats/{chat}/messages', [VendorChatController::class, 'messages'])->name('chats.messages');
+        Route::post('chats/{chat}/messages', [VendorChatController::class, 'sendMessage'])->name('chats.messages.send');
+
+        Route::get('payments', [VendorPaymentController::class, 'index'])->name('payments.index');
+
+        Route::get('profile', [VendorProfileController::class, 'index'])->name('profile.index');
+        Route::get('profile/pages', [VendorProfileController::class, 'pages'])->name('profile.pages');
+        Route::get('profile/business', [VendorProfileController::class, 'business'])->name('profile.business.show');
+        Route::post('profile/business', [VendorProfileController::class, 'updateBusiness'])->name('profile.business');
+        Route::get('profile/bank', [VendorProfileController::class, 'bank'])->name('profile.bank.show');
+        Route::post('profile/bank', [VendorProfileController::class, 'updateBank'])->name('profile.bank');
+        Route::post('profile/bio', [VendorProfileController::class, 'updateBio'])->name('profile.bio');
+        Route::post('profile/availability', [VendorProfileController::class, 'toggleAvailability'])->name('profile.availability');
+        Route::post('profile/password', [VendorProfileController::class, 'updatePassword'])->name('profile.password');
+
+        Route::get('portfolio', [VendorPortfolioController::class, 'index'])->name('portfolio.index');
+        Route::post('portfolio', [VendorPortfolioController::class, 'store'])->name('portfolio.store');
+        Route::delete('portfolio/{portfolio}', [VendorPortfolioController::class, 'destroy'])->name('portfolio.destroy');
     });
 });
 
