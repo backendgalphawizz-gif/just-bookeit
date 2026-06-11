@@ -105,13 +105,13 @@ class VendorController extends AdminController
 
         if (($data['status'] ?? '') === 'suspended' && $vendor->status !== 'suspended') {
             return back()
-                ->with('error', 'Use the Suspend vendor form on the profile page so a reason is recorded.')
+                ->with('error', 'To suspend this vendor, open their profile page and use the Suspend button. You must enter a reason there.')
                 ->withInput();
         }
 
         if (($data['status'] ?? '') === 'rejected' && $vendor->status !== 'rejected') {
             return back()
-                ->with('error', 'Use the Reject button on the profile page so a reason is recorded for the vendor.')
+                ->with('error', 'To reject this vendor, open their profile page and use the Reject button. You must enter a reason there.')
                 ->withInput();
         }
 
@@ -146,7 +146,7 @@ class VendorController extends AdminController
     public function destroy(Vendor $vendor): RedirectResponse
     {
         if ($vendor->orders()->exists()) {
-            return back()->with('error', 'Cannot delete vendor with existing orders.');
+            return back()->with('error', 'This vendor has orders on record and cannot be deleted.');
         }
 
         $vendor->delete();
@@ -191,7 +191,7 @@ class VendorController extends AdminController
             ->get(['id', 'status']);
 
         if ($pendingVendors->isEmpty()) {
-            return back()->with('error', 'No pending vendors were selected for approval.');
+            return back()->with('error', 'Select at least one pending vendor to approve.');
         }
 
         foreach ($pendingVendors as $pendingVendor) {
@@ -212,7 +212,7 @@ class VendorController extends AdminController
             ]);
 
         if ($approved === 0) {
-            return back()->with('error', 'No pending vendors were selected for approval.');
+            return back()->with('error', 'Select at least one pending vendor to approve.');
         }
 
         return back()->with('success', $approved.' vendor(s) approved successfully.');

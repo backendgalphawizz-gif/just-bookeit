@@ -371,6 +371,76 @@
         padding: 1rem;
     }
 
+    .jb-account-status-banner__layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1rem 1.25rem;
+        align-items: start;
+    }
+
+    @media (max-width: 640px) {
+        .jb-account-status-banner__layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .jb-account-status-banner__content {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .jb-account-status-banner__title {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .jb-account-status-banner__reason {
+        margin: 0.5rem 0 0;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        white-space: pre-wrap;
+        max-width: 100%;
+    }
+
+    .jb-account-status-banner__meta {
+        margin: 1rem 0 0;
+        display: grid;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    @media (min-width: 640px) {
+        .jb-account-status-banner__meta {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    .jb-account-status-banner__meta dt {
+        font-weight: 600;
+    }
+
+    .jb-account-status-banner__meta dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .jb-account-status-banner__actions {
+        flex-shrink: 0;
+        justify-self: end;
+    }
+
+    @media (max-width: 640px) {
+        .jb-account-status-banner__actions {
+            justify-self: start;
+        }
+    }
+
     .jb-modal-alert-reason {
         margin-top: 1rem;
         text-align: left;
@@ -1491,38 +1561,58 @@
 
     .jb-history-table-wrap {
         padding: 1rem 0 1.25rem;
-        overflow: visible;
+        overflow-x: auto;
     }
 
     .jb-history-table-wrap .jb-history-table {
         width: 100%;
-        min-width: 0;
-        table-layout: fixed;
+        min-width: 52rem;
+        table-layout: auto;
     }
-
-    .jb-history-col-date { width: 17%; }
-    .jb-history-col-action { width: 12%; }
-    .jb-history-col-status { width: 9%; }
-    .jb-history-col-reason { width: 41%; }
-    .jb-history-col-admin { width: 12%; }
 
     .jb-history-table th,
     .jb-history-table td {
         font-size: 0.8rem;
         vertical-align: top;
-        white-space: normal;
-        word-break: break-word;
-        overflow-wrap: anywhere;
     }
 
     .jb-history-table th {
         white-space: nowrap;
     }
 
-    .jb-history-reason,
-    .jb-history-admin {
+    .jb-history-table td.jb-history-date,
+    .jb-history-table th:first-child {
+        white-space: nowrap;
+        width: 1%;
+        min-width: 12.5rem;
+    }
+
+    .jb-history-table td.jb-history-status,
+    .jb-history-table th:nth-child(3),
+    .jb-history-table th:nth-child(4) {
+        white-space: nowrap;
+        width: 1%;
+        min-width: 6.25rem;
+    }
+
+    .jb-history-table td:nth-child(2) {
+        white-space: nowrap;
+        width: 1%;
+    }
+
+    .jb-history-table td.jb-history-admin,
+    .jb-history-table th:last-child {
+        white-space: nowrap;
+        width: 1%;
+        min-width: 6.5rem;
+    }
+
+    .jb-history-reason {
+        width: auto;
+        min-width: 10rem;
         white-space: normal;
         word-break: break-word;
+        overflow-wrap: break-word;
     }
 
     .jb-history-action {

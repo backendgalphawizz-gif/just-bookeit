@@ -62,14 +62,11 @@
 
 @section('content')
     @if (in_array($customer->status, ['suspended', 'blocked'], true))
-        <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
-            <div class="jb-card-body">
-                <p class="text-sm font-bold uppercase tracking-wide text-rose-800">
-                    Account {{ $customer->status === 'blocked' ? 'blocked' : 'suspended' }}
-                </p>
-                <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $customer->rejection_reason ?: 'No reason recorded.' }}</p>
-            </div>
-        </div>
+        @include('admin.partials.account-status-banner', [
+            'title' => 'Account '.($customer->status === 'blocked' ? 'blocked' : 'suspended'),
+            'reason' => $customer->rejection_reason,
+            'emptyReason' => 'No reason recorded.',
+        ])
     @endif
 
     <div class="jb-detail-grid">

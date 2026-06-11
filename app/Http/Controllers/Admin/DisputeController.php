@@ -105,7 +105,7 @@ class DisputeController extends AdminController
         $this->authorizeAdmin('edit');
 
         if (! $dispute->isChatOpen()) {
-            return back()->with('error', 'This dispute chat is closed.');
+            return back()->with('error', 'This dispute chat is closed. No new messages can be sent.');
         }
 
         $data = $request->validate([
@@ -140,7 +140,7 @@ class DisputeController extends AdminController
         $this->authorizeAdmin('edit');
 
         if (! in_array($dispute->status, Dispute::OPEN_STATUSES, true)) {
-            return back()->with('error', 'This dispute is already resolved or closed.');
+            return back()->with('error', 'This dispute is already resolved or closed and cannot be updated.');
         }
 
         $data = $request->validate([

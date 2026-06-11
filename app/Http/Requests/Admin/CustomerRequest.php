@@ -10,4 +10,22 @@ class CustomerRequest extends AdminFormRequest
     {
         return AdminValidationRules::customer();
     }
+
+    protected function prepareForValidation(): void
+    {
+        parent::prepareForValidation();
+
+        $this->merge([
+            'registered_at' => AdminValidationRules::normalizeMysqlTimestampDate(
+                $this->input('registered_at')
+            ),
+        ]);
+    }
+
+    protected function passedValidation(): void
+    {
+        $this->merge([
+            'is_verified' => $this->boolean('is_verified'),
+        ]);
+    }
 }

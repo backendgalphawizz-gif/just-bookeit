@@ -99,11 +99,11 @@ class CategoryController extends AdminController
     public function destroy(Category $category): RedirectResponse
     {
         if ($category->orders()->exists()) {
-            return back()->with('error', 'Cannot delete category used in orders.');
+            return back()->with('error', 'This category is linked to orders and cannot be deleted.');
         }
 
         if (Vendor::query()->whereJsonContains('categories', $category->name)->exists()) {
-            return back()->with('error', 'Cannot delete category assigned to vendors.');
+            return back()->with('error', 'This category is assigned to vendors and cannot be deleted.');
         }
 
         StoresUploadedFiles::delete($category->image_path);

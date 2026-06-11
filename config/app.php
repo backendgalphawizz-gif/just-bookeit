@@ -69,6 +69,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Panel Display Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Dates and times in the admin UI are shown in this timezone. Database
+    | values remain stored in UTC.
+    |
+    */
+
+    'admin_timezone' => env('APP_ADMIN_TIMEZONE', 'Asia/Kolkata'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
