@@ -90,7 +90,7 @@ class DriverController extends AdminController
 
         if (($data['status'] ?? '') === 'rejected' && $driver->status !== 'rejected') {
             return back()
-                ->with('error', 'Use the Reject button on the profile page so a reason is recorded for the driver.')
+                ->with('error', 'To reject this driver, open their profile page and use the Reject button. You must enter a reason there.')
                 ->withInput();
         }
 
@@ -121,7 +121,7 @@ class DriverController extends AdminController
     public function destroy(Driver $driver): RedirectResponse
     {
         if ($driver->orders()->exists()) {
-            return back()->with('error', 'Cannot delete driver with assigned orders.');
+            return back()->with('error', 'This driver has assigned orders and cannot be deleted.');
         }
 
         $driver->delete();

@@ -76,11 +76,11 @@ class RoleController extends AdminController
     public function destroy(Role $role): RedirectResponse
     {
         if ($role->slug === 'super_admin') {
-            return back()->with('error', 'The Super Admin role cannot be deleted.');
+            return back()->with('error', 'The Super Admin role is protected and cannot be deleted.');
         }
 
         if ($role->admins()->exists()) {
-            return back()->with('error', 'Cannot delete a role that is assigned to admin users.');
+            return back()->with('error', 'This role is assigned to admin users. Reassign them before deleting it.');
         }
 
         $role->delete();

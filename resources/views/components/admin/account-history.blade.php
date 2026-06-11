@@ -24,7 +24,10 @@
                 <div class="jb-history-modal-head">
                     <div>
                         <h2 id="jb-account-history-title" class="jb-history-modal-title">{{ $title }}</h2>
-                        <p class="jb-history-modal-subtitle">Approve, reject, suspend, block, and status changes recorded by admins.</p>
+                        <p class="jb-history-modal-subtitle">
+                            Approve, reject, suspend, block, and status changes recorded by admins.
+                            Times shown in {{ str_replace('_', ' ', \App\Support\AdminDateTime::timezone()) }}.
+                        </p>
                     </div>
                     <button type="button" class="jb-history-modal-close" @click="open = false" aria-label="Close history">
                         &times;
@@ -37,14 +40,6 @@
                     @else
                         <div class="jb-history-table-wrap">
                             <table class="jb-table jb-history-table">
-                                <colgroup>
-                                    <col class="jb-history-col-date">
-                                    <col class="jb-history-col-action">
-                                    <col class="jb-history-col-status">
-                                    <col class="jb-history-col-status">
-                                    <col class="jb-history-col-reason">
-                                    <col class="jb-history-col-admin">
-                                </colgroup>
                                 <thead>
                                     <tr>
                                         <th>Date</th>
@@ -58,14 +53,14 @@
                                 <tbody>
                                     @foreach ($histories as $entry)
                                         <tr>
-                                            <td>{{ $entry->created_at?->format('M d, Y · h:i A') ?? '—' }}</td>
+                                            <td class="jb-history-date">{{ \App\Support\AdminDateTime::format($entry->created_at, 'M d, Y · h:i:s A') }}</td>
                                             <td>
                                                 <span class="jb-history-action jb-history-action--{{ $entry->actionVariant() }}">
                                                     {{ $entry->actionLabel() }}
                                                 </span>
                                             </td>
-                                            <td>{{ $entry->previous_status ? ucfirst($entry->previous_status) : '—' }}</td>
-                                            <td>{{ $entry->new_status ? ucfirst($entry->new_status) : '—' }}</td>
+                                            <td class="jb-history-status">{{ $entry->previous_status ? ucfirst($entry->previous_status) : '—' }}</td>
+                                            <td class="jb-history-status">{{ $entry->new_status ? ucfirst($entry->new_status) : '—' }}</td>
                                             <td class="jb-history-reason">{{ $entry->reason ?: '—' }}</td>
                                             <td class="jb-history-admin">{{ $entry->admin?->name ?? 'System' }}</td>
                                         </tr>

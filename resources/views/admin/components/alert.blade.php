@@ -1,20 +1,5 @@
 @php
-    $alerts = [];
-    if (session('success')) {
-        $alerts[] = ['type' => 'success', 'title' => 'Success!', 'message' => session('success')];
-    }
-    if (session('error')) {
-        $alerts[] = ['type' => 'error', 'title' => 'Something went wrong', 'message' => session('error')];
-    }
-    if ($errors->any()) {
-        $alerts[] = [
-            'type' => 'warning',
-            'title' => 'Please check the form',
-            'message' => $errors->count() === 1
-                ? $errors->first()
-                : 'Please fix ' . $errors->count() . ' errors in the form below.',
-        ];
-    }
+    $alerts = \App\Support\AdminFlashMessage::buildAlerts($errors);
 @endphp
 
 @if (count($alerts) > 0)
@@ -73,7 +58,9 @@
                 </div>
 
                 <h2 id="jb-alert-title-{{ $loop->index }}" class="jb-modal-alert-title">{{ $alert['title'] }}</h2>
-                <p id="jb-alert-desc-{{ $loop->index }}" class="jb-modal-alert-message">{{ $alert['message'] }}</p>
+                @if (! empty($alert['message']))
+                    <p id="jb-alert-desc-{{ $loop->index }}" class="jb-modal-alert-message">{{ $alert['message'] }}</p>
+                @endif
 
                 <button type="button" class="jb-modal-alert-btn" @click="show = false" x-init="$nextTick(() => $el.focus())">OK</button>
             </div>

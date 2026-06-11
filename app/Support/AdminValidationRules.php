@@ -4,6 +4,9 @@ namespace App\Support;
 
 class AdminValidationRules
 {
+    /** Earliest value accepted by MySQL TIMESTAMP columns. */
+    public const MYSQL_MIN_TIMESTAMP_DATE = '1970-01-01';
+
     public const REGEX_PERSON_NAME = '/^[\p{L}\s.\'\-]+$/u';
 
     public const REGEX_CITY = '/^[\p{L}\s.\'\-]+$/u';
@@ -251,7 +254,7 @@ class AdminValidationRules
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'status' => ['required', 'in:active,suspended,blocked'],
             'is_verified' => ['nullable', 'boolean'],
-            'registered_at' => ['nullable', 'date'],
+            'registered_at' => ['nullable', 'date', 'after_or_equal:'.self::MYSQL_MIN_TIMESTAMP_DATE, 'before_or_equal:today'],
             'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }
@@ -610,6 +613,8 @@ class AdminValidationRules
             'audience_category_ids.min' => 'Select at least one category (Men, Women, or Kids).',
             'service_category_ids.required' => 'Select at least one service category.',
             'service_category_ids.min' => 'Select at least one service category.',
+            'registered_at.after_or_equal' => 'Registration date must be on or after Jan 1, 1970.',
+            'registered_at.before_or_equal' => 'Registration date cannot be in the future.',
             'city.required' => 'Select a city for this sub-admin.',
             'account_type.in' => 'Account type must be savings or current.',
             'account_name.regex' => 'Account holder name may only contain letters, spaces, dots, and hyphens.',
@@ -701,5 +706,30 @@ class AdminValidationRules
             'orders_completed' => 'integer',
             default => ($type === 'email' ? 'email' : ($type === 'url' ? 'url' : null)),
         };
+    }
+
+    public static function isMysqlTimestampDate(?string $value): bool
+    {
+        if ($value === null || trim($value) === '') {
+            return false;
+        }
+
+        $timestamp = strtotime($value);
+
+        if ($timestamp === false) {
+            return false;
+        }
+
+        return $timestamp >= strtotime(self::MYSQL_MIN_TIMESTAMP_DATE.' 00:00:00')
+            && $timestamp <= strtotime('today 23:59:59');
+    }
+
+    public static function normalizeMysqlTimestampDate(?string $value): ?string
+    {
+        if (! self::isMysqlTimestampDate($value)) {
+            return null;
+        }
+
+        return date('Y-m-d', strtotime((string) $value));
     }
 }

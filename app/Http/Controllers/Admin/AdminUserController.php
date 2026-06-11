@@ -77,11 +77,11 @@ class AdminUserController extends AdminController
     public function destroy(Admin $admin): RedirectResponse
     {
         if ($admin->id === auth('admin')->id()) {
-            return back()->with('error', 'You cannot delete your own account.');
+            return back()->with('error', 'You cannot delete the account you are currently signed in with.');
         }
 
         if ($admin->role?->slug === 'super_admin' && Admin::query()->whereHas('role', fn ($q) => $q->where('slug', 'super_admin'))->where('status', 'active')->count() <= 1) {
-            return back()->with('error', 'At least one active Super Admin is required.');
+            return back()->with('error', 'At least one active Super Admin must remain on the platform.');
         }
 
         $admin->delete();

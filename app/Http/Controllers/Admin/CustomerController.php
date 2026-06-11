@@ -93,14 +93,24 @@ class CustomerController extends AdminController
 
         if (in_array($data['status'] ?? '', ['suspended', 'blocked'], true) && $customer->status !== $data['status']) {
             return back()
-                ->with('error', 'Use Suspend or Block on the profile page so a reason is recorded for the customer.')
+                ->with('error', 'To suspend or block this customer, open their profile page and use the Suspend or Block button. You must enter a reason there.')
                 ->withInput();
         }
 
         $previousStatus = $customer->status;
 
-        $customer->fill(collect($data)->except(['profile_image'])->all());
+        $attributes = collect($data)->except(['profile_image']);
+
+        if (! filled($attributes->get('registered_at'))) {
+            $attributes = $attributes->except(['registered_at']);
+        }
+
+        $customer->fill($attributes->all());
         $customer->is_verified = $request->boolean('is_verified');
+
+        if (! $customer->registered_at || $customer->registered_at->year < 1970) {
+            $customer->registered_at = $customer->created_at ?? now();
+        }
 
         if ($customer->status === 'active') {
             $customer->rejection_reason = null;
@@ -124,7 +134,7 @@ class CustomerController extends AdminController
     public function destroy(Customer $customer): RedirectResponse
     {
         if ($customer->orders()->exists()) {
-            return back()->with('error', 'Cannot delete customer with existing orders.');
+            return back()->with('error', 'This customer has orders on record and cannot be deleted.');
         }
 
         $customer->delete();

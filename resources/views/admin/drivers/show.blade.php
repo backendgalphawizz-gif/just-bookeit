@@ -31,21 +31,14 @@
 @endsection
 @section('content')
     @if ($driver->status === 'rejected')
-        <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
-            <div class="jb-card-body">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-bold uppercase tracking-wide text-rose-800">Application rejected</p>
-                        <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $driver->rejection_reason ?: 'No rejection reason recorded.' }}</p>
-                    </div>
-                    @if (auth('admin')->user()->hasPermission('drivers', 'edit'))
-                        <form method="POST" action="{{ route('admin.drivers.approve', $driver) }}">@csrf
-                            <x-admin.button variant="success" type="submit">Approve driver</x-admin.button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        </div>
+        @include('admin.partials.account-status-banner', [
+            'title' => 'Application rejected',
+            'reason' => $driver->rejection_reason,
+            'emptyReason' => 'No rejection reason recorded.',
+            'showAction' => auth('admin')->user()->hasPermission('drivers', 'edit'),
+            'actionRoute' => route('admin.drivers.approve', $driver),
+            'actionLabel' => 'Approve driver',
+        ])
     @endif
 
     <div class="jb-detail-grid">

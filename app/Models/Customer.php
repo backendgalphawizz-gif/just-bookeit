@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\StoresUploadedFiles;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -85,5 +86,16 @@ class Customer extends Authenticatable
     public function profileImageUrl(): ?string
     {
         return StoresUploadedFiles::url($this->profile_image_path);
+    }
+
+    public function registeredAtForForm(): string
+    {
+        foreach ([$this->registered_at, $this->created_at] as $date) {
+            if ($date instanceof CarbonInterface && $date->year >= 1970) {
+                return $date->format('Y-m-d');
+            }
+        }
+
+        return now()->format('Y-m-d');
     }
 }

@@ -37,6 +37,7 @@
             data-jb-confirm-label="Suspend"
             data-jb-confirm-requires-reason="Reason for suspension"
             data-jb-confirm-reason-name="suspension_reason"
+            data-jb-confirm-reason-max="1000"
         >
             @csrf
             <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
@@ -49,47 +50,36 @@
 @endsection
 @section('content')
     @if ($vendor->isSuspended())
-        <div class="jb-card mb-6 border-orange-200 bg-orange-50/80">
-            <div class="jb-card-body">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-bold uppercase tracking-wide text-orange-800">Account suspended</p>
-                        <p class="mt-2 text-sm leading-relaxed text-orange-950">{{ $vendor->suspension_reason ?: 'No suspension reason recorded.' }}</p>
-                        <dl class="mt-4 grid gap-2 text-sm text-orange-900/80 sm:grid-cols-2">
-                            @if ($vendor->suspended_at)
-                                <div><dt class="font-semibold text-orange-900">Suspended on</dt><dd>{{ $vendor->suspended_at->format('M d, Y h:i A') }}</dd></div>
-                            @endif
-                            @if ($vendor->suspendedBy)
-                                <div><dt class="font-semibold text-orange-900">Suspended by</dt><dd>{{ $vendor->suspendedBy->name }}</dd></div>
-                            @endif
-                        </dl>
-                    </div>
-                    @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
-                        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}">@csrf
-                            <x-admin.button variant="success" type="submit">Activate account</x-admin.button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        </div>
+        @include('admin.partials.account-status-banner', [
+            'tone' => 'orange',
+            'title' => 'Account suspended',
+            'reason' => $vendor->suspension_reason,
+            'emptyReason' => 'No suspension reason recorded.',
+            'meta' => array_values(array_filter([
+                $vendor->suspended_at ? [
+                    'label' => 'Suspended on',
+                    'value' => \App\Support\AdminDateTime::format($vendor->suspended_at, 'M d, Y · h:i A'),
+                ] : null,
+                $vendor->suspendedBy ? [
+                    'label' => 'Suspended by',
+                    'value' => $vendor->suspendedBy->name,
+                ] : null,
+            ])),
+            'showAction' => auth('admin')->user()->hasPermission('vendors', 'edit'),
+            'actionRoute' => route('admin.vendors.activate', $vendor),
+            'actionLabel' => 'Activate account',
+        ])
     @endif
 
     @if ($vendor->status === 'rejected')
-        <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
-            <div class="jb-card-body">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-bold uppercase tracking-wide text-rose-800">Application rejected</p>
-                        <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $vendor->rejection_reason ?: 'No rejection reason recorded.' }}</p>
-                    </div>
-                    @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
-                        <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf
-                            <x-admin.button variant="success" type="submit">Approve vendor</x-admin.button>
-                        </form>
-                    @endif
-                </div>
-            </div>
-        </div>
+        @include('admin.partials.account-status-banner', [
+            'title' => 'Application rejected',
+            'reason' => $vendor->rejection_reason,
+            'emptyReason' => 'No rejection reason recorded.',
+            'showAction' => auth('admin')->user()->hasPermission('vendors', 'edit'),
+            'actionRoute' => route('admin.vendors.approve', $vendor),
+            'actionLabel' => 'Approve vendor',
+        ])
     @endif
 
     <div class="jb-wallet-grid">
