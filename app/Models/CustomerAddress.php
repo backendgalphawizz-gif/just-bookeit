@@ -11,6 +11,7 @@ class CustomerAddress extends Model
         'customer_id',
         'label',
         'name',
+        'mobile_number',
         'country',
         'house_no',
         'road_area',

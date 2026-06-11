@@ -8,9 +8,9 @@
     @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <x-admin.action-btn variant="edit" :href="route('admin.portfolio.edit', $portfolio)" />
     @endif
-    @if ($portfolio->status === 'pending' && auth('admin')->user()->hasPermission('portfolio', 'edit'))
+    @if (in_array($portfolio->status, ['pending', 'rejected'], true) && auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <form method="POST" action="{{ route('admin.portfolio.approve', $portfolio) }}" class="inline-flex">@csrf
-            <x-admin.action-btn variant="approve" type="submit" />
+            <x-admin.action-btn variant="approve" type="submit" title="{{ $portfolio->status === 'rejected' ? 'Approve again' : 'Approve' }}" />
         </form>
     @endif
 @endsection
@@ -54,18 +54,25 @@
         @endif
     </div>
 
-    @if ($portfolio->status === 'pending' && auth('admin')->user()->hasPermission('portfolio', 'edit'))
+    @if (in_array($portfolio->status, ['pending', 'rejected'], true) && auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <div class="jb-card mt-6 max-w-2xl">
             <div class="jb-card-header"><p class="jb-card-header-title">Moderation</p></div>
-            <div class="jb-card-body flex flex-wrap gap-3">
-                <form method="POST" action="{{ route('admin.portfolio.approve', $portfolio) }}">@csrf
-                    <x-admin.button variant="primary" type="submit">Approve</x-admin.button>
-                </form>
-                <form method="POST" action="{{ route('admin.portfolio.reject', $portfolio) }}" class="flex-1 min-w-[16rem] space-y-3">
-                    @csrf
-                    @include('admin.partials.form-input', ['label' => 'Rejection reason', 'name' => 'rejection_reason', 'type' => 'textarea', 'value' => old('rejection_reason'), 'required' => true, 'full' => true])
-                    <x-admin.button variant="danger" type="submit">Reject</x-admin.button>
-                </form>
+            <div class="jb-card-body space-y-4">
+                @if ($portfolio->status === 'rejected')
+                    <p class="text-sm text-rose-700">This item was rejected. Approve it again if the vendor has fixed the issues.</p>
+                @endif
+                <div class="flex flex-wrap gap-3">
+                    <form method="POST" action="{{ route('admin.portfolio.approve', $portfolio) }}">@csrf
+                        <x-admin.button variant="primary" type="submit">{{ $portfolio->status === 'rejected' ? 'Approve again' : 'Approve' }}</x-admin.button>
+                    </form>
+                    @if ($portfolio->status === 'pending')
+                        <form method="POST" action="{{ route('admin.portfolio.reject', $portfolio) }}" class="flex-1 min-w-[16rem] space-y-3">
+                            @csrf
+                            @include('admin.partials.form-input', ['label' => 'Rejection reason', 'name' => 'rejection_reason', 'type' => 'textarea', 'value' => old('rejection_reason'), 'required' => true, 'full' => true])
+                            <x-admin.button variant="danger" type="submit">Reject</x-admin.button>
+                        </form>
+                    @endif
+                </div>
             </div>
         </div>
     @endif

@@ -147,9 +147,9 @@
                             </td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
-                                    @if ($vendor->status === 'pending' && $canBulkApprove)
+                                    @if (in_array($vendor->status, ['pending', 'rejected'], true) && $canBulkApprove)
                                         <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}" class="jb-action-form">@csrf
-                                            <x-admin.action-btn variant="approve" type="submit" />
+                                            <x-admin.action-btn variant="approve" type="submit" title="{{ $vendor->status === 'rejected' ? 'Approve again' : 'Approve' }}" />
                                         </form>
                                     @endif
                                     <x-admin.action-btn variant="view" :href="route('admin.vendors.show', $vendor)" />

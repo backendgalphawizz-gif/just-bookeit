@@ -6,20 +6,22 @@
 @section('page_subtitle', $vendor->vendor_code)
 @section('back_href', route('admin.vendors.index'))
 @section('header_actions')
-    @if ($vendor->status === 'pending' && auth('admin')->user()->hasPermission('vendors', 'edit'))
-        <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">Approve</x-admin.button></form>
-        <form
-            method="POST"
-            action="{{ route('admin.vendors.reject', $vendor) }}"
-            data-jb-confirm="This vendor will be rejected. The reason you enter will be visible to them."
-            data-jb-confirm-title="Reject vendor"
-            data-jb-confirm-variant="error"
-            data-jb-confirm-label="Reject"
-            data-jb-confirm-requires-reason="Rejection reason"
-        >
-            @csrf
-            <x-admin.button variant="danger" type="submit">Reject</x-admin.button>
-        </form>
+    @if (in_array($vendor->status, ['pending', 'rejected'], true) && auth('admin')->user()->hasPermission('vendors', 'edit'))
+        <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf<x-admin.button variant="success" type="submit">{{ $vendor->status === 'rejected' ? 'Approve again' : 'Approve' }}</x-admin.button></form>
+        @if ($vendor->status === 'pending')
+            <form
+                method="POST"
+                action="{{ route('admin.vendors.reject', $vendor) }}"
+                data-jb-confirm="This vendor will be rejected. The reason you enter will be visible to them."
+                data-jb-confirm-title="Reject vendor"
+                data-jb-confirm-variant="error"
+                data-jb-confirm-label="Reject"
+                data-jb-confirm-requires-reason="Rejection reason"
+            >
+                @csrf
+                <x-admin.button variant="danger" type="submit">Reject</x-admin.button>
+            </form>
+        @endif
     @endif
     @if ($vendor->status === 'suspended' && auth('admin')->user()->hasPermission('vendors', 'edit'))
         <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}" class="inline-flex">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
@@ -75,8 +77,17 @@
     @if ($vendor->status === 'rejected')
         <div class="jb-card mb-6 border-rose-200 bg-rose-50/80">
             <div class="jb-card-body">
-                <p class="text-sm font-bold uppercase tracking-wide text-rose-800">Application rejected</p>
-                <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $vendor->rejection_reason ?: 'No rejection reason recorded.' }}</p>
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold uppercase tracking-wide text-rose-800">Application rejected</p>
+                        <p class="mt-2 text-sm leading-relaxed text-rose-950">{{ $vendor->rejection_reason ?: 'No rejection reason recorded.' }}</p>
+                    </div>
+                    @if (auth('admin')->user()->hasPermission('vendors', 'edit'))
+                        <form method="POST" action="{{ route('admin.vendors.approve', $vendor) }}">@csrf
+                            <x-admin.button variant="success" type="submit">Approve vendor</x-admin.button>
+                        </form>
+                    @endif
+                </div>
             </div>
         </div>
     @endif

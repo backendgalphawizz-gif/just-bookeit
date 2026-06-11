@@ -15,6 +15,8 @@ class PortfolioItem extends Model
         'category_id',
         'title',
         'description',
+        'price_per_day',
+        'advance_amount',
         'image_url',
         'audience',
         'status',
@@ -25,6 +27,8 @@ class PortfolioItem extends Model
     protected function casts(): array
     {
         return [
+            'price_per_day' => 'decimal:2',
+            'advance_amount' => 'decimal:2',
             'reviewed_at' => 'datetime',
         ];
     }
@@ -42,6 +46,16 @@ class PortfolioItem extends Model
     public function images(): HasMany
     {
         return $this->hasMany(PortfolioItemImage::class)->orderBy('sort_order');
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(PortfolioItemVariant::class)->orderBy('sort_order');
+    }
+
+    public function damageDeductions(): HasMany
+    {
+        return $this->hasMany(PortfolioItemDamageDeduction::class)->orderBy('sort_order');
     }
 
     /** @return list<string> */
@@ -77,6 +91,18 @@ class PortfolioItem extends Model
 
     public function rentalPriceAmount(): int
     {
+        if ($this->price_per_day !== null) {
+            return (int) round((float) $this->price_per_day);
+        }
+
+        $variantPrice = $this->relationLoaded('variants')
+            ? $this->variants->min('price')
+            : $this->variants()->min('price');
+
+        if ($variantPrice !== null) {
+            return (int) round((float) $variantPrice);
+        }
+
         return 800 + (($this->id ?? 1) * 173) % 2700;
     }
 
