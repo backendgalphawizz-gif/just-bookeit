@@ -109,6 +109,7 @@ class CustomerApiPresenter
             'price' => $item->rentalPriceAmount(),
             'price_label' => $item->rentalPriceLabel(),
             'rating' => (float) ($item->vendor?->rating ?? 0),
+            'audience' => $item->audience,
             'category' => $item->category ? self::category($item->category) : null,
             'designer' => $item->vendor ? self::designerSummary($item->vendor) : null,
         ];

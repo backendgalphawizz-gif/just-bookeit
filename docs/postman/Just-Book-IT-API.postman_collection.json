@@ -339,8 +339,10 @@
 										"type": "text/javascript",
 										"exec": [
 											"const json = pm.response.json();",
-											"const id = json.data?.categories?.[0]?.id || json.data?.items?.[0]?.id;",
-											"if (id) { pm.environment.set('v1_category_id', String(id)); }"
+											"const categories = json.data?.categories || json.data?.items || [];",
+											"const men = categories.find((c) => c.slug === 'men') || categories[0];",
+											"if (men?.id) { pm.environment.set('v1_shop_category_id', String(men.id)); }",
+											"if (categories[0]?.id) { pm.environment.set('v1_category_id', String(categories[0].id)); }"
 										]
 									}
 								}
@@ -358,6 +360,20 @@
 						},
 						{
 							"name": "Categories (services)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const services = json.data?.items || [];",
+											"const dress = services.find((s) => s.slug === 'rented-dress') || services[0];",
+											"if (dress?.id) { pm.environment.set('v1_service_id', String(dress.id)); }"
+										]
+									}
+								}
+							],
 							"request": {
 								"method": "GET",
 								"header": [
@@ -420,7 +436,32 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/catalog?search=pearl&category_id={{v1_category_id}}&page=1"
+								"url": {
+									"raw": "{{base_url}}/v1/catalog?audience=men&service=rented-dress&search=pearl&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "catalog"],
+									"query": [
+										{
+											"key": "audience",
+											"value": "men",
+											"description": "Shop category: women | men | kids (aliases: shop_category, shop_category_id)"
+										},
+										{
+											"key": "service",
+											"value": "rented-dress",
+											"description": "Service: fashion-designer | rented-dress | rented-jewellery (aliases: rental-cloth, service_id)"
+										},
+										{
+											"key": "search",
+											"value": "pearl"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Double filtration: combine shop category (Men/Women/Kids) with service (Fashion Designer, Rented Dress, Rented Jewellery). Both filters are ANDed. Response includes `filters.shop_categories`, `filters.services`, and `filters.applied`."
 							}
 						},
 						{

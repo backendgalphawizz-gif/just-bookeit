@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Category;
 use App\Models\PortfolioItem;
+use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,13 @@ class CatalogController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
+        $request->validate(array_merge([
+            'search' => ['nullable', 'string', 'max:100'],
+            'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ], CatalogFilter::validationRules()));
+
         $query = PortfolioItem::query()
             ->with(['vendor', 'category'])
             ->whereIn('status', ['approved', 'pending']);
@@ -26,32 +34,35 @@ class CatalogController extends ApiController
             });
         }
 
-        if ($request->filled('category_id')) {
-            $query->where('category_id', $request->integer('category_id'));
-        }
+        CatalogFilter::applyToQuery($query, $request);
 
         if ($request->filled('vendor_id')) {
             $query->where('vendor_id', $request->integer('vendor_id'));
         }
 
-        if ($request->filled('service')) {
-            $service = $request->string('service');
-            $query->whereHas('category', function ($category) use ($service) {
-                $category->where('slug', $service)->orWhere('name', 'like', '%'.$service.'%');
-            });
-        }
-
         $items = $query->latest('id')->paginate($request->integer('per_page', 12));
 
-        $categories = Category::query()
+        $shopCategories = Category::query()
             ->where('is_active', true)
+            ->where('type', Category::TYPE_MAIN)
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $services = Category::query()
+            ->where('is_active', true)
+            ->where('type', Category::TYPE_SERVICE)
+            ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
         return $this->success([
             ...CustomerApiPresenter::paginator($items, fn (PortfolioItem $item) => CustomerApiPresenter::catalogItem($item)),
             'filters' => [
-                'categories' => $categories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'shop_categories' => $shopCategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'applied' => CatalogFilter::applied($request),
             ],
         ]);
     }
