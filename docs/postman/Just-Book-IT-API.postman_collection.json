@@ -699,7 +699,7 @@
 							}
 						},
 						{
-							"name": "Booking History (designers tab)",
+							"name": "Booking History (fashion designer tab)",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -718,7 +718,22 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings?tab=designers&page=1"
+								"url": {
+									"raw": "{{base_url}}/v1/bookings?tab=fashion_designer&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "bookings"],
+									"query": [
+										{
+											"key": "tab",
+											"value": "fashion_designer",
+											"description": "fashion_designer | rental_dress | rental_jewellery (aliases: designers, fashion-designer, rental, jewellery)"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
 							}
 						},
 						{
@@ -741,7 +756,60 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings?tab=rental_dress&page=1"
+								"url": {
+									"raw": "{{base_url}}/v1/bookings?tab=rental_dress&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "bookings"],
+									"query": [
+										{
+											"key": "tab",
+											"value": "rental_dress",
+											"description": "fashion_designer | rental_dress | rental_jewellery"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
+							}
+						},
+						{
+							"name": "Booking History (rental jewellery tab)",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/v1/bookings?tab=rental_jewellery&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "bookings"],
+									"query": [
+										{
+											"key": "tab",
+											"value": "rental_jewellery",
+											"description": "fashion_designer | rental_dress | rental_jewellery"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
 							}
 						},
 						{
