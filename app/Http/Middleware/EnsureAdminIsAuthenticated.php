@@ -16,8 +16,7 @@ class EnsureAdminIsAuthenticated
         if (! $admin || ! $admin->isActive()) {
             Auth::guard('admin')->logout();
 
-            return redirect()->route('admin.login')
-                ->with('error', 'Please sign in to continue.');
+            return redirect()->route('admin.login');
         }
 
         $admin->loadMissing(['role.permissions', 'assignedCities']);
