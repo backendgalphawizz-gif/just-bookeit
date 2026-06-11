@@ -202,6 +202,7 @@ class CustomerApiPresenter
     {
         return [
             ...self::measurementSummary($profile),
+            ...$profile->apiMeasurementFields(),
             'extra_measurements' => $profile->extra_measurements ?? [],
         ];
     }
