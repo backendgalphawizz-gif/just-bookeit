@@ -1,61 +1,108 @@
 @extends('admin.layouts.app')
 @section('title', 'Categories')
 @section('page_title', 'Categories')
-@section('page_subtitle', 'Main and service categories')
+@section('page_subtitle', 'Categories and service categories used on vendor profiles')
 @section('content')
-    @push('filter_actions')
-        <x-admin.export-dropdown module="categories" :params="['search', 'type', 'from', 'to']" />
+    @php
+        $tabs = [
+            \App\Models\Category::TYPE_MAIN => 'Categories',
+            \App\Models\Category::TYPE_SERVICE => 'Service categories',
+        ];
+    @endphp
+
+    <div class="jb-tabs-row">
+        <div class="jb-tabs-list">
+            @foreach ($tabs as $key => $label)
+                <a href="{{ route('admin.categories.index', ['type' => $key, 'search' => request('search'), 'active' => request('active'), 'from' => request('from'), 'to' => request('to')]) }}"
+                   class="jb-settings-tab {{ $type === $key ? 'jb-settings-tab--active' : '' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </div>
         @if (auth('admin')->user()->hasPermission('categories', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create')">+ Add Category</x-admin.button>
+            <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => $type])">+ Add Category</x-admin.button>
         @endif
+    </div>
+
+    @push('filter_actions')
+        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active', 'from', 'to']" />
     @endpush
     <form method="GET" class="jb-filters">
+        <input type="hidden" name="type" value="{{ $type }}">
         <div class="jb-filters-grid">
-            <div class="jb-filters-field jb-filters-field--wide"><label class="jb-label">Search</label><input type="text" name="search" value="{{ request('search') }}" class="jb-input"></div>
-            <div class="jb-filters-field"><label class="jb-label">Type</label>
-                <select name="type" class="jb-select"><option value="">All</option><option value="main" @selected(request('type') === 'main')>Main</option><option value="service" @selected(request('type') === 'service')>Service</option></select>
+            <div class="jb-filters-field jb-filters-field--wide">
+                <label class="jb-label">Search</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Category name">
+            </div>
+            <div class="jb-filters-field">
+                <label class="jb-label">Active</label>
+                <select name="active" class="jb-select">
+                    <option value="">All</option>
+                    <option value="1" @selected(request('active') === '1')>Yes</option>
+                    <option value="0" @selected(request('active') === '0')>No</option>
+                </select>
             </div>
             @include('admin.partials.date-filter')
-            @include('admin.partials.filters-end', ['resetUrl' => route('admin.categories.index')])
+            @include('admin.partials.filters-end', ['resetUrl' => route('admin.categories.index', ['type' => $type])])
         </div>
     </form>
     <div class="jb-card">
-        <div class="jb-card-header"><p class="jb-card-header-title">{{ $categories->total() }} categories</p></div>
+        <div class="jb-card-header">
+            <p class="jb-card-header-title">
+                {{ $categories->total() }} {{ strtolower(\App\Models\Category::typeLabel($type)) }}
+            </p>
+        </div>
         <div class="jb-table-wrap">
             <table class="jb-table">
-                <thead><tr>
-                    @include('admin.partials.table-index-header')
-                    <th class="jb-col-name">Name</th>
-                    <th>Type</th>
-                    <th>Parent</th>
-                    <th class="text-center">Active</th>
-                    <th class="jb-table-actions-col">Actions</th>
-                </tr></thead>
+                <thead>
+                    <tr>
+                        @include('admin.partials.table-index-header')
+                        <th class="jb-col-name">Name</th>
+                        @if ($type === \App\Models\Category::TYPE_SERVICE)
+                            <th>Category</th>
+                        @endif
+                        <th class="text-center">Sort</th>
+                        <th class="text-center">Active</th>
+                        <th class="jb-table-actions-col">Actions</th>
+                    </tr>
+                </thead>
                 <tbody>
                     @forelse ($categories as $category)
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $categories])
                             <td class="jb-col-name font-semibold">{{ $category->name }}</td>
-                            <td class="capitalize">{{ $category->type }}</td>
-                            <td>{{ $category->parent?->name ?? '—' }}</td>
+                            @if ($type === \App\Models\Category::TYPE_SERVICE)
+                                <td>{{ $category->parent?->name ?? '—' }}</td>
+                            @endif
+                            <td class="text-center">{{ $category->sort_order }}</td>
                             <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
-                            <td class="jb-table-actions-col"><div class="jb-actions">
-                                @if (auth('admin')->user()->hasPermission('categories', 'edit'))
-                                    <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $category)" />
-                                @endif
-                                @if (auth('admin')->user()->hasPermission('categories', 'delete'))
-                                    <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="jb-action-form">@csrf @method('DELETE')
-                                        <x-admin.action-btn variant="delete" type="submit" confirm="Delete this category?" />
-                                    </form>
-                                @endif
-                            </div></td>
+                            <td class="jb-table-actions-col">
+                                <div class="jb-actions">
+                                    @if (auth('admin')->user()->hasPermission('categories', 'edit'))
+                                        <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $category)" />
+                                    @endif
+                                    @if (auth('admin')->user()->hasPermission('categories', 'delete'))
+                                        <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="jb-action-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <x-admin.action-btn variant="delete" type="submit" confirm="Delete this category?" />
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="jb-table-empty">No categories.</td></tr>
+                        <tr>
+                            <td colspan="{{ $type === \App\Models\Category::TYPE_SERVICE ? 6 : 5 }}" class="jb-table-empty">
+                                No {{ strtolower(\App\Models\Category::typeLabel($type)) }} yet.
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        @if ($categories->hasPages()) {{ $categories->links() }} @endif
+        @if ($categories->hasPages())
+            {{ $categories->links() }}
+        @endif
     </div>
 @endsection

@@ -19,13 +19,7 @@ class AdminMenuBuilder
 
         foreach (config('admin_menu.groups', []) as $groupName => $items) {
             $menuItems = collect($items)
-                ->filter(function (array $item) use ($admin) {
-                    if ($admin->isSuperAdmin() && ($item['permission'] ?? null) === 'categories') {
-                        return false;
-                    }
-
-                    return $admin->hasPermission($item['permission'], 'view');
-                })
+                ->filter(fn (array $item) => $admin->hasPermission($item['permission'], 'view'))
                 ->map(function (array $item) use ($badges) {
                     $badgeKey = $item['badge'] ?? null;
                     $count = $badgeKey ? ($badges[$badgeKey] ?? 0) : 0;

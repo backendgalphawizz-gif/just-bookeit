@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Support\LocationResolver;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 
@@ -40,6 +41,8 @@ class ConfigController extends ApiController
                 ['key' => 'credit', 'label' => 'Credit'],
                 ['key' => 'debit', 'label' => 'Debit'],
             ],
+            'locations' => LocationResolver::catalog(),
+            'location_other_value' => LocationResolver::OTHER,
         ]);
     }
 }

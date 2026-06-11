@@ -37,6 +37,8 @@ class VendorController extends AdminController
                     $q->where('brand_name', 'like', $term)
                         ->orWhere('owner_name', 'like', $term)
                         ->orWhere('email', 'like', $term)
+                        ->orWhere('mobile', 'like', $term)
+                        ->orWhere('business_mobile', 'like', $term)
                         ->orWhere('vendor_code', 'like', $term);
                 });
             })
