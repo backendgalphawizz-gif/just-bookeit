@@ -4,12 +4,10 @@ namespace App\Support\Api;
 
 use App\Models\Banner;
 use App\Models\Category;
-use App\Models\Dispute;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
-use App\Models\Dispute;
 use App\Models\CustomerMeasurement;
 use App\Models\Order;
 use App\Models\PortfolioItem;
@@ -312,7 +310,7 @@ class CustomerApiPresenter
                 'chat_open' => $order->dispute->isChatOpen(),
             ] : null,
             'can_raise_dispute' => ! $order->dispute,
-            'dispute_subject_options' => Dispute::subjectOptionsForCategory($order->category),
+            'dispute_subject_options' => \App\Models\Dispute::subjectOptionsForCategory($order->category),
         ];
     }
 
