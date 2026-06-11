@@ -37,8 +37,7 @@ class MeasurementController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        $data = $this->validatedPayload($request);
-        $profile = $customer->measurements()->create($data);
+        $profile = $customer->measurements()->create($this->validatedPayload($request));
 
         return $this->success([
             'measurement' => CustomerApiPresenter::measurementDetail($profile),
@@ -51,7 +50,7 @@ class MeasurementController extends ApiController
         $customer = $request->user();
         abort_unless($measurement->customer_id === $customer->id, 403);
 
-        $measurement->update($this->validatedPayload($request, partial: true));
+        $measurement->update($this->validatedPayload($request, partial: true, existing: $measurement));
 
         return $this->success([
             'measurement' => CustomerApiPresenter::measurementDetail($measurement->fresh()),
@@ -70,29 +69,18 @@ class MeasurementController extends ApiController
     }
 
     /** @return array<string, mixed> */
-    protected function validatedPayload(Request $request, bool $partial = false): array
+    protected function validatedPayload(Request $request, bool $partial = false, ?CustomerMeasurement $existing = null): array
     {
-        $extraRules = [];
-        foreach (CustomerMeasurement::EXTRA_FIELDS as $field) {
-            $extraRules["extra_measurements.{$field}"] = ['nullable', 'string', 'max:50'];
+        $data = $request->validate(CustomerMeasurement::apiValidationRules($partial));
+        $payload = CustomerMeasurement::normalizeApiPayload($data);
+
+        if ($partial && $existing && isset($payload['extra_measurements'])) {
+            $payload['extra_measurements'] = array_merge(
+                $existing->extra_measurements ?? [],
+                $payload['extra_measurements']
+            );
         }
 
-        $data = $request->validate(array_merge([
-            'name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
-            'measurement_type' => ['nullable', 'in:women,men,kid'],
-            'height_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
-            'chest_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
-            'waist_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
-            'extra_measurements' => ['nullable', 'array'],
-        ], $extraRules));
-
-        if (isset($data['extra_measurements'])) {
-            $data['extra_measurements'] = collect($data['extra_measurements'])
-                ->only(CustomerMeasurement::EXTRA_FIELDS)
-                ->filter(fn ($value) => $value !== null && $value !== '')
-                ->all();
-        }
-
-        return $data;
+        return $payload;
     }
 }

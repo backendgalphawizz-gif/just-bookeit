@@ -707,7 +707,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"name\": \"Sarah\",\n  \"measurement_type\": \"women\",\n  \"height_cm\": 172,\n  \"chest_cm\": 88,\n  \"waist_cm\": 68,\n  \"extra_measurements\": {\n    \"blouse_length\": \"24\",\n    \"shoulder\": \"14\",\n    \"sleeve_length\": \"22\",\n    \"hip\": \"92\"\n  }\n}"
+									"raw": "{\n  \"name\": \"Shreya Singh\",\n  \"measurement_type\": \"women\",\n  \"blouse_length\": \"24\",\n  \"shoulder\": \"14\",\n  \"sleeve_length\": \"22\",\n  \"sleeve_loose\": \"12\",\n  \"arm_hole\": \"18\",\n  \"chest\": \"36\",\n  \"waist\": \"30\",\n  \"dot_point\": \"10\",\n  \"front_neck\": \"7\",\n  \"back_neck\": \"8\",\n  \"top_length\": \"28\",\n  \"half_length\": \"20\",\n  \"slit\": \"6\",\n  \"hip\": \"38\",\n  \"seat\": \"40\",\n  \"bottom_length\": \"40\",\n  \"leg_loose\": \"22\",\n  \"thigh\": \"24\",\n  \"knees\": \"16\"\n}"
 								},
 								"url": "{{base_url}}/v1/measurements"
 							}
