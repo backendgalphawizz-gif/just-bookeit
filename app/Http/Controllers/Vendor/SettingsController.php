@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Vendor;
 
 use App\Models\Faq;
 use App\Models\PlatformSetting;
-use App\Models\VendorPortfolioImage;
 use App\Services\PlatformConfigService;
 use App\Support\StoresUploadedFiles;
 use App\Support\VendorValidationRules;
@@ -18,34 +17,25 @@ class SettingsController extends VendorController
         protected PlatformConfigService $config
     ) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $vendor = $this->vendor();
         $tab = $request->string('tab', 'profile')->toString();
+        if ($tab === 'portfolio') {
+            return redirect()->route('vendor.portfolio.index');
+        }
+
         $validTabs = collect($this->settingsTabs())->pluck('key')->all();
         if (! in_array($tab, $validTabs, true)) {
             $tab = 'profile';
         }
         $legal = $this->config->legalFor(Faq::AUDIENCE_VENDOR);
-        $portfolioAudience = $request->string('audience', 'women')->toString();
-        if (! in_array($portfolioAudience, ['women', 'men', 'kids'], true)) {
-            $portfolioAudience = 'women';
-        }
-
-        $portfolioImages = VendorPortfolioImage::query()
-            ->where('vendor_id', $vendor->id)
-            ->where('audience', $portfolioAudience)
-            ->orderBy('sort_order')
-            ->orderByDesc('id')
-            ->get();
 
         return view('vendor.settings.index', [
             'vendor' => $vendor,
             'tab' => $tab,
             'legal' => $legal,
             'serviceOptions' => VendorValidationRules::SERVICE_TYPES,
-            'portfolioImages' => $portfolioImages,
-            'portfolioAudience' => $portfolioAudience,
             'settingsTabs' => $this->settingsTabs(),
             'legalUpdatedAt' => PlatformSetting::get('legal_updated_at', now()->format('F j, Y')),
         ]);
@@ -58,24 +48,10 @@ class SettingsController extends VendorController
 
         return match ($tab) {
             'bio' => $this->updateBio($request, $vendor),
-            'portfolio' => $this->updatePortfolio($request, $vendor),
             'business' => $this->updateBusiness($request, $vendor),
             'bank' => $this->updateBank($request, $vendor),
             default => $this->updateProfile($request, $vendor),
         };
-    }
-
-    public function destroyPortfolio(VendorPortfolioImage $portfolioImage): RedirectResponse
-    {
-        abort_unless($portfolioImage->vendor_id === $this->vendor()->id, 403);
-
-        $audience = $portfolioImage->audience;
-        StoresUploadedFiles::delete($portfolioImage->image_path);
-        $portfolioImage->delete();
-
-        return redirect()
-            ->route('vendor.settings.index', ['tab' => 'portfolio', 'audience' => $audience])
-            ->with('success', 'Portfolio image removed.');
     }
 
     public function toggleActive(Request $request): RedirectResponse
@@ -160,26 +136,6 @@ class SettingsController extends VendorController
             ->with('success', 'Bio updated successfully.');
     }
 
-    protected function updatePortfolio(Request $request, $vendor): RedirectResponse
-    {
-        $data = $this->validateVendor($request, VendorValidationRules::portfolioUpload());
-
-        $imagePath = StoresUploadedFiles::store($request->file('portfolio_image'), 'vendors/portfolio');
-
-        VendorPortfolioImage::query()->create([
-            'vendor_id' => $vendor->id,
-            'audience' => $data['audience'],
-            'image_path' => $imagePath,
-            'sort_order' => (int) VendorPortfolioImage::query()
-                ->where('vendor_id', $vendor->id)
-                ->where('audience', $data['audience'])
-                ->max('sort_order') + 1,
-        ]);
-
-        return redirect()->route('vendor.settings.index', ['tab' => 'portfolio', 'audience' => $data['audience']])
-            ->with('success', 'Portfolio image added.');
-    }
-
     protected function updateBusiness(Request $request, $vendor): RedirectResponse
     {
         $data = $this->validateVendor($request, VendorValidationRules::business());
@@ -218,7 +174,6 @@ class SettingsController extends VendorController
         return [
             ['key' => 'profile', 'label' => 'Personal Profile', 'icon' => 'user'],
             ['key' => 'bio', 'label' => 'Bio / Description', 'icon' => 'bio'],
-            ['key' => 'portfolio', 'label' => 'Portfolio', 'icon' => 'portfolio'],
             ['key' => 'business', 'label' => 'Business Info', 'icon' => 'business'],
             ['key' => 'bank', 'label' => 'Bank Info', 'icon' => 'bank'],
             ['key' => 'password', 'label' => 'Password', 'icon' => 'password'],

@@ -1,10 +1,13 @@
 @extends('admin.layouts.app')
-@section('title', 'Portfolio')
-@section('page_title', 'Portfolio')
-@section('page_subtitle', 'Vendor portfolio submissions and moderation')
+@section('title', 'Products')
+@section('page_title', 'Products')
+@section('page_subtitle', 'Items vendors want to sell or rent — approve and manage')
 @section('content')
     @push('filter_actions')
         <x-admin.export-dropdown module="portfolio" :params="['search', 'status', 'vendor_id', 'from', 'to']" />
+        @if (auth('admin')->user()->hasPermission('portfolio', 'create'))
+            <x-admin.button variant="primary" size="sm" :href="route('admin.portfolio.create')">+ Add Product</x-admin.button>
+        @endif
     @endpush
     <form method="GET" class="jb-filters">
         <div class="jb-filters-grid">
@@ -35,7 +38,7 @@
         </div>
     </form>
     <div class="jb-card">
-        <div class="jb-card-header"><p class="jb-card-header-title">{{ $items->total() }} portfolio items</p></div>
+        <div class="jb-card-header"><p class="jb-card-header-title">{{ $items->total() }} products</p></div>
         <div class="jb-table-wrap">
             <table class="jb-table jb-table--balanced">
                 <thead><tr>
@@ -43,6 +46,7 @@
                     <th class="jb-col-name">Title</th>
                     <th class="jb-col-name">Vendor</th>
                     <th class="jb-col-category">Category</th>
+                    <th class="jb-col-amount">Price/day</th>
                     <th class="jb-col-status">Status</th>
                     <th class="jb-col-date">Submitted</th>
                     <th class="jb-table-actions-col">Actions</th>
@@ -60,6 +64,13 @@
                             <td class="jb-col-category">
                                 <span class="block truncate text-sm" title="{{ $item->category?->name ?? '—' }}">{{ $item->category?->name ?? '—' }}</span>
                             </td>
+                            <td class="jb-col-amount text-sm text-slate-600">
+                                @if ($item->price_per_day !== null)
+                                    ₹{{ number_format((float) $item->price_per_day, 0) }}
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ $item->created_at->format('M d, Y') }}</td>
                             <td class="jb-table-actions-col">
@@ -72,7 +83,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="jb-table-empty">No portfolio items.</td></tr>
+                        <tr><td colspan="8" class="jb-table-empty">No products found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

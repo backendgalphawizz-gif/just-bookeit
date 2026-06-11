@@ -23,7 +23,7 @@ Maps proposal sections to Laravel implementation phases.
 |---|--------|----------------------|
 | 3 | Customer Management | `customers`, `addresses` |
 | 4 | Vendor Management | `vendors`, `vendor_applications`, `vendor_bank_details` |
-| 5 | Portfolio Moderation | `portfolio_items`, `portfolio_reviews` |
+| 5 | Product Moderation | `portfolio_items` (items vendors sell/rent; internal table name) |
 | 6 | Category Management | `categories`, `category_banners` |
 | 7 | Booking & Orders | `orders`, `order_status_logs`, `order_measurements` |
 
@@ -53,8 +53,10 @@ Maps proposal sections to Laravel implementation phases.
 - Super Admin — full access
 - Support Admin — customers, orders, chat, disputes, refunds
 - Finance Admin — payments, refunds, payouts, commissions
-- Vendor Management Admin — vendors, portfolio approvals
-- Content Moderator — portfolio, banners, CMS
+- Vendor Management Admin — vendors, product approvals
+- Content Moderator — products, banners, CMS
+
+**Note:** **Portfolio** = vendor's previous work (`vendor_portfolio_images`). **Products** = items they want to sell or rent (`portfolio_items`). Only products require admin approval.
 
 ## API layer (later)
 

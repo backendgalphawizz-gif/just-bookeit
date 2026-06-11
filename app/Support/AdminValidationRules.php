@@ -521,19 +521,32 @@ class AdminValidationRules
         ];
     }
 
-    public static function portfolioItem(): array
+    public static function portfolioItem(bool $creating = false): array
     {
+        $priceRule = $creating ? 'required' : 'nullable';
+
         return [
             'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
             'title' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'description' => ['nullable', 'string', 'max:5000', 'regex:'.self::REGEX_TEXT],
+            'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
+            'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'audience' => ['required', 'in:women,men,kids'],
             'status' => ['required', 'in:pending,approved,rejected'],
             'rejection_reason' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
-            'image' => ['nullable', 'image', 'max:4096'],
-            'gallery_images' => ['nullable', 'array', 'max:12'],
-            'gallery_images.*' => ['image', 'max:4096'],
+            'image' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'gallery_images' => ['nullable', 'array', 'max:10'],
+            'gallery_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'variants' => ['nullable', 'array', 'max:50'],
+            'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.self::REGEX_TITLE],
+            'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
+            'variant_images' => ['nullable', 'array', 'max:50'],
+            'variant_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'damage_deductions' => ['nullable', 'array', 'max:20'],
+            'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],
         ];
     }
 

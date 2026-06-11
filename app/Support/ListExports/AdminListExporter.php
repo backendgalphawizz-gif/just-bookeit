@@ -337,7 +337,7 @@ class AdminListExporter
                 ],
             ],
             'portfolio' => [
-                'title' => 'Portfolio Export',
+                'title' => 'Products Export',
                 'basename' => 'portfolio',
                 'headers' => ['Title', 'Vendor', 'Category', 'Status', 'Submitted'],
                 'query' => fn (Request $request) => $this->applyDateRange(PortfolioItem::query(), $request)

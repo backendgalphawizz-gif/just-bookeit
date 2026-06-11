@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
             'customers' => 'Customer Management',
             'vendors' => 'Vendor Management',
             'drivers' => 'Driver Management',
-            'portfolio' => 'Portfolio Moderation',
+            'portfolio' => 'Product Moderation',
             'categories' => 'Category Management',
             'orders' => 'Booking & Orders',
             'chat' => 'Chat & Communication',
@@ -45,7 +45,7 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'Support Admin', 'slug' => 'support_admin', 'description' => 'Customer support and disputes'],
             ['name' => 'Finance Admin', 'slug' => 'finance_admin', 'description' => 'Payments, refunds, and payouts'],
             ['name' => 'Vendor Management Admin', 'slug' => 'vendor_management_admin', 'description' => 'Vendor onboarding and operations'],
-            ['name' => 'Content Moderator', 'slug' => 'content_moderator', 'description' => 'Portfolio and CMS moderation'],
+            ['name' => 'Content Moderator', 'slug' => 'content_moderator', 'description' => 'Product and CMS moderation'],
         ];
 
         foreach ($roles as $roleData) {

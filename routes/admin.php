@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Admin\PortfolioController;
+use App\Http\Controllers\Admin\VendorPortfolioController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\NotificationController;
@@ -70,6 +71,11 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::get('payouts/{payout}', [PayoutController::class, 'show'])->name('payouts.show');
             Route::post('payouts/{payout}/mark-paid', [PayoutController::class, 'markPaid'])->name('payouts.mark-paid');
 
+            Route::get('vendor-portfolio', [VendorPortfolioController::class, 'index'])->name('vendor-portfolio.index');
+            Route::get('vendor-portfolio/{vendor}', [VendorPortfolioController::class, 'show'])->name('vendor-portfolio.show');
+
+            Route::get('portfolio/create', [PortfolioController::class, 'create'])->name('portfolio.create');
+            Route::post('portfolio', [PortfolioController::class, 'store'])->name('portfolio.store');
             Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
             Route::get('portfolio/{portfolio}/edit', [PortfolioController::class, 'edit'])->name('portfolio.edit');
             Route::put('portfolio/{portfolio}', [PortfolioController::class, 'update'])->name('portfolio.update');

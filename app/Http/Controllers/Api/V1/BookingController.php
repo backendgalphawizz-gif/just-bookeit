@@ -29,7 +29,7 @@ class BookingController extends ApiController
 
         $orders = CustomerBookingTab::applyToQuery(
             Order::query()
-                ->with(['vendor', 'category'])
+                ->with(['vendor', 'category', 'customer', 'dispute'])
                 ->where('customer_id', $customer->id),
             $request->input('tab')
         )
@@ -37,7 +37,7 @@ class BookingController extends ApiController
             ->paginate($request->integer('per_page', 10));
 
         return $this->success(
-            CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingSummary($order))
+            CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingDetail($order))
         );
     }
 
