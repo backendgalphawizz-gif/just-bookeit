@@ -184,6 +184,8 @@ class CatalogFilter
 
     public static function applyToQuery(Builder $query, Request $request): Builder
     {
+        self::applyCustomerCatalogConstraints($query);
+
         $audience = self::resolveAudience($request);
 
         if ($audience !== null) {
@@ -197,6 +199,15 @@ class CatalogFilter
         }
 
         return $query;
+    }
+
+    public static function applyCustomerCatalogConstraints(Builder $query): Builder
+    {
+        return $query
+            ->where('status', 'approved')
+            ->whereHas('vendor', fn (Builder $vendor) => $vendor
+                ->where('status', 'active')
+                ->where('is_listing_active', true));
     }
 
     /** @return array<string, mixed> */

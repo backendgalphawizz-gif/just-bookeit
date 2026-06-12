@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderReview;
 use App\Models\PortfolioItem;
+use App\Models\Vendor;
 use App\Services\Booking\BookingPricingService;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\Api\CustomerBookingTab;
@@ -29,7 +31,7 @@ class BookingController extends ApiController
 
         $orders = CustomerBookingTab::applyToQuery(
             Order::query()
-                ->with(['vendor', 'category', 'customer', 'dispute'])
+                ->with(['vendor', 'category', 'customer', 'dispute', 'review'])
                 ->where('customer_id', $customer->id),
             $request->input('tab')
         )
@@ -47,7 +49,7 @@ class BookingController extends ApiController
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
-        $booking->load(['customer', 'vendor', 'driver', 'category']);
+        $booking->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'review']);
 
         return $this->success(CustomerApiPresenter::bookingDetail($booking));
     }
@@ -92,7 +94,7 @@ class BookingController extends ApiController
             ->with(['vendor', 'category'])
             ->findOrFail($data['portfolio_item_id']);
 
-        abort_unless($item->isApprovedForCatalog(), 422);
+        abort_unless($item->status === 'approved', 422, 'This product is not available for booking.');
         abort_unless($item->vendor && $item->vendor->status === 'active', 422, 'Designer is not available.');
 
         $pricing = BookingPricingService::forPortfolioItem($item, [
@@ -164,11 +166,55 @@ class BookingController extends ApiController
             return $this->error('This booking can no longer be cancelled.', 422);
         }
 
-        $booking->update(['status' => 'cancelled']);
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+
+        $booking->update([
+            'status' => 'cancelled',
+            'cancellation_reason' => $data['reason'],
+        ]);
 
         return $this->success([
-            'booking' => CustomerApiPresenter::bookingSummary($booking->fresh(['vendor', 'category'])),
+            'booking' => CustomerApiPresenter::bookingDetail($booking->fresh(['vendor', 'category', 'dispute', 'review'])),
         ], 'Booking cancelled.');
+    }
+
+    public function review(Request $request, Order $booking): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+        abort_unless($booking->customer_id === $customer->id, 403);
+
+        if ($booking->status !== 'delivered') {
+            return $this->error('You can review this booking after it is delivered.', 422);
+        }
+
+        if ($booking->review()->exists()) {
+            return $this->error('You have already reviewed this booking.', 422);
+        }
+
+        abort_unless($booking->vendor_id, 422, 'Vendor not found for this booking.');
+
+        $data = $request->validate([
+            'rating' => ['required', 'numeric', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $review = OrderReview::query()->create([
+            'order_id' => $booking->id,
+            'customer_id' => $customer->id,
+            'vendor_id' => $booking->vendor_id,
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+        ]);
+
+        $this->syncVendorRating($booking->vendor_id);
+
+        return $this->success([
+            'review' => CustomerApiPresenter::orderReview($review->load(['customer', 'order'])),
+            'booking' => CustomerApiPresenter::bookingDetail($booking->fresh(['vendor', 'category', 'dispute', 'review'])),
+        ], 'Review submitted.');
     }
 
     public function addresses(Request $request): JsonResponse
@@ -205,5 +251,18 @@ class BookingController extends ApiController
     {
         $count = Order::query()->where('customer_id', $customerId)->count();
         Customer::query()->whereKey($customerId)->update(['total_orders' => $count]);
+    }
+
+    protected function syncVendorRating(?int $vendorId): void
+    {
+        if (! $vendorId) {
+            return;
+        }
+
+        $average = OrderReview::query()->where('vendor_id', $vendorId)->avg('rating');
+
+        Vendor::query()->whereKey($vendorId)->update([
+            'rating' => round((float) $average, 2),
+        ]);
     }
 }

@@ -64,6 +64,7 @@ class Order extends Model
         'delivery_fee',
         'tax_amount',
         'customer_notes',
+        'cancellation_reason',
         'admin_notes',
         'damage_note',
         'damage_deduct_percent',
@@ -133,6 +134,11 @@ class Order extends Model
     public function dispute(): HasOne
     {
         return $this->hasOne(Dispute::class);
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(OrderReview::class);
     }
 
     public function isRental(): bool

@@ -144,6 +144,11 @@ class Vendor extends Authenticatable
         return $this->hasMany(Conversation::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(OrderReview::class);
+    }
+
     public function displayName(): string
     {
         return $this->brand_name ?: $this->shop_name ?: $this->owner_name ?: 'Vendor';
