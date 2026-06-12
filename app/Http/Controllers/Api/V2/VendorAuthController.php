@@ -98,10 +98,25 @@ class VendorAuthController extends ApiController
 
         $data = $request->validate(array_merge(
             $this->vendorFieldRules(required: false, vendorId: $vendor->id),
-            ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
+            [
+                'profile_image' => ['sometimes', ...self::IMAGE_RULE],
+                'cover_image' => ['sometimes', ...self::IMAGE_RULE],
+                'coverImage' => ['sometimes', ...self::IMAGE_RULE],
+                'bio' => ['sometimes', 'nullable', 'string', 'max:2000'],
+                'is_available' => ['sometimes', 'boolean'],
+            ]
         ));
 
         $vendor->fill($this->mapVendorAttributes($data));
+
+        if (array_key_exists('bio', $data)) {
+            $vendor->bio = $data['bio'];
+        }
+
+        if (array_key_exists('is_available', $data)) {
+            $vendor->is_listing_active = $data['is_available'];
+        }
+
         $this->applyVendorFiles($vendor, $request);
         $vendor->save();
 
@@ -214,13 +229,21 @@ class VendorAuthController extends ApiController
     {
         $files = [
             'profile_image' => ['column' => 'profile_image_path', 'dir' => 'vendors/profile-images'],
+            'cover_image' => ['column' => 'cover_image_path', 'dir' => 'vendors/cover-images'],
+            'coverImage' => ['column' => 'cover_image_path', 'dir' => 'vendors/cover-images'],
             'aadhar_front' => ['column' => 'aadhar_front_path', 'dir' => 'vendors/aadhar/front'],
             'aadhar_back' => ['column' => 'aadhar_back_path', 'dir' => 'vendors/aadhar/back'],
             'shop_logo' => ['column' => 'shop_logo_path', 'dir' => 'vendors/shop-logos'],
             'pan_card' => ['column' => 'pan_card_path', 'dir' => 'vendors/pan-cards'],
         ];
 
+        $processedColumns = [];
+
         foreach ($files as $input => $config) {
+            if (in_array($config['column'], $processedColumns, true)) {
+                continue;
+            }
+
             if (! $request->hasFile($input)) {
                 continue;
             }
@@ -230,6 +253,8 @@ class VendorAuthController extends ApiController
                 $vendor->{$config['column']},
                 $config['dir']
             );
+
+            $processedColumns[] = $config['column'];
         }
     }
 }

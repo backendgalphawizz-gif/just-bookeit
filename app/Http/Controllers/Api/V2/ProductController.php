@@ -49,6 +49,7 @@ class ProductController extends VendorApiController
             ...VendorApiPresenter::paginator($products, fn (PortfolioItem $item) => VendorApiPresenter::productSummary($item)),
             'category_type' => $type,
             'category_label' => $this->typeMap[$type] ?? 'Products',
+            'vendor_is_available' => (bool) $vendor->is_listing_active,
         ]);
     }
 
@@ -72,7 +73,10 @@ class ProductController extends VendorApiController
 
         $this->assertHasProductImage($request);
         $this->validateProductUploads($request);
-        $data = $this->validateVendor($request, VendorValidationRules::product(true));
+        $data = $this->validateVendor($request, array_merge(
+            VendorValidationRules::product(true),
+            VendorValidationRules::productTypeRules()
+        ));
 
         $primaryImage = $this->resolvePrimaryImage($request);
         $imagePath = StoresUploadedFiles::store($primaryImage, 'portfolio/images');
@@ -107,7 +111,10 @@ class ProductController extends VendorApiController
         $this->decodeJsonPayloadFields($request);
 
         $this->validateProductUploads($request);
-        $data = $this->validateVendor($request, VendorValidationRules::product(false));
+        $data = $this->validateVendor($request, array_merge(
+            VendorValidationRules::product(false),
+            VendorValidationRules::productTypeRules()
+        ));
 
         $updates = [
             'title' => $data['title'],
@@ -115,6 +122,11 @@ class ProductController extends VendorApiController
             'status' => 'pending',
             'rejection_reason' => null,
         ];
+
+        if ($request->filled('type')) {
+            $category = Category::query()->where('slug', $request->string('type'))->firstOrFail();
+            $updates['category_id'] = $category->id;
+        }
 
         if (array_key_exists('price_per_day', $data)) {
             $updates['price_per_day'] = $data['price_per_day'];

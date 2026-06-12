@@ -4,11 +4,13 @@ namespace App\Support\Api;
 
 use App\Models\ChatMessage;
 use App\Models\Conversation;
+use App\Models\CustomerMeasurement;
 use App\Models\Order;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Models\VendorPortfolioImage;
 use App\Models\VendorWalletTransaction;
+use App\Services\Booking\BookingPricingService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class VendorApiPresenter
@@ -33,6 +35,8 @@ class VendorApiPresenter
             'is_available' => (bool) $vendor->is_listing_active,
             'profile_image_url' => $vendor->profileImageUrl(),
             'shop_logo_url' => $vendor->shopLogoUrl(),
+            'cover_image_url' => $vendor->coverImageUrl(),
+            'coverImage' => $vendor->coverImageUrl(),
             'rating' => (float) $vendor->rating,
         ];
     }
@@ -174,33 +178,118 @@ class VendorApiPresenter
 
     public static function bookingDetail(Order $order): array
     {
-        $order->loadMissing(['customer', 'category', 'driver']);
+        $order->loadMissing(['customer', 'category', 'driver', 'vendor']);
 
         return [
             ...self::bookingSummary($order),
+            'customer' => self::bookingCustomer($order),
             'delivery_address' => $order->delivery_address,
             'pickup_address' => $order->pickup_address,
             'city' => $order->city,
             'pincode' => $order->pincode,
             'customer_notes' => $order->customer_notes,
             'reference_image_urls' => $order->referenceImageUrls(),
-            'measurements' => [
-                'height_cm' => $order->measure_height_cm,
-                'chest_cm' => $order->measure_chest_cm,
-                'waist_cm' => $order->measure_waist_cm,
-            ],
+            'measurements' => self::orderMeasurements($order),
+            'payment_summary' => BookingPricingService::vendorPaymentSummary($order, $order->vendor),
             'tracking_steps' => $order->trackBookingSteps(),
             'driver' => $order->driver ? [
                 'id' => $order->driver->id,
                 'name' => $order->driver->name,
                 'mobile' => $order->driver->mobile,
             ] : null,
+            'customer_review' => $order->status === 'delivered'
+                ? self::bookingCustomerReview($order)
+                : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function bookingCustomer(Order $order): array
+    {
+        $customer = $order->customer;
+
+        return [
+            'id' => $customer?->id,
+            'name' => $customer?->name,
+            'email' => $customer?->email,
+            'mobile' => $customer?->mobile,
+            'profile_image_url' => $customer?->profileImageUrl(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function orderMeasurements(Order $order): array
+    {
+        $measurements = [
+            'measurement_type' => self::parseOrderMeasurementType($order),
+            'size' => $order->size,
+            'height_cm' => $order->measure_height_cm,
+            'chest_cm' => $order->measure_chest_cm,
+            'waist_cm' => $order->measure_waist_cm,
+        ];
+
+        foreach (CustomerMeasurement::EXTRA_FIELDS as $field) {
+            $measurements[$field] = null;
+        }
+
+        $profile = $order->customer?->measurements()->latest('id')->first();
+
+        if ($profile) {
+            $profileFields = CustomerApiPresenter::measurementDetail($profile);
+
+            foreach ($profileFields as $key => $value) {
+                if (in_array($key, ['id', 'name', 'updated_at', 'extra_measurements'], true)) {
+                    continue;
+                }
+
+                if (($measurements[$key] ?? null) === null && $value !== null && $value !== '') {
+                    $measurements[$key] = $value;
+                }
+            }
+
+            if ($measurements['measurement_type'] === null && ! empty($profile->measurement_type)) {
+                $measurements['measurement_type'] = $profile->measurement_type;
+            }
+        }
+
+        return $measurements;
+    }
+
+    protected static function parseOrderMeasurementType(Order $order): ?string
+    {
+        $notes = (string) ($order->customer_notes ?? '');
+
+        if (preg_match('/Measurement:\s*(Women|Men|Kid)/i', $notes, $matches)) {
+            return strtolower($matches[1]) === 'kid' ? 'kid' : strtolower($matches[1]);
+        }
+
+        return null;
+    }
+
+    /** @return array<string, mixed>|null */
+    public static function bookingCustomerReview(Order $order): ?array
+    {
+        $reviews = CustomerApiPresenter::placeholderReviews();
+
+        if ($reviews === []) {
+            return null;
+        }
+
+        $review = $reviews[0];
+
+        return [
+            'id' => $review['id'],
+            'customer_name' => $order->customer?->name,
+            'rating' => $review['rating'],
+            'comment' => $review['comment'],
+            'reviewed_at' => $order->updated_at?->format('M d, Y'),
         ];
     }
 
     public static function productSummary(PortfolioItem $item): array
     {
         $item->loadMissing(['category', 'vendor', 'variants', 'damageDeductions']);
+        $isFashionDesigner = $item->category?->slug === 'fashion-designer';
 
         return [
             'id' => $item->id,
@@ -213,7 +302,9 @@ class VendorApiPresenter
                 ->all(),
             'price_per_day' => (float) ($item->price_per_day ?? $item->rentalPriceAmount()),
             'advance_amount' => $item->advance_amount !== null ? (float) $item->advance_amount : null,
-            'price_label' => $item->rentalPriceLabel(),
+            'price_label' => $isFashionDesigner
+                ? '₹'.number_format((float) ($item->price_per_day ?? $item->rentalPriceAmount()), 0)
+                : $item->rentalPriceLabel(),
             'audience' => $item->audience,
             'variants' => $item->variants->map(fn ($variant) => [
                 'id' => $variant->id,
@@ -228,20 +319,36 @@ class VendorApiPresenter
                 'percent' => (float) $rule->percent,
             ])->values()->all(),
             'rating' => (float) ($item->vendor?->rating ?? 0),
+            'reviews' => CustomerApiPresenter::placeholderReviews(),
             'brand_name' => strtoupper($item->vendor?->brand_name ?? ''),
             'category' => $item->category ? CustomerApiPresenter::category($item->category) : null,
             'category_type' => $item->category?->slug,
             'status' => $item->status,
+            'is_available' => self::productIsAvailable($item),
             'rejection_reason' => $item->rejection_reason,
             'updated_at' => $item->updated_at?->format('M d, Y'),
         ];
+    }
+
+    public static function productIsAvailable(PortfolioItem $item): bool
+    {
+        $item->loadMissing('vendor');
+
+        return $item->status === 'approved'
+            && (bool) ($item->vendor?->is_listing_active ?? false);
     }
 
     public static function productDetail(PortfolioItem $item): array
     {
         $item->loadMissing(['category', 'vendor', 'images', 'variants', 'damageDeductions']);
 
-        return self::productSummary($item);
+        return [
+            ...self::productSummary($item),
+            'review_summary' => [
+                'average_rating' => (float) ($item->vendor?->rating ?? 0),
+                'total_reviews' => count(CustomerApiPresenter::placeholderReviews()),
+            ],
+        ];
     }
 
     public static function chatSummary(Conversation $conversation): array

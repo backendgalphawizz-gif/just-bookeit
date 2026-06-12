@@ -110,6 +110,14 @@ class VendorValidationRules
         ];
     }
 
+    /** @return array<string, array<int, string>> */
+    public static function productTypeRules(): array
+    {
+        return [
+            'type' => ['nullable', 'string', Rule::in(['fashion-designer', 'rented-dress', 'rented-jewellery'])],
+        ];
+    }
+
     /** @return array<string, int> */
     public static function productUploadLimits(): array
     {

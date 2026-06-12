@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\nImport with **Just Book IT — Local** environment.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v2 highlights:** `GET /v2/auth/me` returns `coverImage`, `bio`, `is_available`. Products split by `type` (rented-dress | fashion-designer | rented-jewellery). Booking detail includes customer contact, full measurements, payment breakdown, and `customer_review` when delivered.\n\nImport with **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -1624,7 +1624,7 @@
 		},
 		{
 			"name": "v2 — Vendor App",
-			"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.",
+			"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.\n\n**Profile:** `coverImage` on `/v2/auth/me` and `POST /v2/auth/profile`. Availability via `is_available` on profile or `POST /v2/profile/availability`.\n\n**Products:** filter by service type — `?type=rented-dress`, `?type=fashion-designer`, `?type=rented-jewellery`. Each item includes `is_available`.\n\n**Booking detail:** customer email/mobile, full measurements, payment_summary (subtotal, shipping_fee, platform_fee, tax), `customer_review` when status is delivered.",
 			"item": [
 				{
 					"name": "Auth",
@@ -1799,7 +1799,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/auth/me"
+								"url": "{{base_url}}/v2/auth/me",
+								"description": "Returns vendor profile including `coverImage` / `cover_image_url`, `bio`, `is_available`, shop logo, and business details."
 							}
 						},
 						{
@@ -1846,13 +1847,32 @@
 											"type": "text"
 										},
 										{
+											"key": "bio",
+											"value": "Fashion designer specialising in bridal and evening wear.",
+											"type": "text"
+										},
+										{
+											"key": "is_available",
+											"value": "1",
+											"type": "text",
+											"description": "1 = available, 0 = unavailable (also via POST /v2/profile/availability)"
+										},
+										{
 											"key": "profile_image",
 											"type": "file",
-											"src": []
+											"src": [],
+											"description": "Profile photo"
+										},
+										{
+											"key": "coverImage",
+											"type": "file",
+											"src": [],
+											"description": "Shop banner / background image (alias: cover_image). Single image only."
 										}
 									]
 								},
-								"url": "{{base_url}}/v2/auth/profile"
+								"url": "{{base_url}}/v2/auth/profile",
+								"description": "Update vendor profile. Supports `coverImage` (or `cover_image`) for shop banner, `profile_image`, `bio`, and `is_available`. Same fields returned on GET /v2/auth/me."
 							}
 						},
 						{
@@ -2024,7 +2044,19 @@
 							}
 						},
 						{
-							"name": "Booking Detail",
+							"name": "List (Delivered)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_booking_id', String(json.data.items[0].id)); }"
+										]
+									}
+								}
+							],
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -2043,7 +2075,52 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}"
+								"url": "{{base_url}}/v2/bookings?tab=completed",
+								"description": "Delivered bookings — use Booking Detail to see `customer_review`."
+							}
+						},
+						{
+							"name": "Booking Detail",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+											"const json = pm.response.json();",
+											"pm.test('Has customer contact', () => {",
+											"    pm.expect(json.data?.customer).to.have.property('email');",
+											"    pm.expect(json.data?.customer).to.have.property('mobile');",
+											"});",
+											"pm.test('Has payment summary', () => {",
+											"    pm.expect(json.data?.payment_summary).to.have.property('subtotal');",
+											"    pm.expect(json.data?.payment_summary).to.have.property('platform_fee');",
+											"});"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}",
+								"description": "Full booking detail: `customer` (name, email, mobile), `measurements` (all fields including blouse_length, shoulder, hip, etc.), `payment_summary` (subtotal, shipping_fee, platform_fee, tax_amount, total_amount, vendor_net_amount), `customer_review` when status is delivered."
 							}
 						},
 						{
@@ -2127,7 +2204,7 @@
 				},
 				{
 					"name": "Products",
-					"description": "Items the vendor wants to sell or rent (dresses, jewellery, designer services). Stored as `portfolio_items`. New products are **pending** until approved in admin **Products** (Content menu).\n\nNot the same as **Portfolio** — the vendor's previous work (`/v2/portfolio`).",
+					"description": "Items the vendor wants to sell or rent (dresses, jewellery, designer services). Stored as `portfolio_items`. New products are **pending** until approved in admin **Products** (Content menu).\n\n**Service types** (separate lists): `type=rented-dress`, `type=fashion-designer`, `type=rented-jewellery`.\n\nEach product includes `is_available` (approved + vendor active). List response also includes `vendor_is_available`.\n\nProduct detail includes `reviews` and `review_summary`.\n\nNot the same as **Portfolio** — the vendor's previous work (`/v2/portfolio`).",
 					"item": [
 						{
 							"name": "List (Rental Dresses)",
@@ -2161,7 +2238,44 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/products?type=rented-dress"
+								"url": "{{base_url}}/v2/products?type=rented-dress",
+								"description": "Rental dress products. Response includes `vendor_is_available` and per-item `is_available`, `category_type`, variants, damage rules."
+							}
+						},
+						{
+							"name": "List (Fashion Designer)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_product_id', String(json.data.items[0].id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products?type=fashion-designer",
+								"description": "Fashion designer service products (separate from rental dresses)."
 							}
 						},
 						{
@@ -2207,7 +2321,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}",
+								"description": "Product detail with gallery, variants, damage_deductions, `is_available`, `reviews`, and `review_summary`."
 							}
 						},
 						{
@@ -2311,6 +2426,78 @@
 										}
 									]
 								},
+								"url": "{{base_url}}/v2/products",
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires primary `image`."
+							}
+						},
+						{
+							"name": "Create Product (Fashion Designer)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"if (json.data?.product?.id) { pm.environment.set('v2_product_id', String(json.data.product.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "type",
+											"value": "fashion-designer",
+											"type": "text"
+										},
+										{
+											"key": "title",
+											"value": "Custom Bridal Lehenga",
+											"type": "text"
+										},
+										{
+											"key": "description",
+											"value": "Bespoke bridal lehenga design and stitching.",
+											"type": "text"
+										},
+										{
+											"key": "price_per_day",
+											"value": "25000",
+											"type": "text",
+											"description": "Service price (no /day label for fashion-designer)"
+										},
+										{
+											"key": "audience",
+											"value": "women",
+											"type": "text"
+										},
+										{
+											"key": "image",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
 								"url": "{{base_url}}/v2/products"
 							}
 						},
@@ -2338,6 +2525,12 @@
 									"mode": "formdata",
 									"formdata": [
 										{
+											"key": "type",
+											"value": "rented-dress",
+											"type": "text",
+											"description": "Optional — change service type: rented-dress | fashion-designer | rented-jewellery"
+										},
+										{
 											"key": "title",
 											"value": "Velvet Gown Updated",
 											"type": "text"
@@ -2353,18 +2546,50 @@
 											"type": "text"
 										},
 										{
+											"key": "advance_amount",
+											"value": "600",
+											"type": "text"
+										},
+										{
+											"key": "audience",
+											"value": "women",
+											"type": "text",
+											"description": "women | men | kids"
+										},
+										{
+											"key": "image",
+											"type": "file",
+											"src": [],
+											"description": "Optional — replace primary image"
+										},
+										{
+											"key": "gallery_images",
+											"type": "file",
+											"src": [],
+											"description": "Optional — append gallery images"
+										},
+										{
 											"key": "variants",
 											"value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]",
-											"type": "text"
+											"type": "text",
+											"description": "Replaces all variants when sent"
+										},
+										{
+											"key": "variant_images",
+											"type": "file",
+											"src": [],
+											"description": "Variant image — index 0 matches variants[0]"
 										},
 										{
 											"key": "damage_deductions",
 											"value": "[{\"damage_type\":\"Tear\",\"percent\":12}]",
-											"type": "text"
+											"type": "text",
+											"description": "Replaces all damage rules when sent"
 										}
 									]
 								},
-								"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}",
+								"description": "Update product — same fields as create (title, description, price, advance, audience, type, image, gallery, variants, damage_deductions). Resets status to pending for re-approval."
 							}
 						},
 						{
@@ -2791,7 +3016,8 @@
 										}
 									]
 								},
-								"url": "{{base_url}}/v2/profile/bio"
+								"url": "{{base_url}}/v2/profile/bio",
+								"description": "Legacy bio + cover upload. Prefer POST /v2/auth/profile with `bio` and `coverImage` fields."
 							}
 						},
 						{
@@ -2822,7 +3048,8 @@
 									"mode": "raw",
 									"raw": "{\n  \"is_available\": true\n}"
 								},
-								"url": "{{base_url}}/v2/profile/availability"
+								"url": "{{base_url}}/v2/profile/availability",
+								"description": "Toggle vendor shop availability. Also set `is_available` on POST /v2/auth/profile. Affects `is_available` on product list/detail."
 							}
 						},
 						{
