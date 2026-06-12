@@ -27,7 +27,7 @@
             <table class="jb-table">
                 <thead><tr>
                     @include('admin.partials.table-index-header')
-                    <th class="jb-col-id">Transaction</th>
+                    <th class="jb-col-id">Order ID</th>
                     <th class="jb-col-name">Customer</th>
                     <th class="jb-col-name">Vendor</th>
                     <th class="jb-col-amount">Amount</th>

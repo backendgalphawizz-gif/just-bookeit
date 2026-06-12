@@ -13,7 +13,7 @@
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
             @foreach ($tabs as $key => $label)
-                <a href="{{ route('admin.categories.index', ['type' => $key, 'search' => request('search'), 'active' => request('active'), 'from' => request('from'), 'to' => request('to')]) }}"
+                <a href="{{ route('admin.categories.index', ['type' => $key, 'search' => request('search'), 'active' => request('active')]) }}"
                    class="jb-settings-tab {{ $type === $key ? 'jb-settings-tab--active' : '' }}">
                     {{ $label }}
                 </a>
@@ -25,14 +25,14 @@
     </div>
 
     @push('filter_actions')
-        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active', 'from', 'to']" />
+        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active']" />
     @endpush
     <form method="GET" class="jb-filters">
         <input type="hidden" name="type" value="{{ $type }}">
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Category name">
+                <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Name">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Active</label>
@@ -42,7 +42,6 @@
                     <option value="0" @selected(request('active') === '0')>No</option>
                 </select>
             </div>
-            @include('admin.partials.date-filter')
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.categories.index', ['type' => $type])])
         </div>
     </form>

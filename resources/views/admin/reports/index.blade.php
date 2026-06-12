@@ -159,6 +159,7 @@
                         <th>City</th>
                         <th class="text-center">Orders</th>
                         <th class="jb-col-amount">Earnings</th>
+                        <th class="jb-col-date">Registration Date</th>
                         <th class="jb-col-status">Status</th>
                     </tr></thead>
                     <tbody>
@@ -170,10 +171,11 @@
                                 <td>{{ $vendor->city }}</td>
                                 <td class="text-center">{{ $vendor->orders_completed }}</td>
                                 <td class="jb-col-amount">₹{{ number_format($vendor->earnings, 2) }}</td>
+                                <td class="jb-col-date text-sm text-slate-500">{{ $vendor->created_at->format('M d, Y') }}</td>
                                 <td class="jb-col-status">{{ $vendor->status }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="jb-table-empty">No vendor data.</td></tr>
+                            <tr><td colspan="8" class="jb-table-empty">No vendor data.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

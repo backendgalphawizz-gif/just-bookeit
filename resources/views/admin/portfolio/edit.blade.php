@@ -6,6 +6,16 @@
 @section('back_href', route('admin.portfolio.show', $portfolio))
 
 @section('content')
+    <!-- Hidden forms for image deletion -->
+    @if ($portfolio->relationLoaded('images') && $portfolio->images->isNotEmpty())
+        @foreach ($portfolio->images as $image)
+            <form id="delete-image-{{ $image->id }}" method="POST" action="{{ route('admin.portfolio.images.destroy', [$portfolio, $image]) }}" class="hidden">
+                @csrf
+                @method('DELETE')
+            </form>
+        @endforeach
+    @endif
+
     <div class="jb-card">
         <div class="jb-card-body">
             <form method="POST" action="{{ route('admin.portfolio.update', $portfolio) }}" enctype="multipart/form-data">

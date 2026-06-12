@@ -218,6 +218,7 @@
                     <dd>{{ filled($vendor->categories) ? implode(', ', $vendor->categories) : '—' }}</dd>
                 </div>
                 <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $vendor->status])</dd></div>
+                <div><dt>Commission</dt><dd>{{ $vendor->commission ? $vendor->commission . '%' : 'Using global commission' }}</dd></div>
                 <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>
                 <div><dt>Orders completed</dt><dd>{{ number_format($vendor->orders_completed) }}</dd></div>
                 <div><dt>Earnings</dt><dd>₹{{ number_format($vendor->earnings, 2) }}</dd></div>
