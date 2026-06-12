@@ -19,7 +19,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, owner, email ID, mobile no..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, mobile no..." class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
