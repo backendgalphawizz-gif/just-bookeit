@@ -27,7 +27,12 @@ use App\Http\Controllers\Api\V2\PortfolioController as VendorPortfolioController
 use App\Http\Controllers\Api\V2\ProductController as VendorProductController;
 use App\Http\Controllers\Api\V2\ProfileController as VendorProfileController;
 use App\Http\Controllers\Api\V2\VendorAuthController;
+use App\Http\Controllers\Api\V3\ConfigController as DriverConfigController;
+use App\Http\Controllers\Api\V3\DeliveryController as DriverDeliveryController;
 use App\Http\Controllers\Api\V3\DriverAuthController;
+use App\Http\Controllers\Api\V3\HomeController as DriverHomeController;
+use App\Http\Controllers\Api\V3\PaymentController as DriverPaymentController;
+use App\Http\Controllers\Api\V3\ProfileController as DriverProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
@@ -163,6 +168,8 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
 });
 
 Route::prefix('v3')->name('api.v3.')->group(function () {
+    Route::get('config', [DriverConfigController::class, 'index'])->name('config');
+
     Route::prefix('auth')->group(function () {
         Route::post('otp/send', [DriverAuthController::class, 'sendOtp']);
         Route::post('otp/verify', [DriverAuthController::class, 'verifyOtp']);
@@ -173,5 +180,24 @@ Route::prefix('v3')->name('api.v3.')->group(function () {
             Route::post('profile', [DriverAuthController::class, 'updateProfile']);
             Route::post('logout', [DriverAuthController::class, 'logout']);
         });
+    });
+
+    Route::middleware(['auth:sanctum', 'driver.api'])->group(function () {
+        Route::get('home', [DriverHomeController::class, 'index'])->name('home');
+
+        Route::get('deliveries', [DriverDeliveryController::class, 'index'])->name('deliveries.index');
+        Route::get('deliveries/{delivery}', [DriverDeliveryController::class, 'show'])->name('deliveries.show');
+        Route::post('deliveries/{delivery}/accept', [DriverDeliveryController::class, 'accept'])->name('deliveries.accept');
+        Route::post('deliveries/{delivery}/reject', [DriverDeliveryController::class, 'reject'])->name('deliveries.reject');
+        Route::post('deliveries/{delivery}/pickup', [DriverDeliveryController::class, 'pickup'])->name('deliveries.pickup');
+        Route::post('deliveries/{delivery}/out-for-delivery', [DriverDeliveryController::class, 'outForDelivery'])->name('deliveries.out-for-delivery');
+        Route::post('deliveries/{delivery}/deliver', [DriverDeliveryController::class, 'deliver'])->name('deliveries.deliver');
+
+        Route::get('payments', [DriverPaymentController::class, 'index'])->name('payments.index');
+        Route::post('payments/withdraw', [DriverPaymentController::class, 'withdraw'])->name('payments.withdraw');
+
+        Route::get('profile', [DriverProfileController::class, 'index'])->name('profile.index');
+        Route::get('profile/documents', [DriverProfileController::class, 'documents'])->name('profile.documents');
+        Route::get('profile/pages', [DriverProfileController::class, 'pages'])->name('profile.pages');
     });
 });

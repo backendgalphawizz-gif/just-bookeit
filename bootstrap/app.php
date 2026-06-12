@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'vendor.auth' => \App\Http\Middleware\EnsureVendorIsAuthenticated::class,
             'vendor.guest' => \App\Http\Middleware\RedirectIfVendorAuthenticated::class,
             'vendor.api' => \App\Http\Middleware\EnsureVendorApiIsAuthenticated::class,
+            'driver.api' => \App\Http\Middleware\EnsureDriverApiIsAuthenticated::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Models\Order;
+use App\Support\OrderDispatchSupport;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\AppliesListDateFilter;
 use Illuminate\Http\JsonResponse;
@@ -104,7 +105,22 @@ class BookingController extends VendorApiController
             'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
         ]);
 
-        $booking->update(['status' => $data['status']]);
+        $nextStatus = $data['status'];
+
+        if (! OrderDispatchSupport::canTransitionTo($booking->status, $nextStatus)) {
+            return $this->error(
+                'Invalid status transition from '.$booking->status.' to '.$nextStatus.'.',
+                422
+            );
+        }
+
+        $booking->status = $nextStatus;
+
+        if ($nextStatus === 'in_transit') {
+            OrderDispatchSupport::prepareForTransit($booking);
+        }
+
+        $booking->save();
 
         return $this->success([
             'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),

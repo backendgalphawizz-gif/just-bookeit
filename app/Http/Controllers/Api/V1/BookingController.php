@@ -10,6 +10,7 @@ use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Services\Booking\BookingPricingService;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\OrderDispatchSupport;
 use App\Support\Api\CustomerBookingTab;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
@@ -133,6 +134,11 @@ class BookingController extends ApiController
             'payment_status' => 'pending',
             'status' => 'new',
         ]);
+
+        OrderDispatchSupport::preparePickupAddress($order);
+        if (filled($order->pickup_address)) {
+            $order->saveQuietly();
+        }
 
         if ($request->hasFile('reference_images')) {
             $paths = [];
