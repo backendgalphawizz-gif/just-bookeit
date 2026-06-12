@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications`.\n\nImport with **Just Book IT — Local** environment.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`.\n\nImport with **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -314,7 +314,7 @@
 									}
 								],
 								"url": "{{base_url}}/v1/home",
-								"description": "Public endpoint. Bearer token is optional — sends location when logged in."
+								"description": "Public endpoint. Bearer token optional. When logged in, includes `notifications.unread_count` and `notifications.total_count` for the bell badge."
 							}
 						},
 						{
@@ -514,7 +514,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&search=&page=1",
+									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&vendor_id={{v1_designer_id}}&search=&page=1",
 									"host": ["{{base_url}}"],
 									"path": ["v1", "catalog"],
 									"query": [
@@ -529,6 +529,11 @@
 											"description": "Service: fashion-designer | rented-dress | rented-jewellery (aliases: rental-cloth, service_id)"
 										},
 										{
+											"key": "vendor_id",
+											"value": "{{v1_designer_id}}",
+											"description": "Optional — filter catalog to a specific vendor"
+										},
+										{
 											"key": "search",
 											"value": ""
 										},
@@ -538,7 +543,7 @@
 										}
 									]
 								},
-								"description": "Double filter on vendor products: audience (Men/Women/Kids) + service type. Only approved products from active, available vendors."
+								"description": "Catalog list with double filter: audience (Men/Women/Kids) + service type. Optional `vendor_id` to show one vendor's products only."
 							}
 						},
 						{
@@ -604,28 +609,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": {
-									"raw": "{{base_url}}/v1/designers/{{v1_designer_id}}?audience=women&service=fashion-designer&page=1",
-									"host": ["{{base_url}}"],
-									"path": ["v1", "designers", "{{v1_designer_id}}"],
-									"query": [
-										{
-											"key": "audience",
-											"value": "women",
-											"description": "Filter vendor products: women | men | kids"
-										},
-										{
-											"key": "service",
-											"value": "fashion-designer",
-											"description": "Filter by service: fashion-designer | rented-dress | rented-jewellery"
-										},
-										{
-											"key": "page",
-											"value": "1"
-										}
-									]
-								},
-								"description": "Designer profile with full address, review_count, review_summary, customer reviews, and filtered products list."
+								"url": "{{base_url}}/v1/designers/{{v1_designer_id}}",
+								"description": "Designer profile with full address, review_count, review_summary, customer reviews, and portfolio/products list."
 							}
 						}
 					]
@@ -1171,6 +1156,19 @@
 					"item": [
 						{
 							"name": "Notification List",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const item = json.data?.items?.[0];",
+											"if (item?.id) { pm.environment.set('v1_notification_id', String(item.id)); }"
+										]
+									}
+								}
+							],
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -1189,8 +1187,77 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/notifications?page=1",
-								"description": "Broadcast notifications sent to customers from admin panel."
+								"url": "{{base_url}}/v1/notifications?page=1&filter=all",
+								"description": "Broadcast notifications for customers. Each item includes `is_read`, `read_at`. Response includes `summary.unread_count`. Filter: all | read | unread."
+							}
+						},
+						{
+							"name": "Mark Notification Read",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v1/notifications/{{v1_notification_id}}/read"
+							}
+						},
+						{
+							"name": "Mark Notification Unread",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v1/notifications/{{v1_notification_id}}/unread"
+							}
+						},
+						{
+							"name": "Mark All Read",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v1/notifications/read-all"
 							}
 						}
 					]
@@ -2122,7 +2189,119 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/home?date=2026-06-27"
+								"url": "{{base_url}}/v2/home?date=2026-06-27",
+								"description": "Vendor dashboard. `notifications` includes `unread_count`, `total_count`, `unread_chats`, and `new_bookings`."
+							}
+						}
+					]
+				},
+				{
+					"name": "Notifications",
+					"item": [
+						{
+							"name": "Notification List",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const item = json.data?.items?.[0];",
+											"if (item?.id) { pm.environment.set('v2_notification_id', String(item.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/notifications?page=1&filter=all",
+								"description": "Broadcast notifications for vendors. Each item includes `is_read`, `read_at`. Filter: all | read | unread."
+							}
+						},
+						{
+							"name": "Mark Notification Read",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/notifications/{{v2_notification_id}}/read"
+							}
+						},
+						{
+							"name": "Mark Notification Unread",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/notifications/{{v2_notification_id}}/unread"
+							}
+						},
+						{
+							"name": "Mark All Read",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/notifications/read-all"
 							}
 						}
 					]

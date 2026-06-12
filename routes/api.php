@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V2\BookingController as VendorBookingController;
 use App\Http\Controllers\Api\V2\ConfigController as VendorConfigController;
 use App\Http\Controllers\Api\V2\ChatController as VendorChatController;
 use App\Http\Controllers\Api\V2\HomeController as VendorHomeController;
+use App\Http\Controllers\Api\V2\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Api\V2\PaymentController as VendorPaymentController;
 use App\Http\Controllers\Api\V2\PortfolioController as VendorPortfolioController;
 use App\Http\Controllers\Api\V2\ProductController as VendorProductController;
@@ -74,6 +75,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('payment/bookings/{booking}/pay', [PaymentController::class, 'pay'])->name('payment.pay');
 
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('notifications/{notification}/unread', [NotificationController::class, 'markUnread'])->name('notifications.unread');
 
         Route::get('profile', [ProfileController::class, 'index'])->name('profile.index');
         Route::get('profile/pages', [ProfileController::class, 'pages'])->name('profile.pages');
@@ -117,6 +121,11 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
 
     Route::middleware(['auth:sanctum', 'vendor.api'])->group(function () {
         Route::get('home', [VendorHomeController::class, 'index'])->name('home');
+
+        Route::get('notifications', [VendorNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/read-all', [VendorNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('notifications/{notification}/read', [VendorNotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('notifications/{notification}/unread', [VendorNotificationController::class, 'markUnread'])->name('notifications.unread');
 
         Route::get('bookings', [VendorBookingController::class, 'index'])->name('bookings.index');
         Route::get('bookings/{booking}', [VendorBookingController::class, 'show'])->name('bookings.show');

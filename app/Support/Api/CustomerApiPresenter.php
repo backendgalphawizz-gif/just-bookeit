@@ -162,8 +162,29 @@ class CustomerApiPresenter
         ];
     }
 
-    public static function notification(NotificationLog $log): array
+    public static function notification(NotificationLog $log, ?string $recipientType = null, ?int $recipientId = null): array
     {
+        $readState = [
+            'is_read' => false,
+            'read_at' => null,
+            'read_at_iso' => null,
+        ];
+
+        if ($recipientType && $recipientId) {
+            $read = $log->relationLoaded('reads')
+                ? $log->reads->first()
+                : $log->reads()
+                    ->where('recipient_type', $recipientType)
+                    ->where('recipient_id', $recipientId)
+                    ->first();
+
+            $readState = [
+                'is_read' => $read !== null && $read->read_at !== null,
+                'read_at' => $read?->read_at?->format('M d, Y, g:i A'),
+                'read_at_iso' => $read?->read_at?->toIso8601String(),
+            ];
+        }
+
         return [
             'id' => $log->id,
             'title' => $log->title,
@@ -171,6 +192,7 @@ class CustomerApiPresenter
             'channel' => $log->channel,
             'sent_at' => $log->sent_at?->format('M d, Y, g:i A'),
             'sent_at_iso' => $log->sent_at?->toIso8601String(),
+            ...$readState,
         ];
     }
 

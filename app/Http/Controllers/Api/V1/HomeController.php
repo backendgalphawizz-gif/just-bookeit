@@ -6,12 +6,17 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Vendor;
+use App\Services\NotificationInboxService;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class HomeController extends ApiController
 {
+    public function __construct(
+        protected NotificationInboxService $notifications
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $banners = Banner::query()
@@ -43,11 +48,22 @@ class HomeController extends ApiController
 
         $customer = $request->user('sanctum');
 
+        $notificationSummary = $customer
+            ? [
+                'unread_count' => $this->notifications->unreadCount(NotificationInboxService::TYPE_CUSTOMER, $customer->id),
+                'total_count' => $this->notifications->totalCount(NotificationInboxService::TYPE_CUSTOMER),
+            ]
+            : [
+                'unread_count' => 0,
+                'total_count' => $this->notifications->totalCount(NotificationInboxService::TYPE_CUSTOMER),
+            ];
+
         return $this->success([
             'location' => [
                 'label' => 'Home',
                 'address' => $customer?->city,
             ],
+            'notifications' => $notificationSummary,
             'banners' => $banners->map(fn ($banner) => CustomerApiPresenter::banner($banner))->values()->all(),
             'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
             'shop_categories' => $shopCategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
