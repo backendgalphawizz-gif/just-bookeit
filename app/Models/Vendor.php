@@ -55,6 +55,7 @@ class Vendor extends Authenticatable
         'suspension_reason',
         'suspended_at',
         'suspended_by',
+        'commission',
     ];
 
     protected $hidden = [
@@ -75,6 +76,7 @@ class Vendor extends Authenticatable
             'earnings' => 'decimal:2',
             'digital_wallet_balance' => 'decimal:2',
             'wallet_balance' => 'decimal:2',
+            'commission' => 'decimal:2',
             'approved_at' => 'datetime',
             'suspended_at' => 'datetime',
             'is_listing_active' => 'boolean',

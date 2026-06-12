@@ -52,7 +52,7 @@
         <label class="jb-label">Primary image @if($isCreate)<span class="text-rose-600">*</span>@endif</label>
         <p class="mb-3 text-sm text-slate-500">Main cover photo shown in listings.</p>
         @if ($portfolio->displayImageUrl())
-            <img src="{{ $portfolio->displayImageUrl() }}" alt="{{ $portfolio->title }}" class="mb-3 h-32 w-32 rounded-xl object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
+            <img src="{{ $portfolio->displayImageUrl() }}" alt="{{ $portfolio->title }}" class="mb-3 h-20 w-20 rounded-xl object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
         @endif
         <input type="file" name="image" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" {{ $isCreate ? 'required' : '' }}>
         <p class="mt-1.5 text-xs text-slate-500">JPEG, PNG or WebP — max 20 MB.</p>
@@ -64,24 +64,20 @@
         <p class="mb-3 text-sm text-slate-500">Additional photos customers can browse when booking (up to 10).</p>
 
         @if ($portfolio->relationLoaded('images') && $portfolio->images->isNotEmpty())
-            <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            <div class="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
                 @foreach ($portfolio->images as $image)
-                    <div class="relative overflow-hidden rounded-xl border border-slate-200">
+                    <div class="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200">
                         @if ($image->imageUrl())
-                            <img src="{{ $image->imageUrl() }}" alt="" class="aspect-square w-full object-cover panel-lightbox-trigger">
+                            <img src="{{ $image->imageUrl() }}" alt="" class="h-full w-full object-cover panel-lightbox-trigger">
                         @endif
                         @if ($portfolio->exists)
-                            <form method="POST" action="{{ route('admin.portfolio.images.destroy', [$portfolio, $image]) }}" class="absolute right-2 top-2">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="rounded-lg bg-white/95 px-2 py-1 text-xs font-semibold text-rose-600 shadow-sm hover:bg-white"
-                                        data-jb-confirm="This gallery image will be permanently removed."
-                                        data-jb-confirm-title="Remove image?"
-                                        data-jb-confirm-label="Remove"
-                                        data-jb-confirm-variant="error">
-                                    Remove
-                                </button>
-                            </form>
+                            <button
+                                type="button"
+                                class="absolute right-1 top-1 rounded bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 shadow-sm hover:bg-white"
+                                onclick="if (confirm('This gallery image will be permanently removed.')) document.getElementById('delete-image-{{ $image->id }}').submit()"
+                            >
+                                Remove
+                            </button>
                         @endif
                     </div>
                 @endforeach

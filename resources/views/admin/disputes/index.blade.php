@@ -57,6 +57,8 @@
                     <th class="jb-col-name">Category</th>
                     <th class="jb-col-id">Order</th>
                     <th class="jb-col-name">Subject</th>
+                    <th class="jb-col-name">User</th>
+                    <th>Created Date</th>
                     <th class="jb-col-meta">Raised by</th>
                     <th class="jb-col-status">Status</th>
                     <th class="jb-table-actions-col">Actions</th>
@@ -69,12 +71,14 @@
                             <td class="jb-col-name">{{ $dispute->category?->name ?? $dispute->order?->category?->name ?? '—' }}</td>
                             <td class="jb-col-id font-mono text-xs">{{ $dispute->order->order_number }}</td>
                             <td class="jb-col-name font-medium">{{ $dispute->subject }}</td>
+                            <td class="jb-col-name">{{ $dispute->raised_by === 'customer' ? ($dispute->order->customer?->name ?? '—') : ($dispute->order->vendor?->brand_name ?? '—') }}</td>
+                            <td>{{ $dispute->created_at ? $dispute->created_at->format('M d, Y') : '—' }}</td>
                             <td class="jb-col-meta capitalize">{{ $dispute->raised_by }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $dispute->status])</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.disputes.show', $dispute)" /></div></td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="jb-table-empty">No disputes for this category.</td></tr>
+                        <tr><td colspan="10" class="jb-table-empty">No disputes for this category.</td></tr>
                     @endforelse
                 </tbody>
             </table>

@@ -33,6 +33,7 @@
                     <th class="jb-col-id">Refund ID</th>
                     <th class="jb-col-name">Customer</th>
                     <th class="jb-col-id">Order</th>
+                    <th>Created Date</th>
                     <th class="jb-col-amount">Amount</th>
                     <th class="jb-col-status">Status</th>
                     <th class="jb-table-actions-col">Actions</th>
@@ -44,12 +45,13 @@
                             <td class="jb-col-id font-mono text-xs font-semibold text-slate-600">{{ $refund->id }}</td>
                             <td class="jb-col-name">{{ $refund->customer->name }}</td>
                             <td class="jb-col-id font-mono text-xs">{{ $refund->order->order_number }}</td>
+                            <td>{{ $refund->created_at ? $refund->created_at->format('M d, Y') : '—' }}</td>
                             <td class="jb-col-amount font-semibold">₹{{ number_format($refund->amount, 2) }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $refund->status])</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.refunds.show', $refund)" /></div></td>
                         </tr>
                     @empty
-                        <tr><td colspan="7" class="jb-table-empty">No refunds.</td></tr>
+                        <tr><td colspan="8" class="jb-table-empty">No refunds.</td></tr>
                     @endforelse
                 </tbody>
             </table>

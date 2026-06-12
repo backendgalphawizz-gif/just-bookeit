@@ -1,4 +1,4 @@
-@extends('admin.layouts.app')
+in this table  i need @extends('admin.layouts.app')
 @section('title', 'Vendors')
 @section('page_title', 'Vendors')
 @section('page_subtitle', 'Designer onboarding and vendor operations')
@@ -19,7 +19,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, mobile no..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Brand, owner, email ID, mobile no..." class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
@@ -95,14 +95,14 @@
                             </th>
                         @endif
                         @include('admin.partials.table-index-header')
-                        <th class="jb-col-id">Vendor ID</th>
+                        <th class="jb-col-name">Name</th>
                         <th class="jb-col-name">Brand</th>
                         <th>Mobile</th>
+                        <th>Email</th>
                         <th>City</th>
-                        <th class="text-center">Rating</th>
-                        <th class="text-center">Orders</th>
-                        <th class="jb-col-amount">Earnings</th>
+                        <th>Registration Date</th>
                         <th class="jb-col-status">Status</th>
+                        <th class="text-center">Rating</th>
                         <th class="jb-table-actions-col">Actions</th>
                     </tr>
                 </thead>
@@ -125,7 +125,9 @@
                                 </td>
                             @endif
                             @include('admin.partials.table-index-cell', ['paginator' => $vendors])
-                            <td class="jb-col-id"><span class="font-mono text-xs font-semibold text-slate-500">{{ $vendor->vendor_code }}</span></td>
+                            <td class="jb-col-name">
+                                <span>{{ $vendor->owner_name ?? '—' }}</span>
+                            </td>
                             <td class="jb-col-name">
                                 <div class="jb-actor-cell">
                                     @include('admin.partials.actor-avatar', [
@@ -137,16 +139,16 @@
                                 </div>
                             </td>
                             <td>{{ $vendor->mobile ?? '—' }}</td>
+                            <td>{{ $vendor->email ?? '—' }}</td>
                             <td>{{ $vendor->city ?? '—' }}</td>
-                            <td class="text-center">{{ number_format($vendor->rating, 1) }}</td>
-                            <td class="text-center">{{ $vendor->orders_completed }}</td>
-                            <td class="jb-col-amount">₹{{ number_format($vendor->earnings, 0) }}</td>
+                            <td>{{ $vendor->created_at ? $vendor->created_at->format('M d, Y') : '—' }}</td>
                             <td class="jb-col-status">
                                 @include('admin.components.status-badge', ['status' => $vendor->status])
                                 @if ($vendor->status === 'suspended' && $vendor->suspension_reason)
                                     <p class="mt-1 max-w-[12rem] truncate text-xs text-orange-700" title="{{ $vendor->suspension_reason }}">{{ $vendor->suspension_reason }}</p>
                                 @endif
                             </td>
+                            <td class="text-center">{{ number_format($vendor->rating, 1) }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     @if (in_array($vendor->status, ['pending', 'rejected'], true) && $canBulkApprove)

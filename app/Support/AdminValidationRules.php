@@ -198,6 +198,7 @@ class AdminValidationRules
             'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'orders_completed' => ['nullable', 'integer', 'min:0'],
             'earnings' => ['nullable', 'numeric', 'min:0'],
+            'commission' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'audience_category_ids' => ['required', 'array', 'min:1'],

@@ -100,6 +100,22 @@
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     @include('admin.partials.form-file-persistence')
+    <script>
+        // Refresh page on back button to clear form state
+        window.addEventListener('popstate', function() {
+            location.reload();
+        });
+
+        // Replace history state after form submission
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            if (form.method.toUpperCase() === 'POST' || form.method.toUpperCase() === 'PUT' || form.method.toUpperCase() === 'DELETE') {
+                setTimeout(function() {
+                    history.replaceState(null, null, window.location.href);
+                }, 100);
+            }
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>

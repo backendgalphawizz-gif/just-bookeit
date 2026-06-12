@@ -14,7 +14,7 @@
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Payout code, vendor, reference..." class="jb-input">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Payout code, vendor" class="jb-input">
             </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
@@ -49,7 +49,7 @@
                     <th class="jb-col-name">Vendor</th>
                     <th class="jb-col-amount">Net amount</th>
                     <th class="jb-col-status">Status</th>
-                    <th class="jb-col-date">Date</th>
+                    <th class="jb-col-date">Payout Date</th>
                     <th class="jb-table-actions-col">Actions</th>
                 </tr></thead>
                 <tbody>
