@@ -221,6 +221,7 @@ class CatalogFilter
 
         return array_filter([
             'audience' => $audience,
+            'vendor_id' => $request->filled('vendor_id') ? $request->integer('vendor_id') : null,
             'service' => $serviceCategory ? [
                 'id' => $serviceCategory->id,
                 'name' => $serviceCategory->name,

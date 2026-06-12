@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V2;
 
 use App\Models\Banner;
 use App\Models\Order;
+use App\Services\NotificationInboxService;
 use App\Services\Vendor\VendorDashboardService;
 use App\Support\Api\VendorApiPresenter;
 use Carbon\Carbon;
@@ -13,7 +14,8 @@ use Illuminate\Http\Request;
 class HomeController extends VendorApiController
 {
     public function __construct(
-        protected VendorDashboardService $dashboard
+        protected VendorDashboardService $dashboard,
+        protected NotificationInboxService $notifications
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -43,6 +45,8 @@ class HomeController extends VendorApiController
         return $this->success([
             'vendor' => VendorApiPresenter::vendorSummary($vendor),
             'notifications' => [
+                'unread_count' => $this->notifications->unreadCount(NotificationInboxService::TYPE_VENDOR, $vendor->id),
+                'total_count' => $this->notifications->totalCount(NotificationInboxService::TYPE_VENDOR),
                 'unread_chats' => $unreadChats,
                 'new_bookings' => $newBookings->count(),
             ],
