@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v3 flow:** OTP login → Dashboard → Deliveries (accept/pickup/deliver) → Payments → Profile\n**v3 IDs:** v3_delivery_id\n\n**v3 highlights:** Dashboard stats + new deliveries. Delivery tabs: new | accepted | out_for_delivery | completed | cancelled. Complete delivery with customer OTP. Wallet + withdraw.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`. Location dropdowns at `/v2/locations/*` (countries, states, cities).\n\n**v3 flow:** OTP login → Dashboard → Deliveries (accept/pickup/deliver) → Payments → Profile\n**v3 IDs:** v3_delivery_id\n\n**v3 highlights:** Dashboard stats + new deliveries. Delivery tabs: new | accepted | out_for_delivery | completed | cancelled. Complete delivery with customer OTP. Wallet + withdraw.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -1557,9 +1557,10 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"height_cm\": 173,\n  \"chest_cm\": 89,\n  \"waist_cm\": 69\n}"
+									"raw": "{\n  \"name\": \"Shreya Singh\",\n  \"measurement_type\": \"women\",\n  \"blouse_length\": \"25\",\n  \"shoulder\": \"15\",\n  \"sleeve_length\": \"23\",\n  \"sleeve_loose\": \"13\",\n  \"arm_hole\": \"19\",\n  \"chest\": \"38\",\n  \"waist\": \"31\",\n  \"dot_point\": \"11\",\n  \"front_neck\": \"8\",\n  \"back_neck\": \"9\",\n  \"top_length\": \"29\",\n  \"half_length\": \"21\",\n  \"slit\": \"7\",\n  \"hip\": \"39\",\n  \"seat\": \"41\",\n  \"bottom_length\": \"41\",\n  \"leg_loose\": \"23\",\n  \"thigh\": \"25\",\n  \"knees\": \"17\"\n}"
 								},
-								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}"
+								"url": "{{base_url}}/v1/measurements/{{v1_measurement_id}}",
+								"description": "Same fields as Add Measurement. Send any or all keys — each provided field updates individually."
 							}
 						},
 						{
@@ -2150,6 +2151,84 @@
 									}
 								],
 								"url": "{{base_url}}/v2/config"
+							}
+						}
+					]
+				},
+				{
+					"name": "Locations",
+					"item": [
+						{
+							"name": "Countries",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const id = json.data?.items?.[0]?.id;",
+											"if (id) { pm.environment.set('v2_country_id', String(id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v2/locations/countries",
+								"description": "Public. Use for vendor registration / business address dropdowns."
+							}
+						},
+						{
+							"name": "States",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const id = json.data?.items?.[0]?.id;",
+											"if (id) { pm.environment.set('v2_state_id', String(id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v2/locations/states?country_id={{v2_country_id}}"
+							}
+						},
+						{
+							"name": "Cities",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const id = json.data?.items?.[0]?.id;",
+											"if (id) { pm.environment.set('v2_city_id', String(id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v2/locations/cities?state_id={{v2_state_id}}"
+							}
+						},
+						{
+							"name": "Location Catalog",
+							"request": {
+								"method": "GET",
+								"header": [{ "key": "Accept", "value": "application/json" }],
+								"url": "{{base_url}}/v2/locations",
+								"description": "Full nested country → state → city tree."
 							}
 						}
 					]

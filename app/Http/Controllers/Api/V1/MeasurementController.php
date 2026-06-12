@@ -37,7 +37,9 @@ class MeasurementController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        $profile = $customer->measurements()->create($this->validatedPayload($request));
+        $profile = $customer->measurements()->create(
+            $this->validatedPayload($request)
+        );
 
         return $this->success([
             'measurement' => CustomerApiPresenter::measurementDetail($profile),
@@ -50,7 +52,9 @@ class MeasurementController extends ApiController
         $customer = $request->user();
         abort_unless($measurement->customer_id === $customer->id, 403);
 
-        $measurement->update($this->validatedPayload($request, partial: true, existing: $measurement));
+        $measurement->update(
+            $this->validatedPayload($request, $measurement)
+        );
 
         return $this->success([
             'measurement' => CustomerApiPresenter::measurementDetail($measurement->fresh()),
@@ -69,18 +73,12 @@ class MeasurementController extends ApiController
     }
 
     /** @return array<string, mixed> */
-    protected function validatedPayload(Request $request, bool $partial = false, ?CustomerMeasurement $existing = null): array
+    protected function validatedPayload(Request $request, ?CustomerMeasurement $existing = null): array
     {
-        $data = $request->validate(CustomerMeasurement::apiValidationRules($partial));
-        $payload = CustomerMeasurement::normalizeApiPayload($data);
+        $data = $request->validate(
+            CustomerMeasurement::apiValidationRules($existing !== null)
+        );
 
-        if ($partial && $existing && isset($payload['extra_measurements'])) {
-            $payload['extra_measurements'] = array_merge(
-                $existing->extra_measurements ?? [],
-                $payload['extra_measurements']
-            );
-        }
-
-        return $payload;
+        return CustomerMeasurement::normalizeApiPayload($data, $existing);
     }
 }
