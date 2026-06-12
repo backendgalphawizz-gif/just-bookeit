@@ -269,21 +269,13 @@ class VendorApiPresenter
     /** @return array<string, mixed>|null */
     public static function bookingCustomerReview(Order $order): ?array
     {
-        $reviews = CustomerApiPresenter::placeholderReviews();
+        $order->loadMissing(['review.customer', 'customer']);
 
-        if ($reviews === []) {
-            return null;
+        if ($order->review) {
+            return CustomerApiPresenter::orderReview($order->review);
         }
 
-        $review = $reviews[0];
-
-        return [
-            'id' => $review['id'],
-            'customer_name' => $order->customer?->name,
-            'rating' => $review['rating'],
-            'comment' => $review['comment'],
-            'reviewed_at' => $order->updated_at?->format('M d, Y'),
-        ];
+        return null;
     }
 
     public static function productSummary(PortfolioItem $item): array

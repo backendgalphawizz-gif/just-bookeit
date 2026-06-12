@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v2 highlights:** `GET /v2/auth/me` returns `coverImage`, `bio`, `is_available`. Products split by `type` (rented-dress | fashion-designer | rented-jewellery). Booking detail includes customer contact, full measurements, payment breakdown, and `customer_review` when delivered.\n\nImport with **Just Book IT — Local** environment.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications`.\n\nImport with **Just Book IT — Local** environment.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -386,6 +386,83 @@
 							}
 						},
 						{
+							"name": "Locations",
+							"item": [
+								{
+									"name": "Countries",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"const json = pm.response.json();",
+													"const id = json.data?.items?.[0]?.id;",
+													"if (id) { pm.environment.set('v1_country_id', String(id)); }"
+												]
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [{ "key": "Accept", "value": "application/json" }],
+										"url": "{{base_url}}/v1/locations/countries"
+									}
+								},
+								{
+									"name": "States",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"const json = pm.response.json();",
+													"const id = json.data?.items?.[0]?.id;",
+													"if (id) { pm.environment.set('v1_state_id', String(id)); }"
+												]
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [{ "key": "Accept", "value": "application/json" }],
+										"url": "{{base_url}}/v1/locations/states?country_id={{v1_country_id}}"
+									}
+								},
+								{
+									"name": "Cities",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"type": "text/javascript",
+												"exec": [
+													"const json = pm.response.json();",
+													"const id = json.data?.items?.[0]?.id;",
+													"if (id) { pm.environment.set('v1_city_id', String(id)); }"
+												]
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [{ "key": "Accept", "value": "application/json" }],
+										"url": "{{base_url}}/v1/locations/cities?state_id={{v1_state_id}}"
+									}
+								},
+								{
+									"name": "Full Location Catalog",
+									"request": {
+										"method": "GET",
+										"header": [{ "key": "Accept", "value": "application/json" }],
+										"url": "{{base_url}}/v1/locations",
+										"description": "Nested country → state → city tree for offline dropdowns."
+									}
+								}
+							]
+						},
+						{
 							"name": "Search",
 							"request": {
 								"method": "GET",
@@ -437,23 +514,23 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/v1/catalog?audience=men&service=rented-dress&search=pearl&page=1",
+									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&search=&page=1",
 									"host": ["{{base_url}}"],
 									"path": ["v1", "catalog"],
 									"query": [
 										{
 											"key": "audience",
-											"value": "men",
+											"value": "women",
 											"description": "Shop category: women | men | kids (aliases: shop_category, shop_category_id)"
 										},
 										{
 											"key": "service",
-											"value": "rented-dress",
+											"value": "fashion-designer",
 											"description": "Service: fashion-designer | rented-dress | rented-jewellery (aliases: rental-cloth, service_id)"
 										},
 										{
 											"key": "search",
-											"value": "pearl"
+											"value": ""
 										},
 										{
 											"key": "page",
@@ -461,7 +538,7 @@
 										}
 									]
 								},
-								"description": "Double filtration: combine shop category (Men/Women/Kids) with service (Fashion Designer, Rented Dress, Rented Jewellery). Both filters are ANDed. Response includes `filters.shop_categories`, `filters.services`, and `filters.applied`."
+								"description": "Double filter on vendor products: audience (Men/Women/Kids) + service type. Only approved products from active, available vendors."
 							}
 						},
 						{
@@ -527,7 +604,28 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/designers/{{v1_designer_id}}"
+								"url": {
+									"raw": "{{base_url}}/v1/designers/{{v1_designer_id}}?audience=women&service=fashion-designer&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "designers", "{{v1_designer_id}}"],
+									"query": [
+										{
+											"key": "audience",
+											"value": "women",
+											"description": "Filter vendor products: women | men | kids"
+										},
+										{
+											"key": "service",
+											"value": "fashion-designer",
+											"description": "Filter by service: fashion-designer | rented-dress | rented-jewellery"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								},
+								"description": "Designer profile with full address, review_count, review_summary, customer reviews, and filtered products list."
 							}
 						}
 					]
@@ -906,9 +1004,50 @@
 									{
 										"key": "Accept",
 										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}/cancel"
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reason\": \"Changed my mind about the rental dates.\"\n}"
+								},
+								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}/cancel",
+								"description": "Cancel a booking (new or pending_acceptance only). `reason` is required (5–500 chars)."
+							}
+						},
+						{
+							"name": "Submit Booking Review",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"rating\": 4.5,\n  \"comment\": \"Beautiful outfit and perfect fitting!\"\n}"
+								},
+								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}/review",
+								"description": "Submit a review after booking is delivered. One review per booking. Updates vendor rating."
 							}
 						}
 					]
@@ -1023,6 +1162,35 @@
 								},
 								"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}/pay",
 								"description": "Requires `enable_cod` in admin platform settings."
+							}
+						}
+					]
+				},
+				{
+					"name": "Notifications",
+					"item": [
+						{
+							"name": "Notification List",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v1_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v1/notifications?page=1",
+								"description": "Broadcast notifications sent to customers from admin panel."
 							}
 						}
 					]

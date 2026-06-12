@@ -22,8 +22,7 @@ class CatalogController extends ApiController
         ], CatalogFilter::validationRules()));
 
         $query = PortfolioItem::query()
-            ->with(['vendor', 'category'])
-            ->whereIn('status', ['approved', 'pending']);
+            ->with(['vendor', 'category']);
 
         if ($request->filled('search')) {
             $term = '%'.$request->string('search').'%';
@@ -69,7 +68,8 @@ class CatalogController extends ApiController
 
     public function show(PortfolioItem $item): JsonResponse
     {
-        abort_unless($item->isApprovedForCatalog(), 404);
+        abort_unless($item->status === 'approved', 404);
+        abort_unless($item->vendor && $item->vendor->status === 'active' && $item->vendor->is_listing_active, 404);
 
         $item->load(['vendor', 'category']);
 
@@ -77,7 +77,7 @@ class CatalogController extends ApiController
             ->with(['vendor', 'category'])
             ->where('vendor_id', $item->vendor_id)
             ->where('id', '!=', $item->id)
-            ->whereIn('status', ['approved', 'pending'])
+            ->where('status', 'approved')
             ->limit(4)
             ->get();
 

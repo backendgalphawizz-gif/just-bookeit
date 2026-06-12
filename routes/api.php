@@ -9,7 +9,9 @@ use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\DesignerController;
 use App\Http\Controllers\Api\V1\DisputeController;
 use App\Http\Controllers\Api\V1\HomeController;
+use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MeasurementController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SearchController;
@@ -37,6 +39,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('catalog/{item}', [CatalogController::class, 'show'])->name('catalog.show');
     Route::get('designers', [DesignerController::class, 'index'])->name('designers.index');
     Route::get('designers/{designer}', [DesignerController::class, 'show'])->name('designers.show');
+    Route::get('locations/countries', [LocationController::class, 'countries'])->name('locations.countries');
+    Route::get('locations/states', [LocationController::class, 'states'])->name('locations.states');
+    Route::get('locations/cities', [LocationController::class, 'cities'])->name('locations.cities');
+    Route::get('locations', [LocationController::class, 'catalog'])->name('locations.catalog');
 
     Route::prefix('auth')->group(function () {
         Route::post('otp/send', [UserAuthController::class, 'sendOtp'])->name('auth.otp.send');
@@ -58,6 +64,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('bookings/{booking}/review', [BookingController::class, 'review'])->name('bookings.review');
         Route::post('bookings/{booking}/dispute', [DisputeController::class, 'store'])->name('bookings.dispute.store');
         Route::get('bookings/{booking}/dispute', [DisputeController::class, 'show'])->name('bookings.dispute.show');
         Route::post('bookings/{booking}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('bookings.dispute.messages');
@@ -65,6 +72,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('payment/methods', [PaymentController::class, 'methods'])->name('payment.methods');
         Route::get('payment/bookings/{booking}', [PaymentController::class, 'summary'])->name('payment.summary');
         Route::post('payment/bookings/{booking}/pay', [PaymentController::class, 'pay'])->name('payment.pay');
+
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
 
         Route::get('profile', [ProfileController::class, 'index'])->name('profile.index');
         Route::get('profile/pages', [ProfileController::class, 'pages'])->name('profile.pages');

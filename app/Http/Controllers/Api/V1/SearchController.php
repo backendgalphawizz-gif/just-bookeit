@@ -21,7 +21,8 @@ class SearchController extends ApiController
 
         $items = PortfolioItem::query()
             ->with(['vendor', 'category'])
-            ->whereIn('status', ['approved', 'pending'])
+            ->where('status', 'approved')
+            ->whereHas('vendor', fn ($vendor) => $vendor->where('status', 'active')->where('is_listing_active', true))
             ->where(function ($q) use ($term) {
                 $q->where('title', 'like', $term)
                     ->orWhere('description', 'like', $term);

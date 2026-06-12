@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Vendor;
+use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ class DesignerController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Vendor::query()->active();
+        $query = Vendor::query()->active()->where('is_listing_active', true);
 
         if ($request->filled('search')) {
             $term = '%'.$request->string('search').'%';
@@ -36,17 +37,31 @@ class DesignerController extends ApiController
         );
     }
 
-    public function show(Vendor $designer): JsonResponse
+    public function show(Request $request, Vendor $designer): JsonResponse
     {
         abort_unless($designer->status === 'active', 404);
 
-        $portfolio = $designer->portfolioItems()
-            ->with(['vendor', 'category'])
-            ->whereIn('status', ['approved', 'pending'])
-            ->latest('id')
-            ->limit(12)
-            ->get();
+        $request->validate(CatalogFilter::validationRules());
 
-        return $this->success(CustomerApiPresenter::designerDetail($designer, $portfolio));
+        $query = $designer->portfolioItems()
+            ->with(['vendor', 'category']);
+
+        CatalogFilter::applyToQuery($query, $request);
+
+        $portfolio = $query->latest('id')->paginate($request->integer('per_page', 12));
+
+        return $this->success([
+            ...CustomerApiPresenter::designerDetail($designer, collect($portfolio->items())),
+            'products_pagination' => [
+                'current_page' => $portfolio->currentPage(),
+                'last_page' => $portfolio->lastPage(),
+                'per_page' => $portfolio->perPage(),
+                'total' => $portfolio->total(),
+                'has_more' => $portfolio->hasMorePages(),
+            ],
+            'filters' => [
+                'applied' => CatalogFilter::applied($request),
+            ],
+        ]);
     }
 }
