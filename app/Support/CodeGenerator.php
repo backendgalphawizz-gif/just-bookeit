@@ -44,4 +44,11 @@ class CodeGenerator
 
         return 'DRV'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
     }
+
+    public static function driverTransactionCode(): string
+    {
+        $next = (\App\Models\DriverWalletTransaction::query()->max('id') ?? 0) + 1;
+
+        return 'TXN'.str_pad((string) $next, 6, '0', STR_PAD_LEFT);
+    }
 }

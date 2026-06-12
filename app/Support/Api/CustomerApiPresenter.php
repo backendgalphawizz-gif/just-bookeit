@@ -418,6 +418,7 @@ class CustomerApiPresenter
             ],
             'payment_summary' => BookingPricingService::fromOrder($order),
             'tracking_steps' => $order->trackBookingSteps(),
+            'delivery_otp' => $order->ensureDeliveryOtp(),
             'category' => $order->category ? self::category($order->category) : null,
             'dispute' => $order->dispute ? [
                 'id' => $order->dispute->id,

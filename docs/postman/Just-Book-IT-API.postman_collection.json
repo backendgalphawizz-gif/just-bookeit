@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`.\n\nImport with **Just Book IT — Local** environment.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v3 flow:** OTP login → Dashboard → Deliveries (accept/pickup/deliver) → Payments → Profile\n**v3 IDs:** v3_delivery_id\n\n**v3 highlights:** Dashboard stats + new deliveries. Delivery tabs: new | accepted | out_for_delivery | completed | cancelled. Complete delivery with customer OTP. Wallet + withdraw.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -968,7 +968,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}"
+								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}",
+								"description": "Full booking detail. When status is `in_transit`, response includes `delivery_otp` (4-digit code for delivery confirmation)."
 							}
 						},
 						{
@@ -2544,7 +2545,8 @@
 									"mode": "raw",
 									"raw": "{\n  \"status\": \"in_transit\"\n}"
 								},
-								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status"
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
+								"description": "Valid transitions: accepted→in_progress→in_transit→delivered. Cannot skip steps."
 							}
 						}
 					]
@@ -3769,6 +3771,306 @@
 							}
 						],
 						"url": "{{base_url}}/v3/auth/logout"
+					}
+				},
+				{
+					"name": "Config",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/config"
+					}
+				},
+				{
+					"name": "Dashboard",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"const json = pm.response.json();",
+								"const item = json.data?.new_deliveries?.[0];",
+								"if (item?.id) { pm.environment.set('v3_delivery_id', String(item.id)); }"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/home",
+						"description": "Total earnings, delivery stats, and latest new deliveries."
+					}
+				},
+				{
+					"name": "Deliveries (New)",
+					"event": [{
+						"listen": "test",
+						"script": {
+							"type": "text/javascript",
+							"exec": [
+								"const json = pm.response.json();",
+								"const item = json.data?.items?.[0];",
+								"if (item?.id) { pm.environment.set('v3_delivery_id', String(item.id)); }"
+							]
+						}
+					}],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=new&page=1"
+					}
+				},
+				{
+					"name": "Deliveries (Accepted)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=accepted&page=1"
+					}
+				},
+				{
+					"name": "Deliveries (Out for Delivery)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=out_for_delivery&page=1"
+					}
+				},
+				{
+					"name": "Delivery Detail",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}"
+					}
+				},
+				{
+					"name": "Accept Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/accept"
+					}
+				},
+				{
+					"name": "Reject Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/reject"
+					}
+				},
+				{
+					"name": "Pickup Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/pickup"
+					}
+				},
+				{
+					"name": "Out for Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/out-for-delivery"
+					}
+				},
+				{
+					"name": "Complete Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/deliver",
+						"description": "Use the customer's delivery OTP from GET /v1/bookings/{id} when status is in_transit."
+					}
+				},
+				{
+					"name": "Payments",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/payments?page=1&search="
+					}
+				},
+				{
+					"name": "Withdraw",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"amount\": 100\n}"},
+						"url": "{{base_url}}/v3/payments/withdraw"
+					}
+				},
+				{
+					"name": "Profile Home",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/profile"
+					}
+				},
+				{
+					"name": "Profile Documents",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/profile/documents"
+					}
+				},
+				{
+					"name": "Profile Pages",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/profile/pages"
+					}
+				}
+			]
+		},
+		{
+			"name": "E2E — Full Order Flow",
+			"description": "Run these in order to test Customer → Vendor → Driver flow.\n\n**Setup:** `php artisan db:seed --class=OrderFlowDemoSeeder` then `php artisan test:order-flow`\n\n**Status chain:** new → pay → pending_acceptance → vendor accept → in_progress → in_transit → driver deliver → delivered\n\n**Driver demo mobile:** 9898989898 (active, pre-seeded)",
+			"item": [
+				{
+					"name": "0. Run automated test (CLI)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/v1/config",
+						"description": "On server run: php artisan test:order-flow\n\nThis validates the entire chain automatically."
+					}
+				},
+				{
+					"name": "1. Customer — Catalog List",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v1/catalog?page=1"
+					}
+				},
+				{
+					"name": "2. Customer — Create Booking",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"delivery_address\": \"4517 Washington Ave, Mumbai\",\n  \"city\": \"Mumbai\",\n  \"pincode\": \"400001\",\n  \"size\": \"M\",\n  \"shipment_required\": true\n}"},
+						"url": "{{base_url}}/v1/bookings"
+					}
+				},
+				{
+					"name": "3. Customer — Pay (COD)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"payment_method\": \"cod\"\n}"},
+						"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}/pay"
+					}
+				},
+				{
+					"name": "4. Vendor — Accept Booking",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v2/bookings/{{v1_booking_id}}/accept"
+					}
+				},
+				{
+					"name": "5. Vendor — Start Preparing (in_progress)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"status\": \"in_progress\"\n}"},
+						"url": "{{base_url}}/v2/bookings/{{v1_booking_id}}/status"
+					}
+				},
+				{
+					"name": "6. Vendor — Dispatch (in_transit)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"status\": \"in_transit\"\n}"},
+						"url": "{{base_url}}/v2/bookings/{{v1_booking_id}}/status",
+						"description": "Generates delivery_otp and pickup_address automatically."
+					}
+				},
+				{
+					"name": "7. Customer — Get Delivery OTP",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}",
+						"description": "Copy data.delivery_otp for driver deliver step."
+					}
+				},
+				{
+					"name": "8. Driver — Accept Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/accept"
+					}
+				},
+				{
+					"name": "9. Driver — Pickup",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/pickup"
+					}
+				},
+				{
+					"name": "10. Driver — Out for Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/out-for-delivery"
+					}
+				},
+				{
+					"name": "11. Driver — Complete (with OTP)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
+						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/deliver",
+						"description": "Replace 1234 with OTP from step 7."
+					}
+				},
+				{
+					"name": "12. Customer — Submit Review",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Great experience\"\n}"},
+						"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}/review"
 					}
 				}
 			]

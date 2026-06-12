@@ -36,6 +36,8 @@ class Driver extends Authenticatable
         'is_verified',
         'approved_at',
         'registered_at',
+        'wallet_balance',
+        'total_earnings',
     ];
 
     protected $hidden = [
@@ -52,12 +54,19 @@ class Driver extends Authenticatable
             'is_verified' => 'boolean',
             'approved_at' => 'datetime',
             'registered_at' => 'datetime',
+            'wallet_balance' => 'decimal:2',
+            'total_earnings' => 'decimal:2',
         ];
     }
 
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(DriverWalletTransaction::class);
     }
 
     public function statusHistories(): MorphMany

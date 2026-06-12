@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\OrderDispatchSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,12 @@ class Order extends Model
     ];
 
     public const PAYMENT_STATUSES = ['pending', 'success', 'failed', 'refunded'];
+
+    public const DRIVER_STATUS_ACCEPTED = 'accepted';
+
+    public const DRIVER_STATUS_PICKED_UP = 'picked_up';
+
+    public const DRIVER_STATUS_OUT_FOR_DELIVERY = 'out_for_delivery';
 
     protected $fillable = [
         'order_number',
@@ -79,6 +86,12 @@ class Order extends Model
         'vendor_wallet_held_amount',
         'wallet_hold_status',
         'status',
+        'delivery_otp',
+        'driver_delivery_status',
+        'driver_assigned_at',
+        'driver_pickup_at',
+        'driver_delivered_at',
+        'driver_earning',
     ];
 
     protected function casts(): array
@@ -101,9 +114,47 @@ class Order extends Model
             'paid_at' => 'datetime',
             'wallet_release_at' => 'datetime',
             'wallet_settled_at' => 'datetime',
+            'driver_assigned_at' => 'datetime',
+            'driver_pickup_at' => 'datetime',
+            'driver_delivered_at' => 'datetime',
+            'driver_earning' => 'decimal:2',
             'vendor_net_amount' => 'decimal:2',
             'vendor_wallet_held_amount' => 'decimal:2',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (Order $order) {
+            if ($order->isDirty('status') && $order->status === 'in_transit') {
+                OrderDispatchSupport::prepareForTransit($order);
+            }
+        });
+
+        static::creating(function (Order $order) {
+            OrderDispatchSupport::preparePickupAddress($order);
+        });
+    }
+
+    public static function generateDeliveryOtpValue(): string
+    {
+        return (string) random_int(1000, 9999);
+    }
+
+    public function ensureDeliveryOtp(): ?string
+    {
+        if ($this->status !== 'in_transit') {
+            return null;
+        }
+
+        if ($this->delivery_otp) {
+            return $this->delivery_otp;
+        }
+
+        $otp = self::generateDeliveryOtpValue();
+        $this->forceFill(['delivery_otp' => $otp])->saveQuietly();
+
+        return $otp;
     }
 
     public function customer(): BelongsTo

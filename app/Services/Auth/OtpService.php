@@ -233,6 +233,8 @@ class OtpService
                 'rejection_reason' => filled($actor->rejection_reason ?? null) ? $actor->rejection_reason : null,
                 'is_verified' => $actor->is_verified,
                 'profile_image_url' => $actor->profileImageUrl(),
+                'wallet_balance' => (float) ($actor->wallet_balance ?? 0),
+                'total_earnings' => (float) ($actor->total_earnings ?? 0),
                 'aadhar_front_url' => $actor->aadharFrontUrl(),
                 'aadhar_back_url' => $actor->aadharBackUrl(),
                 'driving_licence_url' => $actor->drivingLicenceUrl(),
