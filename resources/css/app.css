@@ -665,7 +665,7 @@
     }
 
     .jb-modal-alert-card {
-        @apply relative z-10 w-full max-w-md rounded-2xl bg-white px-8 py-8 text-center shadow-2xl shadow-slate-900/20;
+        @apply relative z-10 w-full min-w-0 max-w-md overflow-hidden rounded-2xl bg-white px-8 py-8 text-center shadow-2xl shadow-slate-900/20;
     }
 
     .jb-modal-alert-icon-wrap {
@@ -709,11 +709,14 @@
     }
 
     .jb-modal-alert-title {
-        @apply text-xl font-bold tracking-tight text-slate-900;
+        @apply break-words text-xl font-bold tracking-tight text-slate-900;
+        overflow-wrap: anywhere;
     }
 
     .jb-modal-alert-message {
-        @apply mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500;
+        @apply mx-auto mt-2 max-w-full break-words text-sm leading-relaxed text-slate-500;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .jb-modal-alert-btn {

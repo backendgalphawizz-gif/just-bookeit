@@ -1,6 +1,6 @@
 {
 	"name": "v2 — Vendor App",
-	"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.",
+	"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.\n\n**Profile:** `coverImage` on `/v2/auth/me` and `POST /v2/auth/profile`. Availability via `is_available` or `POST /v2/profile/availability`.\n\n**Products:** filter by `type` (rented-dress | fashion-designer | rented-jewellery). Each item includes `is_available`.\n\n**Booking detail:** customer email/mobile, full measurements, payment_summary, `customer_review` when delivered.",
 	"item": [
 		{
 			"name": "Auth",
@@ -74,7 +74,8 @@
 						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
 						"method": "GET",
 						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v2/auth/me"
+						"url": "{{base_url}}/v2/auth/me",
+						"description": "Returns `coverImage`, `bio`, `is_available`, and full vendor profile."
 					}
 				},
 				{
@@ -90,10 +91,14 @@
 								{ "key": "shop_name", "value": "Riya Rathore Studio", "type": "text" },
 								{ "key": "email", "value": "riya.vendor@example.com", "type": "text" },
 								{ "key": "city", "value": "Indore", "type": "text" },
-								{ "key": "profile_image", "type": "file", "src": [] }
+								{ "key": "bio", "value": "Fashion designer specialising in bridal and evening wear.", "type": "text" },
+								{ "key": "is_available", "value": "1", "type": "text" },
+								{ "key": "profile_image", "type": "file", "src": [] },
+								{ "key": "coverImage", "type": "file", "src": [], "description": "Shop banner (alias: cover_image)" }
 							]
 						},
-						"url": "{{base_url}}/v2/auth/profile"
+						"url": "{{base_url}}/v2/auth/profile",
+						"description": "Update profile with coverImage, bio, is_available, and other fields."
 					}
 				},
 				{
@@ -174,12 +179,26 @@
 					}
 				},
 				{
+					"name": "List (Delivered)",
+					"event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+						"const json = pm.response.json();",
+						"if (json.data?.items?.[0]?.id) { pm.environment.set('v2_booking_id', String(json.data.items[0].id)); }"
+					] } }],
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/bookings?tab=completed"
+					}
+				},
+				{
 					"name": "Booking Detail",
 					"request": {
 						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
 						"method": "GET",
 						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}"
+						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}",
+						"description": "customer (email, mobile), measurements (all fields), payment_summary (subtotal, shipping_fee, platform_fee, tax), customer_review when delivered."
 					}
 				},
 				{
@@ -241,6 +260,15 @@
 					}
 				},
 				{
+					"name": "List (Fashion Designer)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/products?type=fashion-designer"
+					}
+				},
+				{
 					"name": "Product Detail",
 					"request": {
 						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
@@ -287,14 +315,21 @@
 						"body": {
 							"mode": "formdata",
 							"formdata": [
+								{ "key": "type", "value": "rented-dress", "type": "text" },
 								{ "key": "title", "value": "Velvet Gown Updated", "type": "text" },
 								{ "key": "description", "value": "Updated description.", "type": "text" },
 								{ "key": "price_per_day", "value": "1600", "type": "text" },
+								{ "key": "advance_amount", "value": "600", "type": "text" },
+								{ "key": "audience", "value": "women", "type": "text" },
+								{ "key": "image", "type": "file", "src": [] },
+								{ "key": "gallery_images", "type": "file", "src": [] },
 								{ "key": "variants", "value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]", "type": "text" },
+								{ "key": "variant_images", "type": "file", "src": [] },
 								{ "key": "damage_deductions", "value": "[{\"damage_type\":\"Tear\",\"percent\":12}]", "type": "text" }
 							]
 						},
-						"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+						"url": "{{base_url}}/v2/products/{{v2_product_id}}",
+						"description": "Same fields as create — type, title, price, audience, image, gallery, variants, damage_deductions."
 					}
 				},
 				{

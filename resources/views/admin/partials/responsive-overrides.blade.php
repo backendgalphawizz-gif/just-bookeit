@@ -369,6 +369,20 @@
         align-items: center;
         justify-content: center;
         padding: 1rem;
+        overflow-x: hidden;
+    }
+
+    .jb-modal-alert-card {
+        min-width: 0;
+        max-width: min(28rem, 100%);
+        overflow: hidden;
+    }
+
+    .jb-modal-alert-title,
+    .jb-modal-alert-message {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .jb-account-status-banner__layout {

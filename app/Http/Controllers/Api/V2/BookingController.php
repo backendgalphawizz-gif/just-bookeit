@@ -60,7 +60,7 @@ class BookingController extends VendorApiController
         $vendor = $this->vendor($request);
         $this->assertOwnsOrder($booking, $vendor);
 
-        return $this->success(VendorApiPresenter::bookingDetail($booking));
+        return $this->success(VendorApiPresenter::bookingDetail($booking->load(['customer.measurements', 'vendor'])));
     }
 
     public function accept(Request $request, Order $booking): JsonResponse

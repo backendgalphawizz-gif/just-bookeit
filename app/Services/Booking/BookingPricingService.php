@@ -5,6 +5,7 @@ namespace App\Services\Booking;
 use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Models\PortfolioItem;
+use App\Models\Vendor;
 
 class BookingPricingService
 {
@@ -40,6 +41,40 @@ class BookingPricingService
             'total_amount' => $order->grandTotal(),
             'currency' => (string) PlatformSetting::get('currency', 'INR'),
         ];
+    }
+
+    public static function vendorPaymentSummary(Order $order, ?Vendor $vendor = null): array
+    {
+        $subtotal = $order->subtotal();
+        $shippingFee = (float) ($order->delivery_fee ?? 0);
+        $taxAmount = (float) ($order->tax_amount ?? 0);
+        $totalAmount = $order->grandTotal();
+        $commissionPercent = self::commissionPercent($vendor);
+        $platformFee = round($subtotal * ($commissionPercent / 100), 2);
+        $vendorNet = $order->vendor_net_amount !== null
+            ? (float) $order->vendor_net_amount
+            : max(0, round($totalAmount - $platformFee, 2));
+
+        return [
+            'subtotal' => $subtotal,
+            'shipping_fee' => $shippingFee,
+            'platform_fee' => $platformFee,
+            'platform_fee_percent' => $commissionPercent,
+            'tax_amount' => $taxAmount,
+            'tax_percent' => self::gstPercent(),
+            'total_amount' => $totalAmount,
+            'vendor_net_amount' => $vendorNet,
+            'currency' => (string) PlatformSetting::get('currency', 'INR'),
+        ];
+    }
+
+    public static function commissionPercent(?Vendor $vendor = null): float
+    {
+        if ($vendor && $vendor->commission !== null) {
+            return (float) $vendor->commission;
+        }
+
+        return (float) PlatformSetting::get('global_commission_percent', 10);
     }
 
     public static function shippingFee(bool $shipmentRequired = true): float
