@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V2\BookingController as VendorBookingController;
 use App\Http\Controllers\Api\V2\ConfigController as VendorConfigController;
 use App\Http\Controllers\Api\V2\ChatController as VendorChatController;
 use App\Http\Controllers\Api\V2\HomeController as VendorHomeController;
+use App\Http\Controllers\Api\V2\LocationController as VendorLocationController;
 use App\Http\Controllers\Api\V2\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Api\V2\PaymentController as VendorPaymentController;
 use App\Http\Controllers\Api\V2\PortfolioController as VendorPortfolioController;
@@ -123,6 +124,11 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
     });
 
     Route::get('config', [VendorConfigController::class, 'index'])->name('config');
+
+    Route::get('locations/countries', [VendorLocationController::class, 'countries'])->name('locations.countries');
+    Route::get('locations/states', [VendorLocationController::class, 'states'])->name('locations.states');
+    Route::get('locations/cities', [VendorLocationController::class, 'cities'])->name('locations.cities');
+    Route::get('locations', [VendorLocationController::class, 'catalog'])->name('locations.catalog');
 
     Route::middleware(['auth:sanctum', 'vendor.api'])->group(function () {
         Route::get('home', [VendorHomeController::class, 'index'])->name('home');

@@ -60,16 +60,21 @@ class CustomerMeasurement extends Model
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public static function normalizeApiPayload(array $data): array
+    public static function normalizeApiPayload(array $data, ?self $existing = null): array
     {
-        $extra = collect($data['extra_measurements'] ?? [])
-            ->only(self::EXTRA_FIELDS)
-            ->filter(fn ($value) => $value !== null && $value !== '')
-            ->all();
+        $extra = $existing ? ($existing->extra_measurements ?? []) : [];
+
+        if (isset($data['extra_measurements']) && is_array($data['extra_measurements'])) {
+            foreach (self::EXTRA_FIELDS as $field) {
+                if (array_key_exists($field, $data['extra_measurements'])) {
+                    self::applyExtraField($extra, $field, $data['extra_measurements'][$field]);
+                }
+            }
+        }
 
         foreach (self::EXTRA_FIELDS as $field) {
-            if (array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== '') {
-                $extra[$field] = $data[$field];
+            if (array_key_exists($field, $data)) {
+                self::applyExtraField($extra, $field, $data[$field]);
             }
         }
 
@@ -85,35 +90,84 @@ class CustomerMeasurement extends Model
 
         if (array_key_exists('height_cm', $data)) {
             $payload['height_cm'] = $data['height_cm'];
-        } elseif (array_key_exists('height', $data) && $data['height'] !== '' && is_numeric($data['height'])) {
-            $payload['height_cm'] = (int) $data['height'];
-        } elseif (array_key_exists('height', $data) && $data['height'] !== '') {
-            $extra['height'] = $data['height'];
+        } elseif (array_key_exists('height', $data)) {
+            if ($data['height'] !== '' && is_numeric($data['height'])) {
+                $payload['height_cm'] = (int) $data['height'];
+            } elseif ($data['height'] !== '') {
+                self::applyExtraField($extra, 'height', $data['height']);
+            } elseif ($existing) {
+                unset($extra['height']);
+                $payload['height_cm'] = null;
+            }
         }
 
         if (array_key_exists('chest_cm', $data)) {
             $payload['chest_cm'] = $data['chest_cm'];
-        } elseif (array_key_exists('chest', $data) && $data['chest'] !== '' && is_numeric($data['chest'])) {
-            $payload['chest_cm'] = (int) $data['chest'];
-        } elseif (array_key_exists('chest', $data) && $data['chest'] !== '') {
-            $extra['chest'] = $data['chest'];
+        } elseif (array_key_exists('chest', $data)) {
+            if ($data['chest'] !== '' && is_numeric($data['chest'])) {
+                $payload['chest_cm'] = (int) $data['chest'];
+            } elseif ($data['chest'] !== '') {
+                self::applyExtraField($extra, 'chest', $data['chest']);
+                if ($existing) {
+                    $payload['chest_cm'] = null;
+                }
+            } elseif ($existing) {
+                unset($extra['chest']);
+                $payload['chest_cm'] = null;
+            }
         }
 
         if (array_key_exists('waist_cm', $data)) {
             $payload['waist_cm'] = $data['waist_cm'];
-        } elseif (array_key_exists('waist', $data) && $data['waist'] !== '' && is_numeric($data['waist'])) {
-            $payload['waist_cm'] = (int) $data['waist'];
-        } elseif (array_key_exists('waist', $data) && $data['waist'] !== '') {
-            $extra['waist'] = $data['waist'];
+        } elseif (array_key_exists('waist', $data)) {
+            if ($data['waist'] !== '' && is_numeric($data['waist'])) {
+                $payload['waist_cm'] = (int) $data['waist'];
+            } elseif ($data['waist'] !== '') {
+                self::applyExtraField($extra, 'waist', $data['waist']);
+                if ($existing) {
+                    $payload['waist_cm'] = null;
+                }
+            } elseif ($existing) {
+                unset($extra['waist']);
+                $payload['waist_cm'] = null;
+            }
         }
 
-        if ($extra !== []) {
+        if (self::extraInputPresent($data)) {
+            $payload['extra_measurements'] = $extra !== [] ? $extra : null;
+        } elseif (! $existing && $extra !== []) {
             $payload['extra_measurements'] = $extra;
-        } elseif (array_key_exists('extra_measurements', $data)) {
-            $payload['extra_measurements'] = null;
         }
 
         return $payload;
+    }
+
+    /** @param array<string, string|null> $extra */
+    protected static function applyExtraField(array &$extra, string $field, mixed $value): void
+    {
+        if ($value === null || $value === '') {
+            unset($extra[$field]);
+
+            return;
+        }
+
+        $extra[$field] = (string) $value;
+    }
+
+    /** @param array<string, mixed> $data */
+    protected static function extraInputPresent(array $data): bool
+    {
+        if (isset($data['extra_measurements']) && is_array($data['extra_measurements'])) {
+            return true;
+        }
+
+        foreach (self::EXTRA_FIELDS as $field) {
+            if (array_key_exists($field, $data)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return array<string, string|null> */
