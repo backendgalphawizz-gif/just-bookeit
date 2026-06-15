@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Category;
 use App\Models\PlatformSetting;
 use App\Support\AdminValidationRules;
+use App\Support\DamageDeductionCategoryResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -57,8 +58,10 @@ class DamageDeductionSettingsController extends AdminController
 
         $incomingCatalogRules = collect($request->input('damage_deduction_rules', []))
             ->map(function (array $rule) {
-                if (! filled($rule['subcategory_id'] ?? null)) {
-                    unset($rule['subcategory_id']);
+                if (! filled($rule['subcategory_id'] ?? null) || ($rule['subcategory_id'] ?? '') === DamageDeductionCategoryResolver::OTHER) {
+                    if (($rule['subcategory_id'] ?? '') !== DamageDeductionCategoryResolver::OTHER) {
+                        unset($rule['subcategory_id']);
+                    }
                 }
 
                 return $rule;
@@ -68,14 +71,28 @@ class DamageDeductionSettingsController extends AdminController
 
         $incomingServiceRules = collect($request->input('service_damage_deduction_rules', []))
             ->map(function (array $rule) {
-                if (! filled($rule['subcategory_id'] ?? null)) {
-                    unset($rule['subcategory_id']);
+                if (! filled($rule['subcategory_id'] ?? null) || ($rule['subcategory_id'] ?? '') === DamageDeductionCategoryResolver::OTHER) {
+                    if (($rule['subcategory_id'] ?? '') !== DamageDeductionCategoryResolver::OTHER) {
+                        unset($rule['subcategory_id']);
+                    }
                 }
 
                 return $rule;
             })
             ->values()
             ->all();
+
+        $resolver = new DamageDeductionCategoryResolver;
+
+        $incomingCatalogRules = $resolver->resolveCatalogRules(
+            $incomingCatalogRules,
+            'damage_deduction_rules'
+        );
+
+        $incomingServiceRules = $resolver->resolveServiceRules(
+            $incomingServiceRules,
+            'service_damage_deduction_rules'
+        );
 
         $request->merge([
             'damage_deduction_rules' => $incomingCatalogRules,

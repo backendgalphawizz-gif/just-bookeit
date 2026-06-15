@@ -78,6 +78,7 @@
                             Example: if <strong>Women → Sarees = 10%</strong> and later you add
                             <strong>Women → All sub-categories = 20%</strong>, then Sarees stays at 10% and
                             Lehengas, Gowns, Kurtis, etc. use 20%.
+                            Choose <strong>Other (add new)</strong> to create a category or sub-category here; it is saved when you click Save rules.
                         </p>
                     </div>
                 @else
@@ -90,7 +91,7 @@
                     </div>
                 @endif
             </div>
-            @if ($canEdit && $mainCategories->isNotEmpty() && $serviceCategories->isNotEmpty())
+            @if ($canEdit)
                 <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm shrink-0" data-damage-settings-add>
                     + Add rule
                 </button>
@@ -98,125 +99,105 @@
         </div>
 
         @if ($isCatalogTab)
-            @if ($mainCategories->isEmpty())
-                <div class="jb-card-body">
-                    <p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-sm text-slate-500">
-                        Add categories and sub-categories first under Categories.
-                    </p>
-                </div>
-            @else
-                <div
-                    class="jb-damage-rules-table-wrap"
-                    data-damage-settings-panel
-                    data-damage-field-prefix="damage_deduction_rules"
-                    data-damage-panel-type="catalog"
-                >
-                    <table class="jb-table jb-table--balanced jb-damage-rules-table">
-                        <thead>
-                            <tr>
-                                <th class="jb-col-sn">#</th>
-                                <th class="jb-col-category">Category</th>
-                                <th class="jb-col-category jb-damage-rules-table__sub-col">Sub-category</th>
-                                <th class="jb-damage-rules-table__scope-col">Applies to</th>
-                                <th class="text-center jb-damage-rules-table__percent-col">Max deduction (%)</th>
-                                <th class="jb-table-actions-col">Actions</th>
+            <div
+                class="jb-damage-rules-table-wrap"
+                data-damage-settings-panel
+                data-damage-field-prefix="damage_deduction_rules"
+                data-damage-panel-type="catalog"
+            >
+                <table class="jb-table jb-table--balanced jb-damage-rules-table">
+                    <thead>
+                        <tr>
+                            <th class="jb-col-sn">#</th>
+                            <th class="jb-col-category">Category</th>
+                            <th class="jb-col-category jb-damage-rules-table__sub-col">Sub-category</th>
+                            <th class="jb-damage-rules-table__scope-col">Applies to</th>
+                            <th class="text-center jb-damage-rules-table__percent-col">Max deduction (%)</th>
+                            <th class="jb-table-actions-col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody data-damage-settings-list>
+                        @forelse ($initialCatalogRules as $index => $rule)
+                            @include('admin.settings.partials.damage-deduction-row', [
+                                'rowIndex' => $index,
+                                'rule' => $rule,
+                            ])
+                        @empty
+                            <tr data-damage-settings-empty>
+                                <td colspan="6" class="jb-table-empty">
+                                    No rules yet. Click <strong>+ Add rule</strong> to define a limit.
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody data-damage-settings-list>
-                            @forelse ($initialCatalogRules as $index => $rule)
-                                @include('admin.settings.partials.damage-deduction-row', [
-                                    'rowIndex' => $index,
-                                    'rule' => $rule,
-                                ])
-                            @empty
-                                <tr data-damage-settings-empty>
-                                    <td colspan="6" class="jb-table-empty">
-                                        No rules yet. Click <strong>+ Add rule</strong> to define a limit.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                        @endforelse
+                    </tbody>
+                </table>
 
-                    <template data-damage-settings-template>
-                        @include('admin.settings.partials.damage-deduction-row', [
-                            'rowIndex' => '__INDEX__',
-                            'rule' => ['category_id' => '', 'subcategory_id' => '', 'max_percent' => ''],
-                        ])
-                    </template>
-                </div>
+                <template data-damage-settings-template>
+                    @include('admin.settings.partials.damage-deduction-row', [
+                        'rowIndex' => '__INDEX__',
+                        'rule' => ['category_id' => '', 'subcategory_id' => '', 'max_percent' => ''],
+                    ])
+                </template>
+            </div>
 
-                @error('damage_deduction_rules')
-                    <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
-                @enderror
-                @error('damage_deduction_rules.*')
-                    <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
-                @enderror
-            @endif
+            @error('damage_deduction_rules')
+                <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
+            @enderror
+            @error('damage_deduction_rules.*')
+                <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
+            @enderror
         @else
-            @if ($serviceCategories->isEmpty() || $mainCategories->isEmpty())
-                <div class="jb-card-body">
-                    <p class="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-sm text-slate-500">
-                        @if ($mainCategories->isEmpty())
-                            Add catalog categories first under Categories.
-                        @else
-                            Add service categories first under Categories → Service categories.
-                        @endif
-                    </p>
-                </div>
-            @else
-                <div
-                    class="jb-damage-rules-table-wrap"
-                    data-damage-settings-panel
-                    data-damage-field-prefix="service_damage_deduction_rules"
-                    data-damage-panel-type="service"
-                >
-                    <table class="jb-table jb-table--balanced jb-damage-rules-table">
-                        <thead>
-                            <tr>
-                                <th class="jb-col-sn">#</th>
-                                <th class="jb-col-category">Category</th>
-                                <th class="jb-col-category jb-damage-rules-table__sub-col">Sub-category</th>
-                                <th class="jb-damage-rules-table__scope-col">Applies to</th>
-                                <th class="jb-col-category">Service category</th>
-                                <th class="text-center jb-damage-rules-table__percent-col">Max deduction (%)</th>
-                                <th class="jb-table-actions-col">Actions</th>
+            <div
+                class="jb-damage-rules-table-wrap"
+                data-damage-settings-panel
+                data-damage-field-prefix="service_damage_deduction_rules"
+                data-damage-panel-type="service"
+            >
+                <table class="jb-table jb-table--balanced jb-damage-rules-table">
+                    <thead>
+                        <tr>
+                            <th class="jb-col-sn">#</th>
+                            <th class="jb-col-category">Category</th>
+                            <th class="jb-col-category jb-damage-rules-table__sub-col">Sub-category</th>
+                            <th class="jb-damage-rules-table__scope-col">Applies to</th>
+                            <th class="jb-col-category">Service category</th>
+                            <th class="text-center jb-damage-rules-table__percent-col">Max deduction (%)</th>
+                            <th class="jb-table-actions-col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody data-damage-settings-list>
+                        @forelse ($initialServiceRules as $index => $rule)
+                            @include('admin.settings.partials.service-damage-deduction-row', [
+                                'rowIndex' => $index,
+                                'rule' => $rule,
+                            ])
+                        @empty
+                            <tr data-damage-settings-empty>
+                                <td colspan="7" class="jb-table-empty">
+                                    No rules yet. Click <strong>+ Add rule</strong> to define a limit.
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody data-damage-settings-list>
-                            @forelse ($initialServiceRules as $index => $rule)
-                                @include('admin.settings.partials.service-damage-deduction-row', [
-                                    'rowIndex' => $index,
-                                    'rule' => $rule,
-                                ])
-                            @empty
-                                <tr data-damage-settings-empty>
-                                    <td colspan="7" class="jb-table-empty">
-                                        No rules yet. Click <strong>+ Add rule</strong> to define a limit.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                        @endforelse
+                    </tbody>
+                </table>
 
-                    <template data-damage-settings-template>
-                        @include('admin.settings.partials.service-damage-deduction-row', [
-                            'rowIndex' => '__INDEX__',
-                            'rule' => ['category_id' => '', 'subcategory_id' => '', 'service_category_id' => '', 'max_percent' => ''],
-                        ])
-                    </template>
-                </div>
+                <template data-damage-settings-template>
+                    @include('admin.settings.partials.service-damage-deduction-row', [
+                        'rowIndex' => '__INDEX__',
+                        'rule' => ['category_id' => '', 'subcategory_id' => '', 'service_category_id' => '', 'max_percent' => ''],
+                    ])
+                </template>
+            </div>
 
-                @error('service_damage_deduction_rules')
-                    <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
-                @enderror
-                @error('service_damage_deduction_rules.*')
-                    <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
-                @enderror
-            @endif
+            @error('service_damage_deduction_rules')
+                <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
+            @enderror
+            @error('service_damage_deduction_rules.*')
+                <p class="px-6 pb-2 text-xs font-medium text-rose-600">{{ $message }}</p>
+            @enderror
         @endif
 
-        @if ($isCatalogTab && $mainCategories->isNotEmpty())
+        @if ($isCatalogTab)
             <div
                 hidden
                 data-damage-settings-sync
@@ -229,7 +210,7 @@
                     <input type="hidden" name="service_damage_deduction_rules[{{ $index }}][max_percent]" value="{{ $rule['max_percent'] ?? '' }}">
                 @endforeach
             </div>
-        @elseif ($isServiceTab && $serviceCategories->isNotEmpty() && $mainCategories->isNotEmpty())
+        @else
             <div
                 hidden
                 data-damage-settings-sync
@@ -243,7 +224,7 @@
             </div>
         @endif
 
-        @if ($canEdit && (($isCatalogTab && $mainCategories->isNotEmpty()) || ($isServiceTab && $serviceCategories->isNotEmpty() && $mainCategories->isNotEmpty())))
+        @if ($canEdit)
             <div class="jb-damage-rules-footer">
                 <p class="text-sm text-slate-500" data-damage-settings-count>
                     {{ $totalRules }} rule(s) configured across both tabs
@@ -302,6 +283,15 @@
         min-height: 2.625rem;
         margin-inline: auto;
         text-align: center;
+    }
+
+    .jb-damage-rules-custom-input {
+        min-height: 2.625rem;
+        width: 100%;
+    }
+
+    .jb-damage-rules-custom-input[hidden] {
+        display: none !important;
     }
 
     .jb-damage-rules-table td {
@@ -382,20 +372,74 @@
             : 0;
 
         const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const OTHER = @json(\App\Support\DamageDeductionCategoryResolver::OTHER);
+
+        const syncCustomFieldVisibility = (row) => {
+            const pairs = [
+                [row.querySelector('[data-damage-category]'), row.querySelector('[data-damage-category-custom]')],
+                [row.querySelector('[data-damage-subcategory]'), row.querySelector('[data-damage-subcategory-custom]')],
+                [row.querySelector('[data-damage-service-category]'), row.querySelector('[data-damage-service-category-custom]')],
+            ];
+
+            pairs.forEach(([select, input]) => {
+                if (!select || !input) {
+                    return;
+                }
+
+                const isOther = select.value === OTHER;
+                input.hidden = !isOther;
+                input.required = isOther;
+
+                if (!isOther) {
+                    input.value = '';
+                }
+            });
+        };
+
+        const scopeLabelForRow = (row) => {
+            const categorySelect = row.querySelector('[data-damage-category]');
+            const subSelect = row.querySelector('[data-damage-subcategory]');
+            const categoryCustom = row.querySelector('[data-damage-category-custom]');
+            const subCustom = row.querySelector('[data-damage-subcategory-custom]');
+            const subValue = subSelect?.value || '';
+
+            if (subValue === OTHER) {
+                return subCustom?.value.trim() || 'New sub-category';
+            }
+
+            if (subValue !== '') {
+                return subSelect.options[subSelect.selectedIndex]?.textContent?.trim() || 'Sub-category';
+            }
+
+            if (categorySelect?.value === OTHER) {
+                return categoryCustom?.value.trim() || 'New category';
+            }
+
+            return 'All sub-categories';
+        };
 
         const syncSubcategoryOptions = (row) => {
             const categorySelect = row.querySelector('[data-damage-category]');
             const subSelect = row.querySelector('[data-damage-subcategory]');
             const scope = row.querySelector('[data-damage-scope]');
 
+            syncCustomFieldVisibility(row);
+
             if (!categorySelect || !subSelect) return;
 
             const parentId = categorySelect.value;
-            const isServiceRow = row.querySelector('[name*="service_category_id"]') !== null;
-            let selectedIsValid = subSelect.value === '';
+            const isServiceRow = row.querySelector('[data-damage-service-category]') !== null;
+            let selectedIsValid = subSelect.value === '' || subSelect.value === OTHER;
 
             subSelect.querySelectorAll('option[data-parent-id]').forEach((option) => {
-                const matches = parentId !== '' && option.dataset.parentId === parentId;
+                let matches = false;
+
+                if (parentId === OTHER) {
+                    matches = false;
+                } else if (parentId !== '') {
+                    matches = option.dataset.parentId === parentId;
+                }
+
                 option.hidden = !matches;
                 option.disabled = !matches;
 
@@ -406,11 +450,14 @@
 
             subSelect.disabled = parentId === '';
 
-            if (!selectedIsValid) {
+            if (!selectedIsValid && subSelect.value !== OTHER) {
                 subSelect.value = '';
             }
 
-            if (!scope) return;
+            if (!scope) {
+                updateScopeHints();
+                return;
+            }
 
             if (parentId === '') {
                 if (isServiceRow) {
@@ -422,11 +469,17 @@
                 return;
             }
 
-            if (subSelect.value === '') {
+            const label = scopeLabelForRow(row);
+            const categoryCustom = row.querySelector('[data-damage-category-custom]');
+
+            if (subSelect.value === '' && parentId !== OTHER) {
                 scope.textContent = 'All sub-categories';
                 scope.className = 'jb-damage-rules-scope jb-damage-rules-scope--all';
+            } else if (subSelect.value === '' && parentId === OTHER) {
+                scope.textContent = categoryCustom?.value.trim() || 'New category';
+                scope.className = 'jb-damage-rules-scope jb-damage-rules-scope--all';
             } else {
-                scope.textContent = subSelect.options[subSelect.selectedIndex]?.textContent?.trim() || 'Sub-category';
+                scope.textContent = label;
                 scope.className = 'jb-damage-rules-scope jb-damage-rules-scope--sub';
             }
 
@@ -436,16 +489,22 @@
         const updateScopeHints = () => {
             const rows = Array.from(list.querySelectorAll('[data-damage-settings-row]')).map((row) => {
                 const subSelect = row.querySelector('[data-damage-subcategory]');
-                const serviceSelect = row.querySelector('[name*="service_category_id"]');
+                const subCustom = row.querySelector('[data-damage-subcategory-custom]');
+                const serviceSelect = row.querySelector('[data-damage-service-category]');
+
+                let subcategoryName = '';
+                if (subSelect?.value === OTHER) {
+                    subcategoryName = subCustom?.value.trim() || 'New sub-category';
+                } else if (subSelect?.value) {
+                    subcategoryName = subSelect.options[subSelect.selectedIndex]?.textContent?.trim() || '';
+                }
 
                 return {
                     row,
                     categoryId: row.querySelector('[data-damage-category]')?.value || '',
                     subcategoryId: subSelect?.value || '',
                     serviceCategoryId: serviceSelect?.value || '',
-                    subcategoryName: subSelect?.value
-                        ? subSelect.options[subSelect.selectedIndex]?.textContent?.trim() || ''
-                        : '',
+                    subcategoryName,
                 };
             });
 
@@ -470,13 +529,13 @@
                         return true;
                     });
 
-                    if (subcategoryId !== '') {
+                    if (subcategoryId !== '' && subcategoryId !== OTHER) {
                         if (peers.some(({ subcategoryId: peerSubcategoryId }) => peerSubcategoryId === '')) {
                             hint = 'This limit is used for this sub-category (overrides the category-wide rule).';
                         }
-                    } else {
+                    } else if (subcategoryId === '') {
                         const exceptions = peers
-                            .filter(({ subcategoryId: peerSubcategoryId }) => peerSubcategoryId !== '')
+                            .filter(({ subcategoryId: peerSubcategoryId }) => peerSubcategoryId !== '' && peerSubcategoryId !== OTHER)
                             .map(({ subcategoryName: peerSubcategoryName }) => peerSubcategoryName)
                             .filter(Boolean);
 
@@ -519,7 +578,7 @@
         const bindRow = (row) => {
             const categorySelect = row.querySelector('[data-damage-category]');
             const subSelect = row.querySelector('[data-damage-subcategory]');
-            const serviceSelect = row.querySelector('[name*="service_category_id"]');
+            const serviceSelect = row.querySelector('[data-damage-service-category]');
 
             if (categorySelect && subSelect) {
                 syncSubcategoryOptions(row);
@@ -527,7 +586,15 @@
                 subSelect.addEventListener('change', () => syncSubcategoryOptions(row));
             }
 
-            serviceSelect?.addEventListener('change', () => updateScopeHints());
+            row.querySelectorAll('[data-damage-category-custom], [data-damage-subcategory-custom], [data-damage-service-category-custom]')
+                .forEach((input) => {
+                    input.addEventListener('input', () => syncSubcategoryOptions(row));
+                });
+
+            serviceSelect?.addEventListener('change', () => {
+                syncCustomFieldVisibility(row);
+                updateScopeHints();
+            });
 
             row.querySelector('[data-damage-settings-remove]')?.addEventListener('click', () => {
                 row.remove();
@@ -539,6 +606,9 @@
             });
         };
 
+        list.querySelectorAll('[data-damage-settings-row]').forEach((row) => {
+            syncCustomFieldVisibility(row);
+        });
         list.querySelectorAll('[data-damage-settings-row]').forEach(bindRow);
         updateScopeHints();
 
@@ -550,6 +620,11 @@
                 if (categorySelect?.value && subSelect) {
                     subSelect.disabled = false;
                 }
+
+                row.querySelectorAll('[data-damage-category-custom], [data-damage-subcategory-custom], [data-damage-service-category-custom]')
+                    .forEach((input) => {
+                        input.disabled = false;
+                    });
             });
         });
 

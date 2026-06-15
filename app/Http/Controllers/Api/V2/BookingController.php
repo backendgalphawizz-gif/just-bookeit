@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Support\OrderDispatchSupport;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\AppliesListDateFilter;
+use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -61,7 +62,11 @@ class BookingController extends VendorApiController
         $vendor = $this->vendor($request);
         $this->assertOwnsOrder($booking, $vendor);
 
-        return $this->success(VendorApiPresenter::bookingDetail($booking->load(['customer.measurements', 'vendor'])));
+        return $this->success(
+            VendorApiPresenter::bookingDetail(
+                $booking->load(['customer.measurements', 'vendor', 'category', 'driver', 'review.customer'])
+            )
+        );
     }
 
     public function accept(Request $request, Order $booking): JsonResponse
@@ -89,7 +94,12 @@ class BookingController extends VendorApiController
             return $this->error('This booking cannot be rejected.', 422);
         }
 
-        $booking->update(['status' => 'cancelled']);
+        $data = $this->validateVendor($request, VendorValidationRules::bookingReject());
+
+        $booking->update([
+            'status' => 'cancelled',
+            'cancellation_reason' => trim($data['reason']),
+        ]);
 
         return $this->success([
             'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),

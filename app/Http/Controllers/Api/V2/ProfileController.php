@@ -158,18 +158,33 @@ class ProfileController extends VendorApiController
 
     public function toggleAvailability(Request $request): JsonResponse
     {
-        $vendor = $this->vendor($request);
-
         $data = $request->validate([
             'is_available' => ['required', 'boolean'],
         ]);
 
-        $vendor->is_listing_active = $data['is_available'];
+        return $this->setAvailability($request, (bool) $data['is_available']);
+    }
+
+    public function markAvailable(Request $request): JsonResponse
+    {
+        return $this->setAvailability($request, true);
+    }
+
+    public function markUnavailable(Request $request): JsonResponse
+    {
+        return $this->setAvailability($request, false);
+    }
+
+    protected function setAvailability(Request $request, bool $isAvailable): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+        $vendor->is_listing_active = $isAvailable;
         $vendor->save();
 
         return $this->success([
             'vendor' => VendorApiPresenter::vendorSummary($vendor->fresh()),
-        ], 'Availability updated.');
+            'is_available' => $isAvailable,
+        ], $isAvailable ? 'You are now available.' : 'You are now unavailable.');
     }
 
     public function updatePassword(Request $request): JsonResponse

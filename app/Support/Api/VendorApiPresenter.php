@@ -151,26 +151,40 @@ class VendorApiPresenter
     public static function bookingSummary(Order $order): array
     {
         $order->loadMissing(['customer', 'category']);
+        $rentedPeriod = self::bookingRentedPeriod($order);
 
         return [
             'id' => $order->id,
+            'order_number' => $order->order_number,
             'booking_id' => $order->order_number,
             'product_name' => $order->itemDisplayName(),
+            'item_title' => $order->itemDisplayName(),
             'product_image_url' => $order->itemImageUrl(),
+            'item_image_url' => $order->itemImageUrl(),
             'customer_name' => $order->customer?->name,
             'amount' => (float) $order->amount,
             'amount_label' => '₹'.number_format((float) $order->amount, 0),
+            'total_amount' => $order->grandTotal(),
+            'total_amount_label' => '₹'.number_format($order->grandTotal(), 0),
             'category' => $order->category?->name,
             'order_type' => $order->order_type === 'rental' ? 'Rental' : 'Sale',
+            'order_type_raw' => $order->order_type,
             'status' => $order->status,
             'status_label' => $order->statusLabel(),
             'payment_status' => $order->payment_status,
-            'booking_date' => $order->created_at?->format('M d, Y'),
-            'rental_start_date' => $order->rental_start_date?->format('d M'),
-            'rental_end_date' => $order->rental_end_date?->format('d M'),
-            'rental_period' => $order->rental_start_date && $order->rental_end_date
-                ? $order->rental_start_date->format('d M').' - '.$order->rental_end_date->format('d M')
-                : null,
+            ...self::bookingScheduleFields($order),
+            'size' => $order->size,
+            'color' => $order->color,
+            'quantity' => (int) ($order->quantity ?? 1),
+            'rental_start_date' => $rentedPeriod['start_date'] ?? null,
+            'rental_end_date' => $rentedPeriod['end_date'] ?? null,
+            'rental_start_date_label' => $rentedPeriod['start_date_label'] ?? null,
+            'rental_end_date_label' => $rentedPeriod['end_date_label'] ?? null,
+            'rented_period' => $rentedPeriod,
+            'rented_period_label' => $rentedPeriod['label'] ?? null,
+            'rental_period' => $rentedPeriod['label'] ?? null,
+            'cancellation_reason' => $order->cancellation_reason,
+            'reject_reason' => $order->cancellation_reason,
             'can_accept' => in_array($order->status, ['new', 'pending_acceptance'], true),
             'can_reject' => in_array($order->status, ['new', 'pending_acceptance'], true),
         ];
@@ -178,28 +192,154 @@ class VendorApiPresenter
 
     public static function bookingDetail(Order $order): array
     {
-        $order->loadMissing(['customer', 'category', 'driver', 'vendor']);
+        $order->loadMissing(['customer', 'category', 'driver', 'vendor', 'review.customer']);
 
         return [
             ...self::bookingSummary($order),
+            'product' => self::bookingProduct($order),
+            'category_detail' => $order->category ? CustomerApiPresenter::category($order->category) : null,
             'customer' => self::bookingCustomer($order),
+            'billing_address' => $order->billing_address,
             'delivery_address' => $order->delivery_address,
+            'shipping_address' => self::bookingShippingAddress($order),
             'pickup_address' => $order->pickup_address,
             'city' => $order->city,
             'pincode' => $order->pincode,
             'customer_notes' => $order->customer_notes,
+            'item_description' => $order->item_description,
             'reference_image_urls' => $order->referenceImageUrls(),
+            'event_date' => $order->event_date?->format('Y-m-d'),
+            'event_date_label' => $order->event_date?->format('jS M Y'),
+            'security_deposit' => $order->security_deposit !== null ? (float) $order->security_deposit : null,
             'measurements' => self::orderMeasurements($order),
             'payment_summary' => BookingPricingService::vendorPaymentSummary($order, $order->vendor),
+            'damage' => self::bookingDamage($order),
             'tracking_steps' => $order->trackBookingSteps(),
+            'rental_tracking' => $order->isRental() ? $order->rentalTrackingSummary() : null,
+            'delivery_otp' => self::bookingDeliveryOtp($order),
             'driver' => $order->driver ? [
                 'id' => $order->driver->id,
                 'name' => $order->driver->name,
                 'mobile' => $order->driver->mobile,
+                'delivery_status' => $order->driver_delivery_status,
+                'assigned_at' => $order->driver_assigned_at?->toIso8601String(),
+                'assigned_at_label' => $order->driver_assigned_at?->format('d M Y, g:i A'),
+                'pickup_at' => $order->driver_pickup_at?->toIso8601String(),
+                'pickup_at_label' => $order->driver_pickup_at?->format('d M Y, g:i A'),
+                'delivered_at' => $order->driver_delivered_at?->toIso8601String(),
+                'delivered_at_label' => $order->driver_delivered_at?->format('d M Y, g:i A'),
             ] : null,
             'customer_review' => $order->status === 'delivered'
                 ? self::bookingCustomerReview($order)
                 : null,
+            'review' => $order->status === 'delivered'
+                ? self::bookingCustomerReview($order)
+                : null,
+        ];
+    }
+
+    /** @return array<string, string|null> */
+    protected static function bookingScheduleFields(Order $order): array
+    {
+        return [
+            'booking_date' => $order->created_at?->format('M d, Y g:i A'),
+            'booking_date_label' => $order->created_at?->format('d M Y, g:i A'),
+            'booked_at' => $order->created_at?->toIso8601String(),
+            'booked_at_label' => $order->created_at?->format('d M Y, g:i A'),
+            'updated_at' => $order->updated_at?->toIso8601String(),
+            'updated_at_label' => $order->updated_at?->format('d M Y, g:i A'),
+            'paid_at' => $order->paid_at?->toIso8601String(),
+            'paid_at_label' => $order->paid_at?->format('d M Y, g:i A'),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected static function bookingProduct(Order $order): array
+    {
+        return [
+            'title' => $order->itemDisplayName(),
+            'description' => $order->item_description,
+            'image_url' => $order->itemImageUrl(),
+            'size' => $order->size,
+            'color' => $order->color,
+            'quantity' => (int) ($order->quantity ?? 1),
+            'price' => (float) $order->amount,
+            'price_label' => '₹'.number_format((float) $order->amount, 0),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected static function bookingShippingAddress(Order $order): array
+    {
+        $parts = array_values(array_filter([
+            $order->delivery_address,
+            $order->city,
+            $order->pincode,
+        ], fn ($value) => filled($value)));
+
+        return [
+            'name' => $order->customer?->name,
+            'line' => $order->delivery_address,
+            'city' => $order->city,
+            'pincode' => $order->pincode,
+            'full_address' => $parts !== [] ? implode(', ', $parts) : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected static function bookingDamage(Order $order): array
+    {
+        return [
+            'note' => $order->damage_note,
+            'deduct_percent' => $order->damage_deduct_percent !== null
+                ? (float) $order->damage_deduct_percent
+                : null,
+            'deduction_amount' => $order->damageDeduction(),
+        ];
+    }
+
+    protected static function bookingDeliveryOtp(Order $order): ?string
+    {
+        if (! in_array($order->status, ['accepted', 'in_progress', 'in_transit', 'delivered'], true)) {
+            return null;
+        }
+
+        return $order->ensureDeliveryOtp();
+    }
+
+    /** @return array<string, mixed>|null */
+    protected static function bookingRentedPeriod(Order $order): ?array
+    {
+        if (! $order->isRental()) {
+            return null;
+        }
+
+        $start = $order->rental_start_date;
+        $end = $order->rental_end_date;
+        $returnDue = $order->return_due_date ?? $end;
+
+        if (! $start && ! $end) {
+            return null;
+        }
+
+        $startLabel = $start?->format('jS M');
+        $endLabel = $end?->format('jS M');
+
+        $label = match (true) {
+            $start && $end => $startLabel.' to '.$endLabel,
+            $start !== null => 'From '.$startLabel,
+            default => 'Until '.$endLabel,
+        };
+
+        return [
+            'start_date' => $start?->format('Y-m-d'),
+            'end_date' => $end?->format('Y-m-d'),
+            'start_date_label' => $startLabel,
+            'end_date_label' => $endLabel,
+            'label' => $label,
+            'duration_days' => $order->rentalDurationDays(),
+            'return_due_date' => $returnDue?->format('Y-m-d'),
+            'return_due_date_label' => $returnDue?->format('jS M'),
         ];
     }
 
