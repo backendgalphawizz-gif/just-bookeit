@@ -576,18 +576,48 @@ class AdminValidationRules
             'return_policy_user' => $policyText,
             'refund_rental_cancel_days' => $days,
             'refund_rental_late_fee_per_day' => $amount,
-            'damage_deduction_rules' => ['required', 'array', 'min:1'],
-            'damage_deduction_rules.*.service_category_id' => [
-                'required',
-                'integer',
-                'distinct',
-                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_SERVICE)),
-            ],
-            'damage_deduction_rules.*.max_percent' => $percent,
             'refund_rental_deposit_days' => $days,
             'refund_sale_window_days' => $days,
             'refund_sale_return_days' => $days,
             'refund_sale_restocking_percent' => $percent,
+        ];
+    }
+
+    public static function settingsDamageDeductionRules(): array
+    {
+        $percent = ['required', 'numeric', 'min:0', 'max:100'];
+
+        return [
+            'tab' => ['nullable', 'string', Rule::in(['catalog', 'service'])],
+            'damage_deduction_rules' => ['nullable', 'array'],
+            'damage_deduction_rules.*.category_id' => [
+                'required',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_MAIN)),
+            ],
+            'damage_deduction_rules.*.subcategory_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_SUB)),
+            ],
+            'damage_deduction_rules.*.max_percent' => $percent,
+            'service_damage_deduction_rules' => ['nullable', 'array'],
+            'service_damage_deduction_rules.*.category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_MAIN)),
+            ],
+            'service_damage_deduction_rules.*.subcategory_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_SUB)),
+            ],
+            'service_damage_deduction_rules.*.service_category_id' => [
+                'required',
+                'integer',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_SERVICE)),
+            ],
+            'service_damage_deduction_rules.*.max_percent' => $percent,
         ];
     }
 
@@ -616,13 +646,20 @@ class AdminValidationRules
             'refund_rental_cancel_days.min' => 'Cancellation notice cannot be negative.',
             'refund_rental_cancel_days.max' => 'Cancellation notice cannot exceed 365 days.',
             'refund_rental_late_fee_per_day.min' => 'Late return fee cannot be negative.',
-            'damage_deduction_rules.required' => 'Configure at least one service category for damage deduction.',
-            'damage_deduction_rules.min' => 'Configure at least one service category for damage deduction.',
-            'damage_deduction_rules.*.service_category_id.required' => 'Service category is required.',
-            'damage_deduction_rules.*.service_category_id.exists' => 'Select a valid service category.',
-            'damage_deduction_rules.*.service_category_id.distinct' => 'Each service category can only appear once.',
+            'damage_deduction_rules.min' => 'Configure at least one damage deduction rule.',
+            'damage_deduction_rules.*.category_id.required' => 'Category is required.',
+            'damage_deduction_rules.*.category_id.exists' => 'Select a valid category.',
+            'damage_deduction_rules.*.subcategory_id.exists' => 'Select a valid sub-category.',
             'damage_deduction_rules.*.max_percent.min' => 'Damage deduction cannot be negative.',
             'damage_deduction_rules.*.max_percent.max' => 'Damage deduction cannot exceed 100%.',
+            'service_damage_deduction_rules.min' => 'Configure at least one damage deduction rule.',
+            'service_damage_deduction_rules.*.category_id.required' => 'Category is required.',
+            'service_damage_deduction_rules.*.category_id.exists' => 'Select a valid category.',
+            'service_damage_deduction_rules.*.subcategory_id.exists' => 'Select a valid sub-category.',
+            'service_damage_deduction_rules.*.service_category_id.required' => 'Service category is required.',
+            'service_damage_deduction_rules.*.service_category_id.exists' => 'Select a valid service category.',
+            'service_damage_deduction_rules.*.max_percent.min' => 'Damage deduction cannot be negative.',
+            'service_damage_deduction_rules.*.max_percent.max' => 'Damage deduction cannot exceed 100%.',
             'suspension_reason.required' => 'A suspension reason is required.',
             'suspension_reason.min' => 'Suspension reason must be at least 10 characters.',
             'refund_rental_deposit_days.min' => 'Deposit refund days cannot be negative.',
@@ -695,8 +732,13 @@ class AdminValidationRules
             'global_commission_percent' => 'commission',
             'refund_rental_cancel_days' => 'rental cancellation days',
             'refund_rental_late_fee_per_day' => 'late return fee',
-            'damage_deduction_rules.*.service_category_id' => 'service category',
+            'damage_deduction_rules.*.category_id' => 'category',
+            'damage_deduction_rules.*.subcategory_id' => 'sub-category',
             'damage_deduction_rules.*.max_percent' => 'max damage deduction',
+            'service_damage_deduction_rules.*.service_category_id' => 'service category',
+            'service_damage_deduction_rules.*.category_id' => 'category',
+            'service_damage_deduction_rules.*.subcategory_id' => 'sub-category',
+            'service_damage_deduction_rules.*.max_percent' => 'max damage deduction',
             'suspension_reason' => 'suspension reason',
             'rejection_reason' => 'rejection reason',
             'refund_rental_deposit_days' => 'security deposit refund days',

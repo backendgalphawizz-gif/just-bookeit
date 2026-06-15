@@ -34,7 +34,6 @@ class SettingsController extends AdminController
             'legalAudience' => $legalAudience,
             'settings' => $settings,
             'values' => PlatformSetting::query()->pluck('value', 'key'),
-            'damageDeductionRules' => PlatformSetting::damageDeductionRulesForSettings(),
         ]);
     }
 
@@ -179,17 +178,6 @@ class SettingsController extends AdminController
 
         PlatformSetting::set('refund_policy_user', RichText::sanitize($data['refund_policy_user'] ?? ''), 'refund_rules', 'html');
         PlatformSetting::set('return_policy_user', RichText::sanitize($data['return_policy_user'] ?? ''), 'refund_rules', 'html');
-
-        $damageRules = collect($data['damage_deduction_rules'])
-            ->map(fn (array $rule) => [
-                'service_category_id' => (int) $rule['service_category_id'],
-                'max_percent' => (float) $rule['max_percent'],
-            ])
-            ->unique('service_category_id')
-            ->values()
-            ->all();
-
-        PlatformSetting::set('refund_damage_deduction_rules', json_encode($damageRules), 'refund_rules', 'json');
 
         foreach ([
             'refund_rental_cancel_days',

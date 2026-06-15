@@ -67,7 +67,8 @@ class PortfolioController extends AdminController
             AdminValidationRules::attributes()
         );
 
-        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+        ProductDamageDeductionRules::assertWithinCategoryLimit(
+            (int) $data['subcategory_id'],
             (int) $data['category_id'],
             $data['damage_deductions'] ?? []
         );
@@ -126,7 +127,8 @@ class PortfolioController extends AdminController
             AdminValidationRules::attributes()
         );
 
-        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+        ProductDamageDeductionRules::assertWithinCategoryLimit(
+            (int) $data['subcategory_id'],
             (int) $data['category_id'],
             $data['damage_deductions'] ?? []
         );

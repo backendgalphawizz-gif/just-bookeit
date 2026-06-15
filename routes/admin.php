@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\DamageDeductionSettingsController;
 use App\Http\Controllers\Admin\ListExportController;
 use App\Http\Controllers\Admin\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -94,6 +95,8 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
 
             Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
             Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+            Route::get('settings/damage-deduction', [DamageDeductionSettingsController::class, 'index'])->name('settings.damage-deduction.index');
+            Route::put('settings/damage-deduction', [DamageDeductionSettingsController::class, 'update'])->name('settings.damage-deduction.update');
 
             Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
             Route::resource('roles', RoleController::class)->except(['show']);

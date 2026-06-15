@@ -96,7 +96,8 @@ class ProductController extends VendorApiController
             ]);
         }
 
-        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+        ProductDamageDeductionRules::assertWithinCategoryLimit(
+            $subcategory->id,
             $category->id,
             $data['damage_deductions'] ?? []
         );
@@ -176,7 +177,10 @@ class ProductController extends VendorApiController
         }
 
         if (array_key_exists('damage_deductions', $data)) {
-            ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+            $subcategoryId = (int) ($updates['subcategory_id'] ?? $product->subcategory_id);
+
+            ProductDamageDeductionRules::assertWithinCategoryLimit(
+                $subcategoryId,
                 (int) ($updates['category_id'] ?? $product->category_id),
                 $data['damage_deductions'] ?? []
             );

@@ -30,7 +30,8 @@ return [
             ['label' => 'Admin Users', 'route' => 'admin.admins.index', 'route_is' => 'admin.admins.*', 'permission' => 'admins', 'badge' => null, 'icon' => 'users'],
             ['label' => 'Roles', 'route' => 'admin.roles.index', 'route_is' => 'admin.roles.*', 'permission' => 'admins', 'badge' => null, 'icon' => 'shield'],
             ['label' => 'Permissions', 'route' => 'admin.permissions.index', 'route_is' => 'admin.permissions.*', 'permission' => 'admins', 'badge' => null, 'icon' => 'grid'],
-            ['label' => 'Settings', 'route' => 'admin.settings.index', 'route_is' => 'admin.settings.*', 'permission' => 'settings', 'badge' => null, 'icon' => 'settings'],
+            ['label' => 'Settings', 'route' => 'admin.settings.index', 'route_is' => 'admin.settings.index', 'permission' => 'settings', 'badge' => null, 'icon' => 'settings'],
+            ['label' => 'Damage deduction', 'route' => 'admin.settings.damage-deduction.index', 'route_is' => 'admin.settings.damage-deduction.*', 'permission' => 'settings', 'badge' => null, 'icon' => 'shield'],
         ],
     ],
 ];

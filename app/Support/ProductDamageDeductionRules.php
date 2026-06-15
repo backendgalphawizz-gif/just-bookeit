@@ -8,9 +8,9 @@ use Illuminate\Validation\ValidationException;
 class ProductDamageDeductionRules
 {
     /** @param list<array<string, mixed>> $rules */
-    public static function assertWithinServiceCategoryLimit(int $serviceCategoryId, array $rules): void
+    public static function assertWithinCategoryLimit(?int $subcategoryId, ?int $serviceCategoryId, array $rules): void
     {
-        $maxPercent = PlatformSetting::maxDamagePercentForServiceCategory($serviceCategoryId);
+        $maxPercent = PlatformSetting::maxDamagePercentForPortfolioItem($subcategoryId, $serviceCategoryId);
 
         if ($maxPercent === null || $rules === []) {
             return;
@@ -21,7 +21,7 @@ class ProductDamageDeductionRules
         if ($total > $maxPercent) {
             throw ValidationException::withMessages([
                 'damage_deductions' => [
-                    'Total damage deduction cannot exceed '.$maxPercent.'% for this service category.',
+                    'Total damage deduction cannot exceed '.$maxPercent.'% for this category.',
                 ],
             ]);
         }
@@ -32,10 +32,17 @@ class ProductDamageDeductionRules
             if ($percent > $maxPercent) {
                 throw ValidationException::withMessages([
                     "damage_deductions.{$index}.percent" => [
-                        'Each damage deduction cannot exceed '.$maxPercent.'% for this service category.',
+                        'Each damage deduction cannot exceed '.$maxPercent.'% for this category.',
                     ],
                 ]);
             }
         }
+    }
+
+    /** @param list<array<string, mixed>> $rules */
+    /** @deprecated Use assertWithinCategoryLimit() */
+    public static function assertWithinServiceCategoryLimit(int $serviceCategoryId, array $rules): void
+    {
+        static::assertWithinCategoryLimit(null, $serviceCategoryId, $rules);
     }
 }
