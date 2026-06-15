@@ -1,4 +1,6 @@
 @php
+    use App\Models\PlatformSetting;
+
     $damageRows = old('damage_deductions');
     if (! is_array($damageRows)) {
         $damageRows = $portfolio->relationLoaded('damageDeductions') && $portfolio->damageDeductions->isNotEmpty()
@@ -8,6 +10,11 @@
             ])->all()
             : [];
     }
+
+    $serviceCategoryId = (int) old('category_id', $portfolio->category_id ?? 0);
+    $maxDamagePercent = $serviceCategoryId
+        ? PlatformSetting::maxDamagePercentForServiceCategory($serviceCategoryId)
+        : null;
 @endphp
 
 <div class="sm:col-span-2" data-product-damage>
@@ -15,6 +22,9 @@
         <div>
             <label class="jb-label">Damage deduction rules</label>
             <p class="mt-1 text-sm text-slate-500">Optional. Percent charged per damage type if the rented item is returned damaged.</p>
+            @if ($maxDamagePercent !== null)
+                <p class="mt-1 text-sm text-amber-700">Maximum total deduction for this service category: {{ rtrim(rtrim(number_format($maxDamagePercent, 2), '0'), '.') }}%.</p>
+            @endif
         </div>
         <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm" data-product-damage-add>+ Add rule</button>
     </div>
@@ -28,7 +38,7 @@
                 </div>
                 <div>
                     <label class="jb-label">Deduction (%)</label>
-                    <input type="number" name="damage_deductions[{{ $index }}][percent]" value="{{ $rule['percent'] ?? '' }}" class="jb-input" min="0" max="100" step="0.01" placeholder="0">
+                    <input type="number" name="damage_deductions[{{ $index }}][percent]" value="{{ $rule['percent'] ?? '' }}" class="jb-input" min="0" max="{{ $maxDamagePercent ?? 100 }}" step="0.01" placeholder="0">
                 </div>
                 <div class="flex items-end">
                     <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-damage-remove>Remove</button>
@@ -50,7 +60,7 @@
             </div>
             <div>
                 <label class="jb-label">Deduction (%)</label>
-                <input type="number" name="damage_deductions[__INDEX__][percent]" class="jb-input" min="0" max="100" step="0.01" placeholder="0">
+                <input type="number" name="damage_deductions[__INDEX__][percent]" class="jb-input" min="0" max="{{ $maxDamagePercent ?? 100 }}" step="0.01" placeholder="0">
             </div>
             <div class="flex items-end">
                 <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-damage-remove>Remove</button>

@@ -9,6 +9,7 @@ use App\Models\PortfolioItemImage;
 use App\Models\PortfolioItemVariant;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\AppliesListDateFilter;
+use App\Support\ProductDamageDeductionRules;
 use App\Support\StoresUploadedFiles;
 use App\Support\SubcategoryCatalog;
 use App\Support\VendorValidationRules;
@@ -95,6 +96,11 @@ class ProductController extends VendorApiController
             ]);
         }
 
+        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+            $category->id,
+            $data['damage_deductions'] ?? []
+        );
+
         $primaryImage = $this->resolvePrimaryImage($request);
         $imagePath = StoresUploadedFiles::store($primaryImage, 'portfolio/images');
 
@@ -167,6 +173,13 @@ class ProductController extends VendorApiController
 
         if (array_key_exists('advance_amount', $data)) {
             $updates['advance_amount'] = $data['advance_amount'];
+        }
+
+        if (array_key_exists('damage_deductions', $data)) {
+            ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+                (int) ($updates['category_id'] ?? $product->category_id),
+                $data['damage_deductions'] ?? []
+            );
         }
 
         $product->fill($updates);

@@ -6,13 +6,21 @@ use App\Models\Category;
 use App\Models\Role;
 use App\Support\AdminValidationRules;
 use App\Support\LocationResolver;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class VendorRequest extends AdminFormRequest
 {
     public function rules(): array
     {
-        return AdminValidationRules::vendor($this->route('vendor')?->id);
+        $rules = AdminValidationRules::vendor($this->route('vendor')?->id);
+        $vendor = $this->route('vendor');
+
+        if ($vendor) {
+            $rules['status'] = ['required', Rule::in([$vendor->status])];
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void

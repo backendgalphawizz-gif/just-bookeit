@@ -7,6 +7,7 @@ use App\Models\PortfolioItem;
 use App\Models\PortfolioItemImage;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
+use App\Support\ProductDamageDeductionRules;
 use App\Support\StoresUploadedFiles;
 use App\Support\SubcategoryCatalog;
 use App\Support\VendorValidationRules;
@@ -80,6 +81,11 @@ class ProductController extends VendorController
 
         abort_unless($subcategory, 422, 'Select a valid sub-category.');
 
+        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+            $category->id,
+            $data['damage_deductions'] ?? []
+        );
+
         $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
 
         $product = PortfolioItem::query()->create([
@@ -121,6 +127,11 @@ class ProductController extends VendorController
             VendorValidationRules::product(false),
             $this->productUploadRules(false)
         ));
+
+        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+            (int) $product->category_id,
+            $data['damage_deductions'] ?? []
+        );
 
         $updates = [
             'title' => $data['title'],

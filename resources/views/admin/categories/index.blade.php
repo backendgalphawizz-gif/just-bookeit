@@ -1,28 +1,40 @@
 @extends('admin.layouts.app')
 @section('title', 'Categories')
 @section('page_title', 'Categories')
-@section('page_subtitle', 'Main categories, sub-categories, and service types used across the platform')
+@section('page_subtitle', 'Manage catalog categories, sub-categories, and service types used across the platform')
 @section('content')
     @php
-        $tabs = [
-            \App\Models\Category::TYPE_MAIN => 'Categories',
-            \App\Models\Category::TYPE_SUB => 'Sub-categories',
-            \App\Models\Category::TYPE_SERVICE => 'Service categories',
-        ];
-        $showsParent = $type === \App\Models\Category::TYPE_SUB;
+        $isCatalog = $type === 'catalog';
+        $isService = $type === \App\Models\Category::TYPE_SERVICE;
+        $subcategoryTotal = $subcategoryTotal ?? 0;
+        $filterParams = array_filter([
+            'type' => $type,
+            'search' => request('search'),
+            'active' => request('active'),
+            'parent_id' => request('parent_id'),
+        ], fn ($value) => $value !== null && $value !== '');
     @endphp
 
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
-            @foreach ($tabs as $key => $label)
-                <a href="{{ route('admin.categories.index', ['type' => $key, 'search' => request('search'), 'active' => request('active'), 'parent_id' => request('parent_id')]) }}"
-                   class="jb-settings-tab {{ $type === $key ? 'jb-settings-tab--active' : '' }}">
-                    {{ $label }}
-                </a>
-            @endforeach
+            <a href="{{ route('admin.categories.index', array_merge($filterParams, ['type' => 'catalog', 'parent_id' => request('parent_id')])) }}"
+               class="jb-settings-tab {{ $isCatalog ? 'jb-settings-tab--active' : '' }}">
+                Categories & sub-categories
+            </a>
+            <a href="{{ route('admin.categories.index', ['type' => \App\Models\Category::TYPE_SERVICE, 'search' => request('search'), 'active' => request('active')]) }}"
+               class="jb-settings-tab {{ $isService ? 'jb-settings-tab--active' : '' }}">
+                Service categories
+            </a>
         </div>
         @if (auth('admin')->user()->hasPermission('categories', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => $type])">+ Add {{ $type === \App\Models\Category::TYPE_SUB ? 'Sub-category' : 'Category' }}</x-admin.button>
+            <div class="flex flex-wrap items-center gap-2">
+                @if ($isCatalog)
+                    <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => \App\Models\Category::TYPE_MAIN])">+ Add category</x-admin.button>
+                    <x-admin.button variant="secondary" size="sm" :href="route('admin.categories.create', ['type' => \App\Models\Category::TYPE_SUB])">+ Add sub-category</x-admin.button>
+                @else
+                    <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => \App\Models\Category::TYPE_SERVICE])">+ Add service category</x-admin.button>
+                @endif
+            </div>
         @endif
     </div>
 
@@ -36,11 +48,11 @@
                 <label class="jb-label">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Name">
             </div>
-            @if ($type === \App\Models\Category::TYPE_SUB)
+            @if ($isCatalog)
                 <div class="jb-filters-field">
-                    <label class="jb-label">Parent category</label>
+                    <label class="jb-label">Category</label>
                     <select name="parent_id" class="jb-select">
-                        <option value="">All</option>
+                        <option value="">All categories</option>
                         @foreach ($mainCategories as $mainCategory)
                             <option value="{{ $mainCategory->id }}" @selected(request('parent_id') == $mainCategory->id)>{{ $mainCategory->name }}</option>
                         @endforeach
@@ -58,10 +70,15 @@
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.categories.index', ['type' => $type])])
         </div>
     </form>
+
     <div class="jb-card">
         <div class="jb-card-header">
             <p class="jb-card-header-title">
-                {{ $categories->total() }} {{ strtolower(\App\Models\Category::typeLabel($type)) }}
+                @if ($isCatalog)
+                    {{ $categories->total() }} {{ Str::plural('category', $categories->total()) }}, {{ $subcategoryTotal }} {{ Str::plural('sub-category', $subcategoryTotal) }}
+                @else
+                    {{ $categories->total() }} {{ strtolower(\App\Models\Category::typeLabel($type)) }}
+                @endif
             </p>
         </div>
         <div class="jb-table-wrap">
@@ -69,9 +86,12 @@
                 <thead>
                     <tr>
                         @include('admin.partials.table-index-header')
+                        @if ($isCatalog)
+                            <th class="jb-col-status">Type</th>
+                        @endif
                         <th class="jb-col-name">Name</th>
-                        @if ($showsParent)
-                            <th>Parent category</th>
+                        @if ($isCatalog)
+                            <th>Under category</th>
                         @endif
                         <th class="text-center">Sort</th>
                         <th class="text-center">Active</th>
@@ -79,37 +99,101 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($categories as $category)
-                        <tr>
-                            @include('admin.partials.table-index-cell', ['paginator' => $categories])
-                            <td class="jb-col-name font-semibold">{{ $category->name }}</td>
-                            @if ($showsParent)
-                                <td>{{ $category->parent?->name ?? '—' }}</td>
-                            @endif
-                            <td class="text-center">{{ $category->sort_order }}</td>
-                            <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
-                            <td class="jb-table-actions-col">
-                                <div class="jb-actions">
-                                    @if (auth('admin')->user()->hasPermission('categories', 'edit'))
-                                        <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $category)" />
-                                    @endif
-                                    @if (auth('admin')->user()->hasPermission('categories', 'delete'))
-                                        <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="jb-action-form">
-                                            @csrf
-                                            @method('DELETE')
-                                            <x-admin.action-btn variant="delete" type="submit" confirm="Delete this category?" />
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ $showsParent ? 6 : 5 }}" class="jb-table-empty">
-                                No {{ strtolower(\App\Models\Category::typeLabel($type)) }} yet.
-                            </td>
-                        </tr>
-                    @endforelse
+                    @if ($isCatalog)
+                        @forelse ($categories as $category)
+                            <tr class="jb-category-row jb-category-row--parent">
+                                @include('admin.partials.table-index-cell', ['paginator' => $categories])
+                                <td class="jb-col-status">
+                                    <span class="jb-category-type jb-category-type--main">Category</span>
+                                </td>
+                                <td class="jb-col-name font-semibold text-slate-900">{{ $category->name }}</td>
+                                <td class="text-slate-400">—</td>
+                                <td class="text-center">{{ $category->sort_order }}</td>
+                                <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
+                                <td class="jb-table-actions-col">
+                                    <div class="jb-actions">
+                                        @if (auth('admin')->user()->hasPermission('categories', 'edit'))
+                                            <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $category)" />
+                                        @endif
+                                        @if (auth('admin')->user()->hasPermission('categories', 'delete'))
+                                            <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="jb-action-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <x-admin.action-btn variant="delete" type="submit" confirm="Delete this category? Remove its sub-categories first." />
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                            @forelse ($category->subcategories as $subcategory)
+                                <tr class="jb-category-row jb-category-row--child">
+                                    <td class="jb-col-sn text-slate-300">—</td>
+                                    <td class="jb-col-status">
+                                        <span class="jb-category-type jb-category-type--sub">Sub-category</span>
+                                    </td>
+                                    <td class="jb-col-name">
+                                        <span class="jb-category-child-name">{{ $subcategory->name }}</span>
+                                    </td>
+                                    <td>{{ $category->name }}</td>
+                                    <td class="text-center">{{ $subcategory->sort_order }}</td>
+                                    <td class="text-center">{{ $subcategory->is_active ? 'Yes' : 'No' }}</td>
+                                    <td class="jb-table-actions-col">
+                                        <div class="jb-actions">
+                                            @if (auth('admin')->user()->hasPermission('categories', 'edit'))
+                                                <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $subcategory)" />
+                                            @endif
+                                            @if (auth('admin')->user()->hasPermission('categories', 'delete'))
+                                                <form method="POST" action="{{ route('admin.categories.destroy', $subcategory) }}" class="jb-action-form">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <x-admin.action-btn variant="delete" type="submit" confirm="Delete this sub-category?" />
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr class="jb-category-row jb-category-row--empty">
+                                    <td class="jb-col-sn text-slate-300">—</td>
+                                    <td class="jb-col-status">
+                                        <span class="jb-category-type jb-category-type--sub">Sub-category</span>
+                                    </td>
+                                    <td colspan="5" class="text-sm text-slate-400">No sub-categories yet.</td>
+                                </tr>
+                            @endforelse
+                        @empty
+                            <tr>
+                                <td colspan="7" class="jb-table-empty">No categories yet.</td>
+                            </tr>
+                        @endforelse
+                    @else
+                        @forelse ($categories as $category)
+                            <tr>
+                                @include('admin.partials.table-index-cell', ['paginator' => $categories])
+                                <td class="jb-col-name font-semibold">{{ $category->name }}</td>
+                                <td class="text-center">{{ $category->sort_order }}</td>
+                                <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
+                                <td class="jb-table-actions-col">
+                                    <div class="jb-actions">
+                                        @if (auth('admin')->user()->hasPermission('categories', 'edit'))
+                                            <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $category)" />
+                                        @endif
+                                        @if (auth('admin')->user()->hasPermission('categories', 'delete'))
+                                            <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="jb-action-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <x-admin.action-btn variant="delete" type="submit" confirm="Delete this category?" />
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="jb-table-empty">No service categories yet.</td>
+                            </tr>
+                        @endforelse
+                    @endif
                 </tbody>
             </table>
         </div>
@@ -118,3 +202,44 @@
         @endif
     </div>
 @endsection
+
+@push('styles')
+<style>
+    .jb-category-row--parent td {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .jb-category-row--child td,
+    .jb-category-row--empty td {
+        background: #fff;
+    }
+
+    .jb-category-row--child .jb-category-child-name,
+    .jb-category-row--empty td {
+        padding-left: 1.25rem;
+    }
+
+    .jb-category-type {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 9999px;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .jb-category-type--main {
+        background: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .jb-category-type--sub {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+</style>
+@endpush

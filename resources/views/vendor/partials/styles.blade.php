@@ -117,7 +117,7 @@ img { max-width: 100%; display: block; }
 .vp-filters-grid { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; }
 .vp-filters-field { flex: 0 1 auto; min-width: 8.5rem; }
 .vp-filters-field--wide { min-width: 11rem; max-width: 16rem; flex: 1 1 14rem; }
-.vp-filters-field--date { min-width: 9rem; }
+.vp-filters-field--date { min-width: 10.75rem; }
 .vp-filters-date-group { display: contents; }
 .vp-filters-actions, .vp-filters-page-actions { display: flex; flex-direction: column; flex-shrink: 0; }
 .vp-filters-page-actions { margin-left: auto; }

@@ -103,18 +103,6 @@ class VendorController extends AdminController
     {
         $data = $request->vendorData();
 
-        if (($data['status'] ?? '') === 'suspended' && $vendor->status !== 'suspended') {
-            return back()
-                ->with('error', 'To suspend this vendor, open their profile page and use the Suspend button. You must enter a reason there.')
-                ->withInput();
-        }
-
-        if (($data['status'] ?? '') === 'rejected' && $vendor->status !== 'rejected') {
-            return back()
-                ->with('error', 'To reject this vendor, open their profile page and use the Reject button. You must enter a reason there.')
-                ->withInput();
-        }
-
         if ($data['status'] === 'active') {
             if (! $vendor->approved_at) {
                 $data['approved_at'] = now();

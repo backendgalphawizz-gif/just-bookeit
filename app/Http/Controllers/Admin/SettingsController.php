@@ -34,7 +34,7 @@ class SettingsController extends AdminController
             'legalAudience' => $legalAudience,
             'settings' => $settings,
             'values' => PlatformSetting::query()->pluck('value', 'key'),
-            'damageDeductionRules' => PlatformSetting::damageDeductionRules(),
+            'damageDeductionRules' => PlatformSetting::damageDeductionRulesForSettings(),
         ]);
     }
 
@@ -182,10 +182,10 @@ class SettingsController extends AdminController
 
         $damageRules = collect($data['damage_deduction_rules'])
             ->map(fn (array $rule) => [
-                'product_type' => trim($rule['product_type']),
+                'service_category_id' => (int) $rule['service_category_id'],
                 'max_percent' => (float) $rule['max_percent'],
             ])
-            ->unique(fn (array $rule) => strtolower($rule['product_type']))
+            ->unique('service_category_id')
             ->values()
             ->all();
 
