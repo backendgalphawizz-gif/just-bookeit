@@ -1,24 +1,66 @@
 @php
     $isCreate = ! $item->exists;
+    $selectedSubcategoryId = old('subcategory_id', $item->subcategory_id);
+    $selectedMainCategoryId = old('main_category_id', $item->subcategory?->parent_id);
+    $subcategoryOptions = $subcategories->map(fn ($sub) => [
+        'id' => $sub->id,
+        'name' => $sub->name,
+        'parent_id' => $sub->parent_id,
+    ])->values();
+    $audienceByMainSlug = $mainCategories->mapWithKeys(fn ($main) => [$main->id => $main->slug])->all();
 @endphp
 
 <input type="hidden" name="type" value="{{ $type }}">
 
 <div class="vp-form-grid">
+    <div
+        class="vp-field vp-field--full"
+        x-data="{
+            mainCategoryId: @js((string) ($selectedMainCategoryId ?? '')),
+            subcategoryId: @js((string) ($selectedSubcategoryId ?? '')),
+            subcategories: @js($subcategoryOptions),
+            audienceByMain: @js($audienceByMainSlug),
+            filteredSubs() {
+                if (!this.mainCategoryId) return [];
+                return this.subcategories.filter((sub) => String(sub.parent_id) === String(this.mainCategoryId));
+            },
+            onMainChange() {
+                this.subcategoryId = '';
+            },
+            onSubChange() {
+                const sub = this.subcategories.find((item) => String(item.id) === String(this.subcategoryId));
+                if (sub) this.mainCategoryId = String(sub.parent_id);
+            }
+        }"
+    >
+        <div class="vp-form-grid">
+            <div class="vp-field">
+                <label class="vp-label" for="main_category_id">Category <span class="vp-required">*</span></label>
+                <select id="main_category_id" name="main_category_id" class="vp-select" x-model="mainCategoryId" @change="onMainChange()" required>
+                    <option value="">Select category</option>
+                    @foreach ($mainCategories as $mainCategory)
+                        <option value="{{ $mainCategory->id }}">{{ $mainCategory->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="vp-field">
+                <label class="vp-label" for="subcategory_id">Sub-category <span class="vp-required">*</span></label>
+                <select id="subcategory_id" name="subcategory_id" class="vp-select" x-model="subcategoryId" @change="onSubChange()" required>
+                    <option value="">Select sub-category</option>
+                    <template x-for="sub in filteredSubs()" :key="sub.id">
+                        <option :value="sub.id" x-text="sub.name"></option>
+                    </template>
+                </select>
+                @error('subcategory_id')<p class="vp-field-error">{{ $message }}</p>@enderror
+            </div>
+        </div>
+    </div>
+
     <div class="vp-field">
         <label class="vp-label">Title <span class="vp-required">*</span></label>
         <input type="text" name="title" class="vp-input @error('title') vp-input--error @enderror" value="{{ old('title', $item->title) }}" required maxlength="255" data-vp-restrict="title">
         @error('title')<p class="vp-field-error">{{ $message }}</p>@enderror
-    </div>
-
-    <div class="vp-field">
-        <label class="vp-label">Audience</label>
-        <select name="audience" class="vp-select">
-            @foreach (['women' => 'Women', 'men' => 'Men', 'kids' => 'Kids'] as $value => $label)
-                <option value="{{ $value }}" @selected(old('audience', $item->audience ?? 'women') === $value)>{{ $label }}</option>
-            @endforeach
-        </select>
-        @error('audience')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
     <div class="vp-field">

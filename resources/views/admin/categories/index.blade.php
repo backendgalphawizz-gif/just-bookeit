@@ -1,31 +1,33 @@
 @extends('admin.layouts.app')
 @section('title', 'Categories')
 @section('page_title', 'Categories')
-@section('page_subtitle', 'Categories and service categories used on vendor profiles')
+@section('page_subtitle', 'Main categories, sub-categories, and service types used across the platform')
 @section('content')
     @php
         $tabs = [
             \App\Models\Category::TYPE_MAIN => 'Categories',
+            \App\Models\Category::TYPE_SUB => 'Sub-categories',
             \App\Models\Category::TYPE_SERVICE => 'Service categories',
         ];
+        $showsParent = $type === \App\Models\Category::TYPE_SUB;
     @endphp
 
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
             @foreach ($tabs as $key => $label)
-                <a href="{{ route('admin.categories.index', ['type' => $key, 'search' => request('search'), 'active' => request('active')]) }}"
+                <a href="{{ route('admin.categories.index', ['type' => $key, 'search' => request('search'), 'active' => request('active'), 'parent_id' => request('parent_id')]) }}"
                    class="jb-settings-tab {{ $type === $key ? 'jb-settings-tab--active' : '' }}">
                     {{ $label }}
                 </a>
             @endforeach
         </div>
         @if (auth('admin')->user()->hasPermission('categories', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => $type])">+ Add Category</x-admin.button>
+            <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => $type])">+ Add {{ $type === \App\Models\Category::TYPE_SUB ? 'Sub-category' : 'Category' }}</x-admin.button>
         @endif
     </div>
 
     @push('filter_actions')
-        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active']" />
+        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active', 'parent_id']" />
     @endpush
     <form method="GET" class="jb-filters">
         <input type="hidden" name="type" value="{{ $type }}">
@@ -34,6 +36,17 @@
                 <label class="jb-label">Search</label>
                 <input type="text" name="search" value="{{ request('search') }}" class="jb-input" placeholder="Name">
             </div>
+            @if ($type === \App\Models\Category::TYPE_SUB)
+                <div class="jb-filters-field">
+                    <label class="jb-label">Parent category</label>
+                    <select name="parent_id" class="jb-select">
+                        <option value="">All</option>
+                        @foreach ($mainCategories as $mainCategory)
+                            <option value="{{ $mainCategory->id }}" @selected(request('parent_id') == $mainCategory->id)>{{ $mainCategory->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
             <div class="jb-filters-field">
                 <label class="jb-label">Active</label>
                 <select name="active" class="jb-select">
@@ -57,8 +70,8 @@
                     <tr>
                         @include('admin.partials.table-index-header')
                         <th class="jb-col-name">Name</th>
-                        @if ($type === \App\Models\Category::TYPE_SERVICE)
-                            <th>Category</th>
+                        @if ($showsParent)
+                            <th>Parent category</th>
                         @endif
                         <th class="text-center">Sort</th>
                         <th class="text-center">Active</th>
@@ -70,7 +83,7 @@
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $categories])
                             <td class="jb-col-name font-semibold">{{ $category->name }}</td>
-                            @if ($type === \App\Models\Category::TYPE_SERVICE)
+                            @if ($showsParent)
                                 <td>{{ $category->parent?->name ?? '—' }}</td>
                             @endif
                             <td class="text-center">{{ $category->sort_order }}</td>
@@ -92,7 +105,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $type === \App\Models\Category::TYPE_SERVICE ? 6 : 5 }}" class="jb-table-empty">
+                            <td colspan="{{ $showsParent ? 6 : 5 }}" class="jb-table-empty">
                                 No {{ strtolower(\App\Models\Category::typeLabel($type)) }} yet.
                             </td>
                         </tr>

@@ -54,7 +54,35 @@ class PlatformDataSeeder extends Seeder
             );
         }
 
+        $subcategoryDefinitions = [
+            'women' => ['Sarees', 'Lehengas', 'Gowns', 'Kurtis'],
+            'men' => ['Suits', 'Kurtas', 'Sherwanis'],
+            'kids' => ['Ethnic Wear', 'Party Wear'],
+        ];
+
+        foreach ($subcategoryDefinitions as $mainSlug => $names) {
+            $main = Category::query()->where('type', 'main')->where('slug', $mainSlug)->first();
+
+            if (! $main) {
+                continue;
+            }
+
+            foreach ($names as $index => $name) {
+                Category::query()->updateOrCreate(
+                    ['slug' => $mainSlug.'-'.Str::slug($name)],
+                    [
+                        'name' => $name,
+                        'type' => 'sub',
+                        'parent_id' => $main->id,
+                        'sort_order' => $index + 1,
+                        'is_active' => true,
+                    ]
+                );
+            }
+        }
+
         $serviceIds = Category::query()->where('type', 'service')->pluck('id');
+        $subcategoryIds = Category::query()->where('type', 'sub')->pluck('id');
         $cities = ['Mumbai', 'Delhi', 'Bengaluru', 'Hyderabad', 'Pune', 'Chennai'];
 
         $customers = collect();
@@ -242,6 +270,8 @@ class PlatformDataSeeder extends Seeder
                 ],
                 [
                     'category_id' => $serviceIds->random(),
+                    'subcategory_id' => $subcategoryIds->isNotEmpty() ? $subcategoryIds->random() : null,
+                    'audience' => fake()->randomElement(['women', 'men', 'kids']),
                     'description' => fake()->sentence(12),
                     'image_url' => 'https://picsum.photos/seed/jb-'.$vendor->id.'-'.$index.'/800/600',
                     'status' => $status,

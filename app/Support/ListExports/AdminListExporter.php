@@ -265,6 +265,10 @@ class AdminListExporter
                     ->with(['order.customer', 'order.vendor', 'category'])
                     ->when($request->filled('category'), fn (Builder $q) => $q->where('category_id', $request->integer('category')))
                     ->when(
+                        $request->filled('raised_by') && in_array($request->string('raised_by')->toString(), ['customer', 'vendor'], true),
+                        fn (Builder $q) => $q->where('raised_by', $request->string('raised_by'))
+                    )
+                    ->when(
                         $request->get('status') === '_open_' || $request->boolean('open_only'),
                         fn (Builder $q) => $q->whereIn('status', Dispute::OPEN_STATUSES)
                     )

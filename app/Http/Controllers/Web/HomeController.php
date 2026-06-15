@@ -26,8 +26,8 @@ class HomeController extends WebController
             ->get();
 
         $shopCategories = Category::query()
-            ->where('is_active', true)
-            ->whereNull('parent_id')
+            ->active()
+            ->main()
             ->orderBy('sort_order')
             ->limit(3)
             ->get();

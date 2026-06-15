@@ -3,6 +3,18 @@
 @section('page_title', 'Disputes')
 @section('page_subtitle', 'Customer and vendor issues by service category')
 @section('content')
+    @php
+        $raisedByTabs = [
+            '' => 'All',
+            'customer' => 'Customer',
+            'vendor' => 'Vendor',
+        ];
+        $resetParams = array_filter([
+            'category' => $categoryId ?: null,
+            'raised_by' => $raisedBy ?: null,
+        ]);
+    @endphp
+
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
             <a href="{{ route('admin.disputes.index', request()->except('category', 'page')) }}"
@@ -19,11 +31,14 @@
     </div>
 
     @push('filter_actions')
-        <x-admin.export-dropdown module="disputes" :params="['category', 'status', 'from', 'to']" />
+        <x-admin.export-dropdown module="disputes" :params="['category', 'raised_by', 'status', 'from', 'to']" />
     @endpush
     <form method="GET" class="jb-filters">
         @if ($categoryId)
             <input type="hidden" name="category" value="{{ $categoryId }}">
+        @endif
+        @if ($raisedBy)
+            <input type="hidden" name="raised_by" value="{{ $raisedBy }}">
         @endif
         <div class="jb-filters-grid">
             <div class="jb-filters-field">
@@ -37,15 +52,36 @@
                 </select>
             </div>
             @include('admin.partials.date-filter')
-            @include('admin.partials.filters-end', ['resetUrl' => route('admin.disputes.index', $categoryId ? ['category' => $categoryId] : [])])
+            @include('admin.partials.filters-end', ['resetUrl' => route('admin.disputes.index', $resetParams)])
         </div>
     </form>
+
+    <div class="jb-tabs-row jb-tabs-row--nested">
+        <div class="jb-tabs-list">
+            @foreach ($raisedByTabs as $key => $tabLabel)
+                @php
+                    $tabParams = array_merge(
+                        request()->except('page', 'raised_by'),
+                        $key !== '' ? ['raised_by' => $key] : []
+                    );
+                @endphp
+                <a href="{{ route('admin.disputes.index', $tabParams) }}"
+                   class="jb-settings-tab {{ ($raisedBy ?? '') === $key ? 'jb-settings-tab--active' : '' }}">
+                    {{ $tabLabel }}
+                </a>
+            @endforeach
+        </div>
+    </div>
+
     <div class="jb-card">
         <div class="jb-card-header">
             <p class="jb-card-header-title">
                 {{ $disputes->total() }} disputes
                 @if ($categoryId)
                     · {{ $categories->firstWhere('id', $categoryId)?->name }}
+                @endif
+                @if ($raisedBy)
+                    · {{ ucfirst($raisedBy) }}
                 @endif
             </p>
         </div>
@@ -74,11 +110,11 @@
                             <td class="jb-col-name">{{ $dispute->raised_by === 'customer' ? ($dispute->order->customer?->name ?? '—') : ($dispute->order->vendor?->brand_name ?? '—') }}</td>
                             <td>{{ $dispute->created_at ? $dispute->created_at->format('M d, Y') : '—' }}</td>
                             <td class="jb-col-meta capitalize">{{ $dispute->raised_by }}</td>
-                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $dispute->status])</td>
+                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $dispute->status, 'label' => $dispute->statusLabel()])</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.disputes.show', $dispute)" /></div></td>
                         </tr>
                     @empty
-                        <tr><td colspan="10" class="jb-table-empty">No disputes for this category.</td></tr>
+                        <tr><td colspan="10" class="jb-table-empty">No disputes found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

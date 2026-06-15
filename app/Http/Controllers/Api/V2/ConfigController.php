@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Models\Category;
+use App\Support\Api\CustomerApiPresenter;
 use App\Support\LocationResolver;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
@@ -11,12 +13,34 @@ class ConfigController extends ApiController
 {
     public function index(): JsonResponse
     {
+        $mainCategories = Category::query()
+            ->active()
+            ->main()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $subcategories = Category::query()
+            ->active()
+            ->sub()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
         return $this->success([
             'product_categories' => [
                 ['type' => 'rented-dress', 'label' => 'Rental Dresses'],
                 ['type' => 'rented-jewellery', 'label' => 'Rental Jewellery'],
                 ['type' => 'fashion-designer', 'label' => 'Fashion Designer'],
             ],
+            'shop_categories' => $mainCategories
+                ->map(fn (Category $category) => CustomerApiPresenter::category($category))
+                ->values()
+                ->all(),
+            'subcategories' => $subcategories
+                ->map(fn (Category $category) => CustomerApiPresenter::category($category))
+                ->values()
+                ->all(),
             'product_audiences' => [
                 ['key' => 'women', 'label' => 'Women'],
                 ['key' => 'men', 'label' => 'Men'],

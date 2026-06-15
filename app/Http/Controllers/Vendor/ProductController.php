@@ -8,6 +8,7 @@ use App\Models\PortfolioItemImage;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
 use App\Support\StoresUploadedFiles;
+use App\Support\SubcategoryCatalog;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,9 +35,10 @@ class ProductController extends VendorController
         $items = PortfolioItem::query()
             ->where('vendor_id', $vendor->id)
             ->when($category, fn ($q) => $q->where('category_id', $category->id))
+            ->when($request->filled('subcategory_id'), fn ($q) => $q->where('subcategory_id', $request->integer('subcategory_id')))
             ->when($request->filled('search'), fn ($q) => $q->where('title', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->with('category');
+            ->with(['category', 'subcategory.parent']);
         $items = $this->applyDateRange($items, $request)
             ->orderByDesc('id')
             ->paginate(15)
@@ -55,12 +57,11 @@ class ProductController extends VendorController
         $type = $request->string('type', 'fashion-designer')->toString();
         $category = Category::query()->where('slug', $type)->firstOrFail();
 
-        return view('vendor.products.form', [
-            'item' => new PortfolioItem(['status' => 'pending', 'audience' => 'women']),
-            'type' => $type,
-            'typeLabel' => $this->typeMap[$type] ?? 'Product',
-            'category' => $category,
-        ]);
+        return view('vendor.products.form', $this->formViewData(
+            new PortfolioItem(['status' => 'pending', 'audience' => 'women']),
+            $type,
+            $category
+        ));
     }
 
     public function store(Request $request): RedirectResponse
@@ -75,16 +76,21 @@ class ProductController extends VendorController
             $this->productUploadRules(true)
         ));
 
+        $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);
+
+        abort_unless($subcategory, 422, 'Select a valid sub-category.');
+
         $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
 
         $product = PortfolioItem::query()->create([
             'vendor_id' => $vendor->id,
             'category_id' => $category->id,
+            'subcategory_id' => $subcategory->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'price_per_day' => $data['price_per_day'],
             'advance_amount' => $data['advance_amount'] ?? null,
-            'audience' => $data['audience'] ?? 'women',
+            'audience' => SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $data['audience'] ?? 'women',
             'image_url' => $imagePath,
             'status' => 'pending',
         ]);
@@ -100,15 +106,10 @@ class ProductController extends VendorController
     public function edit(PortfolioItem $product): View
     {
         abort_unless($product->vendor_id === $this->vendor()->id, 403);
-        $product->load(['category', 'images', 'variants', 'damageDeductions']);
+        $product->load(['category', 'subcategory.parent', 'images', 'variants', 'damageDeductions']);
         $type = $product->category?->slug ?? 'fashion-designer';
 
-        return view('vendor.products.form', [
-            'item' => $product,
-            'type' => $type,
-            'typeLabel' => $this->typeMap[$type] ?? 'Product',
-            'category' => $product->category,
-        ]);
+        return view('vendor.products.form', $this->formViewData($product, $type, $product->category));
     }
 
     public function update(Request $request, PortfolioItem $product): RedirectResponse
@@ -121,15 +122,25 @@ class ProductController extends VendorController
             $this->productUploadRules(false)
         ));
 
-        $product->fill([
+        $updates = [
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'price_per_day' => $data['price_per_day'] ?? $product->price_per_day,
             'advance_amount' => array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $product->advance_amount,
-            'audience' => $data['audience'] ?? $product->audience,
             'status' => 'pending',
             'rejection_reason' => null,
-        ]);
+        ];
+
+        if (array_key_exists('subcategory_id', $data)) {
+            $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);
+            abort_unless($subcategory, 422, 'Select a valid sub-category.');
+            $updates['subcategory_id'] = $subcategory->id;
+            $updates['audience'] = SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $product->audience;
+        } elseif (! empty($data['audience'])) {
+            $updates['audience'] = $data['audience'];
+        }
+
+        $product->fill($updates);
 
         if ($request->hasFile('image')) {
             $product->image_url = StoresUploadedFiles::replace(
@@ -170,6 +181,19 @@ class ProductController extends VendorController
         $image->delete();
 
         return back()->with('success', 'Gallery image removed.');
+    }
+
+    /** @return array<string, mixed> */
+    protected function formViewData(PortfolioItem $item, string $type, ?Category $category): array
+    {
+        return [
+            'item' => $item,
+            'type' => $type,
+            'typeLabel' => $this->typeMap[$type] ?? 'Product',
+            'category' => $category,
+            'mainCategories' => Category::query()->main()->active()->orderBy('sort_order')->orderBy('name')->get(),
+            'subcategories' => Category::query()->sub()->active()->orderBy('sort_order')->orderBy('name')->get(),
+        ];
     }
 
     /** @return array<string, mixed> */

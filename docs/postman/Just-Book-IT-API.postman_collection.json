@@ -342,7 +342,9 @@
 											"const categories = json.data?.categories || json.data?.items || [];",
 											"const men = categories.find((c) => c.slug === 'men') || categories[0];",
 											"if (men?.id) { pm.environment.set('v1_shop_category_id', String(men.id)); }",
-											"if (categories[0]?.id) { pm.environment.set('v1_category_id', String(categories[0].id)); }"
+											"if (categories[0]?.id) { pm.environment.set('v1_category_id', String(categories[0].id)); }",
+											"const sub = categories[0]?.subcategories?.[0] || categories.find((c) => c.subcategories?.length)?.subcategories?.[0];",
+											"if (sub?.id) { pm.environment.set('v1_subcategory_id', String(sub.id)); }"
 										]
 									}
 								}
@@ -383,6 +385,33 @@
 									}
 								],
 								"url": "{{base_url}}/v1/categories?type=service"
+							}
+						},
+						{
+							"name": "Sub-categories (by parent)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"const json = pm.response.json();",
+											"const items = json.data?.items || [];",
+											"if (items[0]?.id) { pm.environment.set('v1_subcategory_id', String(items[0].id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v1/categories?type=sub&parent_id={{v1_shop_category_id}}",
+								"description": "List sub-categories under a main category (Women/Men/Kids). Use returned id as `subcategory_id` when creating products or filtering catalog."
 							}
 						},
 						{
@@ -2150,7 +2179,35 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/config"
+								"url": "{{base_url}}/v2/config",
+								"description": "Vendor app config including `shop_categories`, `subcategories`, product types, sizes, and locations."
+							}
+						},
+						{
+							"name": "Categories (shop roots)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/categories?roots=1"
+							}
+						},
+						{
+							"name": "Sub-categories (by parent)",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/categories?type=sub&parent_id={{v1_shop_category_id}}",
+								"description": "Sub-categories for product create/update forms."
 							}
 						}
 					]
@@ -2817,10 +2874,16 @@
 											"description": "Optional advance/booking amount"
 										},
 										{
+											"key": "subcategory_id",
+											"value": "{{v1_subcategory_id}}",
+											"type": "text",
+											"description": "Required. Sub-category id from GET /v1/categories?type=sub&parent_id={main_category_id}"
+										},
+										{
 											"key": "audience",
 											"value": "women",
 											"type": "text",
-											"description": "Category dropdown: women | men | kids"
+											"description": "Optional — derived from sub-category parent when subcategory_id is set"
 										},
 										{
 											"key": "image",
@@ -2855,7 +2918,7 @@
 									]
 								},
 								"url": "{{base_url}}/v2/products",
-								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires primary `image`."
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`."
 							}
 						},
 						{

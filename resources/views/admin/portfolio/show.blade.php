@@ -162,6 +162,14 @@
                         <dd>{{ $portfolio->category?->name ?? '—' }}</dd>
                     </div>
                     <div class="jb-product-fact">
+                        <dt>Category</dt>
+                        <dd>{{ $portfolio->subcategory?->parent?->name ?? '—' }}</dd>
+                    </div>
+                    <div class="jb-product-fact">
+                        <dt>Sub-category</dt>
+                        <dd>{{ $portfolio->subcategory?->name ?? '—' }}</dd>
+                    </div>
+                    <div class="jb-product-fact">
                         <dt>Audience</dt>
                         <dd>{{ ucfirst($portfolio->audience ?? 'women') }}</dd>
                     </div>

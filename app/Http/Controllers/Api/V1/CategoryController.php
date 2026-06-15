@@ -14,27 +14,28 @@ class CategoryController extends ApiController
     {
         if ($request->boolean('roots')) {
             $categories = Category::query()
-                ->where('is_active', true)
-                ->where('type', 'main')
+                ->active()
+                ->main()
                 ->whereNull('parent_id')
+                ->with(['subcategories' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('name')])
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
 
             $services = Category::query()
-                ->where('is_active', true)
-                ->where('type', 'service')
+                ->active()
+                ->service()
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
 
             return $this->success([
-                'categories' => $categories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'categories' => $categories->map(fn ($category) => CustomerApiPresenter::category($category, includeSubcategories: true))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
             ]);
         }
 
-        $query = Category::query()->where('is_active', true);
+        $query = Category::query()->active();
 
         if ($request->filled('type')) {
             $query->where('type', $request->string('type'));
