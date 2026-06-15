@@ -319,6 +319,19 @@
         min-width: 10.75rem;
     }
 
+    .jb-date-native {
+        @apply min-h-[2.625rem];
+    }
+
+    .jb-date-native::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.75;
+    }
+
+    .jb-date-native::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+    }
+
     .jb-filters-actions {
         @apply flex shrink-0 flex-col;
     }

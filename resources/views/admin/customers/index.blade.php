@@ -31,19 +31,11 @@
                 <input type="text" name="city" value="{{ request('city') }}" placeholder="City" class="jb-input">
             </div>
             @include('admin.partials.date-filter')
-            <div class="jb-filters-field jb-filters-field--date">
-                <label class="jb-label" for="filter-registered">Registered on</label>
-                <input
-                    type="date"
-                    id="filter-registered"
-                    name="registered_on"
-                    value="{{ request('registered_on') }}"
-                    class="jb-input"
-                    min="{{ \App\Support\AdminValidationRules::MYSQL_MIN_TIMESTAMP_DATE }}"
-                    max="{{ \App\Support\AdminValidationRules::listDateMax() }}"
-                >
-                @error('registered_on')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-            </div>
+            @include('admin.partials.filter-date-input', [
+                'name' => 'registered_on',
+                'id' => 'filter-registered',
+                'label' => 'Registered on',
+            ])
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.customers.index')])
         </div>
     </form>

@@ -692,6 +692,57 @@
         window.addEventListener('beforeunload', saveScroll);
     }
 
+    function isUsableAdminFilterDate(value, minDate, maxDate) {
+        if (! value || ! /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return false;
+        }
+
+        return value >= minDate && value <= maxDate;
+    }
+
+    window.jbAdminFilterDateRange = (minDate, maxDate, initialFrom = '', initialTo = '') => ({
+        minDate,
+        maxDate,
+        from: initialFrom,
+        to: initialTo,
+        isUsableDate(value) {
+            return isUsableAdminFilterDate(value, this.minDate, this.maxDate);
+        },
+        maxForFrom() {
+            if (this.isUsableDate(this.to)) {
+                return this.to;
+            }
+
+            return this.maxDate;
+        },
+        minForTo() {
+            if (this.isUsableDate(this.from)) {
+                return this.from;
+            }
+
+            return this.minDate;
+        },
+        syncFrom(event) {
+            const value = event.target.value;
+
+            if (value === '' || this.isUsableDate(value)) {
+                this.from = value;
+            }
+        },
+        syncTo(event) {
+            const value = event.target.value;
+
+            if (value === '' || this.isUsableDate(value)) {
+                this.to = value;
+            }
+        },
+    });
+
+    window.jbAdminFilterSingleDate = (minDate, maxDate) => ({
+        minDate,
+        maxDate,
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         initSidebarScrollPersistence();
         init(document);
