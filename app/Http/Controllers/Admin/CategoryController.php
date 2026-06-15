@@ -22,24 +22,13 @@ class CategoryController extends AdminController
     public function index(Request $request): View
     {
         $this->validateListDateRange($request);
-        $type = $this->resolveType($request->string('type', Category::TYPE_MAIN)->toString());
+        $type = $this->resolveIndexType($request->string('type', 'catalog')->toString());
 
-        $categories = $this->applyDateRange(
-            Category::query()->where('type', $type),
-            $request
-        )
-            ->with('parent')
-            ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
-            ->when($request->filled('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
-            ->when($type === Category::TYPE_SUB && $request->filled('parent_id'), fn ($q) => $q->where('parent_id', $request->integer('parent_id')))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+        if ($type === Category::TYPE_SERVICE) {
+            return view('admin.categories.index', $this->serviceCategoriesViewData($request));
+        }
 
-        $mainCategories = Category::query()->main()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
-
-        return view('admin.categories.index', compact('categories', 'type', 'mainCategories'));
+        return view('admin.categories.index', $this->catalogCategoriesViewData($request));
     }
 
     public function create(Request $request): View
@@ -64,7 +53,7 @@ class CategoryController extends AdminController
         Category::query()->create($data);
 
         return redirect()
-            ->route('admin.categories.index', ['type' => $data['type']])
+            ->route('admin.categories.index', ['type' => $this->indexTypeForCategory($data['type'])])
             ->with('success', 'Category created successfully.');
     }
 
@@ -96,7 +85,7 @@ class CategoryController extends AdminController
         $category->update($data);
 
         return redirect()
-            ->route('admin.categories.index', ['type' => $category->type])
+            ->route('admin.categories.index', ['type' => $this->indexTypeForCategory($category->type)])
             ->with('success', 'Category updated successfully.');
     }
 
@@ -123,17 +112,98 @@ class CategoryController extends AdminController
         }
 
         StoresUploadedFiles::delete($category->image_path);
-        $type = $category->type;
+        $indexType = $this->indexTypeForCategory($category->type);
         $category->delete();
 
         return redirect()
-            ->route('admin.categories.index', ['type' => $type])
+            ->route('admin.categories.index', ['type' => $indexType])
             ->with('success', 'Category deleted successfully.');
     }
 
     protected function resolveType(string $type): string
     {
         return in_array($type, Category::TYPES, true) ? $type : Category::TYPE_MAIN;
+    }
+
+    protected function resolveIndexType(string $type): string
+    {
+        if ($type === Category::TYPE_SERVICE) {
+            return Category::TYPE_SERVICE;
+        }
+
+        if (in_array($type, ['catalog', Category::TYPE_MAIN, Category::TYPE_SUB], true)) {
+            return 'catalog';
+        }
+
+        return 'catalog';
+    }
+
+    protected function indexTypeForCategory(string $type): string
+    {
+        return $type === Category::TYPE_SERVICE ? Category::TYPE_SERVICE : 'catalog';
+    }
+
+    /** @return array<string, mixed> */
+    protected function serviceCategoriesViewData(Request $request): array
+    {
+        $categories = $this->applyDateRange(
+            Category::query()->where('type', Category::TYPE_SERVICE),
+            $request
+        )
+            ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
+            ->when($request->filled('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
+
+        return [
+            'type' => Category::TYPE_SERVICE,
+            'categories' => $categories,
+            'mainCategories' => collect(),
+            'subcategoryTotal' => 0,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected function catalogCategoriesViewData(Request $request): array
+    {
+        $search = $request->filled('search') ? $request->string('search')->toString() : null;
+        $activeFilter = $request->filled('active') ? $request->boolean('active') : null;
+
+        $categories = $this->applyDateRange(Category::query()->main(), $request)
+            ->when($request->filled('parent_id'), fn ($q) => $q->where('id', $request->integer('parent_id')))
+            ->when($search, function ($q) use ($search) {
+                $term = '%'.$search.'%';
+                $q->where(function ($q) use ($term) {
+                    $q->where('name', 'like', $term)
+                        ->orWhereHas('subcategories', fn ($sub) => $sub->where('name', 'like', $term));
+                });
+            })
+            ->when($activeFilter !== null, fn ($q) => $q->where('is_active', $activeFilter))
+            ->with(['subcategories' => function ($q) use ($activeFilter) {
+                $q->when($activeFilter !== null, fn ($sub) => $sub->where('is_active', $activeFilter))
+                    ->orderBy('sort_order')
+                    ->orderBy('name');
+            }])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->paginate(15)
+            ->withQueryString();
+
+        $subcategoryTotal = Category::query()
+            ->sub()
+            ->when($request->filled('parent_id'), fn ($q) => $q->where('parent_id', $request->integer('parent_id')))
+            ->when($search, fn ($q) => $q->where('name', 'like', '%'.$search.'%'))
+            ->when($activeFilter !== null, fn ($q) => $q->where('is_active', $activeFilter))
+            ->count();
+
+        return [
+            'type' => 'catalog',
+            'categories' => $categories,
+            'mainCategories' => Category::query()->main()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'subcategoryTotal' => $subcategoryTotal,
+        ];
     }
 
     protected function resolveParentId(string $type, mixed $parentId): ?int

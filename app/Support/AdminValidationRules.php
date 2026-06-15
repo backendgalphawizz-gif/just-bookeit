@@ -2,10 +2,18 @@
 
 namespace App\Support;
 
+use App\Models\Category;
+use Illuminate\Validation\Rule;
+
 class AdminValidationRules
 {
     /** Earliest value accepted by MySQL TIMESTAMP columns. */
     public const MYSQL_MIN_TIMESTAMP_DATE = '1970-01-01';
+
+    public static function listDateMax(): string
+    {
+        return now()->format('Y-m-d');
+    }
 
     public const REGEX_PERSON_NAME = '/^[\p{L}\s.\'\-]+$/u';
 
@@ -153,9 +161,13 @@ class AdminValidationRules
 
     public static function listDateRange(): array
     {
+        $minDate = self::MYSQL_MIN_TIMESTAMP_DATE;
+        $maxDate = self::listDateMax();
+
         return [
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'from' => ['nullable', 'date', 'after_or_equal:'.$minDate, 'before_or_equal:'.$maxDate],
+            'to' => ['nullable', 'date', 'after_or_equal:'.$minDate, 'before_or_equal:'.$maxDate, 'after_or_equal:from'],
+            'registered_on' => ['nullable', 'date', 'after_or_equal:'.$minDate, 'before_or_equal:'.$maxDate],
         ];
     }
 
@@ -348,8 +360,8 @@ class AdminValidationRules
             'title' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'subtitle' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'redirect_url' => ['nullable', 'url', 'max:500'],
-            'starts_at' => ['nullable', 'date'],
-            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'starts_at' => ['nullable', 'date', 'after_or_equal:'.self::MYSQL_MIN_TIMESTAMP_DATE],
+            'ends_at' => ['nullable', 'date', 'after_or_equal:'.self::MYSQL_MIN_TIMESTAMP_DATE, 'after_or_equal:starts_at'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
         ];
     }
@@ -565,7 +577,12 @@ class AdminValidationRules
             'refund_rental_cancel_days' => $days,
             'refund_rental_late_fee_per_day' => $amount,
             'damage_deduction_rules' => ['required', 'array', 'min:1'],
-            'damage_deduction_rules.*.product_type' => ['required', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'damage_deduction_rules.*.service_category_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_SERVICE)),
+            ],
             'damage_deduction_rules.*.max_percent' => $percent,
             'refund_rental_deposit_days' => $days,
             'refund_sale_window_days' => $days,
@@ -578,11 +595,17 @@ class AdminValidationRules
     {
         return [
             'from.date' => 'Enter a valid from date.',
+            'from.after_or_equal' => 'From date must be on or after Jan 1, 1970.',
+            'from.before_or_equal' => 'From date cannot be in the future.',
             'to.date' => 'Enter a valid to date.',
-            'to.after_or_equal' => 'To date must be the same as or after the from date.',
+            'to.after_or_equal' => 'To date must be on or after Jan 1, 1970 and not before the from date.',
+            'to.before_or_equal' => 'To date cannot be in the future.',
+            'registered_on.after_or_equal' => 'Registered date must be on or after Jan 1, 1970.',
+            'registered_on.before_or_equal' => 'Registered date cannot be in the future.',
             'starts_at.date' => 'Enter a valid start date.',
+            'starts_at.after_or_equal' => 'Start date must be on or after Jan 1, 1970.',
             'ends_at.date' => 'Enter a valid end date.',
-            'ends_at.after_or_equal' => 'End date must be the same as or after the start date.',
+            'ends_at.after_or_equal' => 'End date must be on or after Jan 1, 1970 and not before the start date.',
             'amount.min' => 'Amount cannot be negative.',
             'rating.min' => 'Rating cannot be negative.',
             'rating.max' => 'Rating cannot exceed 5.',
@@ -593,9 +616,11 @@ class AdminValidationRules
             'refund_rental_cancel_days.min' => 'Cancellation notice cannot be negative.',
             'refund_rental_cancel_days.max' => 'Cancellation notice cannot exceed 365 days.',
             'refund_rental_late_fee_per_day.min' => 'Late return fee cannot be negative.',
-            'damage_deduction_rules.required' => 'Add at least one product type for damage deduction.',
-            'damage_deduction_rules.min' => 'Add at least one product type for damage deduction.',
-            'damage_deduction_rules.*.product_type.required' => 'Product type is required.',
+            'damage_deduction_rules.required' => 'Configure at least one service category for damage deduction.',
+            'damage_deduction_rules.min' => 'Configure at least one service category for damage deduction.',
+            'damage_deduction_rules.*.service_category_id.required' => 'Service category is required.',
+            'damage_deduction_rules.*.service_category_id.exists' => 'Select a valid service category.',
+            'damage_deduction_rules.*.service_category_id.distinct' => 'Each service category can only appear once.',
             'damage_deduction_rules.*.max_percent.min' => 'Damage deduction cannot be negative.',
             'damage_deduction_rules.*.max_percent.max' => 'Damage deduction cannot exceed 100%.',
             'suspension_reason.required' => 'A suspension reason is required.',
@@ -670,7 +695,7 @@ class AdminValidationRules
             'global_commission_percent' => 'commission',
             'refund_rental_cancel_days' => 'rental cancellation days',
             'refund_rental_late_fee_per_day' => 'late return fee',
-            'damage_deduction_rules.*.product_type' => 'product type',
+            'damage_deduction_rules.*.service_category_id' => 'service category',
             'damage_deduction_rules.*.max_percent' => 'max damage deduction',
             'suspension_reason' => 'suspension reason',
             'rejection_reason' => 'rejection reason',

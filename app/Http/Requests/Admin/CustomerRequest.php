@@ -3,12 +3,19 @@
 namespace App\Http\Requests\Admin;
 
 use App\Support\AdminValidationRules;
+use Illuminate\Validation\Rule;
 
 class CustomerRequest extends AdminFormRequest
 {
     public function rules(): array
     {
-        return AdminValidationRules::customer();
+        $rules = AdminValidationRules::customer();
+
+        if ($customer = $this->route('customer')) {
+            $rules['status'] = ['required', Rule::in([$customer->status])];
+        }
+
+        return $rules;
     }
 
     protected function prepareForValidation(): void

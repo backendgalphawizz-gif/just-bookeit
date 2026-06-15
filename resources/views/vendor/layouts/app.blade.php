@@ -107,6 +107,7 @@
 
 @include('vendor.partials.alert')
 @include('vendor.partials.global-confirm')
+<script defer src="{{ asset('js/date-filter-fields.js') }}"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 <script defer src="{{ asset('js/vendor-panel.js') }}"></script>
 @stack('scripts')

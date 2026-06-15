@@ -18,6 +18,14 @@
         ->take(2)
         ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))
         ->implode('') ?: '?';
+    $isEdit = (bool) ($vendor?->exists ?? false);
+    $currentStatus = old('status', $vendor?->status ?? 'pending');
+    $createStatusOptions = ['pending', 'active', 'suspended', 'rejected'];
+    $statusHelp = match ($currentStatus) {
+        'pending', 'rejected' => 'Approve or reject this vendor from their profile page — status cannot be changed here.',
+        'suspended' => 'Activate this vendor from their profile page — status cannot be changed here.',
+        default => 'Suspend this vendor from their profile page — status cannot be changed here.',
+    };
 @endphp
 
 <p class="jb-form-section-title sm:col-span-2">Profile & branding</p>
@@ -130,11 +138,22 @@
     ])
 </div>
 
-<x-admin.form-select label="Status" name="status" :required="true">
-    @foreach (['pending', 'active', 'suspended', 'rejected'] as $s)
-        <option value="{{ $s }}" @selected(old('status', $vendor?->status ?? 'pending') === $s)>{{ ucfirst($s) }}</option>
-    @endforeach
-</x-admin.form-select>
+@if ($isEdit)
+    <div class="sm:col-span-2">
+        <label class="jb-label">Status</label>
+        <div class="mt-1.5 flex flex-wrap items-center gap-3">
+            @include('admin.components.status-badge', ['status' => $currentStatus])
+            <input type="hidden" name="status" value="{{ $currentStatus }}">
+        </div>
+        <p class="mt-2 text-sm text-slate-500">{{ $statusHelp }}</p>
+    </div>
+@else
+    <x-admin.form-select label="Status" name="status" :required="true">
+        @foreach ($createStatusOptions as $s)
+            <option value="{{ $s }}" @selected($currentStatus === $s)>{{ ucfirst($s) }}</option>
+        @endforeach
+    </x-admin.form-select>
+@endif
 @include('admin.partials.form-input', ['label' => 'Commission (%)', 'name' => 'commission', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('commission', $vendor?->commission), 'hint' => 'Leave blank to use global commission (10%)'])
 @include('admin.partials.form-input', ['label' => 'Rating', 'name' => 'rating', 'type' => 'number', 'step' => '0.1', 'min' => '0', 'max' => '5', 'value' => old('rating', $vendor?->rating ?? 0)])
 @include('admin.partials.form-input', ['label' => 'Orders completed', 'name' => 'orders_completed', 'type' => 'number', 'step' => '1', 'value' => old('orders_completed', $vendor?->orders_completed ?? 0)])

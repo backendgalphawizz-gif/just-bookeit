@@ -1,23 +1,50 @@
+@php
+    use App\Support\AdminValidationRules;
+
+    $minFilterDate = AdminValidationRules::MYSQL_MIN_TIMESTAMP_DATE;
+    $maxFilterDate = AdminValidationRules::listDateMax();
+@endphp
 <div
     class="contents"
     x-data="{
+        minDate: @js($minFilterDate),
+        maxDate: @js($maxFilterDate),
         from: @js(request('from', '')),
         to: @js(request('to', '')),
+        maxForFrom() {
+            if (this.to && this.to < this.maxDate) {
+                return this.to;
+            }
+
+            return this.maxDate;
+        },
+        minForTo() {
+            if (this.from && this.from > this.minDate) {
+                return this.from;
+            }
+
+            return this.minDate;
+        },
         syncFrom(event) {
             this.from = event.target.value;
-            if (this.to && this.from && this.to < this.from) {
+
+            if (this.to && this.from && this.to < this.from && this.$refs.toInput) {
                 this.to = this.from;
-                if (this.$refs.toInput) {
-                    this.$refs.toInput.value = this.from;
-                }
+                this.$refs.toInput.value = this.from;
             }
         },
         syncTo(event) {
-            this.to = event.target.value;
-            if (this.from && this.to && this.to < this.from) {
-                this.to = this.from;
-                event.target.value = this.from;
+            let value = event.target.value;
+
+            if (this.from && value && value < this.from) {
+                value = this.from;
             }
+
+            if (value !== event.target.value) {
+                event.target.value = value;
+            }
+
+            this.to = value;
         }
     }"
 >
@@ -29,8 +56,10 @@
             name="from"
             value="{{ request('from') }}"
             class="jb-input"
+            min="{{ $minFilterDate }}"
+            max="{{ $maxFilterDate }}"
             x-ref="fromInput"
-            :max="to || null"
+            :max="maxForFrom()"
             @change="syncFrom"
         >
         @error('from')
@@ -45,8 +74,10 @@
             name="to"
             value="{{ request('to') }}"
             class="jb-input"
+            min="{{ $minFilterDate }}"
+            max="{{ $maxFilterDate }}"
             x-ref="toInput"
-            :min="from || null"
+            :min="minForTo()"
             @change="syncTo"
         >
         @error('to')

@@ -27,6 +27,7 @@
 @include('admin.partials.form-date-range', [
     'startValue' => $banner?->starts_at?->format('Y-m-d'),
     'endValue' => $banner?->ends_at?->format('Y-m-d'),
+    'allowFuture' => true,
 ])
 <div class="jb-checkbox-row sm:col-span-2">
     <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $banner?->is_active ?? true))>

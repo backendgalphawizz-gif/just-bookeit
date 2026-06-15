@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\PlatformSetting;
 use Illuminate\Database\Seeder;
 
@@ -37,11 +38,6 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'refund_rules', 'key' => 'refund_enable_sale', 'value' => '1', 'type' => 'boolean'],
             ['group' => 'refund_rules', 'key' => 'refund_rental_cancel_days', 'value' => '3', 'type' => 'text'],
             ['group' => 'refund_rules', 'key' => 'refund_rental_late_fee_per_day', 'value' => '500', 'type' => 'text'],
-            ['group' => 'refund_rules', 'key' => 'refund_damage_deduction_rules', 'value' => json_encode([
-                ['product_type' => 'Jewellery', 'max_percent' => 100],
-                ['product_type' => 'Cloth', 'max_percent' => 50],
-                ['product_type' => 'Other', 'max_percent' => 30],
-            ]), 'type' => 'json'],
             ['group' => 'refund_rules', 'key' => 'refund_rental_deposit_days', 'value' => '7', 'type' => 'text'],
             ['group' => 'refund_rules', 'key' => 'refund_sale_window_days', 'value' => '7', 'type' => 'text'],
             ['group' => 'refund_rules', 'key' => 'refund_sale_return_days', 'value' => '14', 'type' => 'text'],
@@ -57,5 +53,41 @@ class PlatformSettingsSeeder extends Seeder
         foreach ($defaults as $row) {
             PlatformSetting::query()->updateOrCreate(['key' => $row['key']], $row);
         }
+
+        $this->seedDamageDeductionRules();
+    }
+
+    protected function seedDamageDeductionRules(): void
+    {
+        $defaultsBySlug = [
+            'fashion-designer' => 100,
+            'rented-dress' => 50,
+            'rented-jewellery' => 100,
+        ];
+
+        $rules = Category::query()
+            ->service()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Category $category) => [
+                'service_category_id' => $category->id,
+                'max_percent' => $defaultsBySlug[$category->slug] ?? 100,
+            ])
+            ->values()
+            ->all();
+
+        if ($rules === []) {
+            return;
+        }
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'refund_damage_deduction_rules'],
+            [
+                'group' => 'refund_rules',
+                'value' => json_encode($rules),
+                'type' => 'json',
+            ]
+        );
     }
 }

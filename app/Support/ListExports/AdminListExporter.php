@@ -183,7 +183,8 @@ class AdminListExporter
                 'headers' => ['Name', 'Slug', 'Type', 'Parent', 'Active', 'Sort Order', 'Created'],
                 'query' => fn (Request $request) => $this->applyDateRange(Category::query(), $request)
                     ->with('parent')
-                    ->when($request->filled('type'), fn (Builder $q) => $q->where('type', $request->string('type')))
+                    ->when($request->string('type')->toString() === 'catalog', fn (Builder $q) => $q->whereIn('type', [Category::TYPE_MAIN, Category::TYPE_SUB]))
+                    ->when($request->filled('type') && $request->string('type')->toString() !== 'catalog', fn (Builder $q) => $q->where('type', $request->string('type')))
                     ->when($request->filled('search'), fn (Builder $q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
                     ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
                     ->orderBy('sort_order')

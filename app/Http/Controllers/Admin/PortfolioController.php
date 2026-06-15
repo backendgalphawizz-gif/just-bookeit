@@ -9,6 +9,7 @@ use App\Models\Vendor;
 use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
+use App\Support\ProductDamageDeductionRules;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -66,6 +67,11 @@ class PortfolioController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+            (int) $data['category_id'],
+            $data['damage_deductions'] ?? []
+        );
+
         $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
 
         $product = PortfolioItem::query()->create([
@@ -118,6 +124,11 @@ class PortfolioController extends AdminController
             AdminValidationRules::portfolioItem(false),
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
+        );
+
+        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+            (int) $data['category_id'],
+            $data['damage_deductions'] ?? []
         );
 
         $portfolio->fill([

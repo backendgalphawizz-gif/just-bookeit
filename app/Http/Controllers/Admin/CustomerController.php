@@ -70,16 +70,19 @@ class CustomerController extends AdminController
         return redirect()->route('admin.customers.index')->with('success', 'Customer created successfully.');
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
         $customer->load([
-            'orders' => fn ($q) => $q->latest()->limit(10),
-            'orders.vendor',
-            'orders.category',
             'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
         ]);
 
-        return view('admin.customers.show', compact('customer'));
+        $orders = $customer->orders()
+            ->with(['vendor', 'category'])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.customers.show', compact('customer', 'orders'));
     }
 
     public function edit(Customer $customer): View
@@ -90,12 +93,6 @@ class CustomerController extends AdminController
     public function update(CustomerRequest $request, Customer $customer): RedirectResponse
     {
         $data = $request->validated();
-
-        if (in_array($data['status'] ?? '', ['suspended', 'blocked'], true) && $customer->status !== $data['status']) {
-            return back()
-                ->with('error', 'To suspend or block this customer, open their profile page and use the Suspend or Block button. You must enter a reason there.')
-                ->withInput();
-        }
 
         $previousStatus = $customer->status;
 

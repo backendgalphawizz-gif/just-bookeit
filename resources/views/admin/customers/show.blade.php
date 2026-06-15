@@ -88,7 +88,12 @@
             </dl>
         </div>
         <div class="jb-detail-card lg:col-span-2">
-            <h2>Order History</h2>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="mb-0">Order History</h2>
+                @if ($orders->total() > 0)
+                    <p class="text-sm text-slate-500">{{ $orders->total() }} {{ Str::plural('order', $orders->total()) }}</p>
+                @endif
+            </div>
             <div class="jb-table-wrap mt-4">
                 <table class="jb-table">
                     <thead><tr>
@@ -100,9 +105,9 @@
                         <th class="jb-table-actions-col">Actions</th>
                     </tr></thead>
                     <tbody>
-                        @forelse ($customer->orders as $order)
+                        @forelse ($orders as $order)
                             <tr>
-                                @include('admin.partials.table-index-cell')
+                                @include('admin.partials.table-index-cell', ['paginator' => $orders])
                                 <td class="jb-col-id font-semibold">{{ $order->order_number }}</td>
                                 <td class="jb-col-name max-w-[14rem]">
                                     <span class="block truncate font-medium" title="{{ $order->vendor?->brand_name ?? 'Unassigned' }}">{{ $order->vendor?->brand_name ?? 'Unassigned' }}</span>
@@ -117,6 +122,9 @@
                     </tbody>
                 </table>
             </div>
+            @if ($orders->hasPages())
+                <div class="border-t border-slate-100 px-4 py-3">{{ $orders->links() }}</div>
+            @endif
         </div>
     </div>
 @endsection

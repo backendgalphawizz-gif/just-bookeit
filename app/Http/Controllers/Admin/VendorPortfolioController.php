@@ -71,8 +71,14 @@ class VendorPortfolioController extends AdminController
         }
 
         $photoCount = collect($portfolioByAudience)->sum(fn (array $group) => $group['images']->count());
+        $totalPhotoCount = $vendor->portfolioImages()->count();
 
-        return view('admin.vendor-portfolio.show', compact('vendor', 'portfolioByAudience', 'photoCount'));
+        return view('admin.vendor-portfolio.show', compact(
+            'vendor',
+            'portfolioByAudience',
+            'photoCount',
+            'totalPhotoCount',
+        ));
     }
 
     /** @return \Closure(HasMany|Builder): void */

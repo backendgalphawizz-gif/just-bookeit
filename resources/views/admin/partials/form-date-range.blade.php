@@ -1,31 +1,60 @@
 @php
+    use App\Support\AdminValidationRules;
+
     $startName = $startName ?? 'starts_at';
     $endName = $endName ?? 'ends_at';
     $startLabel = $startLabel ?? 'Start date';
     $endLabel = $endLabel ?? 'End date';
     $startValue = old($startName, $startValue ?? '');
     $endValue = old($endName, $endValue ?? '');
+    $minFilterDate = AdminValidationRules::MYSQL_MIN_TIMESTAMP_DATE;
+    $maxFilterDate = $allowFuture ?? false ? null : AdminValidationRules::listDateMax();
 @endphp
 <div
     class="{{ $class ?? 'sm:col-span-2 grid gap-4 sm:grid-cols-2' }}"
     x-data="{
+        minDate: @js($minFilterDate),
+        maxDate: @js($maxFilterDate),
         from: @js($startValue),
         to: @js($endValue),
+        maxForFrom() {
+            if (! this.maxDate) {
+                return this.to || null;
+            }
+
+            if (this.to && this.to < this.maxDate) {
+                return this.to;
+            }
+
+            return this.maxDate;
+        },
+        minForTo() {
+            if (this.from && this.from > this.minDate) {
+                return this.from;
+            }
+
+            return this.minDate;
+        },
         syncFrom(event) {
             this.from = event.target.value;
-            if (this.to && this.from && this.to < this.from) {
+
+            if (this.to && this.from && this.to < this.from && this.$refs.endInput) {
                 this.to = this.from;
-                if (this.$refs.endInput) {
-                    this.$refs.endInput.value = this.from;
-                }
+                this.$refs.endInput.value = this.from;
             }
         },
         syncTo(event) {
-            this.to = event.target.value;
-            if (this.from && this.to && this.to < this.from) {
-                this.to = this.from;
-                event.target.value = this.from;
+            let value = event.target.value;
+
+            if (this.from && value && value < this.from) {
+                value = this.from;
             }
+
+            if (value !== event.target.value) {
+                event.target.value = value;
+            }
+
+            this.to = value;
         }
     }"
 >
@@ -37,7 +66,9 @@
             name="{{ $startName }}"
             value="{{ $startValue }}"
             class="jb-input"
-            :max="to || null"
+            min="{{ $minFilterDate }}"
+            @if ($maxFilterDate) max="{{ $maxFilterDate }}" @endif
+            :max="maxForFrom()"
             @change="syncFrom"
         >
         @error($startName)
@@ -52,8 +83,10 @@
             name="{{ $endName }}"
             value="{{ $endValue }}"
             class="jb-input"
+            min="{{ $minFilterDate }}"
+            @if ($maxFilterDate) max="{{ $maxFilterDate }}" @endif
             x-ref="endInput"
-            :min="from || null"
+            :min="minForTo()"
             @change="syncTo"
         >
         @error($endName)
