@@ -358,7 +358,7 @@ class AdminValidationRules
     {
         return [
             'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
-            'type' => ['required', 'in:main,service'],
+            'type' => ['required', 'in:main,service,sub'],
             'parent_id' => ['nullable', 'exists:categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
@@ -529,6 +529,7 @@ class AdminValidationRules
         return [
             'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
+            ...\App\Support\SubcategoryCatalog::subcategoryIdRules(true),
             'title' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'description' => ['nullable', 'string', 'max:5000', 'regex:'.self::REGEX_TEXT],
             'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
@@ -663,6 +664,7 @@ class AdminValidationRules
             'customer_id' => 'customer',
             'vendor_id' => 'vendor',
             'category_id' => 'category',
+            'subcategory_id' => 'sub-category',
             'order_id' => 'order',
             'raised_by' => 'raised by',
             'global_commission_percent' => 'commission',

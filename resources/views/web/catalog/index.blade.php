@@ -14,6 +14,7 @@
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80',
         'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=600&q=80',
     ];
+    $hasFilters = request('search') || request('category') || request('subcategory');
 @endphp
 
 <div class="jbw-container">
@@ -25,7 +26,6 @@
 
     <div class="jbw-catalog-layout" x-data="{ filterOpen: false }">
 
-        {{-- Mobile filter toggle button --}}
         <button
             type="button"
             class="jbw-filter-toggle"
@@ -34,12 +34,11 @@
         >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
             <span x-text="filterOpen ? 'Hide Filters' : 'Show Filters'">Show Filters</span>
-            @if(request('search') || request('category'))
-                <span class="jbw-filter-badge">1</span>
+            @if($hasFilters)
+                <span class="jbw-filter-badge">!</span>
             @endif
         </button>
 
-        {{-- Filter sidebar --}}
         <aside class="jbw-filters" :class="{ 'is-open': filterOpen }">
             <p class="jbw-filter-title">Filter</p>
             <form method="GET" action="{{ route('web.catalog.index') }}">
@@ -49,23 +48,31 @@
                 </div>
                 <div class="jbw-field" style="margin-top:1rem">
                     <label class="jbw-label" for="category">Category</label>
-                    <select id="category" name="category" class="jbw-select">
+                    <select id="category" name="category" class="jbw-select" onchange="this.form.submit()">
                         <option value="">All categories</option>
-                        @foreach ($categories as $cat)
+                        @foreach ($mainCategories as $cat)
                             <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
                         @endforeach
                     </select>
                 </div>
+                <div class="jbw-field" style="margin-top:1rem">
+                    <label class="jbw-label" for="subcategory">Sub-category</label>
+                    <select id="subcategory" name="subcategory" class="jbw-select" @disabled(! request('category'))>
+                        <option value="">All sub-categories</option>
+                        @foreach ($subcategories as $sub)
+                            <option value="{{ $sub->id }}" @selected(request('subcategory') == $sub->id)>{{ $sub->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1.25rem;border-radius:10px">Apply filters</button>
-                @if(request('search') || request('category'))
+                @if($hasFilters)
                     <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--ghost jbw-btn--block" style="margin-top:0.5rem;border-radius:10px">Clear filters</a>
                 @endif
             </form>
         </aside>
 
-        {{-- Product grid --}}
         <div class="jbw-catalog-results">
-            @if(request('search') || request('category'))
+            @if($hasFilters)
                 <p class="jbw-catalog-count">
                     {{ $items->total() }} result{{ $items->total() != 1 ? 's' : '' }}
                     @if(request('search')) for "<strong>{{ request('search') }}</strong>"@endif
@@ -86,6 +93,9 @@
                         <div class="jbw-product-card-body">
                             <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
                             <p class="jbw-product-title">{{ $item->title }}</p>
+                            @if ($item->subcategory)
+                                <p class="jbw-product-meta">{{ $item->subcategory->name }}</p>
+                            @endif
                             <p class="jbw-product-price">{{ $item->rentalPriceLabel() }}</p>
                         </div>
                     </a>

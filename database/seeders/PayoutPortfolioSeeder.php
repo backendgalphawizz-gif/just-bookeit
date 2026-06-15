@@ -52,6 +52,9 @@ class PayoutPortfolioSeeder extends Seeder
             'Party wear collection', 'Kids festive wear', 'Custom menswear fitting',
         ];
 
+        $serviceIds = Category::query()->where('type', 'service')->pluck('id');
+        $subcategoryIds = Category::query()->where('type', 'sub')->pluck('id');
+
         foreach ($activeVendors->take(10) as $index => $vendor) {
             $status = $portfolioStatuses[$index % count($portfolioStatuses)];
             PortfolioItem::query()->updateOrCreate(
@@ -61,6 +64,8 @@ class PayoutPortfolioSeeder extends Seeder
                 ],
                 [
                     'category_id' => $serviceIds->isNotEmpty() ? $serviceIds->random() : null,
+                    'subcategory_id' => $subcategoryIds->isNotEmpty() ? $subcategoryIds->random() : null,
+                    'audience' => fake()->randomElement(['women', 'men', 'kids']),
                     'description' => fake()->sentence(12),
                     'image_url' => 'https://picsum.photos/seed/jb-'.$vendor->id.'-'.$index.'/800/600',
                     'status' => $status,

@@ -280,8 +280,9 @@ class VendorApiPresenter
 
     public static function productSummary(PortfolioItem $item): array
     {
-        $item->loadMissing(['category', 'vendor', 'variants', 'damageDeductions']);
+        $item->loadMissing(['category', 'subcategory.parent', 'vendor', 'variants', 'damageDeductions']);
         $isFashionDesigner = $item->category?->slug === 'fashion-designer';
+        $mainCategory = $item->subcategory?->parent;
 
         return [
             'id' => $item->id,
@@ -313,7 +314,9 @@ class VendorApiPresenter
             'rating' => (float) ($item->vendor?->rating ?? 0),
             'reviews' => CustomerApiPresenter::placeholderReviews(),
             'brand_name' => strtoupper($item->vendor?->brand_name ?? ''),
-            'category' => $item->category ? CustomerApiPresenter::category($item->category) : null,
+            'service' => $item->category ? CustomerApiPresenter::category($item->category) : null,
+            'category' => $mainCategory ? CustomerApiPresenter::category($mainCategory) : null,
+            'subcategory' => $item->subcategory ? CustomerApiPresenter::category($item->subcategory) : null,
             'category_type' => $item->category?->slug,
             'status' => $item->status,
             'is_available' => self::productIsAvailable($item),
@@ -332,7 +335,7 @@ class VendorApiPresenter
 
     public static function productDetail(PortfolioItem $item): array
     {
-        $item->loadMissing(['category', 'vendor', 'images', 'variants', 'damageDeductions']);
+        $item->loadMissing(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions']);
 
         return [
             ...self::productSummary($item),

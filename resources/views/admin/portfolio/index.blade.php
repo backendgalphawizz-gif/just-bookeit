@@ -45,7 +45,7 @@
                     @include('admin.partials.table-index-header')
                     <th class="jb-col-name">Title</th>
                     <th class="jb-col-name">Vendor</th>
-                    <th class="jb-col-category">Category</th>
+                    <th class="jb-col-category">Sub-category</th>
                     <th class="jb-col-amount">Price/day</th>
                     <th class="jb-col-status">Status</th>
                     <th class="jb-col-date">Submitted</th>
@@ -62,7 +62,12 @@
                                 <span class="block truncate" title="{{ $item->vendor->brand_name }}">{{ $item->vendor->brand_name }}</span>
                             </td>
                             <td class="jb-col-category">
-                                <span class="block truncate text-sm" title="{{ $item->category?->name ?? '—' }}">{{ $item->category?->name ?? '—' }}</span>
+                                @php
+                                    $subLabel = $item->subcategory
+                                        ? trim(($item->subcategory->parent?->name ?? '').' / '.$item->subcategory->name, ' /')
+                                        : '—';
+                                @endphp
+                                <span class="block truncate text-sm" title="{{ $subLabel }}">{{ $subLabel }}</span>
                             </td>
                             <td class="jb-col-amount text-sm text-slate-600">
                                 @if ($item->price_per_day !== null)

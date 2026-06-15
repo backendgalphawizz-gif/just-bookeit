@@ -10,6 +10,7 @@ use App\Models\PortfolioItemVariant;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\AppliesListDateFilter;
 use App\Support\StoresUploadedFiles;
+use App\Support\SubcategoryCatalog;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,9 +38,17 @@ class ProductController extends VendorApiController
         $query = PortfolioItem::query()
             ->where('vendor_id', $vendor->id)
             ->when($category, fn ($q) => $q->where('category_id', $category->id))
+            ->when($request->filled('subcategory_id'), fn ($q) => $q->where('subcategory_id', $request->integer('subcategory_id')))
+            ->when($request->filled('category_id') && ! $request->filled('subcategory_id'), function ($q) use ($request) {
+                $main = Category::query()->find($request->integer('category_id'));
+
+                if ($main?->isMain()) {
+                    $q->whereHas('subcategory', fn ($sub) => $sub->where('parent_id', $main->id));
+                }
+            })
             ->when($request->filled('search'), fn ($q) => $q->where('title', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->with(['category', 'vendor', 'variants', 'damageDeductions']);
+            ->with(['category', 'subcategory.parent', 'vendor', 'variants', 'damageDeductions']);
 
         $products = $this->applyDateRange($query, $request)
             ->orderByDesc('id')
@@ -78,17 +87,26 @@ class ProductController extends VendorApiController
             VendorValidationRules::productTypeRules()
         ));
 
+        $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);
+
+        if (! $subcategory) {
+            throw ValidationException::withMessages([
+                'subcategory_id' => ['Select a valid sub-category.'],
+            ]);
+        }
+
         $primaryImage = $this->resolvePrimaryImage($request);
         $imagePath = StoresUploadedFiles::store($primaryImage, 'portfolio/images');
 
         $product = PortfolioItem::query()->create([
             'vendor_id' => $vendor->id,
             'category_id' => $category->id,
+            'subcategory_id' => $subcategory->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'price_per_day' => $data['price_per_day'],
             'advance_amount' => $data['advance_amount'] ?? null,
-            'audience' => $data['audience'] ?? 'women',
+            'audience' => SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $data['audience'] ?? 'women',
             'image_url' => $imagePath,
             'status' => 'pending',
         ]);
@@ -98,7 +116,7 @@ class ProductController extends VendorApiController
         $this->syncDamageDeductions($product, $data['damage_deductions'] ?? []);
 
         return $this->success([
-            'product' => VendorApiPresenter::productDetail($product->load(['category', 'vendor', 'images', 'variants', 'damageDeductions'])),
+            'product' => VendorApiPresenter::productDetail($product->load(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions'])),
         ], 'Product submitted for approval.', 201);
     }
 
@@ -128,16 +146,27 @@ class ProductController extends VendorApiController
             $updates['category_id'] = $category->id;
         }
 
+        if (array_key_exists('subcategory_id', $data)) {
+            $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);
+
+            if (! $subcategory) {
+                throw ValidationException::withMessages([
+                    'subcategory_id' => ['Select a valid sub-category.'],
+                ]);
+            }
+
+            $updates['subcategory_id'] = $subcategory->id;
+            $updates['audience'] = SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $product->audience;
+        } elseif (! empty($data['audience'])) {
+            $updates['audience'] = $data['audience'];
+        }
+
         if (array_key_exists('price_per_day', $data)) {
             $updates['price_per_day'] = $data['price_per_day'];
         }
 
         if (array_key_exists('advance_amount', $data)) {
             $updates['advance_amount'] = $data['advance_amount'];
-        }
-
-        if (! empty($data['audience'])) {
-            $updates['audience'] = $data['audience'];
         }
 
         $product->fill($updates);
@@ -163,7 +192,7 @@ class ProductController extends VendorApiController
         }
 
         return $this->success([
-            'product' => VendorApiPresenter::productDetail($product->fresh(['category', 'vendor', 'images', 'variants', 'damageDeductions'])),
+            'product' => VendorApiPresenter::productDetail($product->fresh(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions'])),
         ], 'Product updated and sent for re-approval.');
     }
 

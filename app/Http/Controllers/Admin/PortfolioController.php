@@ -26,7 +26,7 @@ class PortfolioController extends AdminController
         $this->validateListDateRange($request);
 
         $items = $this->applyDateRange(PortfolioItem::query(), $request)
-            ->with(['vendor', 'category', 'images'])
+            ->with(['vendor', 'category', 'subcategory.parent', 'images'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('vendor_id'), fn ($q) => $q->where('vendor_id', $request->integer('vendor_id')))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -71,6 +71,7 @@ class PortfolioController extends AdminController
         $product = PortfolioItem::query()->create([
             'vendor_id' => $data['vendor_id'],
             'category_id' => $data['category_id'],
+            'subcategory_id' => $data['subcategory_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'price_per_day' => $data['price_per_day'],
@@ -93,7 +94,7 @@ class PortfolioController extends AdminController
 
     public function show(PortfolioItem $portfolio): View
     {
-        $portfolio->load(['vendor', 'category', 'images', 'variants', 'damageDeductions']);
+        $portfolio->load(['vendor', 'category', 'subcategory.parent', 'images', 'variants', 'damageDeductions']);
 
         return view('admin.portfolio.show', compact('portfolio'));
     }
@@ -102,7 +103,7 @@ class PortfolioController extends AdminController
     {
         $this->authorizeAdmin('edit');
 
-        $portfolio->load(['vendor', 'category', 'images', 'variants', 'damageDeductions']);
+        $portfolio->load(['vendor', 'category', 'subcategory.parent', 'images', 'variants', 'damageDeductions']);
 
         return view('admin.portfolio.edit', $this->formViewData($portfolio));
     }
@@ -122,6 +123,7 @@ class PortfolioController extends AdminController
         $portfolio->fill([
             'vendor_id' => $data['vendor_id'],
             'category_id' => $data['category_id'],
+            'subcategory_id' => $data['subcategory_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'price_per_day' => $data['price_per_day'] ?? $portfolio->price_per_day,
@@ -199,17 +201,22 @@ class PortfolioController extends AdminController
     /** @return array<string, mixed> */
     protected function formViewData(PortfolioItem $portfolio): array
     {
+        $portfolio->loadMissing('subcategory.parent');
+
         return [
             'portfolio' => $portfolio,
             'vendors' => Vendor::query()->orderBy('brand_name')->get(['id', 'brand_name']),
-            'categories' => $this->productCategories(),
+            'serviceCategories' => $this->serviceCategories(),
+            'mainCategories' => Category::query()->main()->active()->orderBy('sort_order')->orderBy('name')->get(),
+            'subcategories' => Category::query()->sub()->active()->orderBy('sort_order')->orderBy('name')->get(),
         ];
     }
 
-    protected function productCategories()
+    protected function serviceCategories()
     {
         return Category::query()
-            ->where('is_active', true)
+            ->service()
+            ->active()
             ->whereIn('slug', ['fashion-designer', 'rented-dress', 'rented-jewellery'])
             ->orderBy('sort_order')
             ->orderBy('name')

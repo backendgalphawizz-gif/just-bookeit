@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Category;
+use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Support\AppliesListDateFilter;
@@ -30,18 +31,21 @@ class CategoryController extends AdminController
             ->with('parent')
             ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
+            ->when($type === Category::TYPE_SUB && $request->filled('parent_id'), fn ($q) => $q->where('parent_id', $request->integer('parent_id')))
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.categories.index', compact('categories', 'type'));
+        $mainCategories = Category::query()->main()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']);
+
+        return view('admin.categories.index', compact('categories', 'type', 'mainCategories'));
     }
 
     public function create(Request $request): View
     {
         $type = $this->resolveType($request->string('type', Category::TYPE_MAIN)->toString());
-        $parents = Category::query()->where('type', Category::TYPE_MAIN)->orderBy('name')->get();
+        $parents = Category::query()->main()->orderBy('name')->get();
 
         return view('admin.categories.create', compact('parents', 'type'));
     }
@@ -51,7 +55,7 @@ class CategoryController extends AdminController
         $data = $request->validated();
         unset($data['image']);
         $data['slug'] = Str::slug($data['name']);
-        $data['parent_id'] = $data['type'] === Category::TYPE_MAIN ? null : ($data['parent_id'] ?? null);
+        $data['parent_id'] = $this->resolveParentId($data['type'], $data['parent_id'] ?? null);
 
         if ($request->hasFile('image')) {
             $data['image_path'] = StoresUploadedFiles::store($request->file('image'), 'categories');
@@ -68,7 +72,7 @@ class CategoryController extends AdminController
     {
         $type = $category->type;
         $parents = Category::query()
-            ->where('type', Category::TYPE_MAIN)
+            ->main()
             ->where('id', '!=', $category->id)
             ->orderBy('name')
             ->get();
@@ -81,7 +85,7 @@ class CategoryController extends AdminController
         $data = $request->validated();
         unset($data['image']);
         $data['slug'] = Str::slug($data['name']);
-        $data['parent_id'] = $data['type'] === Category::TYPE_MAIN ? null : ($data['parent_id'] ?? null);
+        $data['parent_id'] = $this->resolveParentId($data['type'], $data['parent_id'] ?? null);
 
         $data['image_path'] = StoresUploadedFiles::replace(
             $request->file('image'),
@@ -102,6 +106,18 @@ class CategoryController extends AdminController
             return back()->with('error', 'This category is linked to orders and cannot be deleted.');
         }
 
+        if ($category->portfolioItems()->exists()) {
+            return back()->with('error', 'This sub-category is linked to products and cannot be deleted.');
+        }
+
+        if ($category->children()->exists()) {
+            return back()->with('error', 'Remove child categories before deleting this category.');
+        }
+
+        if (PortfolioItem::query()->where('category_id', $category->id)->exists()) {
+            return back()->with('error', 'This category is linked to products and cannot be deleted.');
+        }
+
         if (Vendor::query()->whereJsonContains('categories', $category->name)->exists()) {
             return back()->with('error', 'This category is assigned to vendors and cannot be deleted.');
         }
@@ -118,5 +134,18 @@ class CategoryController extends AdminController
     protected function resolveType(string $type): string
     {
         return in_array($type, Category::TYPES, true) ? $type : Category::TYPE_MAIN;
+    }
+
+    protected function resolveParentId(string $type, mixed $parentId): ?int
+    {
+        if ($type === Category::TYPE_MAIN) {
+            return null;
+        }
+
+        if ($type === Category::TYPE_SUB) {
+            return $parentId ? (int) $parentId : null;
+        }
+
+        return null;
     }
 }

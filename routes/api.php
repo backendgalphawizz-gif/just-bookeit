@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
 use App\Http\Controllers\Api\V1\UserAuthController;
 use App\Http\Controllers\Api\V2\BookingController as VendorBookingController;
+use App\Http\Controllers\Api\V2\CategoryController as VendorCategoryController;
 use App\Http\Controllers\Api\V2\ConfigController as VendorConfigController;
 use App\Http\Controllers\Api\V2\ChatController as VendorChatController;
 use App\Http\Controllers\Api\V2\HomeController as VendorHomeController;
@@ -124,6 +125,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
     });
 
     Route::get('config', [VendorConfigController::class, 'index'])->name('config');
+    Route::get('categories', [VendorCategoryController::class, 'index'])->name('categories');
 
     Route::get('locations/countries', [VendorLocationController::class, 'countries'])->name('locations.countries');
     Route::get('locations/states', [VendorLocationController::class, 'states'])->name('locations.states');

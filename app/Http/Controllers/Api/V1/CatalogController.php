@@ -22,7 +22,7 @@ class CatalogController extends ApiController
         ], CatalogFilter::validationRules()));
 
         $query = PortfolioItem::query()
-            ->with(['vendor', 'category']);
+            ->with(['vendor', 'category', 'subcategory.parent']);
 
         if ($request->filled('search')) {
             $term = '%'.$request->string('search').'%';
@@ -56,10 +56,21 @@ class CatalogController extends ApiController
             ->orderBy('name')
             ->get();
 
+        $mainCategoryId = CatalogFilter::resolveMainCategoryId($request);
+
+        $subcategories = Category::query()
+            ->active()
+            ->sub()
+            ->when($mainCategoryId, fn ($query) => $query->where('parent_id', $mainCategoryId))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
         return $this->success([
             ...CustomerApiPresenter::paginator($items, fn (PortfolioItem $item) => CustomerApiPresenter::catalogItem($item)),
             'filters' => [
                 'shop_categories' => $shopCategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'subcategories' => $subcategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'applied' => CatalogFilter::applied($request),
             ],
@@ -71,10 +82,10 @@ class CatalogController extends ApiController
         abort_unless($item->status === 'approved', 404);
         abort_unless($item->vendor && $item->vendor->status === 'active' && $item->vendor->is_listing_active, 404);
 
-        $item->load(['vendor', 'category']);
+        $item->load(['vendor', 'category', 'subcategory.parent']);
 
         $related = PortfolioItem::query()
-            ->with(['vendor', 'category'])
+            ->with(['vendor', 'category', 'subcategory.parent'])
             ->where('vendor_id', $item->vendor_id)
             ->where('id', '!=', $item->id)
             ->where('status', 'approved')

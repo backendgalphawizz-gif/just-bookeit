@@ -100,6 +100,7 @@ class VendorValidationRules
             'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
             'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'audience' => ['nullable', 'in:women,men,kids'],
+            ...\App\Support\SubcategoryCatalog::subcategoryIdRules($creating),
             'variants' => ['nullable', 'array', 'max:50'],
             'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],

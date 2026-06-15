@@ -59,9 +59,9 @@ class CustomerApiPresenter
         ];
     }
 
-    public static function category(Category $category): array
+    public static function category(Category $category, bool $includeSubcategories = false): array
     {
-        return [
+        $payload = [
             'id' => $category->id,
             'name' => $category->name,
             'slug' => $category->slug,
@@ -69,6 +69,15 @@ class CustomerApiPresenter
             'parent_id' => $category->parent_id,
             'image_url' => $category->imageUrl(),
         ];
+
+        if ($includeSubcategories && $category->relationLoaded('subcategories')) {
+            $payload['subcategories'] = $category->subcategories
+                ->map(fn (Category $sub) => self::category($sub))
+                ->values()
+                ->all();
+        }
+
+        return $payload;
     }
 
     public static function designerSummary(Vendor $vendor): array
@@ -198,7 +207,9 @@ class CustomerApiPresenter
 
     public static function catalogItem(PortfolioItem $item): array
     {
-        $item->loadMissing(['vendor', 'category']);
+        $item->loadMissing(['vendor', 'category', 'subcategory.parent']);
+
+        $mainCategory = $item->subcategory?->parent;
 
         return [
             'id' => $item->id,
@@ -209,7 +220,9 @@ class CustomerApiPresenter
             'price_label' => $item->rentalPriceLabel(),
             'rating' => (float) ($item->vendor?->rating ?? 0),
             'audience' => $item->audience,
-            'category' => $item->category ? self::category($item->category) : null,
+            'service' => $item->category ? self::category($item->category) : null,
+            'category' => $mainCategory ? self::category($mainCategory) : null,
+            'subcategory' => $item->subcategory ? self::category($item->subcategory) : null,
             'designer' => $item->vendor ? self::designerSummary($item->vendor) : null,
         ];
     }

@@ -1,6 +1,8 @@
 @php
     $category = $category ?? null;
     $type = $type ?? old('type', $category?->type ?? \App\Models\Category::TYPE_MAIN);
+    $requiresParent = $type === \App\Models\Category::TYPE_SUB;
+    $parentRequired = true;
 @endphp
 
 <input type="hidden" name="type" value="{{ $type }}">
@@ -13,9 +15,9 @@
     'required' => true,
 ])
 
-@if ($type === \App\Models\Category::TYPE_SERVICE)
-    <x-admin.form-select label="Category" name="parent_id">
-        <option value="">None</option>
+@if ($requiresParent)
+    <x-admin.form-select label="Parent category" name="parent_id" :required="$parentRequired">
+        <option value="">{{ $parentRequired ? 'Select parent category' : 'None' }}</option>
         @foreach ($parents as $parent)
             <option value="{{ $parent->id }}" @selected(old('parent_id', $category?->parent_id) == $parent->id)>{{ $parent->name }}</option>
         @endforeach

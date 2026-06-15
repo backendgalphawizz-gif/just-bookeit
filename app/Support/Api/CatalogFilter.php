@@ -80,6 +80,7 @@ class CatalogFilter
             'service' => ['nullable', 'string', Rule::in(self::acceptedServices())],
             'service_id' => ['nullable', 'integer', 'exists:categories,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'subcategory_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_SUB)],
         ];
     }
 
@@ -125,6 +126,44 @@ class CatalogFilter
         return self::normalizeAudience($category->slug) ?? self::normalizeAudience($category->name);
     }
 
+    public static function resolveMainCategoryId(Request $request): ?int
+    {
+        if ($request->filled('shop_category_id')) {
+            $category = Category::query()->find($request->integer('shop_category_id'));
+
+            return ($category && $category->isMain()) ? $category->id : null;
+        }
+
+        if ($request->filled('category_id')) {
+            $category = Category::query()->find($request->integer('category_id'));
+
+            if ($category?->isMain()) {
+                return $category->id;
+            }
+        }
+
+        return null;
+    }
+
+    public static function resolveSubcategoryId(Request $request): ?int
+    {
+        if ($request->filled('subcategory_id')) {
+            $subcategory = Category::query()->find($request->integer('subcategory_id'));
+
+            return ($subcategory && $subcategory->isSub()) ? $subcategory->id : null;
+        }
+
+        if ($request->filled('category_id')) {
+            $category = Category::query()->find($request->integer('category_id'));
+
+            if ($category?->isSub()) {
+                return $category->id;
+            }
+        }
+
+        return null;
+    }
+
     public static function resolveAudience(Request $request): ?string
     {
         if ($request->filled('audience')) {
@@ -135,18 +174,20 @@ class CatalogFilter
             return self::normalizeAudience($request->string('shop_category')->toString());
         }
 
-        if ($request->filled('shop_category_id')) {
-            $category = Category::query()->find($request->integer('shop_category_id'));
+        $subcategoryId = self::resolveSubcategoryId($request);
 
-            return $category ? self::audienceFromCategory($category) : null;
+        if ($subcategoryId) {
+            $subcategory = Category::query()->with('parent')->find($subcategoryId);
+
+            return $subcategory ? self::audienceFromCategory($subcategory->parent) : null;
         }
 
-        if ($request->filled('category_id')) {
-            $category = Category::query()->find($request->integer('category_id'));
+        $mainCategoryId = self::resolveMainCategoryId($request);
 
-            if ($category && $category->type === Category::TYPE_MAIN) {
-                return self::audienceFromCategory($category);
-            }
+        if ($mainCategoryId) {
+            $category = Category::query()->find($mainCategoryId);
+
+            return $category ? self::audienceFromCategory($category) : null;
         }
 
         return null;
@@ -157,7 +198,7 @@ class CatalogFilter
         if ($request->filled('service_id')) {
             $category = Category::query()->find($request->integer('service_id'));
 
-            return ($category && $category->type === Category::TYPE_SERVICE) ? $category->id : null;
+            return ($category && $category->isService()) ? $category->id : null;
         }
 
         if ($request->filled('service')) {
@@ -168,14 +209,6 @@ class CatalogFilter
                     ->where('type', Category::TYPE_SERVICE)
                     ->where('slug', $slug)
                     ->value('id');
-            }
-        }
-
-        if ($request->filled('category_id')) {
-            $category = Category::query()->find($request->integer('category_id'));
-
-            if ($category && $category->type === Category::TYPE_SERVICE) {
-                return $category->id;
             }
         }
 
@@ -198,6 +231,14 @@ class CatalogFilter
             $query->where('category_id', $serviceCategoryId);
         }
 
+        $subcategoryId = self::resolveSubcategoryId($request);
+
+        if ($subcategoryId !== null) {
+            $query->where('subcategory_id', $subcategoryId);
+        } elseif (($mainCategoryId = self::resolveMainCategoryId($request)) !== null) {
+            $query->whereHas('subcategory', fn (Builder $sub) => $sub->where('parent_id', $mainCategoryId));
+        }
+
         return $query;
     }
 
@@ -218,6 +259,10 @@ class CatalogFilter
         $serviceCategory = $serviceCategoryId
             ? Category::query()->find($serviceCategoryId)
             : null;
+        $subcategoryId = self::resolveSubcategoryId($request);
+        $subcategory = $subcategoryId ? Category::query()->with('parent')->find($subcategoryId) : null;
+        $mainCategoryId = self::resolveMainCategoryId($request);
+        $mainCategory = $mainCategoryId ? Category::query()->find($mainCategoryId) : null;
 
         return array_filter([
             'audience' => $audience,
@@ -226,6 +271,17 @@ class CatalogFilter
                 'id' => $serviceCategory->id,
                 'name' => $serviceCategory->name,
                 'slug' => $serviceCategory->slug,
+            ] : null,
+            'category' => $mainCategory ? [
+                'id' => $mainCategory->id,
+                'name' => $mainCategory->name,
+                'slug' => $mainCategory->slug,
+            ] : null,
+            'subcategory' => $subcategory ? [
+                'id' => $subcategory->id,
+                'name' => $subcategory->name,
+                'slug' => $subcategory->slug,
+                'parent_id' => $subcategory->parent_id,
             ] : null,
         ], fn ($value) => $value !== null);
     }

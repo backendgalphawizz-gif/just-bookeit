@@ -1,5 +1,13 @@
 @php
     $isCreate = ! $portfolio->exists;
+    $selectedSubcategoryId = old('subcategory_id', $portfolio->subcategory_id);
+    $selectedMainCategoryId = old('main_category_id', $portfolio->subcategory?->parent_id);
+    $subcategoryOptions = $subcategories->map(fn ($sub) => [
+        'id' => $sub->id,
+        'name' => $sub->name,
+        'parent_id' => $sub->parent_id,
+    ])->values();
+    $audienceByMainSlug = $mainCategories->mapWithKeys(fn ($main) => [$main->id => $main->slug])->all();
 @endphp
 
 <div class="jb-form-grid">
@@ -12,18 +20,74 @@
 
     <x-admin.form-select label="Product type" name="category_id" :required="true">
         <option value="">Select type</option>
-        @foreach ($categories as $category)
+        @foreach ($serviceCategories as $category)
             <option value="{{ $category->id }}" @selected(old('category_id', $portfolio->category_id) == $category->id)>{{ $category->name }}</option>
         @endforeach
     </x-admin.form-select>
 
-    @include('admin.partials.form-input', ['label' => 'Title', 'name' => 'title', 'value' => old('title', $portfolio->title), 'required' => true])
+    <div
+        class="sm:col-span-2"
+        x-data="{
+            mainCategoryId: @js((string) ($selectedMainCategoryId ?? '')),
+            subcategoryId: @js((string) ($selectedSubcategoryId ?? '')),
+            subcategories: @js($subcategoryOptions),
+            audienceByMain: @js($audienceByMainSlug),
+            audience: @js(old('audience', $portfolio->audience ?? 'women')),
+            filteredSubs() {
+                if (!this.mainCategoryId) return [];
+                return this.subcategories.filter((sub) => String(sub.parent_id) === String(this.mainCategoryId));
+            },
+            syncAudience() {
+                const slug = this.audienceByMain[this.mainCategoryId];
+                if (slug) this.audience = slug;
+            },
+            onMainChange() {
+                this.subcategoryId = '';
+                this.syncAudience();
+            },
+            onSubChange() {
+                const sub = this.subcategories.find((item) => String(item.id) === String(this.subcategoryId));
+                if (sub) {
+                    this.mainCategoryId = String(sub.parent_id);
+                    this.syncAudience();
+                }
+            }
+        }"
+    >
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label class="jb-label" for="main_category_id">Category <span class="text-rose-600">*</span></label>
+                <select
+                    id="main_category_id"
+                    name="main_category_id"
+                    class="jb-select"
+                    x-model="mainCategoryId"
+                    @change="onMainChange()"
+                    required
+                >
+                    <option value="">Select category</option>
+                    @foreach ($mainCategories as $mainCategory)
+                        <option value="{{ $mainCategory->id }}">{{ $mainCategory->name }}</option>
+                    @endforeach
+                </select>
+            </div>
 
-    <x-admin.form-select label="Audience" name="audience" :required="true">
-        @foreach (['women' => 'Women', 'men' => 'Men', 'kids' => 'Kids'] as $value => $label)
-            <option value="{{ $value }}" @selected(old('audience', $portfolio->audience ?? 'women') === $value)>{{ $label }}</option>
-        @endforeach
-    </x-admin.form-select>
+            <div>
+                <label class="jb-label" for="subcategory_id">Sub-category <span class="text-rose-600">*</span></label>
+                <select id="subcategory_id" name="subcategory_id" class="jb-select" x-model="subcategoryId" @change="onSubChange()" required>
+                    <option value="">Select sub-category</option>
+                    <template x-for="sub in filteredSubs()" :key="sub.id">
+                        <option :value="sub.id" x-text="sub.name"></option>
+                    </template>
+                </select>
+                @error('subcategory_id')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        <input type="hidden" name="audience" x-model="audience">
+    </div>
+
+    @include('admin.partials.form-input', ['label' => 'Title', 'name' => 'title', 'value' => old('title', $portfolio->title), 'required' => true])
 
     @include('admin.partials.form-input', ['label' => 'Price per day (₹)', 'name' => 'price_per_day', 'type' => 'number', 'value' => old('price_per_day', $portfolio->price_per_day), 'required' => $isCreate, 'step' => '0.01', 'nonNegative' => true])
 

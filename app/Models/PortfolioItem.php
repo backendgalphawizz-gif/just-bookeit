@@ -13,6 +13,7 @@ class PortfolioItem extends Model
     protected $fillable = [
         'vendor_id',
         'category_id',
+        'subcategory_id',
         'title',
         'description',
         'price_per_day',
@@ -41,6 +42,11 @@ class PortfolioItem extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function subcategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'subcategory_id');
     }
 
     public function images(): HasMany
