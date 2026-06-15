@@ -71,16 +71,14 @@
         </div>
     </form>
 
-    <div class="jb-card">
-        <div class="jb-card-header">
-            <p class="jb-card-header-title">
-                @if ($isCatalog)
-                    {{ $categories->total() }} {{ Str::plural('category', $categories->total()) }}, {{ $subcategoryTotal }} {{ Str::plural('sub-category', $subcategoryTotal) }}
-                @else
+    <div class="jb-card" @if ($isCatalog) x-data="jbCategoryTree(@js($categories->pluck('id')->values()))" @endif>
+        @unless ($isCatalog)
+            <div class="jb-card-header">
+                <p class="jb-card-header-title">
                     {{ $categories->total() }} {{ strtolower(\App\Models\Category::typeLabel($type)) }}
-                @endif
-            </p>
-        </div>
+                </p>
+            </div>
+        @endunless
         <div class="jb-table-wrap">
             <table class="jb-table">
                 <thead>
@@ -106,7 +104,29 @@
                                 <td class="jb-col-status">
                                     <span class="jb-category-type jb-category-type--main">Category</span>
                                 </td>
-                                <td class="jb-col-name font-semibold text-slate-900">{{ $category->name }}</td>
+                                <td class="jb-col-name font-semibold text-slate-900">
+                                    <div class="jb-category-name-cell">
+                                        @if ($category->subcategories->isNotEmpty())
+                                            <button
+                                                type="button"
+                                                class="jb-category-toggle"
+                                                @click="toggle({{ $category->id }})"
+                                                :aria-expanded="isOpen({{ $category->id }})"
+                                                aria-label="Toggle sub-categories for {{ $category->name }}"
+                                            >
+                                                <svg class="jb-category-toggle__icon" :class="{ 'jb-category-toggle__icon--open': isOpen({{ $category->id }}) }" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                                </svg>
+                                            </button>
+                                        @else
+                                            <span class="jb-category-toggle jb-category-toggle--placeholder" aria-hidden="true"></span>
+                                        @endif
+                                        <span>{{ $category->name }}</span>
+                                        @if ($category->subcategories->isNotEmpty())
+                                            <span class="jb-category-subcount">{{ $category->subcategories->count() }} {{ Str::plural('sub-category', $category->subcategories->count()) }}</span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="text-slate-400">—</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
                                 <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
@@ -126,7 +146,7 @@
                                 </td>
                             </tr>
                             @forelse ($category->subcategories as $subcategory)
-                                <tr class="jb-category-row jb-category-row--child">
+                                <tr class="jb-category-row jb-category-row--child" x-show="isOpen({{ $category->id }})" x-cloak>
                                     <td class="jb-col-sn text-slate-300">—</td>
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
@@ -153,7 +173,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr class="jb-category-row jb-category-row--empty">
+                                <tr class="jb-category-row jb-category-row--empty" x-show="isOpen({{ $category->id }})" x-cloak>
                                     <td class="jb-col-sn text-slate-300">—</td>
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
@@ -240,6 +260,56 @@
     .jb-category-type--sub {
         background: #e0f2fe;
         color: #0369a1;
+    }
+
+    .jb-category-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .jb-category-toggle {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        border: 0;
+        border-radius: 0.375rem;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .jb-category-toggle:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .jb-category-toggle--placeholder {
+        pointer-events: none;
+    }
+
+    .jb-category-toggle__icon {
+        transition: transform 0.15s ease;
+    }
+
+    .jb-category-toggle__icon--open {
+        transform: rotate(90deg);
+    }
+
+    .jb-category-subcount {
+        flex-shrink: 0;
+        border-radius: 9999px;
+        background: #e2e8f0;
+        padding: 0.1rem 0.45rem;
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #475569;
+        white-space: nowrap;
     }
 </style>
 @endpush

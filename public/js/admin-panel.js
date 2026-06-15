@@ -743,6 +743,16 @@
         maxDate,
     });
 
+    window.jbCategoryTree = (categoryIds = []) => ({
+        expanded: Object.fromEntries(categoryIds.map((id) => [id, true])),
+        toggle(id) {
+            this.expanded[id] = ! this.expanded[id];
+        },
+        isOpen(id) {
+            return !! this.expanded[id];
+        },
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
         initSidebarScrollPersistence();
         init(document);
