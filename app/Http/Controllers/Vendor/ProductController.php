@@ -81,7 +81,8 @@ class ProductController extends VendorController
 
         abort_unless($subcategory, 422, 'Select a valid sub-category.');
 
-        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+        ProductDamageDeductionRules::assertWithinCategoryLimit(
+            $subcategory->id,
             $category->id,
             $data['damage_deductions'] ?? []
         );
@@ -128,7 +129,12 @@ class ProductController extends VendorController
             $this->productUploadRules(false)
         ));
 
-        ProductDamageDeductionRules::assertWithinServiceCategoryLimit(
+        $subcategoryId = array_key_exists('subcategory_id', $data)
+            ? (int) $data['subcategory_id']
+            : (int) $product->subcategory_id;
+
+        ProductDamageDeductionRules::assertWithinCategoryLimit(
+            $subcategoryId,
             (int) $product->category_id,
             $data['damage_deductions'] ?? []
         );

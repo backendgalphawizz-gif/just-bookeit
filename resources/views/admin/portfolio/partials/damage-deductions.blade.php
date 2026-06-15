@@ -12,9 +12,11 @@
     }
 
     $serviceCategoryId = (int) old('category_id', $portfolio->category_id ?? 0);
-    $maxDamagePercent = $serviceCategoryId
-        ? PlatformSetting::maxDamagePercentForServiceCategory($serviceCategoryId)
-        : null;
+    $subcategoryId = (int) old('subcategory_id', $portfolio->subcategory_id ?? 0);
+    $maxDamagePercent = PlatformSetting::maxDamagePercentForPortfolioItem(
+        $subcategoryId ?: null,
+        $serviceCategoryId ?: null
+    );
 @endphp
 
 <div class="sm:col-span-2" data-product-damage>
@@ -23,7 +25,7 @@
             <label class="jb-label">Damage deduction rules</label>
             <p class="mt-1 text-sm text-slate-500">Optional. Percent charged per damage type if the rented item is returned damaged.</p>
             @if ($maxDamagePercent !== null)
-                <p class="mt-1 text-sm text-amber-700">Maximum total deduction for this service category: {{ rtrim(rtrim(number_format($maxDamagePercent, 2), '0'), '.') }}%.</p>
+                <p class="mt-1 text-sm text-amber-700">Maximum total deduction for this category: {{ rtrim(rtrim(number_format($maxDamagePercent, 2), '0'), '.') }}%.</p>
             @endif
         </div>
         <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm" data-product-damage-add>+ Add rule</button>

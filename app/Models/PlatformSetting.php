@@ -31,6 +31,10 @@ class PlatformSetting extends Model
             $value = $value ? '1' : '0';
         }
 
+        if ($type === 'json' && (is_array($value) || is_object($value))) {
+            $value = json_encode($value);
+        }
+
         static::query()->updateOrCreate(
             ['key' => $key],
             ['value' => $value, 'group' => $group, 'type' => $type]
@@ -58,30 +62,125 @@ class PlatformSetting extends Model
         return '/storage/'.ltrim(str_replace('\\', '/', $path), '/');
     }
 
-    /** @return list<array{service_category_id: int, max_percent: float}> */
+    /** @return list<array{category_id: int, subcategory_id: int|null, max_percent: float}|array{service_category_id: int, max_percent: float}> */
     public static function damageDeductionRules(): array
     {
         return static::normalizedDamageDeductionRules();
     }
 
-    /** @return list<array{service_category_id: int, service_category_name: string, max_percent: float}> */
+    /** @return list<array{category_id: int, category_name: string, subcategory_id: int|null, subcategory_name: string, max_percent: float}> */
     public static function damageDeductionRulesForSettings(): array
     {
-        $rules = collect(static::normalizedDamageDeductionRules())->keyBy('service_category_id');
+        return collect(static::normalizedDamageDeductionRules())
+            ->filter(fn (array $rule) => isset($rule['category_id']) && ! isset($rule['service_category_id']))
+            ->map(function (array $rule) {
+                $main = Category::query()->find($rule['category_id']);
+                $sub = isset($rule['subcategory_id']) ? Category::query()->find($rule['subcategory_id']) : null;
 
-        return Category::query()
-            ->service()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Category $category) => [
-                'service_category_id' => $category->id,
-                'service_category_name' => $category->name,
-                'max_percent' => (float) ($rules->get($category->id)['max_percent'] ?? 100),
-            ])
+                return [
+                    'category_id' => $rule['category_id'],
+                    'category_name' => $main?->name ?? '',
+                    'subcategory_id' => $rule['subcategory_id'] ?? null,
+                    'subcategory_name' => $sub?->name ?? '',
+                    'max_percent' => $rule['max_percent'],
+                ];
+            })
             ->values()
             ->all();
+    }
+
+    /** @return list<array{category_id: int|null, category_name: string, subcategory_id: int|null, subcategory_name: string, service_category_id: int, service_category_name: string, max_percent: float}> */
+    public static function serviceDamageDeductionRulesForSettings(): array
+    {
+        return collect(static::normalizedDamageDeductionRules())
+            ->filter(fn (array $rule) => isset($rule['service_category_id']))
+            ->map(function (array $rule) {
+                $main = isset($rule['category_id']) ? Category::query()->find($rule['category_id']) : null;
+                $sub = isset($rule['subcategory_id']) ? Category::query()->find($rule['subcategory_id']) : null;
+                $serviceCategory = Category::query()->find($rule['service_category_id']);
+
+                return [
+                    'category_id' => $rule['category_id'] ?? null,
+                    'category_name' => $main?->name ?? '',
+                    'subcategory_id' => $rule['subcategory_id'] ?? null,
+                    'subcategory_name' => $sub?->name ?? '',
+                    'service_category_id' => $rule['service_category_id'],
+                    'service_category_name' => $serviceCategory?->name ?? '',
+                    'max_percent' => $rule['max_percent'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public static function maxDamagePercentForPortfolioItem(?int $subcategoryId, ?int $serviceCategoryId = null): ?float
+    {
+        $rules = static::normalizedDamageDeductionRules();
+        $mainCategoryId = $subcategoryId
+            ? Category::query()->whereKey($subcategoryId)->value('parent_id')
+            : null;
+
+        if ($serviceCategoryId) {
+            foreach ($rules as $rule) {
+                if (($rule['service_category_id'] ?? null) !== (int) $serviceCategoryId) {
+                    continue;
+                }
+
+                if (($rule['subcategory_id'] ?? null) !== null
+                    && $subcategoryId
+                    && (int) $rule['subcategory_id'] === (int) $subcategoryId) {
+                    return $rule['max_percent'];
+                }
+            }
+
+            foreach ($rules as $rule) {
+                if (($rule['service_category_id'] ?? null) !== (int) $serviceCategoryId) {
+                    continue;
+                }
+
+                if (($rule['subcategory_id'] ?? null) === null
+                    && ($rule['category_id'] ?? null) !== null
+                    && $mainCategoryId
+                    && (int) $rule['category_id'] === (int) $mainCategoryId) {
+                    return $rule['max_percent'];
+                }
+            }
+
+            foreach ($rules as $rule) {
+                if (($rule['service_category_id'] ?? null) === (int) $serviceCategoryId
+                    && ! isset($rule['category_id'])) {
+                    return $rule['max_percent'];
+                }
+            }
+        }
+
+        if ($subcategoryId) {
+            foreach ($rules as $rule) {
+                if (isset($rule['service_category_id'])) {
+                    continue;
+                }
+
+                if (($rule['subcategory_id'] ?? null) !== null
+                    && (int) $rule['subcategory_id'] === (int) $subcategoryId) {
+                    return $rule['max_percent'];
+                }
+            }
+
+            if ($mainCategoryId) {
+                foreach ($rules as $rule) {
+                    if (isset($rule['service_category_id'])) {
+                        continue;
+                    }
+
+                    if (($rule['category_id'] ?? null) === (int) $mainCategoryId
+                        && ($rule['subcategory_id'] ?? null) === null) {
+                        return $rule['max_percent'];
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     public static function maxDamagePercentForServiceCategory(?int $serviceCategoryId): ?float
@@ -91,7 +190,7 @@ class PlatformSetting extends Model
         }
 
         foreach (static::normalizedDamageDeductionRules() as $rule) {
-            if ($rule['service_category_id'] === $serviceCategoryId) {
+            if (($rule['service_category_id'] ?? null) === $serviceCategoryId) {
                 return $rule['max_percent'];
             }
         }
@@ -131,8 +230,27 @@ class PlatformSetting extends Model
         return collect($rules)
             ->map(function (array $rule) {
                 if (isset($rule['service_category_id'])) {
-                    return [
+                    $normalized = [
                         'service_category_id' => (int) $rule['service_category_id'],
+                        'max_percent' => (float) ($rule['max_percent'] ?? 0),
+                    ];
+
+                    if (isset($rule['category_id'])) {
+                        $normalized['category_id'] = (int) $rule['category_id'];
+                        $normalized['subcategory_id'] = filled($rule['subcategory_id'] ?? null)
+                            ? (int) $rule['subcategory_id']
+                            : null;
+                    }
+
+                    return $normalized;
+                }
+
+                if (isset($rule['category_id'])) {
+                    return [
+                        'category_id' => (int) $rule['category_id'],
+                        'subcategory_id' => filled($rule['subcategory_id'] ?? null)
+                            ? (int) $rule['subcategory_id']
+                            : null,
                         'max_percent' => (float) ($rule['max_percent'] ?? 0),
                     ];
                 }
@@ -161,7 +279,9 @@ class PlatformSetting extends Model
                 ];
             })
             ->filter()
-            ->unique('service_category_id')
+            ->unique(fn (array $rule) => isset($rule['service_category_id'])
+                ? 'service:'.($rule['category_id'] ?? 'all').':'.($rule['subcategory_id'] ?? 'all').':'.$rule['service_category_id']
+                : 'catalog:'.$rule['category_id'].':'.($rule['subcategory_id'] ?? 'all'))
             ->values()
             ->all();
     }

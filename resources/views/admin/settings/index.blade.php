@@ -168,7 +168,6 @@
                         @include('admin.partials.form-input', ['label' => 'Full refund if cancelled before rental (days)', 'name' => 'refund_rental_cancel_days', 'type' => 'number', 'min' => '0', 'max' => '365', 'value' => old('refund_rental_cancel_days', $values['refund_rental_cancel_days'] ?? '3'), 'required' => true, 'hint' => 'Days before rental start date'])
                         @include('admin.partials.form-input', ['label' => 'Late return fee (₹ per day)', 'name' => 'refund_rental_late_fee_per_day', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'value' => old('refund_rental_late_fee_per_day', $values['refund_rental_late_fee_per_day'] ?? '500'), 'required' => true])
                         @include('admin.partials.form-input', ['label' => 'Security deposit refund after return (days)', 'name' => 'refund_rental_deposit_days', 'type' => 'number', 'min' => '0', 'max' => '365', 'value' => old('refund_rental_deposit_days', $values['refund_rental_deposit_days'] ?? '7'), 'required' => true, 'hint' => 'Working days after item is returned and inspected'])
-                        @include('admin.settings.partials.damage-deduction-rules')
                     </div>
                 </section>
 

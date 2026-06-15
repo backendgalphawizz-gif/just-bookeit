@@ -9,9 +9,11 @@
     }
 
     $serviceCategoryId = (int) ($category->id ?? $item->category_id ?? 0);
-    $maxDamagePercent = $serviceCategoryId
-        ? PlatformSetting::maxDamagePercentForServiceCategory($serviceCategoryId)
-        : null;
+    $subcategoryId = (int) old('subcategory_id', $item->subcategory_id ?? 0);
+    $maxDamagePercent = PlatformSetting::maxDamagePercentForPortfolioItem(
+        $subcategoryId ?: null,
+        $serviceCategoryId ?: null
+    );
 @endphp
 
 <div class="vp-field vp-field--full vp-form-section" data-vp-damage>
@@ -20,7 +22,7 @@
             <label class="vp-label">Damage deduction rules</label>
             <p class="vp-field-hint">Optional — percent charged per damage type.</p>
             @if ($maxDamagePercent !== null)
-                <p class="vp-field-hint" style="color:#b45309;">Maximum total deduction for this service category: {{ rtrim(rtrim(number_format($maxDamagePercent, 2), '0'), '.') }}%.</p>
+                <p class="vp-field-hint" style="color:#b45309;">Maximum total deduction for this category: {{ rtrim(rtrim(number_format($maxDamagePercent, 2), '0'), '.') }}%.</p>
             @endif
         </div>
         <button type="button" class="vp-btn vp-btn--outline vp-btn--sm" data-vp-damage-add>+ Add rule</button>
