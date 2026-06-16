@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.guest' => \App\Http\Middleware\RedirectIfAdminAuthenticated::class,
             'admin.module' => \App\Http\Middleware\AuthorizeAdminModule::class,
             'customer.auth' => \App\Http\Middleware\EnsureCustomerIsAuthenticated::class,
+            'customer.registered' => \App\Http\Middleware\EnsureCustomerIsRegistered::class,
             'customer.guest' => \App\Http\Middleware\RedirectIfCustomerAuthenticated::class,
             'vendor.auth' => \App\Http\Middleware\EnsureVendorIsAuthenticated::class,
             'vendor.guest' => \App\Http\Middleware\RedirectIfVendorAuthenticated::class,

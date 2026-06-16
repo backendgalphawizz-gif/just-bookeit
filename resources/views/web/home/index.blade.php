@@ -5,7 +5,7 @@
 @section('content')
 @php
     $hero = $banners->first();
-    $heroImage = $hero?->image_url ?: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=1800&q=90&fit=crop';
+    $heroImage = $hero?->image_url ?: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1800&q=90&fit=crop';
 
     $serviceImages = [
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=85&fit=crop',
@@ -25,14 +25,12 @@
     <div class="jbw-hero-overlay"></div>
     <div class="jbw-container jbw-hero-content-wrap">
         <div class="jbw-hero-content">
-            <p class="jbw-hero-kicker">Just Book IT</p>
+            <p class="jbw-hero-kicker">{{ $webBranding['name'] ?? 'Just Book IT' }}</p>
             <h1 class="jbw-hero-title">{!! nl2br(e($hero?->title ?? "Your style,\nyour moment.")) !!}</h1>
             <p class="jbw-hero-text">{{ $hero?->subtitle ?? "India's premier platform for fashion designer bookings, rental dresses & jewellery. Look extraordinary - without the price tag." }}</p>
             <div class="jbw-hero-actions">
                 <a href="{{ $hero?->redirect_url ?: route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Explore collection</a>
-                @guest('customer')
-                    <a href="{{ route('web.login') }}" class="jbw-btn jbw-btn--outline" style="color:#fff;border-color:rgb(255 255 255/0.4);background:rgb(255 255 255/0.1);backdrop-filter:blur(4px)">Sign in</a>
-                @endguest
+                <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--hero-secondary">Browse services</a>
             </div>
         </div>
     </div>
@@ -70,7 +68,7 @@
 </section>
 
 {{-- ── How it works ─────────────────────────────────────────────── --}}
-<section class="jbw-section-band jbw-section-band--warm">
+<section class="jbw-section-band jbw-section-band--warm" id="how-it-works">
     <div class="jbw-container">
         <div class="jbw-section-head">
             <span class="jbw-eyebrow">How it works</span>
@@ -112,7 +110,7 @@
         </div>
         <div class="jbw-grid-3">
             @forelse ($services as $index => $service)
-                <a href="{{ route('web.catalog.index', ['category' => $service->id]) }}" class="jbw-tile">
+                <a href="{{ route('web.catalog.index', ['service' => $service->id]) }}" class="jbw-tile">
                     <img src="{{ $serviceImages[$index % 3] }}" alt="{{ $service->name }}">
                     <div class="jbw-tile-overlay"></div>
                     <div class="jbw-tile-body">
@@ -145,15 +143,25 @@
             <p class="jbw-section-sub" style="color:rgb(255 255 255/0.6)">Women, men &amp; kids collections</p>
         </div>
         <div class="jbw-grid-3">
-            @foreach (['Women','Men','Kids'] as $i => $label)
-                <a href="{{ route('web.catalog.index') }}" class="jbw-tile" style="min-height:18rem">
-                    <img src="{{ $categoryImages[$i] }}" alt="{{ $label }}">
+            @forelse ($shopCategories as $i => $shopCategory)
+                <a href="{{ route('web.catalog.index', ['category' => $shopCategory->id]) }}" class="jbw-tile" style="min-height:18rem">
+                    <img src="{{ $categoryImages[$i % count($categoryImages)] }}" alt="{{ $shopCategory->name }}">
                     <div class="jbw-tile-overlay"></div>
                     <div class="jbw-tile-body">
-                        <span class="jbw-tile-label">{{ $label }}</span>
+                        <span class="jbw-tile-label">{{ $shopCategory->name }}</span>
                     </div>
                 </a>
-            @endforeach
+            @empty
+                @foreach (['Women','Men','Kids'] as $i => $label)
+                    <a href="{{ route('web.catalog.index') }}" class="jbw-tile" style="min-height:18rem">
+                        <img src="{{ $categoryImages[$i] }}" alt="{{ $label }}">
+                        <div class="jbw-tile-overlay"></div>
+                        <div class="jbw-tile-body">
+                            <span class="jbw-tile-label">{{ $label }}</span>
+                        </div>
+                    </a>
+                @endforeach
+            @endforelse
         </div>
     </div>
 </section>
@@ -195,9 +203,16 @@
                 <a href="{{ route('web.catalog.index') }}" class="jbw-btn" style="background:rgb(255 255 255/0.12);color:#fff;border-color:rgb(255 255 255/0.25);backdrop-filter:blur(4px)">Browse catalog</a>
             </div>
         @else
-            <div class="jbw-cta-actions">
-                <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Browse catalog</a>
-            </div>
+            @if ($webCustomer->is_guest)
+                <div class="jbw-cta-actions">
+                    <a href="{{ route('web.register', ['redirect' => route('web.catalog.index')]) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Create account</a>
+                    <a href="{{ route('web.catalog.index') }}" class="jbw-btn" style="background:rgb(255 255 255/0.12);color:#fff;border-color:rgb(255 255 255/0.25);backdrop-filter:blur(4px)">Browse catalog</a>
+                </div>
+            @else
+                <div class="jbw-cta-actions">
+                    <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Browse catalog</a>
+                </div>
+            @endif
         @endguest
     </div>
 </section>

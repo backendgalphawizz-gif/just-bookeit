@@ -3,7 +3,7 @@
 @section('title', 'Verify OTP')
 
 @section('content')
-    <x-web.auth-shell title="Get Verified" subtitle="Enter 4-digit code" :centered="true">
+    <x-web.auth-shell title="Get Verified" subtitle="Enter the 4-digit code sent to +91 ******{{ substr($otpSession['mobile'], -3) }}" :centered="true">
         <form method="POST" action="{{ route('web.verify-otp.submit') }}" class="jbw-form-stack jbw-form-stack--otp" id="otp-form">
             @csrf
             <div class="jbw-otp-row">
@@ -18,7 +18,7 @@
         </form>
 
         <p class="jbw-auth-resend">
-            <a href="{{ route('web.login') }}" id="resend-link">Resend Code</a>
+            <a href="{{ $otpSession['type'] === 'register' ? route('web.register') : route('web.login') }}" id="resend-link">Request new code</a>
             <span id="resend-timer" class="jbw-auth-timer">00:48</span>
         </p>
     </x-web.auth-shell>

@@ -15,6 +15,10 @@ class EnsureCustomerIsAuthenticated
         $customer = Auth::guard('customer')->user();
 
         if (! $customer instanceof Customer) {
+            if (! $request->expectsJson()) {
+                $request->session()->put('url.intended', $request->fullUrl());
+            }
+
             return redirect()->route('web.login')
                 ->with('error', 'Please sign in to continue.');
         }

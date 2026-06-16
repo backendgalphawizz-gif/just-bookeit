@@ -22,14 +22,24 @@
                 @if($vendor->mobile) · {{ $vendor->mobile }} @endif
             </p>
             <div class="jbw-detail-actions" style="margin-top:0.75rem">
-                <a href="#" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                    Video call
-                </a>
-                <a href="#" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    Chat
-                </a>
+                @auth('customer')
+                    @unless ($webCustomer->is_guest)
+                        <a href="{{ route('web.chat.start', $vendor) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                            Chat
+                        </a>
+                    @else
+                        <a href="{{ route('web.register', ['redirect' => route('web.chat.start', $vendor)]) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                            Chat
+                        </a>
+                    @endunless
+                @else
+                    <a href="{{ route('web.login', ['redirect' => route('web.chat.start', $vendor)]) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        Chat
+                    </a>
+                @endauth
             </div>
         </div>
     </div>

@@ -16,7 +16,7 @@ class VendorController extends WebController
         abort_unless($vendor->status === 'active', 404);
 
         $portfolio = $vendor->portfolioItems()
-            ->whereIn('status', ['approved', 'pending'])
+            ->where('status', 'approved')
             ->latest('id')
             ->limit(12)
             ->get();

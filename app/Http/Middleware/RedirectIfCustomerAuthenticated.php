@@ -11,7 +11,9 @@ class RedirectIfCustomerAuthenticated
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::guard('customer')->check()) {
+        $customer = Auth::guard('customer')->user();
+
+        if ($customer && ! $customer->is_guest) {
             return redirect()->route('web.home');
         }
 

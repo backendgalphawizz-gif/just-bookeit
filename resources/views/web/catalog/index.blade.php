@@ -14,7 +14,7 @@
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80',
         'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=600&q=80',
     ];
-    $hasFilters = request('search') || request('category') || request('subcategory');
+    $hasFilters = request('search') || request('category') || request('subcategory') || request('service');
 @endphp
 
 <div class="jbw-container">
@@ -45,6 +45,15 @@
                 <div class="jbw-field">
                     <label class="jbw-label" for="search">Search</label>
                     <input id="search" type="search" name="search" class="jbw-input" value="{{ request('search') }}" placeholder="Gown, lehenga...">
+                </div>
+                <div class="jbw-field" style="margin-top:1rem">
+                    <label class="jbw-label" for="service">Service type</label>
+                    <select id="service" name="service" class="jbw-select">
+                        <option value="">All services</option>
+                        @foreach ($serviceCategories as $service)
+                            <option value="{{ $service->id }}" @selected(request('service') == $service->id)>{{ $service->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="jbw-field" style="margin-top:1rem">
                     <label class="jbw-label" for="category">Category</label>

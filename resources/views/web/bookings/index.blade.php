@@ -7,7 +7,9 @@
 @section('content')
     <div class="jbw-booking-tabs">
         <a href="{{ route('web.bookings.index') }}" @class(['jbw-booking-tab', 'is-active' => ! request('tab')])>All bookings</a>
-        <a href="{{ route('web.bookings.index', ['tab' => 'rental']) }}" @class(['jbw-booking-tab', 'is-active' => request('tab') === 'rental'])>Rental dresses</a>
+        <a href="{{ route('web.bookings.index', ['tab' => 'fashion_designer']) }}" @class(['jbw-booking-tab', 'is-active' => request('tab') === 'fashion_designer'])>Fashion designer</a>
+        <a href="{{ route('web.bookings.index', ['tab' => 'rental_dress']) }}" @class(['jbw-booking-tab', 'is-active' => request('tab') === 'rental_dress'])>Rental dresses</a>
+        <a href="{{ route('web.bookings.index', ['tab' => 'rental_jewellery']) }}" @class(['jbw-booking-tab', 'is-active' => request('tab') === 'rental_jewellery'])>Rental jewellery</a>
     </div>
 
     <div class="jbw-card">
@@ -22,11 +24,14 @@
                     <p style="font-weight:700;margin:0">{{ $order->itemDisplayName() }}</p>
                     <p style="font-size:0.8125rem;color:var(--jbw-muted);margin:0.25rem 0">
                         {{ $order->vendor?->brand_name ?? 'Designer' }}
+                        @if ($order->category)
+                            · {{ $order->category->name }}
+                        @endif
                         @if ($order->isRental() && $order->rental_start_date)
                             · {{ $order->rental_start_date->format('d M') }} – {{ $order->rental_end_date?->format('d M, Y') }}
                         @endif
                     </p>
-                    <p style="font-weight:800;color:var(--jbw-primary);margin:0">₹{{ number_format($order->amount, 0) }}</p>
+                    <p style="font-weight:800;color:var(--jbw-primary);margin:0">₹{{ number_format($order->grandTotal(), 0) }}</p>
                 </div>
                 <div style="text-align:right">
                     @php

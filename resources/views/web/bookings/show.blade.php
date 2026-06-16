@@ -168,8 +168,19 @@
                 @endif
             </div>
 
-            @if (! in_array($order->status, ['cancelled', 'refunded', 'delivered'], true))
-                <button type="button" class="jbw-btn jbw-btn--danger jbw-btn--block">Cancel booking</button>
+            @if (in_array($order->status, ['new', 'pending_acceptance'], true))
+                <div class="jbw-booking-card">
+                    <h3 class="jbw-booking-card-title">Cancel booking</h3>
+                    <form method="POST" action="{{ route('web.bookings.cancel', $order) }}" style="display:grid;gap:0.75rem">
+                        @csrf
+                        <div>
+                            <label for="cancel-reason" style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.35rem">Reason</label>
+                            <textarea id="cancel-reason" name="reason" rows="3" class="jbw-input" style="width:100%;resize:vertical" placeholder="Why are you cancelling?" required minlength="5">{{ old('reason') }}</textarea>
+                            @error('reason')<p style="margin:0.35rem 0 0;font-size:0.75rem;color:#e11d48">{{ $message }}</p>@enderror
+                        </div>
+                        <button type="submit" class="jbw-btn jbw-btn--danger jbw-btn--block" onclick="return confirm('Cancel this booking?')">Cancel booking</button>
+                    </form>
+                </div>
             @endif
         </div>
     </div>
