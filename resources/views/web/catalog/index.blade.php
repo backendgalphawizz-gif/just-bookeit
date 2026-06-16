@@ -81,6 +81,42 @@
         </aside>
 
         <div class="jbw-catalog-results">
+            @if ($subcategories->isNotEmpty() && request('category'))
+                <div class="jbw-subcategory-strip">
+                    <a
+                        href="{{ route('web.catalog.index', array_filter(['category' => request('category'), 'service' => request('service'), 'search' => request('search')])) }}"
+                        @class(['jbw-subcategory-chip', 'is-active' => ! request('subcategory')])
+                    >
+                        <span class="jbw-subcategory-chip-label">All</span>
+                    </a>
+                    @foreach ($subcategories as $i => $sub)
+                        <a
+                            href="{{ route('web.catalog.index', array_filter(['category' => request('category'), 'subcategory' => $sub->id, 'service' => request('service'), 'search' => request('search')])) }}"
+                            @class(['jbw-subcategory-chip', 'is-active' => request('subcategory') == $sub->id])
+                        >
+                            @if ($sub->imageUrl())
+                                <img src="{{ $sub->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
+                            @endif
+                            <span class="jbw-subcategory-chip-label">{{ $sub->name }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            @elseif (! request('category') && $mainCategories->isNotEmpty())
+                <div class="jbw-subcategory-strip">
+                    @foreach ($mainCategories as $cat)
+                        <a
+                            href="{{ route('web.catalog.index', array_filter(['category' => $cat->id, 'service' => request('service'), 'search' => request('search')])) }}"
+                            class="jbw-subcategory-chip"
+                        >
+                            @if ($cat->imageUrl())
+                                <img src="{{ $cat->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
+                            @endif
+                            <span class="jbw-subcategory-chip-label">{{ $cat->name }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
             @if($hasFilters)
                 <p class="jbw-catalog-count">
                     {{ $items->total() }} result{{ $items->total() != 1 ? 's' : '' }}
