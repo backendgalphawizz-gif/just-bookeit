@@ -543,7 +543,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&vendor_id={{v1_designer_id}}&search=&page=1",
+									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&subcategory=women-sarees&vendor_id={{v1_designer_id}}&search=&page=1",
 									"host": ["{{base_url}}"],
 									"path": ["v1", "catalog"],
 									"query": [
@@ -563,6 +563,11 @@
 											"description": "Optional — filter catalog to a specific vendor"
 										},
 										{
+											"key": "subcategory",
+											"value": "women-sarees",
+											"description": "Optional — sub-category slug (e.g. women-sarees). Alias: subcategory_id"
+										},
+										{
 											"key": "search",
 											"value": ""
 										},
@@ -572,7 +577,7 @@
 										}
 									]
 								},
-								"description": "Catalog list with double filter: audience (Men/Women/Kids) + service type. Optional `vendor_id` to show one vendor's products only."
+								"description": "Catalog list with filters: audience (Men/Women/Kids), service type, and optional subcategory slug (e.g. women-sarees). Optional `vendor_id` to show one vendor's products only."
 							}
 						},
 						{

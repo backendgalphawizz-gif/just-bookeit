@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Category;
+use App\Support\Api\CatalogFilter;
 use Illuminate\Validation\Rule;
 
 class SubcategoryCatalog
