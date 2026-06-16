@@ -1,20 +1,24 @@
 @extends('web.layouts.profile')
 
 @section('title', 'Edit Profile')
-@section('page_title', 'Personal Information')
+@section('page_title', 'Profile')
 @section('page_subtitle', 'Update your personal details and how we can reach you.')
 
 @section('content')
     <div class="jbw-card">
+        <div class="jbw-page-head paddingtop">
+                                    <h1 class="jbw-page-title fontsize">Personal Information</h1>
+
+                            </div>
         <form method="POST" action="{{ route('web.profile.update') }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
-            @if ($customer->profileImageUrl())
+            <!-- @if ($customer->profileImageUrl())
                 <img src="{{ $customer->profileImageUrl() }}" alt="" class="jbw-profile-edit-photo">
             @else
                 <span class="jbw-profile-edit-photo jbw-profile-edit-photo--fallback">{{ strtoupper(substr($customer->name, 0, 1)) }}</span>
-            @endif
+            @endif -->
 
             <label class="jbw-label" for="profile_image">Profile photo</label>
             <input id="profile_image" type="file" name="profile_image" accept="image/*" class="jbw-input" style="padding:0.5rem">

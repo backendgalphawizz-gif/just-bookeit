@@ -5,6 +5,11 @@
 @section('page_subtitle', 'View and manage your past and upcoming dress rentals.')
 
 @section('content')
+<div class="jbw-card">
+     <div class="jbw-page-head paddingtop">
+                                    <h5 class="jbw-page-title fontsize">Booking History</h5>
+
+                            </div>
     <div class="jbw-booking-tabs">
         <a href="{{ route('web.bookings.index') }}" @class(['jbw-booking-tab', 'is-active' => ! request('tab')])>All bookings</a>
         <a href="{{ route('web.bookings.index', ['tab' => 'fashion_designer']) }}" @class(['jbw-booking-tab', 'is-active' => request('tab') === 'fashion_designer'])>Fashion designer</a>
@@ -56,4 +61,5 @@
             <div style="margin-top:1rem">{{ $orders->links() }}</div>
         @endif
     </div>
+</div>
 @endsection

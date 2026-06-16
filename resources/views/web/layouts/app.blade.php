@@ -5,7 +5,7 @@
 </head>
 <body class="jbw-body">
     @include('web.partials.header')
-    <main class="jbw-main" style="overflow-x:hidden">
+    <main class="jbw-main bannercss jbw-container" style="overflow-x:hidden">
         @if (session('success') || session('error') || session('info') || $errors->any())
             <div class="jbw-container jbw-flash-wrap">
                 @include('web.partials.alert')

@@ -61,7 +61,7 @@
             @endforeach
 
             <div class="jbw-measure-actions">
-                <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--cta">Save measurements</button>
+                <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--cta">SAVE & CONTINUE</button>
             </div>
         </form>
     </div>

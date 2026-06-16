@@ -3,16 +3,17 @@
 <div class="jbw-auth-page">
     {{-- Left panel — fashion background + logo --}}
     <aside class="jbw-auth-page-brand" aria-label="Just Book IT">
-        <div class="jbw-auth-brand-bg"></div>
-        <div class="jbw-auth-brand-overlay"></div>
+        <!-- <div class="jbw-auth-brand-bg"></div> -->
+        <!-- <div class="jbw-auth-brand-overlay"></div> -->
         <div class="jbw-auth-page-brand-inner">
             <a href="/" class="jbw-auth-brand-logo-link">
-                <x-web.logo variant="auth" />
+                <!-- <x-web.logo variant="auth" /> -->
+                 <img class="auth-logo" src="https://just-bookeit.developmentalphawizz.com/storage/logos/cSc7vM7AbLBl71T3uv0C2NgQLi1NcnbKhSFmHUsI.png"/>
             </a>
-            <div class="jbw-auth-brand-tagline">
+            <!-- <div class="jbw-auth-brand-tagline">
                 <p class="jbw-auth-brand-quote">"Look extraordinary<br>for every occasion."</p>
                 <p class="jbw-auth-brand-sub">India's premier fashion rental platform</p>
-            </div>
+            </div> -->
         </div>
     </aside>
 

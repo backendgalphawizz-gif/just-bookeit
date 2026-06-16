@@ -3,11 +3,13 @@
 
         <a href="{{ route('web.home') }}" class="jbw-logo-link" aria-label="Just Book IT home">
             <x-web.logo variant="header" />
+             <!-- <img src="../../../../assets/frontend/images/bookitlogo.png" /> -->
         </a>
 
         <nav class="jbw-nav" aria-label="Main">
             <a href="{{ route('web.home') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.home')])>Home</a>
-            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') || request()->routeIs('web.vendors.*') || request()->routeIs('web.bookings.overview')])>Catalog</a>
+            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') || request()->routeIs('web.vendors.*') || request()->routeIs('web.bookings.overview')])>Services</a>
+            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') || request()->routeIs('web.vendors.*') || request()->routeIs('web.bookings.overview')])>Categories</a>
             @auth('customer')
                 @unless ($webCustomer->is_guest)
                     <a href="{{ route('web.bookings.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.bookings.*') && ! request()->routeIs('web.bookings.overview')])>My bookings</a>
@@ -23,10 +25,13 @@
 
         <div class="jbw-header-tools">
             @include('web.partials.location-picker')
-            <form method="GET" action="{{ route('web.catalog.index') }}" class="jbw-header-search" role="search">
+            <form method="GET" action="{{ route('web.catalog.index') }}" class="jbw-header-search headerinputradius" role="search">
                 <input type="search" name="search" class="jbw-header-search-input" placeholder="Search outfits…" value="{{ request('search') }}" aria-label="Search catalog">
                 <button type="submit" class="jbw-icon-btn" aria-label="Search">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: rgb(242, 81, 35);" stroke-width="2">
+    <circle cx="11" cy="11" r="7"/>
+    <path d="M20 20l-3-3"/>
+</svg>
                 </button>
             </form>
             @include('web.partials.notification-picker')

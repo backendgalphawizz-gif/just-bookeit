@@ -3,12 +3,24 @@
         @unless ($webCustomer->is_guest)
             <button
                 type="button"
-                class="jbw-icon-btn jbw-notification-btn"
+                class="backgroundborder jbw-notification-btn"
                 @click="notificationOpen = !notificationOpen; locationOpen = false"
                 :aria-expanded="notificationOpen"
                 aria-label="Notifications{{ ($webNotificationUnread ?? 0) > 0 ? ' ('.$webNotificationUnread.' unread)' : '' }}"
             >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+                 <svg class="marginnotificationicon"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgb(242, 81, 35)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true">
+    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+    <path d="M10 21a2 2 0 0 0 4 0"/>
+</svg>
                 @if (($webNotificationUnread ?? 0) > 0)
                     <span class="jbw-notification-badge">{{ $webNotificationUnread > 9 ? '9+' : $webNotificationUnread }}</span>
                 @endif
@@ -62,13 +74,37 @@
                 </div>
             </div>
         @else
-            <a href="{{ route('web.register', ['redirect' => route('web.notifications.index')]) }}" class="jbw-icon-btn jbw-notification-btn" aria-label="Sign in for notifications">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+            <a href="{{ route('web.register', ['redirect' => route('web.notifications.index')]) }}" class="jbw-notification-btn" aria-label="Sign in for notifications">
+                <svg class="marginnotificationicon"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgb(242, 81, 35)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true">
+    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+    <path d="M10 21a2 2 0 0 0 4 0"/>
+</svg>
             </a>
         @endunless
     @else
-        <a href="{{ route('web.login', ['redirect' => route('web.notifications.index')]) }}" class="jbw-icon-btn jbw-notification-btn" aria-label="Sign in for notifications">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <a href="{{ route('web.login', ['redirect' => route('web.notifications.index')]) }}" class=" jbw-notification-btn" aria-label="Sign in for notifications">
+            <svg class="marginnotificationicon"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgb(242, 81, 35)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true">
+    <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+    <path d="M10 21a2 2 0 0 0 4 0"/>
+</svg>
         </a>
     @endauth
 </div>
