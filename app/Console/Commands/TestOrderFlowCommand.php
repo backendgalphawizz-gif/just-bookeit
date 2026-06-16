@@ -61,10 +61,7 @@ class TestOrderFlowCommand extends Command
             $this->stepVendorStatus($vendor, $order, 'in_progress');
             $order->refresh();
 
-            $this->stepVendorStatus($vendor, $order, 'in_transit');
-            $order->refresh();
-
-            $this->assert($order->delivery_otp !== null, 'Delivery OTP generated when vendor dispatches');
+            $this->assert($order->delivery_otp !== null, 'Delivery OTP generated when order is in progress');
             $this->assert(filled($order->pickup_address), 'Pickup address set on dispatch');
 
             $this->stepCustomerSeesOtp($customer, $order);

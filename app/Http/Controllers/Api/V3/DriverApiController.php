@@ -24,6 +24,6 @@ abstract class DriverApiController extends ApiController
 
     protected function assertAvailableDelivery(Order $order): void
     {
-        abort_unless($order->status === 'in_transit' && $order->driver_id === null, 422, 'This delivery is no longer available.');
+        abort_unless($order->status === 'in_progress' && $order->driver_id === null, 422, 'This delivery is no longer available.');
     }
 }

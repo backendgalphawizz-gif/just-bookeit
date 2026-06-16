@@ -10,14 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
-    public const IN_PROGRESS_STATUSES = ['accepted', 'in_progress', 'in_transit', 'pending_acceptance'];
+    public const IN_PROGRESS_STATUSES = ['accepted', 'in_progress', 'pending_acceptance'];
 
     public const STATUSES = [
         'new',
         'pending_acceptance',
         'accepted',
         'in_progress',
-        'in_transit',
         'delivered',
         'cancelled',
         'refunded',
@@ -29,7 +28,6 @@ class Order extends Model
         'pending_acceptance' => 'Pending acceptance',
         'accepted' => 'Accepted',
         'in_progress' => 'In progress',
-        'in_transit' => 'In Progress',
         'delivered' => 'Delivered',
         'cancelled' => 'Cancelled',
         'refunded' => 'Refunded',
@@ -126,7 +124,7 @@ class Order extends Model
     protected static function booted(): void
     {
         static::updating(function (Order $order) {
-            if ($order->isDirty('status') && $order->status === 'in_transit') {
+            if ($order->isDirty('status') && $order->status === 'in_progress') {
                 OrderDispatchSupport::prepareForTransit($order);
             }
         });
@@ -143,7 +141,7 @@ class Order extends Model
 
     public function ensureDeliveryOtp(): ?string
     {
-        if ($this->status !== 'in_transit') {
+        if ($this->status !== 'in_progress') {
             return null;
         }
 
@@ -413,8 +411,8 @@ class Order extends Model
         $deliveryState = match (true) {
             $cancelled => 'cancelled',
             $this->status === 'delivered' => 'done',
-            $this->status === 'in_transit' => 'current',
-            in_array($this->status, ['accepted', 'in_progress'], true) => 'upcoming',
+            $this->status === 'in_progress' => 'current',
+            $this->status === 'accepted' => 'upcoming',
             default => 'upcoming',
         };
         $deliveryTime = match ($deliveryState) {
@@ -488,9 +486,9 @@ class Order extends Model
     public function trackBookingSteps(): array
     {
         $steps = [
-            ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'in_transit', 'delivered'], 'label' => 'Booking placed', 'min' => 'new'],
-            ['keys' => ['pending_acceptance', 'accepted', 'in_progress', 'in_transit', 'delivered'], 'label' => 'Accepted by designer', 'min' => 'pending_acceptance'],
-            ['keys' => ['in_transit', 'delivered'], 'label' => 'In Progress', 'min' => 'in_transit'],
+            ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'delivered'], 'label' => 'Booking placed', 'min' => 'new'],
+            ['keys' => ['pending_acceptance', 'accepted', 'in_progress', 'delivered'], 'label' => 'Accepted by designer', 'min' => 'pending_acceptance'],
+            ['keys' => ['in_progress', 'delivered'], 'label' => 'In progress', 'min' => 'in_progress'],
             ['keys' => ['delivered'], 'label' => 'Delivered', 'min' => 'delivered'],
         ];
 
@@ -554,9 +552,6 @@ class Order extends Model
                 ['label' => 'Cancel booking', 'url' => $route('cancelled'), 'status' => 'cancelled', 'variant' => 'danger', 'confirm' => 'Cancel this booking?'],
             ],
             'in_progress' => [
-                ['label' => 'Dispatch for delivery', 'url' => $route('in_transit'), 'status' => 'in_transit', 'variant' => 'primary'],
-            ],
-            'in_transit' => [
                 ['label' => 'Mark delivered', 'url' => $route('delivered'), 'status' => 'delivered', 'variant' => 'success'],
             ],
             default => [],

@@ -13,7 +13,6 @@
         'new' => 'bg-blue-100 text-blue-800 ring-1 ring-blue-600/10',
         'accepted' => 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-600/10',
         'in_progress' => 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-600/10',
-        'in_transit' => 'bg-violet-100 text-violet-800 ring-1 ring-violet-600/10',
         'suspended' => 'bg-orange-100 text-orange-900 ring-1 ring-orange-600/10',
         'blocked' => 'bg-rose-100 text-rose-800 ring-1 ring-rose-600/10',
         'cancelled' => 'bg-rose-100 text-rose-800 ring-1 ring-rose-600/10',

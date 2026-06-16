@@ -188,7 +188,7 @@
 						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
 						"method": "GET",
 						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v2/bookings?tab=in_transit"
+						"url": "{{base_url}}/v2/bookings?tab=in_progress"
 					}
 				},
 				{
@@ -259,7 +259,7 @@
 							{ "key": "Accept", "value": "application/json" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"status\": \"in_transit\"\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"status\": \"in_progress\"\n}" },
 						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status"
 					}
 				}

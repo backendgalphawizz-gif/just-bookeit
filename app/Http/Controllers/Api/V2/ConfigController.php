@@ -58,7 +58,7 @@ class ConfigController extends ApiController
             'service_types' => VendorValidationRules::SERVICE_TYPES,
             'booking_tabs' => [
                 ['key' => 'accepted', 'label' => 'Accepted'],
-                ['key' => 'in_transit', 'label' => 'In Transit'],
+                ['key' => 'in_progress', 'label' => 'In Progress'],
                 ['key' => 'new', 'label' => 'New'],
             ],
             'payment_types' => [

@@ -126,7 +126,7 @@ class OrderController extends AdminController
         $this->authorizeAdmin('edit');
 
         $data = $request->validate([
-            'status' => ['required', 'in:new,pending_acceptance,accepted,in_progress,in_transit,delivered,cancelled,refunded'],
+            'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
         ]);
 
         $previousPaymentStatus = $order->payment_status;

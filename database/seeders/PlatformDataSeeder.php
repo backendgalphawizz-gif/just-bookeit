@@ -133,7 +133,7 @@ class PlatformDataSeeder extends Seeder
         $activeVendors = $vendors->where('status', 'active');
         $orderStatuses = [
             'new', 'new', 'pending_acceptance', 'accepted', 'in_progress',
-            'in_transit', 'delivered', 'delivered', 'delivered', 'cancelled', 'refunded',
+            'in_progress', 'delivered', 'delivered', 'delivered', 'cancelled', 'refunded',
         ];
 
         $orderCount = 0;
