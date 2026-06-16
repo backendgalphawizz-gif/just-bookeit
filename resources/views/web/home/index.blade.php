@@ -7,12 +7,12 @@
     $hero = $banners->first();
     $heroImage = $hero?->image_url ?: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1800&q=90&fit=crop';
 
-    $serviceImages = [
+    $serviceFallbacks = [
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=85&fit=crop',
         'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=900&q=85&fit=crop',
         'https://images.unsplash.com/photo-1617032210317-3b0855f047a4?w=900&q=85&fit=crop',
     ];
-    $categoryImages = [
+    $categoryFallbacks = [
         'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=900&q=85&fit=crop',
         'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=900&q=85&fit=crop',
         'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=900&q=85&fit=crop',
@@ -111,7 +111,7 @@
         <div class="jbw-grid-3">
             @forelse ($services as $index => $service)
                 <a href="{{ route('web.catalog.index', ['service' => $service->id]) }}" class="jbw-tile">
-                    <img src="{{ $serviceImages[$index % 3] }}" alt="{{ $service->name }}">
+                    <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}" alt="{{ $service->name }}">
                     <div class="jbw-tile-overlay"></div>
                     <div class="jbw-tile-body">
                         <span class="jbw-tile-label">{{ $service->name }}</span>
@@ -121,7 +121,7 @@
             @empty
                 @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
                     <a href="{{ route('web.catalog.index') }}" class="jbw-tile">
-                        <img src="{{ $serviceImages[$i] }}" alt="{{ $svc[0] }}">
+                        <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
                         <div class="jbw-tile-overlay"></div>
                         <div class="jbw-tile-body">
                             <span class="jbw-tile-label">{{ $svc[0] }}</span>
@@ -145,7 +145,7 @@
         <div class="jbw-grid-3">
             @forelse ($shopCategories as $i => $shopCategory)
                 <a href="{{ route('web.catalog.index', ['category' => $shopCategory->id]) }}" class="jbw-tile" style="min-height:18rem">
-                    <img src="{{ $categoryImages[$i % count($categoryImages)] }}" alt="{{ $shopCategory->name }}">
+                    <img src="{{ $shopCategory->imageUrl() ?: $categoryFallbacks[$i % count($categoryFallbacks)] }}" alt="{{ $shopCategory->name }}">
                     <div class="jbw-tile-overlay"></div>
                     <div class="jbw-tile-body">
                         <span class="jbw-tile-label">{{ $shopCategory->name }}</span>
@@ -154,7 +154,7 @@
             @empty
                 @foreach (['Women','Men','Kids'] as $i => $label)
                     <a href="{{ route('web.catalog.index') }}" class="jbw-tile" style="min-height:18rem">
-                        <img src="{{ $categoryImages[$i] }}" alt="{{ $label }}">
+                        <img src="{{ $categoryFallbacks[$i] }}" alt="{{ $label }}">
                         <div class="jbw-tile-overlay"></div>
                         <div class="jbw-tile-body">
                             <span class="jbw-tile-label">{{ $label }}</span>
