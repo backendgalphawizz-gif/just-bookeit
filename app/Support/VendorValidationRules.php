@@ -17,7 +17,11 @@ class VendorValidationRules
 
     public static function messages(): array
     {
-        return AdminValidationRules::messages();
+        return array_merge(AdminValidationRules::messages(), [
+            'reason.required' => 'A rejection reason is required.',
+            'reason.min' => 'Rejection reason must be at least 5 characters.',
+            'reason.max' => 'Rejection reason cannot exceed 500 characters.',
+        ]);
     }
 
     public static function attributes(): array
@@ -28,6 +32,7 @@ class VendorValidationRules
             'account_no' => 'account number',
             'shop_name' => 'shop/business name',
             'portfolio_image' => 'portfolio image',
+            'reason' => 'rejection reason',
         ]);
     }
 
@@ -74,6 +79,13 @@ class VendorValidationRules
             'bank_name' => ['nullable', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'ifsc_code' => ['nullable', 'string', 'size:11', 'regex:'.AdminValidationRules::REGEX_IFSC],
             'account_type' => ['nullable', 'in:savings,current'],
+        ];
+    }
+
+    public static function bookingReject(): array
+    {
+        return [
+            'reason' => ['required', 'string', 'min:5', 'max:500', 'regex:'.AdminValidationRules::REGEX_TEXT],
         ];
     }
 

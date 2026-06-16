@@ -1,6 +1,6 @@
 {
 	"name": "v2 — Vendor App",
-	"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.\n\n**Profile:** `coverImage` on `/v2/auth/me` and `POST /v2/auth/profile`. Availability via `is_available` or `POST /v2/profile/availability`.\n\n**Products:** filter by `type` (rented-dress | fashion-designer | rented-jewellery). Each item includes `is_available`.\n\n**Booking detail:** customer email/mobile, full measurements, payment_summary, `customer_review` when delivered.",
+	"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.\n\n**Profile:** `coverImage` on `/v2/auth/me` and `POST /v2/auth/profile`. Availability: `POST /v2/profile/available`, `POST /v2/profile/unavailable`, or `POST /v2/profile/availability` with `is_available`.\n\n**Products:** filter by `type` (rented-dress | fashion-designer | rented-jewellery). Each item includes `is_available`.\n\n**Booking detail:** customer email/mobile, full measurements, payment_summary, `customer_review` when delivered.",
 	"item": [
 		{
 			"name": "Auth",
@@ -126,6 +126,28 @@
 			]
 		},
 		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "Product Categories",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/categories",
+						"description": "Main categories with nested subcategories + service categories for product forms."
+					}
+				},
+				{
+					"name": "Sub-categories by Category",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/categories/{{v1_shop_category_id}}/subcategories"
+					}
+				}
+			]
+		},
+		{
 			"name": "Home",
 			"item": [
 				{
@@ -198,6 +220,7 @@
 						"method": "GET",
 						"header": [{ "key": "Accept", "value": "application/json" }],
 						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}",
+						"description": "Full booking detail — `booking_date` includes time; see `booked_at`, `product`, `shipping_address`, `payment_summary`, `rented_period`, `measurements`, `delivery_otp`, `damage`, `driver`."
 						"description": "customer (email, mobile), measurements (all fields), payment_summary (subtotal, shipping_fee, platform_fee, tax), customer_review when delivered."
 					}
 				},
@@ -215,8 +238,16 @@
 					"request": {
 						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
 						"method": "POST",
-						"header": [{ "key": "Accept", "value": "application/json" }],
-						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/reject"
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Item is unavailable for the requested rental dates.\"\n}"
+						},
+						"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/reject",
+						"description": "Reject a new/pending booking. `reason` is required (5–500 characters)."
 					}
 				},
 				{
@@ -532,7 +563,28 @@
 							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": { "mode": "raw", "raw": "{\n  \"is_available\": true\n}" },
-						"url": "{{base_url}}/v2/profile/availability"
+						"url": "{{base_url}}/v2/profile/availability",
+						"description": "Set availability with boolean body. Prefer POST /v2/profile/available or /unavailable for one-tap toggles."
+					}
+				},
+				{
+					"name": "Mark Available",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/profile/available",
+						"description": "Mark vendor shop as available. No request body. Sets is_listing_active = true."
+					}
+				},
+				{
+					"name": "Mark Unavailable",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "POST",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/profile/unavailable",
+						"description": "Mark vendor shop as unavailable. No request body. Sets is_listing_active = false."
 					}
 				},
 				{

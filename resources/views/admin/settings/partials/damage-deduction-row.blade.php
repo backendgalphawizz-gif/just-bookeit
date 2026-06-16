@@ -1,10 +1,10 @@
 @php
     $rowIndex = $rowIndex ?? 0;
     $rule = $rule ?? ['category_id' => '', 'subcategory_id' => '', 'max_percent' => ''];
-    $selectedCategoryId = (string) ($rule['category_id'] ?? '');
+    $fieldPrefix = 'damage_deduction_rules';
     $selectedSubcategoryId = (string) ($rule['subcategory_id'] ?? '');
     $scopeLabel = $selectedSubcategoryId !== ''
-        ? ($subcategories->firstWhere('id', (int) $selectedSubcategoryId)?->name ?? 'Sub-category')
+        ? ($subcategories->firstWhere('id', (int) $selectedSubcategoryId)?->name ?? ($rule['subcategory_name'] ?? 'Sub-category'))
         : 'All sub-categories';
     $scopeClass = $selectedSubcategoryId !== '' ? 'jb-damage-rules-scope--sub' : 'jb-damage-rules-scope--all';
     $displayRowNumber = is_numeric($rowIndex) ? ((int) $rowIndex + 1) : '';
@@ -12,38 +12,18 @@
 <tr data-damage-settings-row>
     <td class="jb-col-sn text-slate-500" data-damage-row-number>{{ $displayRowNumber }}</td>
     <td>
-        <select
-            name="damage_deduction_rules[{{ $rowIndex }}][category_id]"
-            class="jb-select jb-damage-rules-table__select"
-            data-damage-category
-            required
-        >
-            <option value="">Select category</option>
-            @foreach ($mainCategories as $mainCategory)
-                <option value="{{ $mainCategory->id }}" @selected($selectedCategoryId === (string) $mainCategory->id)>
-                    {{ $mainCategory->name }}
-                </option>
-            @endforeach
-        </select>
+        @include('admin.settings.partials.damage-deduction-category-cell', [
+            'fieldPrefix' => $fieldPrefix,
+            'rowIndex' => $rowIndex,
+            'rule' => $rule,
+        ])
     </td>
     <td>
-        <select
-            name="damage_deduction_rules[{{ $rowIndex }}][subcategory_id]"
-            class="jb-select jb-damage-rules-table__select"
-            data-damage-subcategory
-            @disabled($selectedCategoryId === '')
-        >
-            <option value="">All sub-categories</option>
-            @foreach ($subcategories as $subcategory)
-                <option
-                    value="{{ $subcategory->id }}"
-                    data-parent-id="{{ $subcategory->parent_id }}"
-                    @selected($selectedSubcategoryId === (string) $subcategory->id)
-                >
-                    {{ $subcategory->name }}
-                </option>
-            @endforeach
-        </select>
+        @include('admin.settings.partials.damage-deduction-subcategory-cell', [
+            'fieldPrefix' => $fieldPrefix,
+            'rowIndex' => $rowIndex,
+            'rule' => $rule,
+        ])
     </td>
     <td>
         <div class="space-y-1">

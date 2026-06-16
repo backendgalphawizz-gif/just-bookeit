@@ -126,6 +126,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
 
     Route::get('config', [VendorConfigController::class, 'index'])->name('config');
     Route::get('categories', [VendorCategoryController::class, 'index'])->name('categories');
+    Route::get('categories/{category}/subcategories', [VendorCategoryController::class, 'subcategories'])->name('categories.subcategories');
 
     Route::get('locations/countries', [VendorLocationController::class, 'countries'])->name('locations.countries');
     Route::get('locations/states', [VendorLocationController::class, 'states'])->name('locations.states');
@@ -167,6 +168,8 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::post('profile/bank', [VendorProfileController::class, 'updateBank'])->name('profile.bank');
         Route::post('profile/bio', [VendorProfileController::class, 'updateBio'])->name('profile.bio');
         Route::post('profile/availability', [VendorProfileController::class, 'toggleAvailability'])->name('profile.availability');
+        Route::post('profile/available', [VendorProfileController::class, 'markAvailable'])->name('profile.available');
+        Route::post('profile/unavailable', [VendorProfileController::class, 'markUnavailable'])->name('profile.unavailable');
         Route::post('profile/password', [VendorProfileController::class, 'updatePassword'])->name('profile.password');
 
         Route::get('portfolio', [VendorPortfolioController::class, 'index'])->name('portfolio.index');
