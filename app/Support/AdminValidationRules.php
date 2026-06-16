@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Category;
+use App\Models\Order;
 use Illuminate\Validation\Rule;
 
 class AdminValidationRules
@@ -309,7 +310,7 @@ class AdminValidationRules
             'reference_images' => ['nullable', 'array'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'payment_status' => ['required', 'in:pending,success,failed,refunded'],
-            'status' => ['required', 'in:new,pending_acceptance,accepted,in_progress,in_transit,delivered,cancelled,refunded'],
+            'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
         ];
     }
 

@@ -13,7 +13,7 @@
     @php
         $badge = match($booking->status) {
             'new','pending_acceptance' => 'new',
-            'in_transit' => 'transit',
+            'in_progress' => 'transit',
             'delivered' => 'done',
             default => 'accepted',
         };

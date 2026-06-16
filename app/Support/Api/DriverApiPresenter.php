@@ -103,7 +103,7 @@ class DriverApiPresenter
             'driver_assigned_at' => $order->driver_assigned_at?->format('M d, Y, g:i A'),
             'driver_pickup_at' => $order->driver_pickup_at?->format('M d, Y, g:i A'),
             'driver_delivered_at' => $order->driver_delivered_at?->format('M d, Y, g:i A'),
-            'requires_delivery_otp' => $order->status === 'in_transit'
+            'requires_delivery_otp' => $order->status === 'in_progress'
                 && in_array($order->driver_delivery_status, [
                     Order::DRIVER_STATUS_PICKED_UP,
                     Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
@@ -143,7 +143,7 @@ class DriverApiPresenter
             return 'CANCELLED';
         }
 
-        if ($order->status === 'in_transit' && $order->driver_id === null) {
+        if ($order->status === 'in_progress' && $order->driver_id === null) {
             return 'NEW';
         }
 
@@ -173,7 +173,7 @@ class DriverApiPresenter
     public static function canAccept(Order $order, ?Driver $viewer): bool
     {
         return $viewer
-            && $order->status === 'in_transit'
+            && $order->status === 'in_progress'
             && $order->driver_id === null;
     }
 
@@ -183,12 +183,12 @@ class DriverApiPresenter
             return false;
         }
 
-        if ($order->status === 'in_transit' && $order->driver_id === null) {
+        if ($order->status === 'in_progress' && $order->driver_id === null) {
             return true;
         }
 
         return $order->driver_id === $viewer->id
-            && $order->status === 'in_transit'
+            && $order->status === 'in_progress'
             && $order->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED;
     }
 
@@ -196,7 +196,7 @@ class DriverApiPresenter
     {
         return $viewer
             && $order->driver_id === $viewer->id
-            && $order->status === 'in_transit'
+            && $order->status === 'in_progress'
             && $order->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED;
     }
 
@@ -204,7 +204,7 @@ class DriverApiPresenter
     {
         return $viewer
             && $order->driver_id === $viewer->id
-            && $order->status === 'in_transit'
+            && $order->status === 'in_progress'
             && $order->driver_delivery_status === Order::DRIVER_STATUS_PICKED_UP;
     }
 
@@ -212,7 +212,7 @@ class DriverApiPresenter
     {
         return $viewer
             && $order->driver_id === $viewer->id
-            && $order->status === 'in_transit'
+            && $order->status === 'in_progress'
             && in_array($order->driver_delivery_status, [
                 Order::DRIVER_STATUS_PICKED_UP,
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,

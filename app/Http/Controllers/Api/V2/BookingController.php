@@ -32,8 +32,8 @@ class BookingController extends VendorApiController
             })
             ->when($request->filled('tab'), function ($q) use ($request) {
                 match ($request->string('tab')->toString()) {
-                    'accepted' => $q->whereIn('status', ['accepted', 'in_progress']),
-                    'in_transit' => $q->where('status', 'in_transit'),
+                    'accepted' => $q->where('status', 'accepted'),
+                    'in_progress' => $q->where('status', 'in_progress'),
                     'new' => $q->whereIn('status', ['new', 'pending_acceptance']),
                     'completed' => $q->where('status', 'delivered'),
                     default => null,
@@ -126,7 +126,7 @@ class BookingController extends VendorApiController
 
         $booking->status = $nextStatus;
 
-        if ($nextStatus === 'in_transit') {
+        if ($nextStatus === 'in_progress') {
             OrderDispatchSupport::prepareForTransit($booking);
         }
 

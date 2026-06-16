@@ -26,7 +26,7 @@ class OrderDispatchSupport
     {
         self::preparePickupAddress($order);
 
-        if ($order->status === 'in_transit' && blank($order->delivery_otp)) {
+        if ($order->status === 'in_progress' && blank($order->delivery_otp)) {
             $order->delivery_otp = Order::generateDeliveryOtpValue();
         }
     }
@@ -37,8 +37,7 @@ class OrderDispatchSupport
         return match ($current) {
             'pending_acceptance' => ['accepted', 'cancelled'],
             'accepted' => ['in_progress', 'cancelled'],
-            'in_progress' => ['in_transit', 'cancelled'],
-            'in_transit' => ['delivered'],
+            'in_progress' => ['delivered', 'cancelled'],
             default => [],
         };
     }

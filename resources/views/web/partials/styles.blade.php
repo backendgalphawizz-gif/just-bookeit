@@ -1499,7 +1499,7 @@ a { color: inherit; }
     letter-spacing: 0.04em;
 }
 .jbw-status--new       { background: #dbeafe; color: #1d4ed8; }
-.jbw-status--in_transit{ background: #ffedd5; color: #c2410c; }
+.jbw-status--in_progress{ background: #ffedd5; color: #c2410c; }
 .jbw-status--delivered { background: #dcfce7; color: #15803d; }
 .jbw-status--cancelled { background: #fee2e2; color: #b91c1c; }
 .jbw-status--default   { background: #f1f5f9; color: #475569; }

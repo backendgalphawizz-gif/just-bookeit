@@ -147,7 +147,7 @@ class OrderDemoSeeder extends Seeder
             $attrs['item_title'] = 'Designer Lehenga — Royal Maroon Collection';
             $attrs['size'] = 'M';
             $attrs['color'] = 'Maroon & Gold';
-            $attrs['status'] = 'in_transit';
+            $attrs['status'] = 'in_progress';
             $attrs['payment_status'] = 'success';
             $attrs['paid_at'] = now()->subDays(3);
             $attrs['delivery_fee'] = 199;
@@ -187,7 +187,7 @@ class OrderDemoSeeder extends Seeder
         if (in_array($status, ['delivered', 'refunded', 'cancelled'], true)) {
             $start = $createdAt->copy()->addDay()->startOfDay();
             $end = $start->copy()->addDays(rand(4, 8));
-        } elseif (in_array($status, ['in_transit', 'in_progress', 'accepted'], true)) {
+        } elseif (in_array($status, ['in_progress', 'accepted'], true)) {
             $start = now()->subDays(rand(1, 3))->startOfDay();
             $end = now()->addDays(rand(4, 7))->startOfDay();
         } else {
