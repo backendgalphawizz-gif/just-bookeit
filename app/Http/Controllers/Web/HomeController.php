@@ -20,16 +20,14 @@ class HomeController extends WebController
 
         $services = Category::query()
             ->where('is_active', true)
-            ->where('type', 'service')
+            ->service()
             ->orderBy('sort_order')
-            ->limit(3)
             ->get();
 
         $shopCategories = Category::query()
             ->active()
             ->main()
             ->orderBy('sort_order')
-            ->limit(3)
             ->get();
 
         $featuredDesigners = Vendor::query()

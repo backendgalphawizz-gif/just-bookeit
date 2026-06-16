@@ -19,21 +19,37 @@ class LoginController extends WebController
         protected OtpService $otp
     ) {}
 
-    public function showLogin(): View
+    public function showLogin(Request $request): View
     {
+        if ($request->filled('redirect')) {
+            $redirect = $request->string('redirect')->toString();
+            if (str_starts_with($redirect, url('/'))) {
+                $request->session()->put('url.intended', $redirect);
+            }
+        }
+
         return view('web.auth.login');
     }
 
-    public function showRegisterMobile(): View
+    public function showRegisterMobile(Request $request): View
     {
+        if ($request->filled('redirect')) {
+            $redirect = $request->string('redirect')->toString();
+            if (str_starts_with($redirect, url('/'))) {
+                $request->session()->put('url.intended', $redirect);
+            }
+        }
+
         return view('web.auth.register');
     }
 
     public function sendOtp(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'mobile' => ['required', 'string', 'max:20'],
+            'mobile' => ['required', 'string', 'regex:/^[6-9]\d{9}$/'],
             'type' => ['required', 'in:login,register'],
+        ], [
+            'mobile.regex' => 'Enter a valid 10-digit mobile number starting with 6–9.',
         ]);
 
         $payload = $this->otp->send(OtpService::ACTOR_CUSTOMER, $data['mobile'], $data['type']);
@@ -113,6 +129,11 @@ class LoginController extends WebController
 
     public function showRegisterComplete(Request $request): View|RedirectResponse
     {
+        $customer = Auth::guard('customer')->user();
+        if ($customer && ! $customer->is_guest) {
+            return redirect()->route('web.home');
+        }
+
         if (! $request->session()->has('web_register')) {
             return redirect()->route('web.login')->with('error', 'Verify OTP before completing registration.');
         }
@@ -164,12 +185,22 @@ class LoginController extends WebController
         $request->session()->forget('web_register');
         $request->session()->regenerate();
 
-        return redirect()->route('web.profile.measurements.create')
+        return redirect()
+            ->intended(route('web.profile.measurements.create'))
             ->with('success', 'Account created! Add your measurements for a better fit.');
     }
 
     public function guest(Request $request): RedirectResponse
     {
+        $existing = Auth::guard('customer')->user();
+        if ($existing && ! $existing->is_guest) {
+            return redirect()->route('web.home');
+        }
+
+        if ($existing?->is_guest) {
+            return redirect()->route('web.home')->with('info', 'You are already browsing as a guest.');
+        }
+
         $customer = Customer::query()->create([
             'customer_code' => CodeGenerator::customerCode(),
             'name' => 'Guest',

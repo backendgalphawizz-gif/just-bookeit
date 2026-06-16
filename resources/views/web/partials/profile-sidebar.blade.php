@@ -27,8 +27,13 @@
         <a href="{{ route('web.profile.addresses') }}" @class(['jbw-profile-nav-link', 'is-active' => request()->routeIs('web.profile.addresses')])>
             <span>📍</span> Saved Addresses
         </a>
-        <a href="#" class="jbw-profile-nav-link"><span>ℹ</span> About Us</a>
-        <a href="#" class="jbw-profile-nav-link"><span>?</span> Help &amp; Support</a>
+        <a href="{{ route('web.chat.index') }}" @class(['jbw-profile-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>
+            <span>💬</span> Chat
+        </a>
+        <a href="{{ route('web.notifications.index') }}" @class(['jbw-profile-nav-link', 'is-active' => request()->routeIs('web.notifications.*')])>
+            <span>🔔</span> Notifications
+        </a>
+        <a href="{{ route('web.contact') }}" class="jbw-profile-nav-link"><span>?</span> Help &amp; Support</a>
         <form method="POST" action="{{ route('web.logout') }}" class="jbw-profile-logout">@csrf
             <button type="submit"><span>⏻</span> Log Out</button>
         </form>

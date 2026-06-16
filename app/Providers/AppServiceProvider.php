@@ -21,7 +21,14 @@ class AppServiceProvider extends ServiceProvider
     {
         View::composer('admin.layouts.app', AdminLayoutComposer::class);
         View::composer(['admin.layouts.guest', 'admin.auth.login'], GuestLayoutComposer::class);
-        View::composer(['web.layouts.app', 'web.layouts.guest', 'web.layouts.profile'], WebLayoutComposer::class);
+        View::composer([
+            'web.layouts.app',
+            'web.layouts.guest',
+            'web.layouts.profile',
+            'web.*',
+            'web.*.*',
+            'web.*.*.*',
+        ], WebLayoutComposer::class);
         View::composer(['vendor.layouts.app', 'vendor.layouts.guest'], VendorLayoutComposer::class);
         Paginator::defaultView('vendor.pagination.admin');
         Paginator::defaultSimpleView('vendor.pagination.admin');

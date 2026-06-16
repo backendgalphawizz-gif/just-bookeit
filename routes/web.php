@@ -3,16 +3,22 @@
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\BookingController;
 use App\Http\Controllers\Web\CatalogController;
+use App\Http\Controllers\Web\ChatController;
+use App\Http\Controllers\Web\ContactController;
 use App\Http\Controllers\Web\DisputeController;
+use App\Http\Controllers\Web\FaqController;
 use App\Http\Controllers\Web\HomeController;
+use App\Http\Controllers\Web\LocationController;
+use App\Http\Controllers\Web\NotificationController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\VendorController;
 use Illuminate\Support\Facades\Route;
 
-// Route::get('/', [HomeController::class, 'index'])->name('web.home');
-Route::get('/', fn () => redirect('/admin'))->name('web.home');
+Route::get('/', [HomeController::class, 'index'])->name('web.home');
 Route::get('/catalog', [CatalogController::class, 'index'])->name('web.catalog.index');
 Route::get('/catalog/{item}', [CatalogController::class, 'show'])->name('web.catalog.show');
+Route::get('/contact', [ContactController::class, 'index'])->name('web.contact');
+Route::get('/faq', [FaqController::class, 'index'])->name('web.faq');
 
 Route::get('/designers/{vendor}', [VendorController::class, 'show'])->name('web.vendors.show');
 
@@ -29,19 +35,36 @@ Route::post('/register/complete', [LoginController::class, 'register'])->name('w
 
 Route::post('/guest', [LoginController::class, 'guest'])->name('web.guest');
 
+Route::post('/location', [LocationController::class, 'update'])->name('web.location.update');
+
 Route::middleware('customer.auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('web.logout');
+});
 
+Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::get('/bookings', [BookingController::class, 'index'])->name('web.bookings.index');
     Route::get('/bookings/{order}', [BookingController::class, 'show'])->name('web.bookings.show');
+    Route::post('/bookings/{order}/cancel', [BookingController::class, 'cancel'])->name('web.bookings.cancel');
     Route::post('/bookings/{order}/dispute', [DisputeController::class, 'store'])->name('web.bookings.dispute.store');
     Route::get('/bookings/{order}/dispute', [DisputeController::class, 'show'])->name('web.bookings.dispute.show');
     Route::post('/bookings/{order}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('web.bookings.dispute.messages');
     Route::get('/book/{item}', [BookingController::class, 'overview'])->name('web.bookings.overview');
+    Route::post('/book/{item}', [BookingController::class, 'store'])->name('web.bookings.store');
+
+    Route::get('/chat', [ChatController::class, 'index'])->name('web.chat.index');
+    Route::get('/chat/start/{vendor}', [ChatController::class, 'start'])->name('web.chat.start');
+    Route::post('/chat/{chat}/messages', [ChatController::class, 'sendMessage'])->name('web.chat.messages');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('web.notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('web.notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('web.notifications.read');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('web.profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('web.profile.update');
     Route::get('/profile/measurements', [ProfileController::class, 'measurements'])->name('web.profile.measurements');
     Route::get('/profile/measurements/create', [ProfileController::class, 'createMeasurement'])->name('web.profile.measurements.create');
+    Route::post('/profile/measurements', [ProfileController::class, 'storeMeasurement'])->name('web.profile.measurements.store');
     Route::get('/profile/addresses', [ProfileController::class, 'addresses'])->name('web.profile.addresses');
+    Route::post('/profile/addresses', [ProfileController::class, 'storeAddress'])->name('web.profile.addresses.store');
+    Route::delete('/profile/addresses/{address}', [ProfileController::class, 'destroyAddress'])->name('web.profile.addresses.destroy');
 });

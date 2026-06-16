@@ -77,18 +77,38 @@
 
             <div class="jbw-detail-actions">
                 @auth('customer')
-                    <a href="{{ route('web.bookings.overview', $item) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Book now</a>
+                    @if ($webCustomer->is_guest)
+                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Create account to book</a>
+                    @else
+                        <a href="{{ route('web.bookings.overview', $item) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Book now</a>
+                    @endif
                 @else
-                    <a href="{{ route('web.login') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
+                    <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
                 @endauth
-                <a href="#" class="jbw-btn jbw-btn--outline">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    Chat
-                </a>
-                <a href="#" class="jbw-btn jbw-btn--outline">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                    Video call
-                </a>
+                @auth('customer')
+                    @unless ($webCustomer->is_guest)
+                        @if ($item->vendor)
+                            <a href="{{ route('web.chat.start', $item->vendor) }}" class="jbw-btn jbw-btn--outline">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Chat
+                            </a>
+                        @endif
+                    @else
+                        @if ($item->vendor)
+                            <a href="{{ route('web.register', ['redirect' => route('web.chat.start', $item->vendor)]) }}" class="jbw-btn jbw-btn--outline">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Chat
+                            </a>
+                        @endif
+                    @endunless
+                @else
+                    @if ($item->vendor)
+                        <a href="{{ route('web.login', ['redirect' => route('web.chat.start', $item->vendor)]) }}" class="jbw-btn jbw-btn--outline">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Chat
+                        </a>
+                    @endif
+                @endauth
             </div>
         </div>
     </div>

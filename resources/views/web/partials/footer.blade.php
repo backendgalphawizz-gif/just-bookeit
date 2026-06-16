@@ -1,26 +1,37 @@
 <footer class="jbw-footer">
     <div class="jbw-container jbw-footer-grid">
         <div>
-            <a href="{{ route('web.home') }}" class="jbw-footer-logo-link">
-                <img src="{{ asset('images/just-book-it-logo.png') }}" alt="Just Book IT" class="jbw-footer-logo-img" width="160" height="54" decoding="async">
+            <a href="{{ route('web.home') }}" class="jbw-footer-logo-link" aria-label="Just Book IT home">
+                <x-web.logo variant="footer" />
             </a>
             <p class="jbw-footer-about">India's premier destination for designer dress and jewellery rentals. Look extraordinary for any occasion.</p>
         </div>
         <div>
             <p class="jbw-footer-heading">Quick Links</p>
             <ul class="jbw-footer-links">
-                <li><a href="#">How It Works</a></li>
+                <li><a href="{{ route('web.home') }}#how-it-works">How It Works</a></li>
                 <li><a href="{{ route('web.catalog.index') }}">Browse Catalog</a></li>
-                <li><a href="#">FAQ</a></li>
-                <li><a href="#">Contact Us</a></li>
+                <li><a href="{{ route('web.faq') }}">FAQs</a></li>
+                @auth('customer')
+                    @unless ($webCustomer->is_guest)
+                        <li><a href="{{ route('web.bookings.index') }}">My Bookings</a></li>
+                    @endunless
+                @else
+                    <li><a href="{{ route('web.login') }}">Sign in</a></li>
+                @endauth
+                <li><a href="{{ route('web.contact') }}">Contact Us</a></li>
             </ul>
         </div>
         <div>
             <p class="jbw-footer-heading">Services</p>
             <ul class="jbw-footer-links">
-                <li><a href="{{ route('web.catalog.index') }}">Fashion Designer Booking</a></li>
-                <li><a href="{{ route('web.catalog.index') }}">Rental Dresses</a></li>
-                <li><a href="{{ route('web.catalog.index') }}">Rental Jewellery</a></li>
+                @forelse ($webServiceCategories ?? [] as $service)
+                    <li><a href="{{ route('web.catalog.index', ['service' => $service->id]) }}">{{ $service->name }}</a></li>
+                @empty
+                    <li><a href="{{ route('web.catalog.index') }}">Fashion Designer Booking</a></li>
+                    <li><a href="{{ route('web.catalog.index') }}">Rental Dresses</a></li>
+                    <li><a href="{{ route('web.catalog.index') }}">Rental Jewellery</a></li>
+                @endforelse
             </ul>
         </div>
         <div>
@@ -39,7 +50,7 @@
         </div>
     </div>
     <div class="jbw-container jbw-footer-bottom">
-        <p>© {{ date('Y') }} Just Book IT. All rights reserved.</p>
+        <p>© {{ date('Y') }} {{ $webBranding['name'] ?? 'Just Book IT' }}. All rights reserved.</p>
         <p>Made with ♥ in India</p>
     </div>
 </footer>

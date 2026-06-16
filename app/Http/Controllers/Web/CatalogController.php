@@ -13,7 +13,7 @@ class CatalogController extends WebController
     {
         $query = PortfolioItem::query()
             ->with(['vendor', 'category', 'subcategory.parent'])
-            ->whereIn('status', ['approved', 'pending']);
+            ->where('status', 'approved');
 
         if ($request->filled('search')) {
             $term = '%'.$request->string('search').'%';
@@ -21,6 +21,10 @@ class CatalogController extends WebController
                 $q->where('title', 'like', $term)
                     ->orWhere('description', 'like', $term);
             });
+        }
+
+        if ($request->filled('service')) {
+            $query->where('category_id', $request->integer('service'));
         }
 
         if ($request->filled('subcategory')) {
@@ -43,6 +47,13 @@ class CatalogController extends WebController
             ->orderBy('name')
             ->get();
 
+        $serviceCategories = Category::query()
+            ->active()
+            ->service()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
         $subcategories = Category::query()
             ->active()
             ->sub()
@@ -51,17 +62,19 @@ class CatalogController extends WebController
             ->orderBy('name')
             ->get();
 
-        return view('web.catalog.index', compact('items', 'mainCategories', 'subcategories'));
+        return view('web.catalog.index', compact('items', 'mainCategories', 'subcategories', 'serviceCategories'));
     }
 
     public function show(PortfolioItem $item): View
     {
+        abort_unless($item->status === 'approved', 404);
+
         $item->load(['vendor', 'category', 'subcategory.parent', 'images']);
 
         $related = PortfolioItem::query()
             ->where('vendor_id', $item->vendor_id)
             ->where('id', '!=', $item->id)
-            ->whereIn('status', ['approved', 'pending'])
+            ->where('status', 'approved')
             ->limit(4)
             ->get();
 

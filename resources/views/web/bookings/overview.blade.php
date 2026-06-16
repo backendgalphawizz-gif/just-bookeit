@@ -17,100 +17,119 @@
 
     <div class="jbw-page-head" style="padding-top:1rem">
         <h1 class="jbw-page-title">Booking Overview</h1>
-        <p class="jbw-page-subtitle">Review your selection before checkout</p>
+        <p class="jbw-page-subtitle">Review your selection and submit your rental request</p>
     </div>
 
-    <div class="jbw-booking-layout">
-        {{-- Main --}}
-        <div class="jbw-booking-main">
+    <form method="POST" action="{{ route('web.bookings.store', $item) }}" class="jbw-booking-layout">
+        @csrf
 
-            {{-- Item card --}}
+        <div class="jbw-booking-main">
             <div class="jbw-overview-card">
                 <p class="jbw-overview-label">Your Selection</p>
                 <div class="jbw-overview-product">
-                    <img
-                        src="{{ $item->displayImageUrl() ?: $fallbackImg }}"
-                        alt="{{ $item->title }}"
-                        class="jbw-overview-img"
-                    >
+                    <img src="{{ $item->displayImageUrl() ?: $fallbackImg }}" alt="{{ $item->title }}" class="jbw-overview-img">
                     <div class="jbw-overview-product-info">
                         <p class="jbw-overview-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
                         <h2 class="jbw-overview-title">{{ $item->title }}</h2>
-                        <p class="jbw-overview-cat">{{ $item->category?->name ?? 'Rental dress' }}</p>
+                        <p class="jbw-overview-cat">{{ $item->category?->name ?? 'Rental' }}@if($item->subcategory) · {{ $item->subcategory->name }}@endif</p>
                         <p class="jbw-overview-price">{{ $item->rentalPriceLabel() }}</p>
                     </div>
                 </div>
             </div>
 
-            @if ($item->vendor)
             <div class="jbw-overview-card">
-                <p class="jbw-overview-label">Designer</p>
-                <div style="display:flex;align-items:center;gap:0.875rem">
-                    @if($item->vendor->profileImageUrl() || $item->vendor->shopLogoUrl())
-                        <img src="{{ $item->vendor->profileImageUrl() ?: $item->vendor->shopLogoUrl() }}" alt="" style="width:3rem;height:3rem;border-radius:999px;object-fit:cover;border:2px solid var(--c-border)">
-                    @else
-                        <span style="width:3rem;height:3rem;border-radius:999px;background:#fce7df;display:grid;place-items:center;font-weight:800;color:var(--c-primary);font-size:1.125rem;flex-shrink:0">{{ strtoupper(substr($item->vendor->brand_name, 0, 1)) }}</span>
-                    @endif
-                    <div>
-                        <p style="margin:0;font-weight:700;font-size:0.9375rem">{{ $item->vendor->brand_name }}</p>
-                        <p style="margin:0.125rem 0 0;font-size:0.8125rem;color:var(--c-muted)">★ {{ number_format($item->vendor->rating ?? 4.5, 1) }}{{ $item->vendor->city ? ' · '.$item->vendor->city : '' }}</p>
+                <p class="jbw-overview-label">Rental Period</p>
+                <div class="jbw-measure-form-grid" style="grid-template-columns:1fr 1fr">
+                    <div class="jbw-field">
+                        <label class="jbw-label" for="rental_start_date">Start date</label>
+                        <input type="date" id="rental_start_date" name="rental_start_date" class="jbw-input" value="{{ old('rental_start_date') }}" min="{{ now()->format('Y-m-d') }}" required>
+                    </div>
+                    <div class="jbw-field">
+                        <label class="jbw-label" for="rental_end_date">End date</label>
+                        <input type="date" id="rental_end_date" name="rental_end_date" class="jbw-input" value="{{ old('rental_end_date') }}" min="{{ now()->format('Y-m-d') }}" required>
                     </div>
                 </div>
+                @error('rental_start_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
+                @error('rental_end_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
             </div>
+
+            <div class="jbw-overview-card">
+                <p class="jbw-overview-label">Delivery address</p>
+                @if ($addresses->isNotEmpty())
+                    <div class="jbw-field">
+                        <label class="jbw-label" for="address_id">Saved address</label>
+                        <select id="address_id" name="address_id" class="jbw-select">
+                            <option value="">Enter a new address below</option>
+                            @foreach ($addresses as $address)
+                                <option value="{{ $address->id }}" @selected(old('address_id', $defaultAddress?->id) == $address->id)>
+                                    {{ $address->label }} — {{ $address->fullAddress() }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+                <div class="jbw-field" style="margin-top:1rem">
+                    <label class="jbw-label" for="delivery_address">Full address</label>
+                    <textarea id="delivery_address" name="delivery_address" class="jbw-textarea" rows="3" placeholder="House no, street, area, landmark" required>{{ old('delivery_address', $defaultAddress?->fullAddress()) }}</textarea>
+                    @error('delivery_address')<p class="jbw-field-error">{{ $message }}</p>@enderror
+                </div>
+                <div class="jbw-measure-form-grid" style="grid-template-columns:1fr 1fr;margin-top:1rem">
+                    <div class="jbw-field">
+                        <label class="jbw-label" for="city">City</label>
+                        <input type="text" id="city" name="city" class="jbw-input" value="{{ old('city', $defaultAddress?->city ?? auth('customer')->user()->city) }}">
+                    </div>
+                    <div class="jbw-field">
+                        <label class="jbw-label" for="pincode">Pincode</label>
+                        <input type="text" id="pincode" name="pincode" class="jbw-input" value="{{ old('pincode', $defaultAddress?->pincode) }}" maxlength="10">
+                    </div>
+                </div>
+                <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.addresses') }}" style="color:var(--c-primary);font-weight:700">Manage saved addresses</a></p>
+            </div>
+
+            @if ($measurement)
+                <div class="jbw-overview-card">
+                    <p class="jbw-overview-label">Measurements on file</p>
+                    <div class="jbw-measures">
+                        <div class="jbw-measure"><span class="jbw-measure-label">Height</span><span class="jbw-measure-value">{{ $measurement->height_cm ?? '—' }}</span></div>
+                        <div class="jbw-measure"><span class="jbw-measure-label">Chest</span><span class="jbw-measure-value">{{ $measurement->chest_cm ?? '—' }}</span></div>
+                        <div class="jbw-measure"><span class="jbw-measure-label">Waist</span><span class="jbw-measure-value">{{ $measurement->waist_cm ?? '—' }}</span></div>
+                    </div>
+                    <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create') }}" style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
+                </div>
+            @else
+                <div class="jbw-overview-card">
+                    <p class="jbw-overview-label">Measurements</p>
+                    <p style="margin:0 0 0.75rem;color:var(--c-muted);font-size:0.875rem">Add measurements for a better fit before booking.</p>
+                    <a href="{{ route('web.profile.measurements.create') }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">Add measurements</a>
+                </div>
             @endif
 
             <div class="jbw-overview-card">
-                <p class="jbw-overview-label">Rental Period</p>
-                <div class="jbw-overview-dates-placeholder">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                    <p style="margin:0;font-size:0.875rem;color:var(--c-muted)">Date selection available at checkout</p>
-                </div>
-            </div>
-
-            <div class="jbw-overview-card">
-                <p class="jbw-overview-label">Additional Notes</p>
-                <textarea class="jbw-textarea" placeholder="Any specific requirements, fitting instructions, or customisation notes..." style="min-height:6rem"></textarea>
+                <p class="jbw-overview-label">Additional notes</p>
+                <textarea name="customer_notes" class="jbw-textarea" placeholder="Fitting instructions, event details, or customisation notes..." style="min-height:6rem">{{ old('customer_notes') }}</textarea>
             </div>
         </div>
 
-        {{-- Sidebar --}}
         <div class="jbw-booking-sidebar">
-            <div class="jbw-overview-card jbw-overview-card--sticky">
-                <p class="jbw-overview-label">Billing Address</p>
-                <a href="{{ route('web.profile.addresses') }}" class="jbw-overview-add-address">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-                    Add delivery address
-                </a>
-            </div>
-
             <div class="jbw-overview-card jbw-overview-card--accent">
                 <p class="jbw-overview-label">Payment Summary</p>
                 <div class="jbw-payment-lines" style="margin-bottom:0">
-                    <div>
-                        <span>Rental price</span>
-                        <span>{{ $item->rentalPriceLabel() }}</span>
-                    </div>
-                    <div>
-                        <span>Delivery</span>
-                        <span style="color:var(--c-muted)">₹150</span>
-                    </div>
-                    <div>
-                        <span>GST &amp; tax</span>
-                        <span style="color:var(--c-muted)">Calculated at checkout</span>
-                    </div>
+                    <div><span>Rental price</span><span>₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span></div>
+                    <div><span>Delivery</span><span>₹{{ number_format($pricing['shipping_fee'] ?? 150, 0) }}</span></div>
+                    <div><span>GST &amp; tax</span><span>₹{{ number_format($pricing['tax_amount'] ?? 0, 0) }}</span></div>
                 </div>
                 <div class="jbw-payment-total">
                     <span style="font-weight:700">Estimated total</span>
-                    <strong>{{ $item->rentalPriceLabel() }}</strong>
+                    <strong>₹{{ number_format($pricing['total_amount'] ?? $item->rentalPriceAmount(), 0) }}</strong>
                 </div>
-                <button type="button" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1.25rem;border-radius:10px;padding:0.9375rem" disabled>
-                    Checkout — Coming soon
+                <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1.25rem;border-radius:10px;padding:0.9375rem">
+                    Submit booking request
                 </button>
                 <p style="text-align:center;font-size:0.75rem;color:var(--c-muted);margin:0.75rem 0 0">
-                    🔒 Secure booking — no payment now
+                    Payment is collected after the designer accepts your booking.
                 </p>
             </div>
         </div>
-    </div>
+    </form>
 </div>
 @endsection
