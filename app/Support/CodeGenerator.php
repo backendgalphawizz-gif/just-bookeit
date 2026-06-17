@@ -12,37 +12,68 @@ class CodeGenerator
 {
     public static function customerCode(): string
     {
-        $next = (Customer::query()->max('id') ?? 0) + 1;
-
-        return 'CUS'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+        return self::uniqueCode(
+            'CUS', 5,
+            fn () => (int) (Customer::query()->max('id') ?? 0),
+            fn ($code) => Customer::query()->where('customer_code', $code)->exists()
+        );
     }
 
     public static function vendorCode(): string
     {
-        $next = (Vendor::query()->max('id') ?? 0) + 1;
-
-        return 'VEN'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+        return self::uniqueCode(
+            'VEN', 5,
+            fn () => (int) (Vendor::query()->max('id') ?? 0),
+            fn ($code) => Vendor::query()->where('vendor_code', $code)->exists()
+        );
     }
 
     public static function orderNumber(): string
     {
-        $next = (Order::query()->max('id') ?? 0) + 1;
+        $prefix = 'JB'.now()->format('ym');
 
-        return 'JB'.now()->format('ym').str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+        return self::uniqueCode(
+            $prefix, 5,
+            fn () => (int) (Order::query()->max('id') ?? 0),
+            fn ($code) => Order::query()->where('order_number', $code)->exists()
+        );
     }
 
     public static function payoutCode(): string
     {
-        $next = (VendorPayout::query()->max('id') ?? 0) + 1;
-
-        return 'PAY'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+        return self::uniqueCode(
+            'PAY', 5,
+            fn () => (int) (VendorPayout::query()->max('id') ?? 0),
+            fn ($code) => VendorPayout::query()->where('payout_code', $code)->exists()
+        );
     }
 
     public static function driverCode(): string
     {
-        $next = (Driver::query()->max('id') ?? 0) + 1;
+        return self::uniqueCode(
+            'DRV', 5,
+            fn () => (int) (Driver::query()->max('id') ?? 0),
+            fn ($code) => Driver::query()->where('driver_code', $code)->exists()
+        );
+    }
 
-        return 'DRV'.str_pad((string) $next, 5, '0', STR_PAD_LEFT);
+    /**
+     * Generate the next available sequential code.
+     * Starts from max(id)+1 as a hint, then increments until a non-colliding code is found.
+     *
+     * @param  callable(): int       $hintFn    Returns the starting sequence hint.
+     * @param  callable(string): bool $existsFn  Returns true if the code is already taken.
+     */
+    private static function uniqueCode(string $prefix, int $pad, callable $hintFn, callable $existsFn): string
+    {
+        $n = max(1, $hintFn() + 1);
+
+        do {
+            $code = $prefix.str_pad((string) $n, $pad, '0', STR_PAD_LEFT);
+            $n++;
+        } while ($existsFn($code));
+
+        return $code;
     }
 
     public static function driverTransactionCode(): string

@@ -21,8 +21,23 @@
             </form>
         @endif
     @endif
+    @if ($driver->status === 'inactive' && auth('admin')->user()->hasPermission('drivers', 'edit'))
+        <form method="POST" action="{{ route('admin.drivers.approve', $driver) }}" class="inline-flex">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
+    @endif
     @if ($driver->status === 'active' && auth('admin')->user()->hasPermission('drivers', 'edit'))
-        <form method="POST" action="{{ route('admin.drivers.suspend', $driver) }}">@csrf<x-admin.button variant="danger" type="submit">Suspend</x-admin.button></form>
+        <form
+            method="POST"
+            action="{{ route('admin.drivers.inactivate', $driver) }}"
+            class="inline-flex"
+            data-jb-confirm="This driver will be marked inactive and will not be able to use the app. The reason you enter will be visible to them."
+            data-jb-confirm-title="Mark driver inactive"
+            data-jb-confirm-variant="error"
+            data-jb-confirm-label="Mark Inactive"
+            data-jb-confirm-requires-reason="Reason for inactivation"
+        >
+            @csrf
+            <x-admin.button variant="danger" type="submit">Mark Inactive</x-admin.button>
+        </form>
     @endif
     <x-admin.account-history :histories="$driver->statusHistories" title="Driver account history" />
     @if (auth('admin')->user()->hasPermission('drivers', 'edit'))
@@ -30,6 +45,16 @@
     @endif
 @endsection
 @section('content')
+    @if ($driver->status === 'inactive')
+        @include('admin.partials.account-status-banner', [
+            'title' => 'Account inactive',
+            'reason' => $driver->rejection_reason,
+            'emptyReason' => 'No reason recorded.',
+            'showAction' => auth('admin')->user()->hasPermission('drivers', 'edit'),
+            'actionRoute' => route('admin.drivers.approve', $driver),
+            'actionLabel' => 'Activate driver',
+        ])
+    @endif
     @if ($driver->status === 'rejected')
         @include('admin.partials.account-status-banner', [
             'title' => 'Application rejected',

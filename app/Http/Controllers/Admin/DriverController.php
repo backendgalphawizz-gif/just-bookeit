@@ -182,22 +182,32 @@ class DriverController extends AdminController
         return back()->with('success', "Driver {$driver->name} rejected.");
     }
 
-    public function suspend(Driver $driver): RedirectResponse
+    public function inactivate(Request $request, Driver $driver): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
+        $data = $request->validate(
+            AdminValidationRules::accountRejection(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
         $previousStatus = $driver->status;
 
-        $driver->update(['status' => 'suspended']);
+        $driver->update([
+            'status' => 'inactive',
+            'rejection_reason' => $data['rejection_reason'],
+        ]);
 
         $this->recordAccountStatusHistory(
             $driver,
-            AccountStatusHistory::ACTION_SUSPEND,
+            AccountStatusHistory::ACTION_INACTIVATE,
             $previousStatus,
-            'suspended',
+            'inactive',
+            $data['rejection_reason'],
         );
 
-        return back()->with('success', "Driver {$driver->name} suspended.");
+        return back()->with('success', "Driver {$driver->name} inactivated.");
     }
 
     private function driverData(DriverRequest $request): array

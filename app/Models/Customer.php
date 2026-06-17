@@ -18,7 +18,11 @@ class Customer extends Authenticatable
         'name',
         'mobile',
         'email',
+        'address',
         'city',
+        'state',
+        'country',
+        'pincode',
         'profile_image_path',
         'status',
         'rejection_reason',
@@ -27,6 +31,15 @@ class Customer extends Authenticatable
         'total_orders',
         'registered_at',
     ];
+
+    public const ACTIVE_ORDER_STATUSES = [
+        'new', 'pending_acceptance', 'accepted', 'in_progress', 'rework', 're_intransit',
+    ];
+
+    public function hasActiveOrders(): bool
+    {
+        return $this->orders()->whereIn('status', self::ACTIVE_ORDER_STATUSES)->exists();
+    }
 
     protected $hidden = [
         'profile_image_path',

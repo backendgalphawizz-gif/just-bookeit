@@ -16,7 +16,7 @@ class AccountStatusHistory extends Model
 
     public const ACTION_ACTIVATE = 'activate';
 
-    public const ACTION_BLOCK = 'block';
+    public const ACTION_INACTIVATE = 'inactivate';
 
     public const ACTION_STATUS_UPDATE = 'status_update';
 
@@ -49,7 +49,7 @@ class AccountStatusHistory extends Model
             self::ACTION_REJECT => 'Rejected',
             self::ACTION_SUSPEND => 'Suspended',
             self::ACTION_ACTIVATE => 'Activated',
-            self::ACTION_BLOCK => 'Blocked',
+            self::ACTION_INACTIVATE => 'Inactivated',
             self::ACTION_STATUS_UPDATE => 'Status updated',
             self::ACTION_BULK_APPROVE => 'Bulk approved',
             default => ucfirst(str_replace('_', ' ', $this->action)),
@@ -60,7 +60,7 @@ class AccountStatusHistory extends Model
     {
         return match ($this->action) {
             self::ACTION_APPROVE, self::ACTION_ACTIVATE, self::ACTION_BULK_APPROVE => 'success',
-            self::ACTION_REJECT, self::ACTION_BLOCK => 'error',
+            self::ACTION_REJECT, self::ACTION_INACTIVATE => 'error',
             self::ACTION_SUSPEND => 'warning',
             default => 'neutral',
         };

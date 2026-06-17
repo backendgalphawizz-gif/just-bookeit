@@ -21,7 +21,7 @@
                 <label class="jb-label">Status</label>
                 <select name="status" class="jb-select">
                     <option value="">All statuses</option>
-                    @foreach (['active', 'suspended', 'blocked'] as $s)
+                    @foreach (['active', 'inactive'] as $s)
                         <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>

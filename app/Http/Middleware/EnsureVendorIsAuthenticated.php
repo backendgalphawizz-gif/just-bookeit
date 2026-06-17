@@ -26,21 +26,11 @@ class EnsureVendorIsAuthenticated
                 ->with('error', $this->statusMessage('vendor application', $vendor->rejection_reason, 'rejected'));
         }
 
-        if ($vendor->status === 'suspended') {
-            Auth::guard('vendor')->logout();
-
-            $message = filled($vendor->suspension_reason)
-                ? 'Your vendor account is suspended: '.$vendor->suspension_reason
-                : 'Your vendor account is suspended.';
-
-            return redirect()->route('vendor.login')->with('error', $message);
-        }
-
-        if ($vendor->status === 'blocked') {
+        if ($vendor->status === 'inactive') {
             Auth::guard('vendor')->logout();
 
             return redirect()->route('vendor.login')
-                ->with('error', $this->statusMessage('vendor account', $vendor->rejection_reason, 'blocked'));
+                ->with('error', $this->statusMessage('vendor account', $vendor->rejection_reason, 'deactivated'));
         }
 
         return $next($request);

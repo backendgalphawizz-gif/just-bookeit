@@ -25,7 +25,7 @@ in this table  i need @extends('admin.layouts.app')
                 <label class="jb-label">Status</label>
                 <select name="status" class="jb-select">
                     <option value="">All</option>
-                    @foreach (['pending', 'active', 'suspended', 'rejected'] as $s)
+                    @foreach (['pending', 'active', 'inactive', 'rejected'] as $s)
                         <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>
@@ -144,8 +144,8 @@ in this table  i need @extends('admin.layouts.app')
                             <td>{{ $vendor->created_at ? $vendor->created_at->format('M d, Y') : '—' }}</td>
                             <td class="jb-col-status">
                                 @include('admin.components.status-badge', ['status' => $vendor->status])
-                                @if ($vendor->status === 'suspended' && $vendor->suspension_reason)
-                                    <p class="mt-1 max-w-[12rem] truncate text-xs text-orange-700" title="{{ $vendor->suspension_reason }}">{{ $vendor->suspension_reason }}</p>
+                                @if ($vendor->status === 'inactive' && $vendor->rejection_reason)
+                                    <p class="mt-1 max-w-[12rem] truncate text-xs text-rose-700" title="{{ $vendor->rejection_reason }}">{{ $vendor->rejection_reason }}</p>
                                 @endif
                             </td>
                             <td class="text-center">{{ number_format($vendor->rating, 1) }}</td>

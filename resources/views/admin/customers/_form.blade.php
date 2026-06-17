@@ -12,7 +12,14 @@
 @include('admin.partials.form-input', ['label' => 'Full Name', 'name' => 'name', 'value' => old('name', $customer?->name), 'required' => true, 'restrict' => 'person-name', 'maxChars' => 100])
 @include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $customer?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits required'])
 @include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $customer?->email)])
-@include('admin.partials.form-input', ['label' => 'City', 'name' => 'city', 'value' => old('city', $customer?->city)])
+
+@include('admin.partials.address-fields', ['values' => [
+    'address' => $customer?->address,
+    'country' => $customer?->country,
+    'state' => $customer?->state,
+    'city' => $customer?->city,
+    'pincode' => $customer?->pincode,
+]])
 @php
     $isEdit = (bool) ($customer?->exists ?? false);
     $currentStatus = old('status', $customer?->status ?? 'active');
@@ -24,11 +31,11 @@
             @include('admin.components.status-badge', ['status' => $currentStatus])
             <input type="hidden" name="status" value="{{ $currentStatus }}">
         </div>
-        <p class="mt-2 text-sm text-slate-500">Suspend or block this customer from their profile page — status cannot be changed here.</p>
+        <p class="mt-2 text-sm text-slate-500">Mark this customer inactive from their profile page — status cannot be changed here.</p>
     </div>
 @else
     <x-admin.form-select label="Status" name="status" :required="true">
-        @foreach (['active', 'suspended', 'blocked'] as $s)
+        @foreach (['active', 'inactive'] as $s)
             <option value="{{ $s }}" @selected($currentStatus === $s)>{{ ucfirst($s) }}</option>
         @endforeach
     </x-admin.form-select>
