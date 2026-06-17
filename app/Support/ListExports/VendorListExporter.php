@@ -85,12 +85,12 @@ class VendorListExporter
                 )->orderByDesc('created_at'),
                 'map' => fn (Order $order) => [
                     $order->order_number,
-                    $order->customer?->name ?? '—',
+                    $order->customer?->name ?? '',
                     $order->itemDisplayName(),
                     $order->grandTotal(),
                     $order->payment_status,
                     $order->statusLabel(),
-                    $order->created_at?->format('Y-m-d H:i') ?? '—',
+                    $order->created_at?->format('Y-m-d H:i') ?? '',
                 ],
             ],
             'products' => [
@@ -113,9 +113,9 @@ class VendorListExporter
                 },
                 'map' => fn (PortfolioItem $item) => [
                     $item->title,
-                    $item->category?->name ?? '—',
+                    $item->category?->name ?? '',
                     $item->status,
-                    $item->created_at?->format('Y-m-d') ?? '—',
+                    $item->created_at?->format('Y-m-d') ?? '',
                 ],
             ],
             'payments' => [
@@ -139,11 +139,11 @@ class VendorListExporter
                 )->orderByDesc('created_at'),
                 'map' => fn (Order $order) => [
                     $order->order_number,
-                    $order->customer?->name ?? '—',
+                    $order->customer?->name ?? '',
                     $order->itemDisplayName(),
                     $order->grandTotal(),
                     $order->wallet_hold_status,
-                    $order->created_at?->format('Y-m-d H:i') ?? '—',
+                    $order->created_at?->format('Y-m-d H:i') ?? '',
                 ],
             ],
             'wallet' => [
@@ -158,10 +158,10 @@ class VendorListExporter
                     ->when($request->filled('to'), fn (Builder $q) => $q->whereDate('created_at', '<=', $request->date('to')))
                     ->orderByDesc('id'),
                 'map' => fn (VendorWalletTransaction $entry) => [
-                    $entry->created_at?->format('Y-m-d H:i') ?? '—',
+                    $entry->created_at?->format('Y-m-d H:i') ?? '',
                     $entry->typeLabel(),
                     $entry->walletLabel(),
-                    $entry->order?->order_number ?? '—',
+                    $entry->order?->order_number ?? '',
                     ucfirst($entry->direction),
                     $entry->amount,
                     $entry->balance_after,
@@ -186,10 +186,10 @@ class VendorListExporter
                     })
                     ->orderByDesc('last_message_at'),
                 'map' => fn (Conversation $chat) => [
-                    $chat->customer?->name ?? '—',
-                    $chat->latestMessage?->body ?? '—',
+                    $chat->customer?->name ?? '',
+                    $chat->latestMessage?->body ?? '',
                     $chat->unread_count,
-                    $chat->last_message_at?->format('Y-m-d H:i') ?? '—',
+                    $chat->last_message_at?->format('Y-m-d H:i') ?? '',
                 ],
             ],
             default => abort(404),

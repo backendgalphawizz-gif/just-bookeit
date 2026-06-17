@@ -79,7 +79,6 @@ class VendorController extends AdminController
     public function show(Vendor $vendor): View
     {
         $vendor->load([
-            'suspendedBy',
             'shopImages',
             'orders' => fn ($q) => $q->latest()->limit(10),
             'orders.customer',
@@ -108,9 +107,6 @@ class VendorController extends AdminController
                 $data['approved_at'] = now();
             }
             $data['rejection_reason'] = null;
-            $data['suspension_reason'] = null;
-            $data['suspended_at'] = null;
-            $data['suspended_by'] = null;
         }
 
         $previousStatus = $vendor->status;
@@ -235,12 +231,12 @@ class VendorController extends AdminController
         return back()->with('success', "Vendor {$vendor->brand_name} rejected.");
     }
 
-    public function suspend(Request $request, Vendor $vendor): RedirectResponse
+    public function inactivate(Request $request, Vendor $vendor): RedirectResponse
     {
         $this->authorizeAdmin('edit');
 
         $data = $request->validate(
-            AdminValidationRules::vendorSuspend(),
+            AdminValidationRules::accountRejection(),
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
@@ -248,21 +244,19 @@ class VendorController extends AdminController
         $previousStatus = $vendor->status;
 
         $vendor->update([
-            'status' => 'suspended',
-            'suspension_reason' => $data['suspension_reason'],
-            'suspended_at' => now(),
-            'suspended_by' => auth('admin')->id(),
+            'status' => 'inactive',
+            'rejection_reason' => $data['rejection_reason'],
         ]);
 
         $this->recordAccountStatusHistory(
             $vendor,
-            AccountStatusHistory::ACTION_SUSPEND,
+            AccountStatusHistory::ACTION_INACTIVATE,
             $previousStatus,
-            'suspended',
-            $data['suspension_reason'],
+            'inactive',
+            $data['rejection_reason'],
         );
 
-        return back()->with('success', "Vendor {$vendor->brand_name} suspended.");
+        return back()->with('success', "Vendor {$vendor->brand_name} inactivated.");
     }
 
     public function activate(Vendor $vendor): RedirectResponse
@@ -274,9 +268,6 @@ class VendorController extends AdminController
         $vendor->update([
             'status' => 'active',
             'rejection_reason' => null,
-            'suspension_reason' => null,
-            'suspended_at' => null,
-            'suspended_by' => null,
             'approved_at' => $vendor->approved_at ?? now(),
         ]);
 

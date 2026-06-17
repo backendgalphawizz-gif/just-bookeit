@@ -55,10 +55,10 @@ class CustomerController extends AdminController
 
     public function store(CustomerRequest $request): RedirectResponse
     {
-        $data = $request->validated();
+        $data = $request->customerData();
 
         $customer = Customer::query()->create([
-            ...collect($data)->except(['profile_image'])->all(),
+            ...$data,
             'customer_code' => CodeGenerator::customerCode(),
             'is_verified' => $request->boolean('is_verified'),
             'registered_at' => $data['registered_at'] ?? now(),
@@ -92,11 +92,11 @@ class CustomerController extends AdminController
 
     public function update(CustomerRequest $request, Customer $customer): RedirectResponse
     {
-        $data = $request->validated();
+        $data = $request->customerData();
 
         $previousStatus = $customer->status;
 
-        $attributes = collect($data)->except(['profile_image']);
+        $attributes = collect($data);
 
         if (! filled($attributes->get('registered_at'))) {
             $attributes = $attributes->except(['registered_at']);
@@ -160,9 +160,13 @@ class CustomerController extends AdminController
         return back()->with('success', "Customer {$customer->name} activated.");
     }
 
-    public function suspend(Request $request, Customer $customer): RedirectResponse
+    public function inactivate(Request $request, Customer $customer): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+
+        if ($customer->hasActiveOrders()) {
+            return back()->with('error', 'This customer has active orders and cannot be inactivated right now.');
+        }
 
         $data = $request->validate(
             AdminValidationRules::accountRejection(),
@@ -173,47 +177,19 @@ class CustomerController extends AdminController
         $previousStatus = $customer->status;
 
         $customer->update([
-            'status' => 'suspended',
+            'status' => 'inactive',
             'rejection_reason' => $data['rejection_reason'],
         ]);
 
         $this->recordAccountStatusHistory(
             $customer,
-            AccountStatusHistory::ACTION_SUSPEND,
+            AccountStatusHistory::ACTION_INACTIVATE,
             $previousStatus,
-            'suspended',
+            'inactive',
             $data['rejection_reason'],
         );
 
-        return back()->with('success', "Customer {$customer->name} suspended.");
-    }
-
-    public function block(Request $request, Customer $customer): RedirectResponse
-    {
-        $this->authorizeAdmin('edit');
-
-        $data = $request->validate(
-            AdminValidationRules::accountRejection(),
-            AdminValidationRules::messages(),
-            AdminValidationRules::attributes()
-        );
-
-        $previousStatus = $customer->status;
-
-        $customer->update([
-            'status' => 'blocked',
-            'rejection_reason' => $data['rejection_reason'],
-        ]);
-
-        $this->recordAccountStatusHistory(
-            $customer,
-            AccountStatusHistory::ACTION_BLOCK,
-            $previousStatus,
-            'blocked',
-            $data['rejection_reason'],
-        );
-
-        return back()->with('success', "Customer {$customer->name} blocked.");
+        return back()->with('success', "Customer {$customer->name} inactivated.");
     }
 
     private function applyProfileImage(Customer $customer, CustomerRequest $request): void

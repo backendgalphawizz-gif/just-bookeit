@@ -26,7 +26,7 @@ class EnsureDriverApiIsAuthenticated
                 'message' => match ($user->status) {
                     'pending' => 'Your driver account is pending approval.',
                     'rejected' => 'Your driver account was rejected.',
-                    'suspended' => 'Your driver account is suspended.',
+                    'inactive' => 'Your driver account has been deactivated.',
                     default => 'Your driver account cannot access the app right now.',
                 },
             ], 403);

@@ -49,13 +49,13 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::post('vendors/bulk-approve', [VendorController::class, 'bulkApprove'])->name('vendors.bulk-approve');
             Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('vendors.approve');
             Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('vendors.reject');
-            Route::post('vendors/{vendor}/suspend', [VendorController::class, 'suspend'])->name('vendors.suspend');
+            Route::post('vendors/{vendor}/inactivate', [VendorController::class, 'inactivate'])->name('vendors.inactivate');
             Route::post('vendors/{vendor}/activate', [VendorController::class, 'activate'])->name('vendors.activate');
 
             Route::resource('drivers', DriverController::class);
             Route::post('drivers/{driver}/approve', [DriverController::class, 'approve'])->name('drivers.approve');
             Route::post('drivers/{driver}/reject', [DriverController::class, 'reject'])->name('drivers.reject');
-            Route::post('drivers/{driver}/suspend', [DriverController::class, 'suspend'])->name('drivers.suspend');
+            Route::post('drivers/{driver}/inactivate', [DriverController::class, 'inactivate'])->name('drivers.inactivate');
 
             Route::resource('categories', CategoryController::class)->except(['show']);
             Route::resource('orders', OrderController::class);
@@ -105,8 +105,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
             Route::post('orders/{order}/manage', [OrderController::class, 'manage'])->name('orders.manage');
             Route::post('customers/{customer}/activate', [CustomerController::class, 'activate'])->name('customers.activate');
-            Route::post('customers/{customer}/suspend', [CustomerController::class, 'suspend'])->name('customers.suspend');
-            Route::post('customers/{customer}/block', [CustomerController::class, 'block'])->name('customers.block');
+            Route::post('customers/{customer}/inactivate', [CustomerController::class, 'inactivate'])->name('customers.inactivate');
             Route::post('refunds/{refund}/approve', [RefundController::class, 'approve'])->name('refunds.approve');
             Route::post('refunds/{refund}/reject', [RefundController::class, 'reject'])->name('refunds.reject');
             Route::post('refunds/{refund}/process', [RefundController::class, 'process'])->name('refunds.process');

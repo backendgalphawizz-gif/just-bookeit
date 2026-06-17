@@ -23,7 +23,7 @@ class EnsureCustomerIsAuthenticated
                 ->with('error', 'Please sign in to continue.');
         }
 
-        if ($customer->status !== 'active') {
+        if (! in_array($customer->status, ['active'], true)) {
             Auth::guard('customer')->logout();
 
             return redirect()->route('web.login')
@@ -35,16 +35,10 @@ class EnsureCustomerIsAuthenticated
 
     protected function statusMessage(Customer $customer): string
     {
-        if ($customer->status === 'blocked') {
+        if ($customer->status === 'inactive') {
             return filled($customer->rejection_reason)
-                ? 'Your account was blocked: '.$customer->rejection_reason
-                : 'Your account was blocked.';
-        }
-
-        if ($customer->status === 'suspended') {
-            return filled($customer->rejection_reason)
-                ? 'Your account is suspended: '.$customer->rejection_reason
-                : 'Your account is suspended.';
+                ? 'Your account has been deactivated: '.$customer->rejection_reason
+                : 'Your account has been deactivated.';
         }
 
         return 'Please sign in to continue.';

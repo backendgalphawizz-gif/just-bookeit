@@ -22,7 +22,7 @@
 <div>
     <label for="status" class="jb-label">Status</label>
     <select id="status" name="status" class="jb-select" required>
-        @foreach (['pending', 'active', 'suspended', 'rejected'] as $status)
+        @foreach (['pending', 'active', 'inactive', 'rejected'] as $status)
             <option value="{{ $status }}" @selected(old('status', $driver?->status ?? 'pending') === $status)>{{ ucfirst($status) }}</option>
         @endforeach
     </select>
