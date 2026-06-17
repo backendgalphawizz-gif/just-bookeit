@@ -53,7 +53,7 @@
             @forelse ($services as $index => $service)
                 <a class="textalign" href="{{ route('web.catalog.index', ['service' => $service->id]) }}" >
                     <div class="jbw-tile">
-                    <img src="{{ $serviceImages[$index % 3] }}" alt="{{ $service->name }}">
+                    <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}" alt="{{ $service->name }}">
                     </div>
                     <!-- <div class="jbw-tile-overlay"></div> -->
                     <!-- <div class="jbw-tile-body">
@@ -68,7 +68,7 @@
             @empty
                 @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
                     <a href="{{ route('web.catalog.index') }}" class="jbw-tile">
-                        <img src="{{ $serviceImages[$i] }}" alt="{{ $svc[0] }}">
+                        <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
                         <div class="jbw-tile-overlay"></div>
                         <div class="jbw-tile-body">
                             <span class="jbw-tile-label">{{ $svc[0] }}</span>
@@ -94,7 +94,7 @@
             @forelse ($shopCategories as $i => $shopCategory)
                 <a  href="{{ route('web.catalog.index', ['category' => $shopCategory->id]) }}" class=" textalign" style="min-height:18rem">
                 <div class="jbw-tile" style="min-height: 15rem;">
-                <img src="{{ $categoryImages[$i % count($categoryImages)] }}" alt="{{ $shopCategory->name }}">
+                <img src="{{ $shopCategory->imageUrl() ?: $categoryFallbacks[$i % count($categoryFallbacks)] }}" alt="{{ $shopCategory->name }}">
                 </div>
                 <!-- <div class="jbw-tile-overlay"></div> -->
                     <!-- <div class="jbw-tile-body">
