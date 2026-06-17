@@ -10,7 +10,7 @@
 <div class="jbw-location-picker ">
     <button
         type="button"
-        class="jbw-location-btn headerinputradius bordercolor"
+        class="jbw-location-btn headerinputradius headerinputradiuses bordercolor"
         @click="locationOpen = !locationOpen; notificationOpen = false"
         :aria-expanded="locationOpen"
         aria-haspopup="listbox"

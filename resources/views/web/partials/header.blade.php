@@ -25,8 +25,8 @@
 
         <div class="jbw-header-tools">
             @include('web.partials.location-picker')
-            <form method="GET" action="{{ route('web.catalog.index') }}" class="jbw-header-search headerinputradius" role="search">
-                <input type="search" name="search" class="jbw-header-search-input" placeholder="Search outfits…" value="{{ request('search') }}" aria-label="Search catalog">
+            <form method="GET" action="{{ route('web.catalog.index') }}" class="jbw-header-search headerinputradius " role="search">
+                <input type="search" name="search" class="jbw-header-search-input " placeholder="Search outfits…" value="{{ request('search') }}" aria-label="Search catalog">
                 <button type="submit" class="jbw-icon-btn" aria-label="Search">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: rgb(242, 81, 35);" stroke-width="2">
     <circle cx="11" cy="11" r="7"/>
