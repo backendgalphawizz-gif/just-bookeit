@@ -142,6 +142,8 @@ class DriverApiPresenter
             'order_id' => $transaction->order?->order_number,
             'order_number' => $transaction->order?->order_number,
             'customer_name' => $transaction->order?->customer?->name,
+            'customer_image_url' => $transaction->order?->customer?->profileImageUrl(),
+            'imageUrl' => $transaction->order?->customer?->profileImageUrl(),
             'type' => strtoupper($transaction->direction),
             'direction' => $transaction->direction,
             'amount' => (float) $transaction->amount,
@@ -245,7 +247,10 @@ class DriverApiPresenter
         return $viewer
             && $order->driver_id === $viewer->id
             && OrderDispatchSupport::isDispatchStatus($order->status)
-            && $order->driver_delivery_status === Order::DRIVER_STATUS_PICKED_UP;
+            && in_array($order->driver_delivery_status, [
+                Order::DRIVER_STATUS_PICKED_UP,
+                Order::DRIVER_STATUS_RESCHEDULED,
+            ], true);
     }
 
     public static function canDeliver(Order $order, ?Driver $viewer): bool
@@ -275,6 +280,8 @@ class DriverApiPresenter
     /** @return list<array<string, mixed>> */
     public static function sampleWalletTransactions(): array
     {
+        $sampleImageUrl = 'https://picsum.photos/seed/jb-driver-wallet-demo/200/200';
+
         return [
             [
                 'id' => 0,
@@ -283,6 +290,8 @@ class DriverApiPresenter
                 'order_id' => 'ORD-DEMO-1001',
                 'order_number' => 'ORD-DEMO-1001',
                 'customer_name' => 'Demo Customer',
+                'customer_image_url' => $sampleImageUrl,
+                'imageUrl' => $sampleImageUrl,
                 'type' => 'CREDIT',
                 'direction' => 'credit',
                 'amount' => 150.0,
@@ -300,6 +309,8 @@ class DriverApiPresenter
                 'order_id' => 'ORD-DEMO-1002',
                 'order_number' => 'ORD-DEMO-1002',
                 'customer_name' => 'Demo Customer',
+                'customer_image_url' => $sampleImageUrl,
+                'imageUrl' => $sampleImageUrl,
                 'type' => 'CREDIT',
                 'direction' => 'credit',
                 'amount' => 120.0,
@@ -317,6 +328,8 @@ class DriverApiPresenter
                 'order_id' => null,
                 'order_number' => null,
                 'customer_name' => null,
+                'customer_image_url' => null,
+                'imageUrl' => null,
                 'type' => 'DEBIT',
                 'direction' => 'debit',
                 'amount' => 500.0,

@@ -13,12 +13,15 @@ class NotificationInboxService
 
     public const TYPE_VENDOR = NotificationRead::TYPE_VENDOR;
 
+    public const TYPE_DRIVER = NotificationRead::TYPE_DRIVER;
+
     /** @return list<string> */
     public function audiencesFor(string $recipientType): array
     {
         return match ($recipientType) {
             self::TYPE_CUSTOMER => ['all_customers', 'customers'],
             self::TYPE_VENDOR => ['all_vendors', 'vendors'],
+            self::TYPE_DRIVER => ['all_drivers', 'drivers'],
             default => [],
         };
     }

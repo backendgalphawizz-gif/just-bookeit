@@ -3884,7 +3884,7 @@
 		},
 		{
 			"name": "v3 — Driver",
-			"description": "Driver mobile app APIs. Flow: Config → Send OTP → Verify OTP → Dashboard → Deliveries → Payments / Profile.\n\nBearer token saved as `v3_token`. IDs auto-saved: `v3_delivery_id`.\n\n**Dashboard** (`GET /v3/home`): stats, earnings (month/ytd), COD collected, `cash_collected_orders` (full COD order details), recent deliveries. Filters: `month`, `year`, `from`, `to`, `date`, `search`. List items include `customer_image_url` / `imageUrl`.\n\n**Delivery tabs:** `new`, `accepted`, `pickup`, `dispatched`, `delivered`, `cancelled`, `rescheduled`.\n\n**Actions:** accept → pickup → dispatch → delivered (OTP + optional `delivery_image`). Rescheduled deliveries can also be completed with OTP. Reject requires `reason`. Reschedule requires `scheduled_date`.\n\n**Payments** (`GET /v3/payments`): wallet transactions; returns sample demo rows when wallet is empty (`is_sample_data: true`).",
+			"description": "Driver mobile app APIs. Flow: Config → Send OTP → Verify OTP → Dashboard → Deliveries → Payments / Notifications / Profile.\n\nBearer token saved as `v3_token`. IDs auto-saved: `v3_delivery_id`, `v3_notification_id`.\n\n**Dashboard** (`GET /v3/home`): stats, earnings (month/ytd), COD collected, `cash_collected_orders` (full COD order details), recent deliveries. Filters: `month`, `year`, `from`, `to`, `date`, `search`. List items include `customer_image_url` / `imageUrl`.\n\n**Delivery tabs:** `new`, `accepted`, `pickup`, `dispatched`, `delivered`, `cancelled`, `rescheduled`.\n\n**Actions:** accept → pickup → dispatch → delivered (OTP + optional `delivery_image`). Rescheduled deliveries can dispatch directly and complete with OTP. Reject requires `reason`. Reschedule requires `scheduled_date`.\n\n**Payments** (`GET /v3/payments`): wallet transactions with `customer_image_url` / `imageUrl`; returns sample demo rows when wallet is empty (`is_sample_data: true`).\n\n**Notifications** (`GET /v3/notifications`): broadcast inbox with `is_read`, filter `all|read|unread`. Mark one read: `POST /v3/notifications/{id}/read`. Mark all read: `POST /v3/notifications/read-all`.",
 			"item": [
 				{
 					"name": "Send OTP",
@@ -4362,7 +4362,48 @@
 						"method": "GET",
 						"header": [{"key": "Accept", "value": "application/json"}],
 						"url": "{{base_url}}/v3/payments?page=1&search=",
-						"description": "Wallet transaction history with search/date filters. When no transactions exist, returns sample demo rows and `is_sample_data: true`."
+						"description": "Wallet transaction history with search/date filters. Each item includes `customer_image_url` and `imageUrl`. When no transactions exist, returns sample demo rows and `is_sample_data: true`."
+					}
+				},
+				{
+					"name": "Notifications",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/notifications?page=1&filter=all",
+						"description": "Broadcast notifications for drivers. Each item includes `is_read`, `read_at`. Filter: all | read | unread. Response includes `summary.unread_count`."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const json = pm.response.json();",
+									"const first = json?.data?.items?.[0];",
+									"if (first?.id) pm.collectionVariables.set('v3_notification_id', first.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Mark Notification Read",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/notifications/{{v3_notification_id}}/read"
+					}
+				},
+				{
+					"name": "Mark All Notifications Read",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/notifications/read-all"
 					}
 				},
 				{

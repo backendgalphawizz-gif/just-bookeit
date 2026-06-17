@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V3\ConfigController as DriverConfigController;
 use App\Http\Controllers\Api\V3\DeliveryController as DriverDeliveryController;
 use App\Http\Controllers\Api\V3\DriverAuthController;
 use App\Http\Controllers\Api\V3\HomeController as DriverHomeController;
+use App\Http\Controllers\Api\V3\NotificationController as DriverNotificationController;
 use App\Http\Controllers\Api\V3\PaymentController as DriverPaymentController;
 use App\Http\Controllers\Api\V3\ProfileController as DriverProfileController;
 use Illuminate\Support\Facades\Route;
@@ -210,6 +211,11 @@ Route::prefix('v3')->name('api.v3.')->group(function () {
 
         Route::get('payments', [DriverPaymentController::class, 'index'])->name('payments.index');
         Route::post('payments/withdraw', [DriverPaymentController::class, 'withdraw'])->name('payments.withdraw');
+
+        Route::get('notifications', [DriverNotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/read-all', [DriverNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('notifications/{notification}/read', [DriverNotificationController::class, 'markRead'])->name('notifications.read');
+        Route::post('notifications/{notification}/unread', [DriverNotificationController::class, 'markUnread'])->name('notifications.unread');
 
         Route::get('profile', [DriverProfileController::class, 'index'])->name('profile.index');
         Route::get('profile/documents', [DriverProfileController::class, 'documents'])->name('profile.documents');

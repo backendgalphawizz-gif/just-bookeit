@@ -17,8 +17,10 @@
             <x-admin.form-select label="Audience" name="audience" :required="true">
                 <option value="all_customers" @selected(old('audience') === 'all_customers')>All customers ({{ $customerCount }})</option>
                 <option value="all_vendors" @selected(old('audience') === 'all_vendors')>All vendors ({{ $vendorCount }})</option>
+                <option value="all_drivers" @selected(old('audience') === 'all_drivers')>All drivers ({{ $driverCount }})</option>
                 <option value="customers" @selected(old('audience') === 'customers')>Active customers</option>
                 <option value="vendors" @selected(old('audience') === 'vendors')>Active vendors</option>
+                <option value="drivers" @selected(old('audience') === 'drivers')>Active drivers</option>
             </x-admin.form-select>
         </div>
         <div class="border-t border-slate-100 px-6 py-4 flex gap-3">

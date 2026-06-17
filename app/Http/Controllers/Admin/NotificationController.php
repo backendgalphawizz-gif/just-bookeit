@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Customer;
+use App\Models\Driver;
 use App\Models\NotificationLog;
 use App\Models\Vendor;
 use App\Http\Requests\Admin\NotificationStoreRequest;
@@ -43,6 +44,7 @@ class NotificationController extends AdminController
         return view('admin.notifications.create', [
             'customerCount' => Customer::query()->where('status', 'active')->count(),
             'vendorCount' => Vendor::query()->where('status', 'active')->count(),
+            'driverCount' => Driver::query()->where('status', 'active')->count(),
         ]);
     }
 
@@ -55,8 +57,10 @@ class NotificationController extends AdminController
         $recipients = match ($data['audience']) {
             'all_customers' => Customer::query()->where('status', 'active')->count(),
             'all_vendors' => Vendor::query()->where('status', 'active')->count(),
+            'all_drivers' => Driver::query()->where('status', 'active')->count(),
             'customers' => Customer::query()->where('status', 'active')->count(),
             'vendors' => Vendor::query()->where('status', 'active')->count(),
+            'drivers' => Driver::query()->where('status', 'active')->count(),
         };
 
         NotificationLog::query()->create([
