@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
-    public const IN_PROGRESS_STATUSES = ['accepted', 'in_progress', 'pending_acceptance'];
+    public const IN_PROGRESS_STATUSES = ['accepted', 'in_progress', 're_intransit', 'rework', 'pending_acceptance'];
 
     public const STATUSES = [
         'new',
@@ -18,6 +18,10 @@ class Order extends Model
         'accepted',
         'in_progress',
         'delivered',
+        'returned',
+        'rework',
+        're_intransit',
+        're_delivered',
         'cancelled',
         'refunded',
     ];
@@ -29,6 +33,10 @@ class Order extends Model
         'accepted' => 'Accepted',
         'in_progress' => 'In progress',
         'delivered' => 'Delivered',
+        'returned' => 'Returned',
+        'rework' => 'Rework',
+        're_intransit' => 'Re-in transit',
+        're_delivered' => 'Re-delivered',
         'cancelled' => 'Cancelled',
         'refunded' => 'Refunded',
     ];
@@ -124,7 +132,7 @@ class Order extends Model
     protected static function booted(): void
     {
         static::updating(function (Order $order) {
-            if ($order->isDirty('status') && $order->status === 'in_progress') {
+            if ($order->isDirty('status') && in_array($order->status, ['in_progress', 're_intransit'], true)) {
                 OrderDispatchSupport::prepareForTransit($order);
             }
         });
@@ -141,7 +149,7 @@ class Order extends Model
 
     public function ensureDeliveryOtp(): ?string
     {
-        if ($this->status !== 'in_progress') {
+        if (! in_array($this->status, ['in_progress', 're_intransit'], true)) {
             return null;
         }
 
@@ -553,6 +561,16 @@ class Order extends Model
             ],
             'in_progress' => [
                 ['label' => 'Mark delivered', 'url' => $route('delivered'), 'status' => 'delivered', 'variant' => 'success'],
+            ],
+            'delivered' => [
+                ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'primary'],
+                ['label' => 'Send for rework', 'url' => $route('rework'), 'status' => 'rework', 'variant' => 'primary'],
+            ],
+            'rework' => [
+                ['label' => 'Dispatch rework', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
+            ],
+            're_intransit' => [
+                ['label' => 'Mark re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'success'],
             ],
             default => [],
         };

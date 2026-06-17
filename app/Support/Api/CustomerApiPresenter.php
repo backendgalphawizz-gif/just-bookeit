@@ -110,6 +110,14 @@ class CustomerApiPresenter
             'owner_name' => $vendor->owner_name,
             'bio' => $vendor->bio,
             'cover_image_url' => $vendor->coverImageUrl(),
+            'coverImage' => $vendor->coverImageUrl(),
+            'is_available' => (bool) $vendor->is_listing_active,
+            'contact' => [
+                'mobile' => $vendor->mobile,
+                'email' => $vendor->email,
+                'business_mobile' => $vendor->business_mobile,
+                'business_email' => $vendor->business_email,
+            ],
             'service_types' => $vendor->selectedServiceTypes(),
             'service_type' => $vendor->serviceType(),
             'address' => self::vendorAddress($vendor),
@@ -164,6 +172,8 @@ class CustomerApiPresenter
             'order_id' => $review->order_id,
             'booking_id' => $review->order?->order_number,
             'customer_name' => $review->customer?->name,
+            'profile_image_url' => $review->customer?->profileImageUrl(),
+            'customer_profile_image_url' => $review->customer?->profileImageUrl(),
             'rating' => (float) $review->rating,
             'comment' => $review->comment,
             'reviewed_at' => $review->created_at?->format('M d, Y'),
@@ -224,6 +234,7 @@ class CustomerApiPresenter
             'category' => $mainCategory ? self::category($mainCategory) : null,
             'subcategory' => $item->subcategory ? self::category($item->subcategory) : null,
             'designer' => $item->vendor ? self::designerSummary($item->vendor) : null,
+            'is_available' => $item->isCatalogAvailable(),
         ];
     }
 

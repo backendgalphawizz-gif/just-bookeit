@@ -30,7 +30,7 @@ class ProfileController extends DriverApiController
                 ['key' => 'faqs', 'label' => 'FAQs', 'route' => '/api/v3/profile/pages'],
             ],
             'counts' => [
-                'assigned_deliveries' => $driver->orders()->where('status', 'in_progress')->count(),
+                'assigned_deliveries' => $driver->orders()->whereIn('status', ['in_progress', 're_intransit'])->count(),
                 'completed_deliveries' => $driver->orders()->where('status', 'delivered')->count(),
             ],
         ]);

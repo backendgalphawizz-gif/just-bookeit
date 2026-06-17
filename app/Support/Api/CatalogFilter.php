@@ -158,10 +158,22 @@ class CatalogFilter
             $slug = strtolower(trim($request->string('subcategory')->toString()));
 
             if ($slug !== '') {
-                $subcategory = Category::query()
-                    ->where('type', Category::TYPE_SUB)
-                    ->where('slug', $slug)
-                    ->first();
+                $mainCategoryId = self::resolveMainCategoryId($request);
+                if ($mainCategoryId === null) {
+                    $audience = $request->filled('audience')
+                        ? self::normalizeAudience($request->string('audience')->toString())
+                        : ($request->filled('shop_category')
+                            ? self::normalizeAudience($request->string('shop_category')->toString())
+                            : null);
+                    if ($audience !== null) {
+                        $mainCategoryId = Category::query()
+                            ->where('type', Category::TYPE_MAIN)
+                            ->where('slug', $audience)
+                            ->value('id');
+                    }
+                }
+
+                $subcategory = self::findSubcategoryBySlug($slug, $mainCategoryId);
 
                 return ($subcategory && $subcategory->isSub()) ? $subcategory->id : null;
             }
@@ -298,5 +310,37 @@ class CatalogFilter
                 'parent_id' => $subcategory->parent_id,
             ] : null,
         ], fn ($value) => $value !== null);
+    }
+
+    protected static function findSubcategoryBySlug(string $slug, ?int $mainCategoryId = null): ?Category
+    {
+        $query = Category::query()->where('type', Category::TYPE_SUB);
+
+        $exact = (clone $query)->where('slug', $slug)->first();
+        if ($exact) {
+            return $exact;
+        }
+
+        if ($mainCategoryId) {
+            $main = Category::query()->find($mainCategoryId);
+            if ($main) {
+                $prefixed = $main->slug.'-'.str($slug)->slug()->toString();
+                $prefixedMatch = (clone $query)->where('slug', $prefixed)->where('parent_id', $mainCategoryId)->first();
+                if ($prefixedMatch) {
+                    return $prefixedMatch;
+                }
+            }
+        }
+
+        $suffix = '-'.str($slug)->slug()->toString();
+
+        return (clone $query)
+            ->when($mainCategoryId, fn ($builder) => $builder->where('parent_id', $mainCategoryId))
+            ->where(function ($builder) use ($slug, $suffix) {
+                $builder->where('slug', 'like', '%'.$suffix)
+                    ->orWhere('slug', 'like', $slug.'%');
+            })
+            ->orderBy('sort_order')
+            ->first();
     }
 }
