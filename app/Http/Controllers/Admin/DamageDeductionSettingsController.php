@@ -8,6 +8,8 @@ use App\Support\AdminValidationRules;
 use App\Support\DamageDeductionCategoryResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -55,58 +57,54 @@ class DamageDeductionSettingsController extends AdminController
         $this->authorizeAdmin('edit');
 
         $tab = $request->input('tab', 'catalog') === 'service' ? 'service' : 'catalog';
-
-        $incomingCatalogRules = collect($request->input('damage_deduction_rules', []))
-            ->map(function (array $rule) {
-                if (! filled($rule['subcategory_id'] ?? null) || ($rule['subcategory_id'] ?? '') === DamageDeductionCategoryResolver::OTHER) {
-                    if (($rule['subcategory_id'] ?? '') !== DamageDeductionCategoryResolver::OTHER) {
-                        unset($rule['subcategory_id']);
-                    }
-                }
-
-                return $rule;
-            })
-            ->values()
-            ->all();
-
-        $incomingServiceRules = collect($request->input('service_damage_deduction_rules', []))
-            ->map(function (array $rule) {
-                if (! filled($rule['subcategory_id'] ?? null) || ($rule['subcategory_id'] ?? '') === DamageDeductionCategoryResolver::OTHER) {
-                    if (($rule['subcategory_id'] ?? '') !== DamageDeductionCategoryResolver::OTHER) {
-                        unset($rule['subcategory_id']);
-                    }
-                }
-
-                return $rule;
-            })
-            ->values()
-            ->all();
-
         $resolver = new DamageDeductionCategoryResolver;
 
-        $incomingCatalogRules = $resolver->resolveCatalogRules(
-            $incomingCatalogRules,
-            'damage_deduction_rules'
-        );
-
-        $incomingServiceRules = $resolver->resolveServiceRules(
-            $incomingServiceRules,
-            'service_damage_deduction_rules'
-        );
+        if ($tab === 'catalog') {
+            $incomingCatalogRules = $this->prepareIncomingRules(
+                $request->input('damage_deduction_rules', []),
+                'damage_deduction_rules'
+            );
+            $incomingCatalogRules = $resolver->resolveCatalogRules(
+                $incomingCatalogRules,
+                'damage_deduction_rules'
+            );
+            $incomingServiceRules = $this->prunedStoredServiceRules();
+        } else {
+            $incomingServiceRules = $this->prepareIncomingRules(
+                $request->input('service_damage_deduction_rules', []),
+                'service_damage_deduction_rules'
+            );
+            $incomingServiceRules = $resolver->resolveServiceRules(
+                $incomingServiceRules,
+                'service_damage_deduction_rules'
+            );
+            $incomingCatalogRules = $this->prunedStoredCatalogRules();
+        }
 
         $request->merge([
+            'tab' => $tab,
             'damage_deduction_rules' => $incomingCatalogRules,
             'service_damage_deduction_rules' => $incomingServiceRules,
         ]);
 
+        $validationRules = $tab === 'service'
+            ? array_merge(
+                ['tab' => ['nullable', 'string', Rule::in(['catalog', 'service'])]],
+                AdminValidationRules::settingsDamageDeductionServiceRules()
+            )
+            : array_merge(
+                ['tab' => ['nullable', 'string', Rule::in(['catalog', 'service'])]],
+                AdminValidationRules::settingsDamageDeductionCatalogRules()
+            );
+
         $data = $request->validate(
-            AdminValidationRules::settingsDamageDeductionRules(),
+            $validationRules,
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
 
-        $catalogRules = collect($data['damage_deduction_rules'] ?? []);
-        $serviceRules = collect($data['service_damage_deduction_rules'] ?? []);
+        $catalogRules = collect($data['damage_deduction_rules'] ?? $incomingCatalogRules);
+        $serviceRules = collect($data['service_damage_deduction_rules'] ?? $incomingServiceRules);
 
         if ($catalogRules->isEmpty() && $serviceRules->isEmpty()) {
             throw ValidationException::withMessages([
@@ -202,15 +200,145 @@ class DamageDeductionSettingsController extends AdminController
             ->merge($normalizedService->values())
             ->all();
 
-        PlatformSetting::set(
-            'refund_damage_deduction_rules',
-            $normalized,
-            'damage_deduction',
-            'json'
-        );
+        DB::transaction(function () use ($normalized) {
+            PlatformSetting::set(
+                'refund_damage_deduction_rules',
+                $normalized,
+                'damage_deduction',
+                'json'
+            );
+        });
 
         return redirect()
             ->route('admin.settings.damage-deduction.index', ['tab' => $tab])
             ->with('success', 'Damage deduction rules saved successfully.');
+    }
+
+    /** @param list<array<string, mixed>> $rules */
+    protected function prepareIncomingRules(array $rules, string $errorKey): array
+    {
+        return collect($rules)
+            ->map(function (array $rule) {
+                foreach (['category_id', 'subcategory_id', 'service_category_id', 'max_percent'] as $field) {
+                    if (array_key_exists($field, $rule) && $rule[$field] === '') {
+                        unset($rule[$field]);
+                    }
+                }
+
+                foreach (['category_name', 'subcategory_name', 'service_category_name'] as $field) {
+                    if (array_key_exists($field, $rule)) {
+                        $rule[$field] = trim((string) $rule[$field]);
+                    }
+                }
+
+                if (($rule['subcategory_id'] ?? '') === DamageDeductionCategoryResolver::OTHER) {
+                    return $rule;
+                }
+
+                if (! filled($rule['subcategory_id'] ?? null)) {
+                    unset($rule['subcategory_id']);
+                }
+
+                return $rule;
+            })
+            ->filter(function (array $rule) use ($errorKey) {
+                $hasCategory = filled($rule['category_id'] ?? null)
+                    || filled($rule['category_name'] ?? null);
+                $hasServiceCategory = filled($rule['service_category_id'] ?? null)
+                    || filled($rule['service_category_name'] ?? null);
+                $hasPercent = array_key_exists('max_percent', $rule) && $rule['max_percent'] !== null && $rule['max_percent'] !== '';
+
+                if ($errorKey === 'service_damage_deduction_rules') {
+                    return $hasServiceCategory || $hasCategory || $hasPercent;
+                }
+
+                return $hasCategory || $hasPercent;
+            })
+            ->values()
+            ->all();
+    }
+
+    /** @return list<array{category_id: int, subcategory_id: int|null, max_percent: float}> */
+    protected function prunedStoredCatalogRules(): array
+    {
+        $subcategories = Category::query()
+            ->sub()
+            ->get(['id', 'parent_id'])
+            ->keyBy('id');
+        $mainCategoryIds = Category::query()->main()->pluck('id')->all();
+        $mainCategoryIds = array_fill_keys($mainCategoryIds, true);
+
+        return collect(PlatformSetting::damageDeductionRulesForSettings())
+            ->filter(function (array $rule) use ($subcategories, $mainCategoryIds) {
+                if (! isset($mainCategoryIds[(int) $rule['category_id']])) {
+                    return false;
+                }
+
+                if (filled($rule['subcategory_id'] ?? null)) {
+                    $subcategory = $subcategories->get((int) $rule['subcategory_id']);
+
+                    return $subcategory && (int) $subcategory->parent_id === (int) $rule['category_id'];
+                }
+
+                return true;
+            })
+            ->map(fn (array $rule) => [
+                'category_id' => (int) $rule['category_id'],
+                'subcategory_id' => filled($rule['subcategory_id'] ?? null) ? (int) $rule['subcategory_id'] : null,
+                'max_percent' => (float) $rule['max_percent'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return list<array<string, mixed>> */
+    protected function prunedStoredServiceRules(): array
+    {
+        $subcategories = Category::query()
+            ->sub()
+            ->get(['id', 'parent_id'])
+            ->keyBy('id');
+        $mainCategoryIds = Category::query()->main()->pluck('id')->all();
+        $mainCategoryIds = array_fill_keys($mainCategoryIds, true);
+        $serviceCategoryIds = Category::query()->service()->pluck('id')->all();
+        $serviceCategoryIds = array_fill_keys($serviceCategoryIds, true);
+
+        return collect(PlatformSetting::serviceDamageDeductionRulesForSettings())
+            ->filter(function (array $rule) use ($subcategories, $mainCategoryIds, $serviceCategoryIds) {
+                if (! isset($serviceCategoryIds[(int) $rule['service_category_id']])) {
+                    return false;
+                }
+
+                if (filled($rule['category_id'] ?? null)) {
+                    if (! isset($mainCategoryIds[(int) $rule['category_id']])) {
+                        return false;
+                    }
+
+                    if (filled($rule['subcategory_id'] ?? null)) {
+                        $subcategory = $subcategories->get((int) $rule['subcategory_id']);
+
+                        return $subcategory && (int) $subcategory->parent_id === (int) $rule['category_id'];
+                    }
+                }
+
+                return true;
+            })
+            ->map(function (array $rule) {
+                $normalized = [
+                    'service_category_id' => (int) $rule['service_category_id'],
+                    'max_percent' => (float) $rule['max_percent'],
+                ];
+
+                if (filled($rule['category_id'] ?? null)) {
+                    $normalized['category_id'] = (int) $rule['category_id'];
+                    $normalized['subcategory_id'] = filled($rule['subcategory_id'] ?? null)
+                        ? (int) $rule['subcategory_id']
+                        : null;
+                }
+
+                return $normalized;
+            })
+            ->values()
+            ->all();
     }
 }
