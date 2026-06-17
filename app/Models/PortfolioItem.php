@@ -112,6 +112,15 @@ class PortfolioItem extends Model
         return 800 + (($this->id ?? 1) * 173) % 2700;
     }
 
+    public function isCatalogAvailable(): bool
+    {
+        $this->loadMissing('vendor');
+
+        return $this->status === 'approved'
+            && ($this->vendor?->status === 'active')
+            && (bool) ($this->vendor?->is_listing_active ?? false);
+    }
+
     public function rentalPriceLabel(): string
     {
         return '₹'.number_format($this->rentalPriceAmount(), 0).' / day';

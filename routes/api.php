@@ -146,6 +146,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::post('bookings/{booking}/accept', [VendorBookingController::class, 'accept'])->name('bookings.accept');
         Route::post('bookings/{booking}/reject', [VendorBookingController::class, 'reject'])->name('bookings.reject');
         Route::post('bookings/{booking}/status', [VendorBookingController::class, 'updateStatus'])->name('bookings.status');
+        Route::post('bookings/{booking}/damage', [VendorBookingController::class, 'updateDamage'])->name('bookings.damage');
 
         Route::get('products', [VendorProductController::class, 'index'])->name('products.index');
         Route::post('products', [VendorProductController::class, 'store'])->name('products.store');
@@ -201,8 +202,11 @@ Route::prefix('v3')->name('api.v3.')->group(function () {
         Route::post('deliveries/{delivery}/accept', [DriverDeliveryController::class, 'accept'])->name('deliveries.accept');
         Route::post('deliveries/{delivery}/reject', [DriverDeliveryController::class, 'reject'])->name('deliveries.reject');
         Route::post('deliveries/{delivery}/pickup', [DriverDeliveryController::class, 'pickup'])->name('deliveries.pickup');
+        Route::post('deliveries/{delivery}/dispatch', [DriverDeliveryController::class, 'dispatch'])->name('deliveries.dispatch');
         Route::post('deliveries/{delivery}/out-for-delivery', [DriverDeliveryController::class, 'outForDelivery'])->name('deliveries.out-for-delivery');
+        Route::post('deliveries/{delivery}/delivered', [DriverDeliveryController::class, 'delivered'])->name('deliveries.delivered');
         Route::post('deliveries/{delivery}/deliver', [DriverDeliveryController::class, 'deliver'])->name('deliveries.deliver');
+        Route::post('deliveries/{delivery}/rescheduled', [DriverDeliveryController::class, 'rescheduled'])->name('deliveries.rescheduled');
 
         Route::get('payments', [DriverPaymentController::class, 'index'])->name('payments.index');
         Route::post('payments/withdraw', [DriverPaymentController::class, 'withdraw'])->name('payments.withdraw');

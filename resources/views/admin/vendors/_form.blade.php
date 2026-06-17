@@ -20,11 +20,11 @@
         ->implode('') ?: '?';
     $isEdit = (bool) ($vendor?->exists ?? false);
     $currentStatus = old('status', $vendor?->status ?? 'pending');
-    $createStatusOptions = ['pending', 'active', 'suspended', 'rejected'];
+    $createStatusOptions = ['pending', 'active', 'inactive', 'rejected'];
     $statusHelp = match ($currentStatus) {
         'pending', 'rejected' => 'Approve or reject this vendor from their profile page — status cannot be changed here.',
-        'suspended' => 'Activate this vendor from their profile page — status cannot be changed here.',
-        default => 'Suspend this vendor from their profile page — status cannot be changed here.',
+        'inactive' => 'Activate this vendor from their profile page — status cannot be changed here.',
+        default => 'Mark this vendor inactive from their profile page — status cannot be changed here.',
     };
 @endphp
 

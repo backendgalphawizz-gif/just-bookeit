@@ -294,24 +294,22 @@ class OtpService
             ]);
         }
 
-        if ($actorType === self::ACTOR_CUSTOMER && $actor->status === 'blocked') {
+        if ($actorType === self::ACTOR_CUSTOMER && $actor->status === 'inactive') {
             throw ValidationException::withMessages([
-                'mobile' => [$this->rejectionMessage('account', $actor->rejection_reason, 'blocked')],
+                'mobile' => [$this->rejectionMessage('account', $actor->rejection_reason, 'deactivated')],
             ]);
         }
 
-        if (in_array($actor->status ?? 'active', ['suspended', 'blocked'], true)) {
-            $message = 'This account is suspended.';
+        if ($actorType === self::ACTOR_VENDOR && $actor->status === 'inactive') {
+            throw ValidationException::withMessages([
+                'mobile' => [$this->rejectionMessage('vendor account', $actor->rejection_reason, 'deactivated')],
+            ]);
+        }
 
-            if ($actorType === self::ACTOR_VENDOR && filled($actor->suspension_reason ?? null)) {
-                $message = 'This vendor account is suspended: '.$actor->suspension_reason;
-            } elseif ($actorType === self::ACTOR_CUSTOMER && filled($actor->rejection_reason ?? null)) {
-                $message = 'Your account is suspended: '.$actor->rejection_reason;
-            } elseif ($actorType === self::ACTOR_DRIVER && filled($actor->rejection_reason ?? null)) {
-                $message = 'Your driver account is suspended: '.$actor->rejection_reason;
-            }
-
-            throw ValidationException::withMessages(['mobile' => [$message]]);
+        if ($actorType === self::ACTOR_DRIVER && $actor->status === 'inactive') {
+            throw ValidationException::withMessages([
+                'mobile' => [$this->rejectionMessage('driver account', $actor->rejection_reason, 'deactivated')],
+            ]);
         }
     }
 

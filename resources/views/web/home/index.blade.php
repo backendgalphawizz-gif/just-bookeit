@@ -112,7 +112,7 @@ $categoryFallbacks = [
             @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
                 <a href="{{ route('web.catalog.index') }}" class="service-card">
                     <div class="jbw-tile">
-                        <img src="{{ $serviceImages[$i] }}" alt="{{ $svc[0] }}">
+                    <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}" alt="{{ $service->name }}">
                     </div>
 
                     <p class="jbw-step-title textalign">
@@ -123,7 +123,19 @@ $categoryFallbacks = [
         @endforelse
     </div>
 
-</div>
+            @empty
+                @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
+                    <a href="{{ route('web.catalog.index') }}" class="jbw-tile">
+                        <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
+                        <div class="jbw-tile-overlay"></div>
+                        <div class="jbw-tile-body">
+                            <span class="jbw-tile-label">{{ $svc[0] }}</span>
+                            <span class="jbw-tile-meta">{{ $svc[1] }}</span>
+                        </div>
+                    </a>
+                @endforeach
+            @endforelse
+        </div>
     </div>
 </section>
 
@@ -145,32 +157,27 @@ $categoryFallbacks = [
             </div>
 
         </div>
-
-        <!-- <div class="jbw-section-head alignmentheading">
-             <h2 class="jbw-section-title">Shop by Category</h2>
-
-        </div> -->
-
-            <div class="category-wrapper">
-
-                <!-- <div class="category-nav">
-        <button class="category-arrow prev" onclick="slideCategories(-1)">
-            &#10094;
-        </button>
-
-        <button class="category-arrow next" onclick="slideCategories(1)">
-            &#10095;
-        </button>
-    </div> -->
-
-                <div class="category-slider" id="categorySlider">
-                    @forelse ($shopCategories as $i => $shopCategory)
-                    <a href="{{ route('web.catalog.index', ['category' => $shopCategory->id]) }}"
-                        class="category-card textalign">
-
-                        <div class="jbw-tile" style="min-height:15rem;">
-                            <img src="{{ $shopCategory->imageUrl() ?: $categoryFallbacks[$i % count($categoryFallbacks)] }}"
-                                alt="{{ $shopCategory->name }}">
+        <div class="jbw-grid-3">
+            @forelse ($shopCategories as $i => $shopCategory)
+                <a  href="{{ route('web.catalog.index', ['category' => $shopCategory->id]) }}" class=" textalign" style="min-height:18rem">
+                <div class="jbw-tile" style="min-height: 15rem;">
+                <img src="{{ $shopCategory->imageUrl() ?: $categoryFallbacks[$i % count($categoryFallbacks)] }}" alt="{{ $shopCategory->name }}">
+                </div>
+                <!-- <div class="jbw-tile-overlay"></div> -->
+                    <!-- <div class="jbw-tile-body">
+                        <span class="jbw-tile-label">{{ $shopCategory->name }}</span>
+                    </div> -->
+                    <p class="jbw-step-title textalign ">
+        {{ $shopCategory->name }}
+    </p>
+                </a>
+            @empty
+                @foreach (['Women','Men','Kids'] as $i => $label)
+                    <a href="{{ route('web.catalog.index') }}" class="jbw-tile" style="min-height:18rem">
+                        <img src="{{ $categoryImages[$i] }}" alt="{{ $label }}">
+                        <div class="jbw-tile-overlay"></div>
+                        <div class="jbw-tile-body">
+                            <span class="jbw-tile-label">{{ $label }}</span>
                         </div>
 
                         <p class="jbw-step-title textalign">

@@ -89,6 +89,14 @@ class VendorValidationRules
         ];
     }
 
+    public static function bookingDamage(): array
+    {
+        return [
+            'damage_note' => ['nullable', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TEXT],
+            'damage_deduct_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ];
+    }
+
     public static function register(): array
     {
         return [

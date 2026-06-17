@@ -31,6 +31,11 @@ class OrderDispatchSupport
         }
     }
 
+    public static function isDispatchStatus(string $status): bool
+    {
+        return in_array($status, ['in_progress', 're_intransit'], true);
+    }
+
     /** @return list<string> */
     public static function allowedNextStatuses(string $current): array
     {
@@ -38,6 +43,11 @@ class OrderDispatchSupport
             'pending_acceptance' => ['accepted', 'cancelled'],
             'accepted' => ['in_progress', 'cancelled'],
             'in_progress' => ['delivered', 'cancelled'],
+            'delivered' => ['returned', 'rework', 'cancelled'],
+            'returned' => [],
+            'rework' => ['re_intransit', 'cancelled'],
+            're_intransit' => ['re_delivered', 'cancelled'],
+            're_delivered' => [],
             default => [],
         };
     }

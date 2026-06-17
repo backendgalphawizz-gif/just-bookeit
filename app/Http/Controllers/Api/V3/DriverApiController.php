@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V3;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Driver;
 use App\Models\Order;
+use App\Support\OrderDispatchSupport;
 use Illuminate\Http\Request;
 
 abstract class DriverApiController extends ApiController
@@ -24,6 +25,6 @@ abstract class DriverApiController extends ApiController
 
     protected function assertAvailableDelivery(Order $order): void
     {
-        abort_unless($order->status === 'in_progress' && $order->driver_id === null, 422, 'This delivery is no longer available.');
+        abort_unless(OrderDispatchSupport::isDispatchStatus($order->status) && $order->driver_id === null, 422, 'This delivery is no longer available.');
     }
 }

@@ -20,7 +20,7 @@ class EnsureVendorApiIsAuthenticated
             ], 401);
         }
 
-        if (in_array($user->status, ['rejected', 'suspended', 'blocked'], true)) {
+        if (in_array($user->status, ['rejected', 'inactive'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Your vendor account cannot access the app right now.',

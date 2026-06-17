@@ -5,6 +5,7 @@ namespace App\Support\Api;
 use App\Models\Driver;
 use App\Models\DriverWalletTransaction;
 use App\Models\Order;
+use App\Support\OrderDispatchSupport;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class DriverApiPresenter
@@ -53,9 +54,11 @@ class DriverApiPresenter
         return [
             'id' => $order->id,
             'booking_id' => $order->order_number,
+            'order_id' => $order->order_number,
             'order_number' => $order->order_number,
-            'date' => $order->created_at?->format('M d, Y'),
-            'date_iso' => $order->created_at?->toDateString(),
+            'date' => $order->updated_at?->format('M d, Y'),
+            'date_iso' => $order->updated_at?->toDateString(),
+            'datetime_label' => $order->updated_at?->format('M d, Y, g:i A'),
             'status' => $order->status,
             'driver_delivery_status' => $order->driver_delivery_status,
             'status_label' => self::deliveryStatusLabel($order),
@@ -63,19 +66,26 @@ class DriverApiPresenter
             'product_name' => $order->itemDisplayName(),
             'product_image_url' => $order->itemImageUrl(),
             'customer_name' => $order->customer?->name,
-            'amount' => (float) $order->amount,
-            'amount_label' => '₹'.number_format((float) $order->amount, 0),
+            'amount' => $order->grandTotal(),
+            'amount_label' => '₹'.number_format($order->grandTotal(), 0),
             'delivery_fee' => (float) ($order->delivery_fee ?? 0),
             'driver_earning' => $order->driver_earning !== null ? (float) $order->driver_earning : null,
+            'payment_method' => $order->payment_method,
+            'is_cod' => $order->isCod(),
+            'payment_badge' => self::paymentBadge($order),
             'pickup_address' => self::pickupAddress($order),
             'delivery_address' => $order->delivery_address,
             'city' => $order->city,
             'pincode' => $order->pincode,
+            'scheduled_for' => $order->driver_scheduled_for?->format('Y-m-d'),
+            'scheduled_for_label' => $order->driver_scheduled_for?->format('M d, Y'),
             'can_accept' => self::canAccept($order, $viewer),
             'can_reject' => self::canReject($order, $viewer),
             'can_pickup' => self::canPickup($order, $viewer),
-            'can_out_for_delivery' => self::canOutForDelivery($order, $viewer),
+            'can_dispatch' => self::canDispatch($order, $viewer),
+            'can_out_for_delivery' => self::canDispatch($order, $viewer),
             'can_deliver' => self::canDeliver($order, $viewer),
+            'can_reschedule' => self::canReschedule($order, $viewer),
         ];
     }
 
@@ -88,6 +98,7 @@ class DriverApiPresenter
                 'name' => $order->customer?->name,
                 'mobile' => $order->customer?->mobile,
                 'email' => $order->customer?->email,
+                'profile_image_url' => $order->customer?->profileImageUrl(),
             ],
             'vendor' => $order->vendor ? [
                 'id' => $order->vendor->id,
@@ -103,7 +114,9 @@ class DriverApiPresenter
             'driver_assigned_at' => $order->driver_assigned_at?->format('M d, Y, g:i A'),
             'driver_pickup_at' => $order->driver_pickup_at?->format('M d, Y, g:i A'),
             'driver_delivered_at' => $order->driver_delivered_at?->format('M d, Y, g:i A'),
-            'requires_delivery_otp' => $order->status === 'in_progress'
+            'driver_rescheduled_at' => $order->driver_rescheduled_at?->format('M d, Y, g:i A'),
+            'driver_rejection_reason' => $order->driver_rejection_reason,
+            'requires_delivery_otp' => OrderDispatchSupport::isDispatchStatus($order->status)
                 && in_array($order->driver_delivery_status, [
                     Order::DRIVER_STATUS_PICKED_UP,
                     Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
@@ -135,7 +148,7 @@ class DriverApiPresenter
 
     public static function deliveryStatusLabel(Order $order): string
     {
-        if ($order->status === 'delivered') {
+        if (in_array($order->status, ['delivered', 're_delivered'], true)) {
             return 'DELIVERED';
         }
 
@@ -143,16 +156,30 @@ class DriverApiPresenter
             return 'CANCELLED';
         }
 
-        if ($order->status === 'in_progress' && $order->driver_id === null) {
+        if (OrderDispatchSupport::isDispatchStatus($order->status) && $order->driver_id === null) {
             return 'NEW';
         }
 
         return match ($order->driver_delivery_status) {
             Order::DRIVER_STATUS_ACCEPTED => 'ACCEPTED',
-            Order::DRIVER_STATUS_PICKED_UP => 'PICKED UP',
-            Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'OUT FOR DELIVERY',
+            Order::DRIVER_STATUS_PICKED_UP => 'PICKUP',
+            Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'DISPATCHED',
+            Order::DRIVER_STATUS_RESCHEDULED => 'RESCHEDULED',
             default => strtoupper($order->statusLabel()),
         };
+    }
+
+    public static function paymentBadge(Order $order): ?string
+    {
+        if (! $order->isCod()) {
+            return null;
+        }
+
+        if ($order->cod_collected_at) {
+            return 'CASH COLLECTED';
+        }
+
+        return 'CASH COLLECT';
     }
 
     public static function pickupAddress(Order $order): ?string
@@ -173,7 +200,7 @@ class DriverApiPresenter
     public static function canAccept(Order $order, ?Driver $viewer): bool
     {
         return $viewer
-            && $order->status === 'in_progress'
+            && OrderDispatchSupport::isDispatchStatus($order->status)
             && $order->driver_id === null;
     }
 
@@ -183,28 +210,34 @@ class DriverApiPresenter
             return false;
         }
 
-        if ($order->status === 'in_progress' && $order->driver_id === null) {
+        if (OrderDispatchSupport::isDispatchStatus($order->status) && $order->driver_id === null) {
             return true;
         }
 
         return $order->driver_id === $viewer->id
-            && $order->status === 'in_progress'
-            && $order->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED;
+            && OrderDispatchSupport::isDispatchStatus($order->status)
+            && in_array($order->driver_delivery_status, [
+                Order::DRIVER_STATUS_ACCEPTED,
+                Order::DRIVER_STATUS_RESCHEDULED,
+            ], true);
     }
 
     public static function canPickup(Order $order, ?Driver $viewer): bool
     {
         return $viewer
             && $order->driver_id === $viewer->id
-            && $order->status === 'in_progress'
-            && $order->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED;
+            && OrderDispatchSupport::isDispatchStatus($order->status)
+            && in_array($order->driver_delivery_status, [
+                Order::DRIVER_STATUS_ACCEPTED,
+                Order::DRIVER_STATUS_RESCHEDULED,
+            ], true);
     }
 
-    public static function canOutForDelivery(Order $order, ?Driver $viewer): bool
+    public static function canDispatch(Order $order, ?Driver $viewer): bool
     {
         return $viewer
             && $order->driver_id === $viewer->id
-            && $order->status === 'in_progress'
+            && OrderDispatchSupport::isDispatchStatus($order->status)
             && $order->driver_delivery_status === Order::DRIVER_STATUS_PICKED_UP;
     }
 
@@ -212,8 +245,20 @@ class DriverApiPresenter
     {
         return $viewer
             && $order->driver_id === $viewer->id
-            && $order->status === 'in_progress'
+            && OrderDispatchSupport::isDispatchStatus($order->status)
             && in_array($order->driver_delivery_status, [
+                Order::DRIVER_STATUS_PICKED_UP,
+                Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            ], true);
+    }
+
+    public static function canReschedule(Order $order, ?Driver $viewer): bool
+    {
+        return $viewer
+            && $order->driver_id === $viewer->id
+            && OrderDispatchSupport::isDispatchStatus($order->status)
+            && in_array($order->driver_delivery_status, [
+                Order::DRIVER_STATUS_ACCEPTED,
                 Order::DRIVER_STATUS_PICKED_UP,
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
             ], true);

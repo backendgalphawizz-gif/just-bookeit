@@ -59,7 +59,7 @@ class AdminFlashMessage
             str_contains($lower, 'approved') => 'Approved',
             str_contains($lower, 'rejected') => 'Rejected',
             str_contains($lower, 'suspended') => 'Suspended',
-            str_contains($lower, 'blocked') => 'Blocked',
+            str_contains($lower, 'inactivated') => 'Inactivated',
             str_contains($lower, 'activated') => 'Activated',
             str_contains($lower, 'reactivated') => 'Reactivated',
             default => 'Success',
@@ -110,6 +110,10 @@ class AdminFlashMessage
     {
         if ($errors->count() === 1) {
             return (string) $errors->first();
+        }
+
+        if ($errors->count() <= 5) {
+            return $errors->all() === [] ? '' : implode(' ', $errors->all());
         }
 
         return 'There are '.$errors->count().' fields that need your attention. Review the form and try again.';

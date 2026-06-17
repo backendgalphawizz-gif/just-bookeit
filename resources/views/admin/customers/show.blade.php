@@ -17,29 +17,16 @@
         @if ($customer->status === 'active')
             <form
                 method="POST"
-                action="{{ route('admin.customers.suspend', $customer) }}"
+                action="{{ route('admin.customers.inactivate', $customer) }}"
                 class="inline-flex"
-                data-jb-confirm="This customer will be suspended. The reason you enter will be visible to them."
-                data-jb-confirm-title="Suspend customer"
+                data-jb-confirm="This customer will be marked inactive and will not be able to log in. The reason you enter will be visible to them."
+                data-jb-confirm-title="Mark customer inactive"
                 data-jb-confirm-variant="error"
-                data-jb-confirm-label="Suspend"
-                data-jb-confirm-requires-reason="Reason for suspension"
+                data-jb-confirm-label="Mark Inactive"
+                data-jb-confirm-requires-reason="Reason for inactivation"
             >
                 @csrf
-                <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
-            </form>
-            <form
-                method="POST"
-                action="{{ route('admin.customers.block', $customer) }}"
-                class="inline-flex"
-                data-jb-confirm="This customer will be blocked. The reason you enter will be visible to them."
-                data-jb-confirm-title="Block customer"
-                data-jb-confirm-variant="error"
-                data-jb-confirm-label="Block"
-                data-jb-confirm-requires-reason="Reason for blocking"
-            >
-                @csrf
-                <x-admin.button variant="danger" type="submit">Block</x-admin.button>
+                <x-admin.button variant="danger" type="submit">Mark Inactive</x-admin.button>
             </form>
         @endif
         <x-admin.button variant="secondary" :href="route('admin.customers.edit', $customer)">Edit</x-admin.button>
@@ -61,9 +48,9 @@
 @endsection
 
 @section('content')
-    @if (in_array($customer->status, ['suspended', 'blocked'], true))
+    @if ($customer->status === 'inactive')
         @include('admin.partials.account-status-banner', [
-            'title' => 'Account '.($customer->status === 'blocked' ? 'blocked' : 'suspended'),
+            'title' => 'Account inactive',
             'reason' => $customer->rejection_reason,
             'emptyReason' => 'No reason recorded.',
         ])
@@ -83,6 +70,12 @@
                 <div><dt>Mobile No</dt><dd>{{ $customer->mobile }}</dd></div>
                 <div><dt>Email ID</dt><dd>{{ $customer->email ?? '—' }}</dd></div>
                 <div><dt>City</dt><dd>{{ $customer->city ?? '—' }}</dd></div>
+                @if ($customer->address || $customer->state || $customer->pincode)
+                <div><dt>Address</dt><dd>{{ $customer->address ?? '—' }}</dd></div>
+                <div><dt>State</dt><dd>{{ $customer->state ?? '—' }}</dd></div>
+                <div><dt>Country</dt><dd>{{ $customer->country ?? '—' }}</dd></div>
+                <div><dt>Pincode</dt><dd>{{ $customer->pincode ?? '—' }}</dd></div>
+                @endif
                 <div><dt>Verified</dt><dd>{{ $customer->is_verified ? 'Yes' : 'No' }}</dd></div>
                 <div><dt>Registered</dt><dd>{{ $customer->registered_at?->format('M d, Y') }}</dd></div>
             </dl>

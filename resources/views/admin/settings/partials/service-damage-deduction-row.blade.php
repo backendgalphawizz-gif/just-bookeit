@@ -60,8 +60,14 @@
                 data-damage-service-category-custom
                 placeholder="New service category name"
                 maxlength="255"
-                hidden
+                @if($selectedServiceCategoryId !== $otherValue) hidden @endif
             >
+            @error('service_damage_deduction_rules.'.$rowIndex.'.service_category_id')
+                <p class="text-xs font-medium text-rose-600">{{ $message }}</p>
+            @enderror
+            @error('service_damage_deduction_rules.'.$rowIndex.'.service_category_name')
+                <p class="text-xs font-medium text-rose-600">{{ $message }}</p>
+            @enderror
         </div>
     </td>
     <td class="text-center">

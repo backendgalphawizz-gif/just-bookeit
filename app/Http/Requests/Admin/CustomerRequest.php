@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Support\AdminValidationRules;
+use App\Support\LocationResolver;
 use Illuminate\Validation\Rule;
 
 class CustomerRequest extends AdminFormRequest
@@ -33,6 +34,22 @@ class CustomerRequest extends AdminFormRequest
     {
         $this->merge([
             'is_verified' => $this->boolean('is_verified'),
+        ]);
+
+        if ($this->filled('country_id') || $this->filled('state_id') || $this->filled('city_id')
+            || $this->filled('country_other') || $this->filled('state_other') || $this->filled('city_other')) {
+            $resolved = LocationResolver::resolve($this->all());
+            $this->merge($resolved);
+        }
+    }
+
+    public function customerData(): array
+    {
+        return $this->safe()->except([
+            'country_id', 'country_other',
+            'state_id', 'state_other',
+            'city_id', 'city_other',
+            'profile_image',
         ]);
     }
 }

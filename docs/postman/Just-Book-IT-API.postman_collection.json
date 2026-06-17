@@ -577,7 +577,28 @@
 										}
 									]
 								},
-								"description": "Catalog list with filters: audience (Men/Women/Kids), service type, and optional subcategory slug (e.g. women-sarees). Optional `vendor_id` to show one vendor's products only."
+								"description": "Catalog list with filters: audience, service, subcategory slug (`women-sarees` or short `sarees` with audience), optional `vendor_id`. Each item includes `is_available`."
+							}
+						},
+						{
+							"name": "Catalog List (rented-dress + sarees slug)",
+							"request": {
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": {
+									"raw": "{{base_url}}/v1/catalog?service=rented-dress&audience=women&subcategory=sarees&vendor_id={{v1_designer_id}}&search=&page=1",
+									"host": ["{{base_url}}"],
+									"path": ["v1", "catalog"],
+									"query": [
+										{"key": "service", "value": "rented-dress"},
+										{"key": "audience", "value": "women"},
+										{"key": "subcategory", "value": "sarees", "description": "Short slug resolves to women-sarees when audience is set"},
+										{"key": "vendor_id", "value": "{{v1_designer_id}}"},
+										{"key": "search", "value": ""},
+										{"key": "page", "value": "1"}
+									]
+								},
+								"description": "Rental dress catalog filtered by subcategory slug. Each item includes `is_available`."
 							}
 						},
 						{
@@ -603,7 +624,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/catalog/{{v1_portfolio_item_id}}"
+								"url": "{{base_url}}/v1/catalog/{{v1_portfolio_item_id}}",
+								"description": "Product detail with `is_available`, `review_summary`, and reviews (each review includes `profile_image_url`)."
 							}
 						},
 						{
@@ -644,7 +666,7 @@
 									}
 								],
 								"url": "{{base_url}}/v1/designers/{{v1_designer_id}}",
-								"description": "Designer profile with full address, review_count, review_summary, customer reviews, and portfolio/products list."
+								"description": "Designer profile with `cover_image_url`, `coverImage`, `is_available`, `contact` (mobile, email, business_mobile, business_email), address, reviews (with customer `profile_image_url`), and portfolio/products."
 							}
 						}
 					]
@@ -1895,7 +1917,7 @@
 		},
 		{
 			"name": "v2 — Vendor App",
-			"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.\n\n**Profile:** `coverImage` on `/v2/auth/me` and `POST /v2/auth/profile`. Availability: `POST /v2/profile/available`, `POST /v2/profile/unavailable`, or `POST /v2/profile/availability` with `is_available`.\n\n**Products:** filter by service type — `?type=rented-dress`, `?type=fashion-designer`, `?type=rented-jewellery`. Each item includes `is_available`.\n\n**Booking detail:** customer email/mobile, full measurements, payment_summary (subtotal, shipping_fee, platform_fee, tax), `customer_review` when status is delivered.",
+			"description": "Vendor mobile app APIs. Flow: Config → Send OTP → Verify OTP → Home → Bookings / Products / Chats / Profile.\n\nBearer token saved as `v2_token`. IDs auto-saved: `v2_booking_id`, `v2_product_id`, `v2_chat_id`.\n\n**Profile:** `coverImage` on `/v2/auth/me` and `POST /v2/auth/profile`. Availability: `POST /v2/profile/available`, `POST /v2/profile/unavailable`, or `POST /v2/profile/availability` with `is_available`.\n\n**Products:** filter by service type — `?type=rented-dress`, `?type=fashion-designer`, `?type=rented-jewellery`. Each item includes `is_available`.\n\n**Booking tabs:** `accepted`, `in_progress` (In Transit), `completed` (Delivered), `cancelled`, `returned`, `rework`, `re-in-transit`, `re-delivered`, `new`.\n\n**Status update** accepts aliases: `in_progress`, `completed`, `re-intransit`, `re-delivered`. Response uses `status` (alias) + `status_raw` (DB).\n\n**Returned bookings:** `POST /v2/bookings/{id}/damage` with `damage_note` and `damage_deduct_percent`.\n\n**Booking detail:** customer email/mobile, measurements, payment_summary, `customer_review` when delivered.",
 			"item": [
 				{
 					"name": "Auth",
@@ -2595,7 +2617,52 @@
 									}
 								],
 								"url": "{{base_url}}/v2/bookings?tab=completed",
-								"description": "Delivered bookings — use Booking Detail to see `customer_review`."
+								"description": "Delivered bookings — use Booking Detail to see `customer_review`. Status in response shows as `completed`."
+							}
+						},
+						{
+							"name": "List (Cancelled)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v2/bookings?tab=cancelled"
+							}
+						},
+						{
+							"name": "List (Returned)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v2/bookings?tab=returned"
+							}
+						},
+						{
+							"name": "List (Rework)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v2/bookings?tab=rework"
+							}
+						},
+						{
+							"name": "List (Re-In Transit)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v2/bookings?tab=re-in-transit"
+							}
+						},
+						{
+							"name": "List (Re-Delivered)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v2/bookings?tab=re-delivered"
 							}
 						},
 						{
@@ -2698,6 +2765,61 @@
 							}
 						},
 						{
+							"name": "Update Status (In Transit)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"status\": \"in_progress\"\n}"},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
+								"description": "In Transit tab — sends `in_progress`. Generates delivery_otp and pickup_address."
+							}
+						},
+						{
+							"name": "Update Status (Delivered)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"status\": \"completed\"\n}"},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
+								"description": "Delivered tab — alias `completed` maps to DB status `delivered`."
+							}
+						},
+						{
+							"name": "Update Status (Returned)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"status\": \"returned\"\n}"},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
+								"description": "Rental flow — after delivered, mark returned then use Update Damage."
+							}
+						},
+						{
+							"name": "Update Status (Rework → Re-In Transit → Re-Delivered)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"status\": \"rework\"\n}"},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
+								"description": "Designer flow: delivered → rework → re-intransit → re-delivered. Also accepts aliases `re-intransit` and `re-delivered`."
+							}
+						},
+						{
+							"name": "Update Damage (Returned)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"damage_note\": \"Minor stain on hem\",\n  \"damage_deduct_percent\": 10\n}"},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/damage",
+								"description": "Record damage deduction when booking status is `returned`."
+							}
+						},
+						{
 							"name": "Update Status",
 							"request": {
 								"auth": {
@@ -2726,7 +2848,7 @@
 									"raw": "{\n  \"status\": \"in_progress\"\n}"
 								},
 								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
-								"description": "Valid transitions: accepted→in_progress→delivered. Cannot skip steps."
+								"description": "Valid transitions: accepted→in_progress→completed (delivered)→returned/rework→re-intransit→re-delivered."
 							}
 						}
 					]
@@ -3762,6 +3884,7 @@
 		},
 		{
 			"name": "v3 — Driver",
+			"description": "Driver mobile app APIs. Flow: Config → Send OTP → Verify OTP → Dashboard → Deliveries → Payments / Profile.\n\nBearer token saved as `v3_token`. IDs auto-saved: `v3_delivery_id`.\n\n**Dashboard** (`GET /v3/home`): stats, earnings (month/ytd), COD collected, recent deliveries. Filters: `month`, `year`, `from`, `to`, `date`, `search`.\n\n**Delivery tabs:** `new`, `accepted`, `pickup`, `dispatched`, `delivered`, `cancelled`, `rescheduled`.\n\n**Actions:** accept → pickup → dispatch → delivered (OTP). Reject requires `reason`. Reschedule requires `scheduled_date`.",
 			"item": [
 				{
 					"name": "Send OTP",
@@ -4012,7 +4135,8 @@
 					"request": {
 						"method": "GET",
 						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/config"
+						"url": "{{base_url}}/v3/config",
+						"description": "Returns delivery_tabs: new, accepted, pickup, dispatched, delivered, cancelled, rescheduled."
 					}
 				},
 				{
@@ -4023,7 +4147,7 @@
 							"type": "text/javascript",
 							"exec": [
 								"const json = pm.response.json();",
-								"const item = json.data?.new_deliveries?.[0];",
+								"const item = json.data?.recent_deliveries?.items?.[0] || json.data?.new_deliveries?.[0];",
 								"if (item?.id) { pm.environment.set('v3_delivery_id', String(item.id)); }"
 							]
 						}
@@ -4032,8 +4156,21 @@
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "GET",
 						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/home",
-						"description": "Total earnings, delivery stats, and latest new deliveries."
+						"url": {
+							"raw": "{{base_url}}/v3/home?month=4&year=2026&search=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["v3", "home"],
+							"query": [
+								{"key": "month", "value": "4", "description": "Earnings month (1-12)"},
+								{"key": "year", "value": "2026", "description": "Earnings year"},
+								{"key": "from", "value": "", "description": "Optional date filter (YYYY-MM-DD)"},
+								{"key": "to", "value": "", "description": "Optional date filter (YYYY-MM-DD)"},
+								{"key": "date", "value": "", "description": "Optional single-day filter"},
+								{"key": "search", "value": ""},
+								{"key": "page", "value": "1"}
+							]
+						},
+						"description": "Delivery dashboard: stats (assigned/pending/completed/cancelled), earnings (this_month, ytd), cod.total_collected, recent_deliveries list with payment_badge (CASH COLLECT)."
 					}
 				},
 				{
@@ -4053,7 +4190,8 @@
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "GET",
 						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/deliveries?tab=new&page=1"
+						"url": "{{base_url}}/v3/deliveries?tab=new&page=1",
+						"description": "New unassigned deliveries. Optional filters: `from`, `to`, `date`, `search`."
 					}
 				},
 				{
@@ -4066,12 +4204,48 @@
 					}
 				},
 				{
-					"name": "Deliveries (Out for Delivery)",
+					"name": "Deliveries (Pickup)",
 					"request": {
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "GET",
 						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/deliveries?tab=out_for_delivery&page=1"
+						"url": "{{base_url}}/v3/deliveries?tab=pickup&page=1"
+					}
+				},
+				{
+					"name": "Deliveries (Dispatched)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=dispatched&page=1"
+					}
+				},
+				{
+					"name": "Deliveries (Delivered)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=delivered&page=1"
+					}
+				},
+				{
+					"name": "Deliveries (Cancelled)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=cancelled&page=1"
+					}
+				},
+				{
+					"name": "Deliveries (Rescheduled)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries?tab=rescheduled&page=1"
 					}
 				},
 				{
@@ -4097,8 +4271,10 @@
 					"request": {
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "POST",
-						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/reject"
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"reason\": \"Unable to reach pickup location today.\"\n}"},
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/reject",
+						"description": "Reject/skip delivery. `reason` is required (3–500 chars). Works on New (unassigned) or Accepted/Rescheduled."
 					}
 				},
 				{
@@ -4111,7 +4287,17 @@
 					}
 				},
 				{
-					"name": "Out for Delivery",
+					"name": "Dispatch Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/dispatch",
+						"description": "Mark out for delivery after pickup. Alias: POST /out-for-delivery"
+					}
+				},
+				{
+					"name": "Out for Delivery (legacy)",
 					"request": {
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "POST",
@@ -4126,8 +4312,30 @@
 						"method": "POST",
 						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
 						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/delivered",
+						"description": "Complete delivery with customer OTP. Alias: POST /deliver. COD orders set cod_collected_at automatically."
+					}
+				},
+				{
+					"name": "Deliver (legacy alias)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
 						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/deliver",
-						"description": "Use the customer's delivery OTP from GET /v1/bookings/{id} when status is in_progress."
+						"description": "Use OTP from GET /v1/bookings/{id} when order is in_progress."
+					}
+				},
+				{
+					"name": "Reschedule Delivery",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+						"body": {"mode": "raw", "raw": "{\n  \"scheduled_date\": \"2026-06-15\",\n  \"reason\": \"Customer requested next-day delivery\"\n}"},
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/rescheduled",
+						"description": "Reschedule an accepted/pickup/dispatched delivery. `scheduled_date` required (today or later)."
 					}
 				},
 				{
@@ -4180,7 +4388,7 @@
 		},
 		{
 			"name": "E2E — Full Order Flow",
-			"description": "Run these in order to test Customer → Vendor → Driver flow.\n\n**Setup:** `php artisan db:seed --class=OrderFlowDemoSeeder` then `php artisan test:order-flow`\n\n**Status chain:** new → pay → pending_acceptance → vendor accept → in_progress → driver deliver → delivered\n\n**Driver demo mobile:** 9898989898 (active, pre-seeded)",
+			"description": "Run these in order to test Customer → Vendor → Driver flow.\n\n**Setup:** `php artisan db:seed --class=OrderFlowDemoSeeder` then `php artisan test:order-flow`\n\n**Status chain:** new → pay (COD) → pending_acceptance → vendor accept → in_progress → driver accept → pickup → dispatch → delivered\n\n**Driver demo mobile:** 9898989898 (active, pre-seeded)",
 			"item": [
 				{
 					"name": "0. Run automated test (CLI)",
@@ -4229,17 +4437,7 @@
 					}
 				},
 				{
-					"name": "5. Vendor — Start Preparing (in_progress)",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
-						"body": {"mode": "raw", "raw": "{\n  \"status\": \"in_progress\"\n}"},
-						"url": "{{base_url}}/v2/bookings/{{v1_booking_id}}/status"
-					}
-				},
-				{
-					"name": "6. Vendor — Mark in progress",
+					"name": "6. Vendor — Mark In Transit (in_progress)",
 					"request": {
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
 						"method": "POST",
@@ -4278,12 +4476,12 @@
 					}
 				},
 				{
-					"name": "10. Driver — Out for Delivery",
+					"name": "10. Driver — Dispatch",
 					"request": {
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "POST",
 						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/out-for-delivery"
+						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/dispatch"
 					}
 				},
 				{
@@ -4293,8 +4491,8 @@
 						"method": "POST",
 						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
 						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
-						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/deliver",
-						"description": "Replace 1234 with OTP from step 7."
+						"url": "{{base_url}}/v3/deliveries/{{v1_booking_id}}/delivered",
+						"description": "Replace 1234 with OTP from step 7. Alias: /deliver"
 					}
 				},
 				{

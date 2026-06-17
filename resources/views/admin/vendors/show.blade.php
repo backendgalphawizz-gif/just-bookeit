@@ -23,24 +23,22 @@
             </form>
         @endif
     @endif
-    @if ($vendor->status === 'suspended' && auth('admin')->user()->hasPermission('vendors', 'edit'))
+    @if ($vendor->status === 'inactive' && auth('admin')->user()->hasPermission('vendors', 'edit'))
         <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}" class="inline-flex">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
     @endif
     @if ($vendor->status === 'active' && auth('admin')->user()->hasPermission('vendors', 'edit'))
         <form
             method="POST"
-            action="{{ route('admin.vendors.suspend', $vendor) }}"
+            action="{{ route('admin.vendors.inactivate', $vendor) }}"
             class="inline-flex"
-            data-jb-confirm="This vendor will be suspended. Login and listings will be blocked. The reason you enter will be visible to them."
-            data-jb-confirm-title="Suspend vendor"
+            data-jb-confirm="This vendor will be marked inactive. Login and listings will be disabled. The reason you enter will be visible to them."
+            data-jb-confirm-title="Mark vendor inactive"
             data-jb-confirm-variant="error"
-            data-jb-confirm-label="Suspend"
-            data-jb-confirm-requires-reason="Reason for suspension"
-            data-jb-confirm-reason-name="suspension_reason"
-            data-jb-confirm-reason-max="1000"
+            data-jb-confirm-label="Mark Inactive"
+            data-jb-confirm-requires-reason="Reason for inactivation"
         >
             @csrf
-            <x-admin.button variant="danger" type="submit">Suspend</x-admin.button>
+            <x-admin.button variant="danger" type="submit">Mark Inactive</x-admin.button>
         </form>
     @endif
     <x-admin.account-history :histories="$vendor->statusHistories" title="Vendor account history" />
@@ -49,22 +47,11 @@
     @endif
 @endsection
 @section('content')
-    @if ($vendor->isSuspended())
+    @if ($vendor->isInactive())
         @include('admin.partials.account-status-banner', [
-            'tone' => 'orange',
-            'title' => 'Account suspended',
-            'reason' => $vendor->suspension_reason,
-            'emptyReason' => 'No suspension reason recorded.',
-            'meta' => array_values(array_filter([
-                $vendor->suspended_at ? [
-                    'label' => 'Suspended on',
-                    'value' => \App\Support\AdminDateTime::format($vendor->suspended_at, 'M d, Y · h:i A'),
-                ] : null,
-                $vendor->suspendedBy ? [
-                    'label' => 'Suspended by',
-                    'value' => $vendor->suspendedBy->name,
-                ] : null,
-            ])),
+            'title' => 'Account inactive',
+            'reason' => $vendor->rejection_reason,
+            'emptyReason' => 'No reason recorded.',
             'showAction' => auth('admin')->user()->hasPermission('vendors', 'edit'),
             'actionRoute' => route('admin.vendors.activate', $vendor),
             'actionLabel' => 'Activate account',

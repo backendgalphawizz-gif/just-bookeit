@@ -99,9 +99,9 @@ class Vendor extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
-    public function isSuspended(): bool
+    public function isInactive(): bool
     {
-        return $this->status === 'suspended';
+        return $this->status === 'inactive';
     }
 
     public function portfolioItems(): HasMany

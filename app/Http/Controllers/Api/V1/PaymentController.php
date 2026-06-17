@@ -68,6 +68,7 @@ class PaymentController extends ApiController
 
         $booking->update([
             'payment_status' => 'success',
+            'payment_method' => $data['payment_method'],
             'paid_at' => now(),
             'status' => $booking->status === 'new' ? 'pending_acceptance' : $booking->status,
         ]);
