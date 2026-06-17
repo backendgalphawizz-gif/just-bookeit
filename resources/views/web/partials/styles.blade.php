@@ -1099,19 +1099,109 @@ border-radius: 8px !important;
 .jbw-hero {
     position: relative;
     overflow: hidden;
-    min-height: 440px;
-    /* background: #111; */
+    height: clamp(420px, 58vh, 560px);
+    min-height: 420px;
+    background: #111;
 }
 
 .jbw-hero-slide {
-    position: absolute; inset: 0;
-    background-size: contain;
-    background: no-repeat;
-     background-size: cover;
-    /* background-position: center; */
-    /* transform: scale(1.04);
-    transition: transform 8s ease; */
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    z-index: 0;
+}
 
+.jbw-hero-slide.is-active {
+    opacity: 1;
+    z-index: 1;
+}
+
+.jbw-hero-slide-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.jbw-hero-slides {
+    position: absolute;
+    inset: 0;
+}
+
+.jbw-hero-content-stack {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+}
+
+.jbw-hero-content-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+}
+
+.jbw-hero-content-panel.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.jbw-hero-nav {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.jbw-hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: auto;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: none;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.88);
+    color: #111;
+    font-size: 1.125rem;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+
+.jbw-hero-arrow--prev { left: 1rem; }
+.jbw-hero-arrow--next { right: 1rem; }
+
+.jbw-hero-dots {
+    position: absolute;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.jbw-hero-dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border: none;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.45);
+    cursor: pointer;
+    padding: 0;
+}
+
+.jbw-hero-dot.is-active {
+    background: #fff;
+    transform: scale(1.15);
 }
 
 .alignmentheading {
@@ -1133,18 +1223,18 @@ border-radius: 8px !important;
 .jbw-hero-content-wrap {
     position: relative;
     z-index: 2;
-    min-height:440px;
+    height: 100%;
     display: flex;
     align-items: center;
 }
 
 .jbw-hero-content {
-
-    padding: 4rem;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
     color: #fff;
     background: rgba(0, 0, 0, 0.45);
     display: inline-block;
     border-radius: 5px;
+    max-width: min(100%, 36rem);
 }
 
 .jbw-hero-kicker {
@@ -1328,13 +1418,19 @@ border-radius: 8px !important;
     margin-bottom: 20px;
 }
 
+.category-slider-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
 .category-slider {
     display: flex;
-    gap: 20px;
+    gap: 1.25rem;
     overflow-x: auto;
     scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    padding-bottom: 0.25rem;
 }
 
 .category-slider::-webkit-scrollbar {
@@ -1342,8 +1438,29 @@ border-radius: 8px !important;
 }
 
 .category-card {
-    min-width: 280px;
-    flex-shrink: 0;
+    flex: 0 0 clamp(220px, 28vw, 300px);
+    min-width: clamp(220px, 28vw, 300px);
+    text-decoration: none;
+    color: inherit;
+}
+
+.jbw-tile--category {
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+    width: 100%;
+}
+
+.jbw-tile--category img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.category-card .jbw-step-title {
+    margin-top: 0.75rem;
 }
 
 .category-arrow {
@@ -2427,14 +2544,22 @@ background: #AE2A0B;
 
 /* Hero - smaller on mobile */
 @media (max-width: 640px) {
-    .jbw-hero { min-height: min(85vh, 560px); }
-    .jbw-hero-content-wrap { min-height: min(85vh, 560px); }
-    .jbw-hero-content { padding: 2rem 0; }
+    .jbw-hero {
+        height: clamp(360px, 52vh, 480px);
+        min-height: 360px;
+    }
+
+    .jbw-hero-content { padding: 1.25rem 1rem; }
     .jbw-hero-title { font-size: clamp(1.875rem, 9vw, 2.5rem); margin-bottom: 0.875rem; }
-    .jbw-hero-text { font-size: 0.9375rem; margin-bottom: 1.5rem; }
+    .jbw-hero-text { font-size: 0.9375rem; margin-bottom: 1.25rem; }
     .jbw-hero-actions { gap: 0.75rem; }
     .jbw-hero-actions .jbw-btn--lg { padding: 0.875rem 1.25rem; font-size: 0.9375rem; }
     .jbw-hero-scroll { display: none; }
+    .jbw-hero-arrow { width: 2.25rem; height: 2.25rem; font-size: 1rem; }
+    .category-card {
+        flex-basis: clamp(180px, 62vw, 240px);
+        min-width: clamp(180px, 62vw, 240px);
+    }
 }
 
 /* Section bands — less padding on mobile */
