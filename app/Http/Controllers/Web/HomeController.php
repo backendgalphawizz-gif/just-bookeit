@@ -14,8 +14,8 @@ class HomeController extends WebController
         $banners = Banner::query()
             ->forAudience(Banner::AUDIENCE_CUSTOMER)
             ->published()
-            ->latest('id')
-            ->limit(5)
+            ->orderByDesc('starts_at')
+            ->orderByDesc('id')
             ->get();
 
         $services = Category::query()
