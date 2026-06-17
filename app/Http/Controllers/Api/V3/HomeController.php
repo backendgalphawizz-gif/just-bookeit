@@ -40,11 +40,18 @@ class HomeController extends DriverApiController
         $recentQuery = $this->dashboard->recentDeliveriesQuery($driver, $request);
         $recentDeliveries = $recentQuery->paginate($request->integer('per_page', 10));
 
+        $cashCollectedQuery = $this->dashboard->cashCollectedOrdersQuery($driver, $request);
+        $cashCollectedOrders = $cashCollectedQuery->paginate($request->integer('per_page', 10));
+
         return $this->success([
             'driver' => DriverApiPresenter::driverSummary($driver),
             'stats' => DriverApiPresenter::dashboardStats($stats),
             'earnings' => $earnings,
             'cod' => $cod,
+            'cash_collected_orders' => DriverApiPresenter::paginator(
+                $cashCollectedOrders,
+                fn (Order $order) => DriverApiPresenter::deliveryDetail($order, $driver)
+            ),
             'recent_deliveries' => DriverApiPresenter::paginator(
                 $recentDeliveries,
                 fn (Order $order) => DriverApiPresenter::deliverySummary($order, $driver)

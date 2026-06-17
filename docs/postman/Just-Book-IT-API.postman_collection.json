@@ -3884,7 +3884,7 @@
 		},
 		{
 			"name": "v3 — Driver",
-			"description": "Driver mobile app APIs. Flow: Config → Send OTP → Verify OTP → Dashboard → Deliveries → Payments / Profile.\n\nBearer token saved as `v3_token`. IDs auto-saved: `v3_delivery_id`.\n\n**Dashboard** (`GET /v3/home`): stats, earnings (month/ytd), COD collected, recent deliveries. Filters: `month`, `year`, `from`, `to`, `date`, `search`.\n\n**Delivery tabs:** `new`, `accepted`, `pickup`, `dispatched`, `delivered`, `cancelled`, `rescheduled`.\n\n**Actions:** accept → pickup → dispatch → delivered (OTP). Reject requires `reason`. Reschedule requires `scheduled_date`.",
+			"description": "Driver mobile app APIs. Flow: Config → Send OTP → Verify OTP → Dashboard → Deliveries → Payments / Profile.\n\nBearer token saved as `v3_token`. IDs auto-saved: `v3_delivery_id`.\n\n**Dashboard** (`GET /v3/home`): stats, earnings (month/ytd), COD collected, `cash_collected_orders` (full COD order details), recent deliveries. Filters: `month`, `year`, `from`, `to`, `date`, `search`. List items include `customer_image_url` / `imageUrl`.\n\n**Delivery tabs:** `new`, `accepted`, `pickup`, `dispatched`, `delivered`, `cancelled`, `rescheduled`.\n\n**Actions:** accept → pickup → dispatch → delivered (OTP + optional `delivery_image`). Rescheduled deliveries can also be completed with OTP. Reject requires `reason`. Reschedule requires `scheduled_date`.\n\n**Payments** (`GET /v3/payments`): wallet transactions; returns sample demo rows when wallet is empty (`is_sample_data: true`).",
 			"item": [
 				{
 					"name": "Send OTP",
@@ -4170,7 +4170,7 @@
 								{"key": "page", "value": "1"}
 							]
 						},
-						"description": "Delivery dashboard: stats (assigned/pending/completed/cancelled), earnings (this_month, ytd), cod.total_collected, recent_deliveries list with payment_badge (CASH COLLECT)."
+						"description": "Delivery dashboard: stats, earnings (this_month, ytd), cod.total_collected + orders_count, cash_collected_orders (full delivery detail for COD collected on filtered date), recent_deliveries with customer_image_url/imageUrl and payment_badge."
 					}
 				},
 				{
@@ -4313,7 +4313,24 @@
 						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
 						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
 						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/delivered",
-						"description": "Complete delivery with customer OTP. Alias: POST /deliver. COD orders set cod_collected_at automatically."
+						"description": "Complete delivery with customer OTP. Rescheduled deliveries can also be completed directly with OTP. Optional proof photo: use form-data with `delivery_image` file. Alias: POST /deliver. COD orders set cod_collected_at automatically."
+					}
+				},
+				{
+					"name": "Complete Delivery (with photo)",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
+						"method": "POST",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{"key": "delivery_otp", "value": "1234", "type": "text"},
+								{"key": "delivery_image", "type": "file", "src": [], "description": "Optional delivery proof photo"}
+							]
+						},
+						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/delivered",
+						"description": "Same as Complete Delivery but multipart/form-data. `delivery_image` is optional."
 					}
 				},
 				{
@@ -4344,7 +4361,8 @@
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v3_token}}", "type": "string"}]},
 						"method": "GET",
 						"header": [{"key": "Accept", "value": "application/json"}],
-						"url": "{{base_url}}/v3/payments?page=1&search="
+						"url": "{{base_url}}/v3/payments?page=1&search=",
+						"description": "Wallet transaction history with search/date filters. When no transactions exist, returns sample demo rows and `is_sample_data: true`."
 					}
 				},
 				{

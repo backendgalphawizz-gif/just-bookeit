@@ -88,7 +88,21 @@ class DriverDashboardService
             'total_collected' => round($total, 2),
             'total_collected_label' => '₹'.number_format($total, 0),
             'currency' => 'INR',
+            'orders_count' => (clone $query)->count(),
         ];
+    }
+
+    public function cashCollectedOrdersQuery(Driver $driver, ?Request $request = null): Builder
+    {
+        $query = Order::query()
+            ->with(['customer', 'vendor', 'category'])
+            ->where('driver_id', $driver->id)
+            ->where('payment_method', 'cod')
+            ->whereNotNull('cod_collected_at');
+
+        $this->applyDateFilter($query, $request, 'cod_collected_at');
+
+        return $query->orderByDesc('cod_collected_at');
     }
 
     public function recentDeliveriesQuery(Driver $driver, ?Request $request = null): Builder

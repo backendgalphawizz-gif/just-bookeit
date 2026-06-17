@@ -105,6 +105,7 @@ class Order extends Model
         'driver_scheduled_for',
         'driver_rescheduled_at',
         'cod_collected_at',
+        'driver_delivery_proof_path',
     ];
 
     protected function casts(): array
@@ -245,6 +246,11 @@ class Order extends Model
     public function itemImageUrl(): ?string
     {
         return StoresUploadedFiles::url($this->item_image_path);
+    }
+
+    public function deliveryProofImageUrl(): ?string
+    {
+        return StoresUploadedFiles::url($this->driver_delivery_proof_path);
     }
 
     /** @return array<int, string> */

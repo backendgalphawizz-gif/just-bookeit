@@ -66,6 +66,8 @@ class DriverApiPresenter
             'product_name' => $order->itemDisplayName(),
             'product_image_url' => $order->itemImageUrl(),
             'customer_name' => $order->customer?->name,
+            'customer_image_url' => $order->customer?->profileImageUrl(),
+            'imageUrl' => $order->customer?->profileImageUrl(),
             'amount' => $order->grandTotal(),
             'amount_label' => '₹'.number_format($order->grandTotal(), 0),
             'delivery_fee' => (float) ($order->delivery_fee ?? 0),
@@ -99,6 +101,7 @@ class DriverApiPresenter
                 'mobile' => $order->customer?->mobile,
                 'email' => $order->customer?->email,
                 'profile_image_url' => $order->customer?->profileImageUrl(),
+                'imageUrl' => $order->customer?->profileImageUrl(),
             ],
             'vendor' => $order->vendor ? [
                 'id' => $order->vendor->id,
@@ -116,10 +119,14 @@ class DriverApiPresenter
             'driver_delivered_at' => $order->driver_delivered_at?->format('M d, Y, g:i A'),
             'driver_rescheduled_at' => $order->driver_rescheduled_at?->format('M d, Y, g:i A'),
             'driver_rejection_reason' => $order->driver_rejection_reason,
+            'delivery_proof_image_url' => $order->deliveryProofImageUrl(),
+            'cod_collected_at' => $order->cod_collected_at?->format('M d, Y, g:i A'),
+            'cod_collected_at_iso' => $order->cod_collected_at?->toIso8601String(),
             'requires_delivery_otp' => OrderDispatchSupport::isDispatchStatus($order->status)
                 && in_array($order->driver_delivery_status, [
                     Order::DRIVER_STATUS_PICKED_UP,
                     Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+                    Order::DRIVER_STATUS_RESCHEDULED,
                 ], true),
         ];
     }
@@ -249,6 +256,7 @@ class DriverApiPresenter
             && in_array($order->driver_delivery_status, [
                 Order::DRIVER_STATUS_PICKED_UP,
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+                Order::DRIVER_STATUS_RESCHEDULED,
             ], true);
     }
 
@@ -262,5 +270,63 @@ class DriverApiPresenter
                 Order::DRIVER_STATUS_PICKED_UP,
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
             ], true);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function sampleWalletTransactions(): array
+    {
+        return [
+            [
+                'id' => 0,
+                'transaction_code' => 'DWT-DEMO-001',
+                'transaction_id' => 'DWT-DEMO-001',
+                'order_id' => 'ORD-DEMO-1001',
+                'order_number' => 'ORD-DEMO-1001',
+                'customer_name' => 'Demo Customer',
+                'type' => 'CREDIT',
+                'direction' => 'credit',
+                'amount' => 150.0,
+                'amount_label' => '₹150',
+                'balance_after' => 2150.0,
+                'description' => 'Delivery earning for ORD-DEMO-1001',
+                'created_at' => now()->subDays(2)->format('M d, Y, g:i A'),
+                'created_at_iso' => now()->subDays(2)->toIso8601String(),
+                'is_sample' => true,
+            ],
+            [
+                'id' => 0,
+                'transaction_code' => 'DWT-DEMO-002',
+                'transaction_id' => 'DWT-DEMO-002',
+                'order_id' => 'ORD-DEMO-1002',
+                'order_number' => 'ORD-DEMO-1002',
+                'customer_name' => 'Demo Customer',
+                'type' => 'CREDIT',
+                'direction' => 'credit',
+                'amount' => 120.0,
+                'amount_label' => '₹120',
+                'balance_after' => 2000.0,
+                'description' => 'Delivery earning for ORD-DEMO-1002',
+                'created_at' => now()->subDay()->format('M d, Y, g:i A'),
+                'created_at_iso' => now()->subDay()->toIso8601String(),
+                'is_sample' => true,
+            ],
+            [
+                'id' => 0,
+                'transaction_code' => 'DWT-DEMO-003',
+                'transaction_id' => 'DWT-DEMO-003',
+                'order_id' => null,
+                'order_number' => null,
+                'customer_name' => null,
+                'type' => 'DEBIT',
+                'direction' => 'debit',
+                'amount' => 500.0,
+                'amount_label' => '₹500',
+                'balance_after' => 1880.0,
+                'description' => 'Wallet withdrawal',
+                'created_at' => now()->format('M d, Y, g:i A'),
+                'created_at_iso' => now()->toIso8601String(),
+                'is_sample' => true,
+            ],
+        ];
     }
 }

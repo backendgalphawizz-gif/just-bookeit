@@ -9,6 +9,7 @@ use App\Support\Api\DriverApiPresenter;
 use App\Support\Api\DriverDeliveryTab;
 use App\Support\AppliesListDateFilter;
 use App\Support\DriverValidationRules;
+use App\Support\StoresUploadedFiles;
 use App\Support\OrderDispatchSupport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -196,6 +197,7 @@ class DeliveryController extends DriverApiController
         if (! in_array($delivery->driver_delivery_status, [
             Order::DRIVER_STATUS_PICKED_UP,
             Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            Order::DRIVER_STATUS_RESCHEDULED,
         ], true)) {
             return $this->error('This delivery is not ready to be completed.', 422);
         }
@@ -208,12 +210,24 @@ class DeliveryController extends DriverApiController
 
         $finalStatus = $delivery->status === 're_intransit' ? 're_delivered' : 'delivered';
 
-        $delivery->update([
+        $updates = [
             'status' => $finalStatus,
             'driver_delivery_status' => null,
             'driver_delivered_at' => now(),
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
             'cod_collected_at' => $delivery->isCod() ? now() : null,
-        ]);
+        ];
+
+        if ($request->hasFile('delivery_image')) {
+            $updates['driver_delivery_proof_path'] = StoresUploadedFiles::replace(
+                $request->file('delivery_image'),
+                $delivery->driver_delivery_proof_path,
+                'driver/delivery-proofs'
+            );
+        }
+
+        $delivery->update($updates);
 
         try {
             $this->wallet->creditDeliveryEarning($delivery->fresh(), $driver);
