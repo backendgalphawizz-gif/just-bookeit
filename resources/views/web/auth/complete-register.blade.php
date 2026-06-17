@@ -9,7 +9,7 @@
             <input type="hidden" name="registration_token" value="{{ $registerSession['registration_token'] }}">
 
             <div class="jbw-field">
-                <label class="jbw-label" for="name">Full name</label>
+                <label class="jbw-label" for="name">Full name <sup class="text-danger">*</sup></label>
                 <input id="name" type="text" name="name" class="jbw-input jbw-input--auth" value="{{ old('name') }}" placeholder="Sarah Shah" required autofocus>
             </div>
 

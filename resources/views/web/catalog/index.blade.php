@@ -19,9 +19,9 @@
 
 <div class="jbw-container">
     <div class="jbw-page-head">
-        <span class="jbw-eyebrow">Catalog</span>
+        <!-- <span class="jbw-eyebrow">Catalog</span> -->
         <h1 class="jbw-page-title">Designer Collection</h1>
-        <p class="jbw-page-subtitle">Browse premium outfits for every occasion</p>
+        <!-- <p class="jbw-page-subtitle">Browse premium outfits for every occasion</p> -->
     </div>
 
     <div class="jbw-catalog-layout" x-data="{ filterOpen: false }">
@@ -136,12 +136,26 @@
                             >
                         </div>
                         <div class="jbw-product-card-body">
-                            <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
-                            <p class="jbw-product-title">{{ $item->title }}</p>
+                            <div class="brand-rating-row">
+    <p class="jbw-product-brand textlimit">
+        {{ $item->vendor?->brand_name ?? 'Designer' }}
+    </p>
+
+    <div class="rating-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#e95433">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        <span>
+            {{ number_format($item->reviews_avg_rating ?? 0, 1) }}
+        </span>
+    </div>
+</div>
+                            <!-- <p class="jbw-product-brand textlimit">{{ $item->vendor?->brand_name ?? 'Designer' }}</p> -->
+                            <p class="jbw-product-title textlimit">{{ $item->title }}</p>
                             @if ($item->subcategory)
-                                <p class="jbw-product-meta">{{ $item->subcategory->name }}</p>
+                                <p class="jbw-product-meta textlimit">{{ $item->subcategory->name }}</p>
                             @endif
-                            <p class="jbw-product-price">{{ $item->rentalPriceLabel() }}</p>
+                            <p class="jbw-product-price ">{{ $item->rentalPriceLabel() }}</p>
                         </div>
                     </a>
                 @empty

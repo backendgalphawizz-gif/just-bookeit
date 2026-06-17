@@ -52,15 +52,15 @@
 
     <div class="jbw-form-stack">
         <button type="button" class="jbw-btn jbw-btn--social jbw-btn--block" disabled>
-            <span class="jbw-social-icon jbw-social-icon--google">G</span> Continue with Google
+            <img src="../../../../assets/frontend/SVG.png"/> Continue with Google
         </button>
         <button type="button" class="jbw-btn jbw-btn--social jbw-btn--block" disabled>
-            <span class="jbw-social-icon jbw-social-icon--apple">&#63743;</span> Continue with Apple
+             <img src="../../../../assets/frontend/apple-logo 1.png"/> Continue with Apple
         </button>
     </div>
 
     <form method="POST" action="{{ route('web.guest') }}" class="jbw-form-stack jbw-form-stack--tight">@csrf
-        <button type="submit" class="jbw-btn jbw-btn--ghost jbw-btn--block">Continue as a Guest</button>
+        <button type="submit" class="jbw-btn jbw-btn--ghost jbw-btn--block fw-semibold">Continue as a Guest</button>
     </form>
 
     <p class="jbw-auth-footer">{{ $footerPrompt }} <a href="{{ $footerHref }}">{{ $footerLink }}</a></p>

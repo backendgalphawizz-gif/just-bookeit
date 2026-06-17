@@ -8,7 +8,7 @@
             @csrf
             <div class="jbw-otp-row">
                 @foreach (range(1, 4) as $i)
-                    <input type="text" name="otp_digits[]" class="jbw-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-otp-box autocomplete="one-time-code" aria-label="Digit {{ $i }}" @if($i===1) autofocus @endif>
+                    <input type="text" name="otp_digits[]" placeholder="-" class="jbw-otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-otp-box autocomplete="one-time-code" aria-label="Digit {{ $i }}" @if($i===1) autofocus @endif>
                 @endforeach
             </div>
             <input type="hidden" name="otp" id="otp-combined">
