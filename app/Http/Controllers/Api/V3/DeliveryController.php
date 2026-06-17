@@ -171,13 +171,24 @@ class DeliveryController extends DriverApiController
         $driver = $this->driver($request);
         $this->assertOwnsDelivery($delivery, $driver);
 
-        if ($delivery->driver_delivery_status !== Order::DRIVER_STATUS_PICKED_UP) {
+        if (! in_array($delivery->driver_delivery_status, [
+            Order::DRIVER_STATUS_PICKED_UP,
+            Order::DRIVER_STATUS_RESCHEDULED,
+        ], true)) {
             return $this->error('Mark pickup before dispatching for delivery.', 422);
         }
 
-        $delivery->update([
+        $updates = [
             'driver_delivery_status' => Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
-        ]);
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
+        ];
+
+        if ($delivery->driver_delivery_status === Order::DRIVER_STATUS_RESCHEDULED && ! $delivery->driver_pickup_at) {
+            $updates['driver_pickup_at'] = now();
+        }
+
+        $delivery->update($updates);
 
         return $this->success([
             'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category']), $driver),

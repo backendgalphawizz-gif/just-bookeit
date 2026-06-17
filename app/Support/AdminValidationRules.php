@@ -442,7 +442,7 @@ class AdminValidationRules
             'title' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'message' => ['required', 'string', 'max:2000', 'regex:'.self::REGEX_TEXT],
             'channel' => ['required', 'in:push,email,sms'],
-            'audience' => ['required', 'in:all_customers,all_vendors,customers,vendors'],
+            'audience' => ['required', 'in:all_customers,all_vendors,customers,vendors,all_drivers,drivers'],
         ];
     }
 

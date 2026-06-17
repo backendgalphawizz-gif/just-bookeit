@@ -11,6 +11,8 @@ class NotificationRead extends Model
 
     public const TYPE_VENDOR = 'vendor';
 
+    public const TYPE_DRIVER = 'driver';
+
     protected $fillable = [
         'notification_log_id',
         'recipient_type',
