@@ -596,10 +596,18 @@ class AdminValidationRules
 
     public static function settingsDamageDeductionRules(): array
     {
+        return array_merge(
+            ['tab' => ['nullable', 'string', Rule::in(['catalog', 'service'])]],
+            self::settingsDamageDeductionCatalogRules(),
+            self::settingsDamageDeductionServiceRules(),
+        );
+    }
+
+    public static function settingsDamageDeductionCatalogRules(): array
+    {
         $percent = ['required', 'numeric', 'min:0', 'max:100'];
 
         return [
-            'tab' => ['nullable', 'string', Rule::in(['catalog', 'service'])],
             'damage_deduction_rules' => ['nullable', 'array'],
             'damage_deduction_rules.*.category_id' => [
                 'required',
@@ -612,6 +620,14 @@ class AdminValidationRules
                 Rule::exists('categories', 'id')->where(fn ($query) => $query->where('type', Category::TYPE_SUB)),
             ],
             'damage_deduction_rules.*.max_percent' => $percent,
+        ];
+    }
+
+    public static function settingsDamageDeductionServiceRules(): array
+    {
+        $percent = ['required', 'numeric', 'min:0', 'max:100'];
+
+        return [
             'service_damage_deduction_rules' => ['nullable', 'array'],
             'service_damage_deduction_rules.*.category_id' => [
                 'nullable',

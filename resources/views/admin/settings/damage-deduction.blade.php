@@ -197,33 +197,6 @@
             @enderror
         @endif
 
-        @if ($isCatalogTab)
-            <div
-                hidden
-                data-damage-settings-sync
-                data-damage-field-prefix="service_damage_deduction_rules"
-            >
-                @foreach ($initialServiceRules as $index => $rule)
-                    <input type="hidden" name="service_damage_deduction_rules[{{ $index }}][category_id]" value="{{ $rule['category_id'] ?? '' }}">
-                    <input type="hidden" name="service_damage_deduction_rules[{{ $index }}][subcategory_id]" value="{{ $rule['subcategory_id'] ?? '' }}">
-                    <input type="hidden" name="service_damage_deduction_rules[{{ $index }}][service_category_id]" value="{{ $rule['service_category_id'] ?? '' }}">
-                    <input type="hidden" name="service_damage_deduction_rules[{{ $index }}][max_percent]" value="{{ $rule['max_percent'] ?? '' }}">
-                @endforeach
-            </div>
-        @else
-            <div
-                hidden
-                data-damage-settings-sync
-                data-damage-field-prefix="damage_deduction_rules"
-            >
-                @foreach ($initialCatalogRules as $index => $rule)
-                    <input type="hidden" name="damage_deduction_rules[{{ $index }}][category_id]" value="{{ $rule['category_id'] ?? '' }}">
-                    <input type="hidden" name="damage_deduction_rules[{{ $index }}][subcategory_id]" value="{{ $rule['subcategory_id'] ?? '' }}">
-                    <input type="hidden" name="damage_deduction_rules[{{ $index }}][max_percent]" value="{{ $rule['max_percent'] ?? '' }}">
-                @endforeach
-            </div>
-        @endif
-
         @if ($canEdit)
             <div class="jb-damage-rules-footer">
                 <p class="text-sm text-slate-500" data-damage-settings-count>
@@ -364,12 +337,7 @@
         const addBtn = form.querySelector('[data-damage-settings-add]');
         const countEl = form.querySelector('[data-damage-settings-count]');
         const emptyRow = list.querySelector('[data-damage-settings-empty]');
-        const syncBlock = form.querySelector('[data-damage-settings-sync]');
-        const syncPrefix = syncBlock?.dataset.damageFieldPrefix;
-        const syncFieldsPerRule = syncPrefix === 'damage_deduction_rules' ? 3 : 4;
-        const syncRuleCount = syncBlock
-            ? syncBlock.querySelectorAll(`input[name^="${syncPrefix}["]`).length / syncFieldsPerRule
-            : 0;
+        const inactiveRuleCount = {{ $isCatalogTab ? count($initialServiceRules) : count($initialCatalogRules) }};
 
         const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const OTHER = @json(\App\Support\DamageDeductionCategoryResolver::OTHER);
@@ -569,7 +537,7 @@
 
             if (countEl) {
                 const activeTotal = list.querySelectorAll('[data-damage-settings-row]').length;
-                countEl.textContent = `${activeTotal + syncRuleCount} rule(s) configured across both tabs`;
+                countEl.textContent = `${activeTotal + inactiveRuleCount} rule(s) configured across both tabs`;
             }
 
             updateScopeHints();
@@ -614,17 +582,26 @@
 
         form.addEventListener('submit', () => {
             list.querySelectorAll('[data-damage-settings-row]').forEach((row) => {
-                const categorySelect = row.querySelector('[data-damage-category]');
-                const subSelect = row.querySelector('[data-damage-subcategory]');
-
-                if (categorySelect?.value && subSelect) {
-                    subSelect.disabled = false;
-                }
-
-                row.querySelectorAll('[data-damage-category-custom], [data-damage-subcategory-custom], [data-damage-service-category-custom]')
-                    .forEach((input) => {
-                        input.disabled = false;
+                row.querySelectorAll('[data-damage-category], [data-damage-subcategory], [data-damage-service-category]')
+                    .forEach((select) => {
+                        select.disabled = false;
                     });
+
+                [
+                    [row.querySelector('[data-damage-category]'), row.querySelector('[data-damage-category-custom]')],
+                    [row.querySelector('[data-damage-subcategory]'), row.querySelector('[data-damage-subcategory-custom]')],
+                    [row.querySelector('[data-damage-service-category]'), row.querySelector('[data-damage-service-category-custom]')],
+                ].forEach(([select, input]) => {
+                    if (!select || !input) {
+                        return;
+                    }
+
+                    if (select.value === OTHER) {
+                        input.hidden = false;
+                        input.disabled = false;
+                        input.required = true;
+                    }
+                });
             });
         });
 

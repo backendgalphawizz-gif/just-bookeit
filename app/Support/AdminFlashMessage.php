@@ -112,6 +112,10 @@ class AdminFlashMessage
             return (string) $errors->first();
         }
 
+        if ($errors->count() <= 5) {
+            return $errors->all() === [] ? '' : implode(' ', $errors->all());
+        }
+
         return 'There are '.$errors->count().' fields that need your attention. Review the form and try again.';
     }
 }

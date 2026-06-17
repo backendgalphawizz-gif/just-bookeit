@@ -27,6 +27,12 @@
         data-damage-category-custom
         placeholder="New category name"
         maxlength="255"
-        hidden
+        @if($selectedCategoryId !== $otherValue) hidden @endif
     >
+    @error($fieldPrefix.'.'.$rowIndex.'.category_id')
+        <p class="text-xs font-medium text-rose-600">{{ $message }}</p>
+    @enderror
+    @error($fieldPrefix.'.'.$rowIndex.'.category_name')
+        <p class="text-xs font-medium text-rose-600">{{ $message }}</p>
+    @enderror
 </div>

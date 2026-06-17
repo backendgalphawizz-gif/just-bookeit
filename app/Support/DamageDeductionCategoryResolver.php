@@ -193,6 +193,8 @@ class DamageDeductionCategoryResolver
             return $existing;
         }
 
+        $slug = $this->uniqueSlug($slug);
+
         $maxSort = (int) ($scope(Category::query())->max('sort_order') ?? 0);
 
         return Category::query()->create([
@@ -203,5 +205,19 @@ class DamageDeductionCategoryResolver
             'is_active' => true,
             'sort_order' => $maxSort + 1,
         ]);
+    }
+
+    protected function uniqueSlug(string $baseSlug): string
+    {
+        $slug = $baseSlug !== '' ? $baseSlug : 'category';
+        $candidate = $slug;
+        $suffix = 1;
+
+        while (Category::query()->where('slug', $candidate)->exists()) {
+            $candidate = $slug.'-'.$suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 }

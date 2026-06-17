@@ -32,6 +32,12 @@
         data-damage-subcategory-custom
         placeholder="New sub-category name"
         maxlength="255"
-        hidden
+        @if($selectedSubcategoryId !== $otherValue) hidden @endif
     >
+    @error($fieldPrefix.'.'.$rowIndex.'.subcategory_id')
+        <p class="text-xs font-medium text-rose-600">{{ $message }}</p>
+    @enderror
+    @error($fieldPrefix.'.'.$rowIndex.'.subcategory_name')
+        <p class="text-xs font-medium text-rose-600">{{ $message }}</p>
+    @enderror
 </div>
