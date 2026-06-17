@@ -543,7 +543,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&vendor_id={{v1_designer_id}}&search=&page=1",
+									"raw": "{{base_url}}/v1/catalog?audience=women&service=fashion-designer&subcategory=women-sarees&vendor_id={{v1_designer_id}}&search=&page=1",
 									"host": ["{{base_url}}"],
 									"path": ["v1", "catalog"],
 									"query": [
@@ -563,6 +563,11 @@
 											"description": "Optional — filter catalog to a specific vendor"
 										},
 										{
+											"key": "subcategory",
+											"value": "women-sarees",
+											"description": "Optional — sub-category slug (e.g. women-sarees). Alias: subcategory_id"
+										},
+										{
 											"key": "search",
 											"value": ""
 										},
@@ -572,7 +577,7 @@
 										}
 									]
 								},
-								"description": "Catalog list with double filter: audience (Men/Women/Kids) + service type. Optional `vendor_id` to show one vendor's products only."
+								"description": "Catalog list with filters: audience (Men/Women/Kids), service type, and optional subcategory slug (e.g. women-sarees). Optional `vendor_id` to show one vendor's products only."
 							}
 						},
 						{
@@ -998,7 +1003,7 @@
 									}
 								],
 								"url": "{{base_url}}/v1/bookings/{{v1_booking_id}}",
-								"description": "Full booking detail. When status is `in_transit`, response includes `delivery_otp` (4-digit code for delivery confirmation)."
+								"description": "Full booking detail. When status is `in_progress`, response includes `delivery_otp` (4-digit code for delivery confirmation)."
 							}
 						},
 						{
@@ -2531,7 +2536,7 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/bookings?tab=in_transit"
+								"url": "{{base_url}}/v2/bookings?tab=in_progress"
 							}
 						},
 						{
@@ -2718,10 +2723,10 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"status\": \"in_transit\"\n}"
+									"raw": "{\n  \"status\": \"in_progress\"\n}"
 								},
 								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/status",
-								"description": "Valid transitions: accepted→in_progress→in_transit→delivered. Cannot skip steps."
+								"description": "Valid transitions: accepted→in_progress→delivered. Cannot skip steps."
 							}
 						}
 					]
@@ -4122,7 +4127,7 @@
 						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
 						"body": {"mode": "raw", "raw": "{\n  \"delivery_otp\": \"1234\"\n}"},
 						"url": "{{base_url}}/v3/deliveries/{{v3_delivery_id}}/deliver",
-						"description": "Use the customer's delivery OTP from GET /v1/bookings/{id} when status is in_transit."
+						"description": "Use the customer's delivery OTP from GET /v1/bookings/{id} when status is in_progress."
 					}
 				},
 				{
@@ -4175,7 +4180,7 @@
 		},
 		{
 			"name": "E2E — Full Order Flow",
-			"description": "Run these in order to test Customer → Vendor → Driver flow.\n\n**Setup:** `php artisan db:seed --class=OrderFlowDemoSeeder` then `php artisan test:order-flow`\n\n**Status chain:** new → pay → pending_acceptance → vendor accept → in_progress → in_transit → driver deliver → delivered\n\n**Driver demo mobile:** 9898989898 (active, pre-seeded)",
+			"description": "Run these in order to test Customer → Vendor → Driver flow.\n\n**Setup:** `php artisan db:seed --class=OrderFlowDemoSeeder` then `php artisan test:order-flow`\n\n**Status chain:** new → pay → pending_acceptance → vendor accept → in_progress → driver deliver → delivered\n\n**Driver demo mobile:** 9898989898 (active, pre-seeded)",
 			"item": [
 				{
 					"name": "0. Run automated test (CLI)",
@@ -4234,12 +4239,12 @@
 					}
 				},
 				{
-					"name": "6. Vendor — Dispatch (in_transit)",
+					"name": "6. Vendor — Mark in progress",
 					"request": {
 						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v2_token}}", "type": "string"}]},
 						"method": "POST",
 						"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
-						"body": {"mode": "raw", "raw": "{\n  \"status\": \"in_transit\"\n}"},
+						"body": {"mode": "raw", "raw": "{\n  \"status\": \"in_progress\"\n}"},
 						"url": "{{base_url}}/v2/bookings/{{v1_booking_id}}/status",
 						"description": "Generates delivery_otp and pickup_address automatically."
 					}

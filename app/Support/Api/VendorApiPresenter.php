@@ -121,8 +121,12 @@ class VendorApiPresenter
         $order->loadMissing(['customer', 'category']);
 
         $statusLabel = match ($order->status) {
-            'in_transit' => 'OUT FOR DELIVERY',
-            'accepted', 'in_progress' => 'PENDING PICKUP',
+            'in_progress' => match ($order->driver_delivery_status) {
+                Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'OUT FOR DELIVERY',
+                Order::DRIVER_STATUS_PICKED_UP => 'PICKED UP',
+                default => 'IN PROGRESS',
+            },
+            'accepted' => 'PENDING PICKUP',
             'delivered' => 'DELIVERED',
             default => strtoupper($order->statusLabel()),
         };
@@ -300,7 +304,7 @@ class VendorApiPresenter
 
     protected static function bookingDeliveryOtp(Order $order): ?string
     {
-        if (! in_array($order->status, ['accepted', 'in_progress', 'in_transit', 'delivered'], true)) {
+        if (! in_array($order->status, ['accepted', 'in_progress', 'delivered'], true)) {
             return null;
         }
 

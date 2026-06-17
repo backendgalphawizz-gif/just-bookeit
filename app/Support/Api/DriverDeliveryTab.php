@@ -40,15 +40,15 @@ class DriverDeliveryTab
     {
         return match ($tab) {
             self::TAB_NEW => $query
-                ->where('status', 'in_transit')
+                ->where('status', 'in_progress')
                 ->whereNull('driver_id'),
             self::TAB_ACCEPTED => $query
                 ->where('driver_id', $driver->id)
-                ->where('status', 'in_transit')
+                ->where('status', 'in_progress')
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_ACCEPTED),
             self::TAB_OUT_FOR_DELIVERY => $query
                 ->where('driver_id', $driver->id)
-                ->where('status', 'in_transit')
+                ->where('status', 'in_progress')
                 ->whereIn('driver_delivery_status', [
                     Order::DRIVER_STATUS_PICKED_UP,
                     Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
@@ -61,7 +61,7 @@ class DriverDeliveryTab
                 ->where('status', 'cancelled'),
             default => $query->where(function (Builder $builder) use ($driver) {
                 $builder->where(function (Builder $available) {
-                    $available->where('status', 'in_transit')->whereNull('driver_id');
+                    $available->where('status', 'in_progress')->whereNull('driver_id');
                 })->orWhere('driver_id', $driver->id);
             }),
         };

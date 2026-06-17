@@ -15,10 +15,10 @@ class DriverDashboardService
             'total_earnings' => round((float) $driver->total_earnings, 2),
             'wallet_balance' => round((float) $driver->wallet_balance, 2),
             'assigned_deliveries' => (clone $base)
-                ->where('status', 'in_transit')
+                ->where('status', 'in_progress')
                 ->count(),
             'pending_deliveries' => Order::query()
-                ->where('status', 'in_transit')
+                ->where('status', 'in_progress')
                 ->whereNull('driver_id')
                 ->count(),
             'completed_deliveries' => (clone $base)
@@ -35,7 +35,7 @@ class DriverDashboardService
     {
         return Order::query()
             ->with(['customer', 'vendor', 'category'])
-            ->where('status', 'in_transit')
+            ->where('status', 'in_progress')
             ->whereNull('driver_id')
             ->latest('updated_at')
             ->limit($limit)

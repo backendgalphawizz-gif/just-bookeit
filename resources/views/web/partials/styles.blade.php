@@ -1579,7 +1579,7 @@ border-radius: 8px !important;
     letter-spacing: 0.04em;
 }
 .jbw-status--new       { background: #dbeafe; color: #1d4ed8; }
-.jbw-status--in_transit{ background: #ffedd5; color: #c2410c; }
+.jbw-status--in_progress{ background: #ffedd5; color: #c2410c; }
 .jbw-status--delivered { background: #dcfce7; color: #15803d; }
 .jbw-status--cancelled { background: #fee2e2; color: #b91c1c; }
 .jbw-status--default   { background: #f1f5f9; color: #475569; }
@@ -2003,6 +2003,46 @@ border-radius: 8px !important;
     border: 1px solid var(--c-border);
 }
 .jbw-catalog-empty svg { margin: 0 auto 1rem; opacity: 0.4; }
+
+.jbw-subcategory-strip {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    scrollbar-width: thin;
+}
+.jbw-subcategory-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 5.5rem;
+    padding: 0.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--trans), box-shadow var(--trans);
+}
+.jbw-subcategory-chip:hover,
+.jbw-subcategory-chip.is-active {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 1px rgb(242 81 35 / 0.15);
+}
+.jbw-subcategory-chip-img {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 999px;
+    object-fit: cover;
+}
+.jbw-subcategory-chip-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+}
 .jbw-catalog-empty p { margin: 0 0 1.25rem; font-size: 0.9375rem; }
 
 /* ─── Booking Overview ───────────────────────────────────────────── */

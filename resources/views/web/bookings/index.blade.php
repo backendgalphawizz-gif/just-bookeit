@@ -42,7 +42,7 @@
                     @php
                         $statusClass = match ($order->status) {
                             'new', 'pending_acceptance' => 'new',
-                            'in_transit' => 'in_transit',
+                            'in_progress' => 'in_progress',
                             'delivered' => 'delivered',
                             'cancelled', 'refunded' => 'cancelled',
                             default => 'default',

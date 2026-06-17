@@ -81,6 +81,7 @@ class CatalogFilter
             'service_id' => ['nullable', 'integer', 'exists:categories,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'subcategory_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_SUB)],
+            'subcategory' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -151,6 +152,19 @@ class CatalogFilter
             $subcategory = Category::query()->find($request->integer('subcategory_id'));
 
             return ($subcategory && $subcategory->isSub()) ? $subcategory->id : null;
+        }
+
+        if ($request->filled('subcategory')) {
+            $slug = strtolower(trim($request->string('subcategory')->toString()));
+
+            if ($slug !== '') {
+                $subcategory = Category::query()
+                    ->where('type', Category::TYPE_SUB)
+                    ->where('slug', $slug)
+                    ->first();
+
+                return ($subcategory && $subcategory->isSub()) ? $subcategory->id : null;
+            }
         }
 
         if ($request->filled('category_id')) {

@@ -35,7 +35,7 @@ class VendorDashboardService
 
         return Order::query()
             ->where('vendor_id', $vendor->id)
-            ->whereIn('status', ['accepted', 'in_progress', 'in_transit', 'delivered'])
+            ->whereIn('status', ['accepted', 'in_progress', 'delivered'])
             ->where(function ($q) use ($date) {
                 $q->whereDate('rental_start_date', $date)
                     ->orWhereDate('rental_end_date', $date)

@@ -60,7 +60,7 @@ class DeliveryController extends DriverApiController
         $driver = $this->driver($request);
 
         abort_unless(
-            ($delivery->status === 'in_transit' && $delivery->driver_id === null)
+            ($delivery->status === 'in_progress' && $delivery->driver_id === null)
             || $delivery->driver_id === $driver->id,
             403
         );
