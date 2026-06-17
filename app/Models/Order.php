@@ -49,6 +49,8 @@ class Order extends Model
 
     public const DRIVER_STATUS_OUT_FOR_DELIVERY = 'out_for_delivery';
 
+    public const DRIVER_STATUS_RESCHEDULED = 'rescheduled';
+
     protected $fillable = [
         'order_number',
         'customer_id',
@@ -85,6 +87,7 @@ class Order extends Model
         'measure_chest_cm',
         'measure_waist_cm',
         'payment_status',
+        'payment_method',
         'paid_at',
         'wallet_release_at',
         'wallet_settled_at',
@@ -98,6 +101,10 @@ class Order extends Model
         'driver_pickup_at',
         'driver_delivered_at',
         'driver_earning',
+        'driver_rejection_reason',
+        'driver_scheduled_for',
+        'driver_rescheduled_at',
+        'cod_collected_at',
     ];
 
     protected function casts(): array
@@ -123,6 +130,9 @@ class Order extends Model
             'driver_assigned_at' => 'datetime',
             'driver_pickup_at' => 'datetime',
             'driver_delivered_at' => 'datetime',
+            'driver_rescheduled_at' => 'datetime',
+            'driver_scheduled_for' => 'date',
+            'cod_collected_at' => 'datetime',
             'driver_earning' => 'decimal:2',
             'vendor_net_amount' => 'decimal:2',
             'vendor_wallet_held_amount' => 'decimal:2',
@@ -196,6 +206,11 @@ class Order extends Model
     public function review(): HasOne
     {
         return $this->hasOne(OrderReview::class);
+    }
+
+    public function isCod(): bool
+    {
+        return $this->payment_method === 'cod';
     }
 
     public function isRental(): bool

@@ -16,11 +16,13 @@ class ConfigController extends DriverApiController
     {
         return $this->success([
             'delivery_tabs' => [
-                ['key' => 'new', 'label' => 'New Deliveries'],
+                ['key' => 'new', 'label' => 'New'],
                 ['key' => 'accepted', 'label' => 'Accepted'],
-                ['key' => 'out_for_delivery', 'label' => 'Out for Delivery'],
-                ['key' => 'completed', 'label' => 'Completed'],
+                ['key' => 'pickup', 'label' => 'Pickup'],
+                ['key' => 'dispatched', 'label' => 'Dispatched'],
+                ['key' => 'delivered', 'label' => 'Delivered'],
                 ['key' => 'cancelled', 'label' => 'Cancelled'],
+                ['key' => 'rescheduled', 'label' => 'Rescheduled'],
             ],
             'support' => [
                 'email' => \App\Models\PlatformSetting::get('support_email'),

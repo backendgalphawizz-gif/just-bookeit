@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers\Api\V3;
 
+use App\Models\DriverDeliverySkip;
 use App\Models\Order;
 use App\Services\Driver\DriverWalletService;
 use App\Support\Api\DriverApiPresenter;
 use App\Support\Api\DriverDeliveryTab;
+use App\Support\AppliesListDateFilter;
+use App\Support\DriverValidationRules;
+use App\Support\OrderDispatchSupport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
 class DeliveryController extends DriverApiController
 {
+    use AppliesListDateFilter;
+
     public function __construct(
         protected DriverWalletService $wallet
     ) {}
@@ -20,16 +26,15 @@ class DeliveryController extends DriverApiController
     {
         $driver = $this->driver($request);
 
-        $request->validate([
+        $request->validate(array_merge([
             'tab' => DriverDeliveryTab::validationRule(),
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
             'search' => ['nullable', 'string', 'max:100'],
-        ]);
+        ], $this->listDateRules()));
 
         $query = DriverDeliveryTab::applyToQuery(
-            Order::query()
-                ->with(['customer', 'vendor', 'category']),
+            Order::query()->with(['customer', 'vendor', 'category']),
             $driver,
             $request->input('tab')
         );
@@ -42,6 +47,8 @@ class DeliveryController extends DriverApiController
                     ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', $term));
             });
         }
+
+        $this->applyDateRange($query, $request, 'updated_at');
 
         $deliveries = $query
             ->orderByDesc('updated_at')
@@ -60,7 +67,7 @@ class DeliveryController extends DriverApiController
         $driver = $this->driver($request);
 
         abort_unless(
-            ($delivery->status === 'in_progress' || $delivery->status === 're_intransit') && $delivery->driver_id === null
+            (OrderDispatchSupport::isDispatchStatus($delivery->status) && $delivery->driver_id === null)
             || $delivery->driver_id === $driver->id,
             403
         );
@@ -79,6 +86,9 @@ class DeliveryController extends DriverApiController
             'driver_id' => $driver->id,
             'driver_delivery_status' => Order::DRIVER_STATUS_ACCEPTED,
             'driver_assigned_at' => now(),
+            'driver_rejection_reason' => null,
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
         ]);
 
         $delivery->ensureDeliveryOtp();
@@ -91,14 +101,25 @@ class DeliveryController extends DriverApiController
     public function reject(Request $request, Order $delivery): JsonResponse
     {
         $driver = $this->driver($request);
+        $data = $request->validate(DriverValidationRules::deliveryReject());
 
         if ($delivery->driver_id === null) {
-            return $this->success(null, 'Delivery skipped.');
+            abort_unless(OrderDispatchSupport::isDispatchStatus($delivery->status), 422, 'This delivery is no longer available.');
+
+            DriverDeliverySkip::query()->updateOrCreate(
+                ['driver_id' => $driver->id, 'order_id' => $delivery->id],
+                ['reason' => trim($data['reason'])]
+            );
+
+            return $this->success(null, 'Delivery rejected.');
         }
 
         $this->assertOwnsDelivery($delivery, $driver);
 
-        if ($delivery->driver_delivery_status !== Order::DRIVER_STATUS_ACCEPTED) {
+        if (! in_array($delivery->driver_delivery_status, [
+            Order::DRIVER_STATUS_ACCEPTED,
+            Order::DRIVER_STATUS_RESCHEDULED,
+        ], true)) {
             return $this->error('This delivery cannot be rejected.', 422);
         }
 
@@ -106,6 +127,10 @@ class DeliveryController extends DriverApiController
             'driver_id' => null,
             'driver_delivery_status' => null,
             'driver_assigned_at' => null,
+            'driver_pickup_at' => null,
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
+            'driver_rejection_reason' => trim($data['reason']),
         ]);
 
         return $this->success(null, 'Delivery rejected.');
@@ -116,18 +141,28 @@ class DeliveryController extends DriverApiController
         $driver = $this->driver($request);
         $this->assertOwnsDelivery($delivery, $driver);
 
-        if ($delivery->driver_delivery_status !== Order::DRIVER_STATUS_ACCEPTED) {
+        if (! in_array($delivery->driver_delivery_status, [
+            Order::DRIVER_STATUS_ACCEPTED,
+            Order::DRIVER_STATUS_RESCHEDULED,
+        ], true)) {
             return $this->error('Pickup is only available after accepting the delivery.', 422);
         }
 
         $delivery->update([
             'driver_delivery_status' => Order::DRIVER_STATUS_PICKED_UP,
             'driver_pickup_at' => now(),
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
         ]);
 
         return $this->success([
             'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category']), $driver),
         ], 'Order picked up.');
+    }
+
+    public function dispatch(Request $request, Order $delivery): JsonResponse
+    {
+        return $this->outForDelivery($request, $delivery);
     }
 
     public function outForDelivery(Request $request, Order $delivery): JsonResponse
@@ -136,7 +171,7 @@ class DeliveryController extends DriverApiController
         $this->assertOwnsDelivery($delivery, $driver);
 
         if ($delivery->driver_delivery_status !== Order::DRIVER_STATUS_PICKED_UP) {
-            return $this->error('Mark pickup before going out for delivery.', 422);
+            return $this->error('Mark pickup before dispatching for delivery.', 422);
         }
 
         $delivery->update([
@@ -146,6 +181,11 @@ class DeliveryController extends DriverApiController
         return $this->success([
             'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category']), $driver),
         ], 'Out for delivery.');
+    }
+
+    public function delivered(Request $request, Order $delivery): JsonResponse
+    {
+        return $this->deliver($request, $delivery);
     }
 
     public function deliver(Request $request, Order $delivery): JsonResponse
@@ -160,18 +200,19 @@ class DeliveryController extends DriverApiController
             return $this->error('This delivery is not ready to be completed.', 422);
         }
 
-        $data = $request->validate([
-            'delivery_otp' => ['required', 'digits:4'],
-        ]);
+        $data = $request->validate(DriverValidationRules::deliveryComplete());
 
         if ($delivery->delivery_otp !== $data['delivery_otp']) {
             return $this->error('Invalid delivery OTP.', 422);
         }
 
+        $finalStatus = $delivery->status === 're_intransit' ? 're_delivered' : 'delivered';
+
         $delivery->update([
-            'status' => 'delivered',
+            'status' => $finalStatus,
             'driver_delivery_status' => null,
             'driver_delivered_at' => now(),
+            'cod_collected_at' => $delivery->isCod() ? now() : null,
         ]);
 
         try {
@@ -183,5 +224,43 @@ class DeliveryController extends DriverApiController
         return $this->success([
             'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category']), $driver),
         ], 'Delivery completed.');
+    }
+
+    public function rescheduled(Request $request, Order $delivery): JsonResponse
+    {
+        $driver = $this->driver($request);
+        $this->assertOwnsDelivery($delivery, $driver);
+
+        if (! in_array($delivery->driver_delivery_status, [
+            Order::DRIVER_STATUS_ACCEPTED,
+            Order::DRIVER_STATUS_PICKED_UP,
+            Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+        ], true)) {
+            return $this->error('This delivery cannot be rescheduled.', 422);
+        }
+
+        $data = $request->validate(DriverValidationRules::deliveryReschedule());
+
+        $delivery->update([
+            'driver_delivery_status' => Order::DRIVER_STATUS_RESCHEDULED,
+            'driver_scheduled_for' => $data['scheduled_date'],
+            'driver_rescheduled_at' => now(),
+            'driver_rejection_reason' => filled($data['reason'] ?? null) ? trim($data['reason']) : null,
+            'driver_pickup_at' => null,
+        ]);
+
+        return $this->success([
+            'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category']), $driver),
+        ], 'Delivery rescheduled.');
+    }
+
+    /** @return array<string, array<int, string>> */
+    protected function listDateRules(): array
+    {
+        return [
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'date' => ['nullable', 'date'],
+        ];
     }
 }
