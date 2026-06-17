@@ -11,6 +11,7 @@ use App\Models\Vendor;
 use App\Models\VendorPortfolioImage;
 use App\Models\VendorWalletTransaction;
 use App\Services\Booking\BookingPricingService;
+use App\Support\Api\VendorBookingStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class VendorApiPresenter
@@ -121,10 +122,10 @@ class VendorApiPresenter
         $order->loadMissing(['customer', 'category']);
 
         $statusLabel = match ($order->status) {
-            'in_progress' => match ($order->driver_delivery_status) {
+            'in_progress', 're_intransit' => match ($order->driver_delivery_status) {
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'OUT FOR DELIVERY',
                 Order::DRIVER_STATUS_PICKED_UP => 'PICKED UP',
-                default => 'IN PROGRESS',
+                default => $order->status === 're_intransit' ? 'RE-IN TRANSIT' : 'IN PROGRESS',
             },
             'accepted' => 'PENDING PICKUP',
             'delivered' => 'DELIVERED',
@@ -173,7 +174,8 @@ class VendorApiPresenter
             'category' => $order->category?->name,
             'order_type' => $order->order_type === 'rental' ? 'Rental' : 'Sale',
             'order_type_raw' => $order->order_type,
-            'status' => $order->status,
+            'status' => VendorBookingStatus::toApi($order->status),
+            'status_raw' => $order->status,
             'status_label' => $order->statusLabel(),
             'payment_status' => $order->payment_status,
             ...self::bookingScheduleFields($order),
@@ -233,10 +235,10 @@ class VendorApiPresenter
                 'delivered_at' => $order->driver_delivered_at?->toIso8601String(),
                 'delivered_at_label' => $order->driver_delivered_at?->format('d M Y, g:i A'),
             ] : null,
-            'customer_review' => $order->status === 'delivered'
+            'customer_review' => in_array($order->status, ['delivered', 're_delivered'], true)
                 ? self::bookingCustomerReview($order)
                 : null,
-            'review' => $order->status === 'delivered'
+            'review' => in_array($order->status, ['delivered', 're_delivered'], true)
                 ? self::bookingCustomerReview($order)
                 : null,
         ];
@@ -304,7 +306,7 @@ class VendorApiPresenter
 
     protected static function bookingDeliveryOtp(Order $order): ?string
     {
-        if (! in_array($order->status, ['accepted', 'in_progress', 'delivered'], true)) {
+        if (! in_array($order->status, ['accepted', 'in_progress', 're_intransit', 'delivered', 're_delivered'], true)) {
             return null;
         }
 
@@ -463,7 +465,7 @@ class VendorApiPresenter
             'subcategory' => $item->subcategory ? CustomerApiPresenter::category($item->subcategory) : null,
             'category_type' => $item->category?->slug,
             'status' => $item->status,
-            'is_available' => self::productIsAvailable($item),
+            'is_available' => $item->isCatalogAvailable(),
             'rejection_reason' => $item->rejection_reason,
             'updated_at' => $item->updated_at?->format('M d, Y'),
         ];
@@ -471,10 +473,7 @@ class VendorApiPresenter
 
     public static function productIsAvailable(PortfolioItem $item): bool
     {
-        $item->loadMissing('vendor');
-
-        return $item->status === 'approved'
-            && (bool) ($item->vendor?->is_listing_active ?? false);
+        return $item->isCatalogAvailable();
     }
 
     public static function productDetail(PortfolioItem $item): array

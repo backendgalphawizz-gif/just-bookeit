@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Models\Order;
-use App\Support\OrderDispatchSupport;
 use App\Support\Api\VendorApiPresenter;
+use App\Support\Api\VendorBookingStatus;
 use App\Support\AppliesListDateFilter;
+use App\Support\OrderDispatchSupport;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BookingController extends VendorApiController
 {
@@ -31,16 +33,14 @@ class BookingController extends VendorApiController
                 });
             })
             ->when($request->filled('tab'), function ($q) use ($request) {
-                match ($request->string('tab')->toString()) {
-                    'accepted' => $q->where('status', 'accepted'),
-                    'in_progress' => $q->where('status', 'in_progress'),
-                    'new' => $q->whereIn('status', ['new', 'pending_acceptance']),
-                    'completed' => $q->where('status', 'delivered'),
-                    default => null,
-                };
+                $statuses = VendorBookingStatus::statusesForTab($request->string('tab')->toString());
+
+                if ($statuses !== null) {
+                    $q->whereIn('status', $statuses);
+                }
             })
             ->when($request->filled('status'), function ($q) use ($request) {
-                $status = $request->string('status')->toString();
+                $status = VendorBookingStatus::normalizeInput($request->string('status')->toString());
                 if ($status === 'new') {
                     $q->whereIn('status', ['new', 'pending_acceptance']);
                 } else {
@@ -112,21 +112,25 @@ class BookingController extends VendorApiController
         $this->assertOwnsOrder($booking, $vendor);
 
         $data = $request->validate([
-            'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
+            'status' => ['required', 'string', Rule::in(VendorBookingStatus::acceptedInputStatuses())],
         ]);
 
-        $nextStatus = $data['status'];
+        $nextStatus = VendorBookingStatus::normalizeInput($data['status']);
+
+        if (! in_array($nextStatus, Order::STATUSES, true)) {
+            return $this->error('Invalid booking status.', 422);
+        }
 
         if (! OrderDispatchSupport::canTransitionTo($booking->status, $nextStatus)) {
             return $this->error(
-                'Invalid status transition from '.$booking->status.' to '.$nextStatus.'.',
+                'Invalid status transition from '.VendorBookingStatus::toApi($booking->status).' to '.VendorBookingStatus::toApi($nextStatus).'.',
                 422
             );
         }
 
         $booking->status = $nextStatus;
 
-        if ($nextStatus === 'in_progress') {
+        if (OrderDispatchSupport::isDispatchStatus($nextStatus)) {
             OrderDispatchSupport::prepareForTransit($booking);
         }
 
@@ -135,5 +139,26 @@ class BookingController extends VendorApiController
         return $this->success([
             'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
         ], 'Booking status updated.');
+    }
+
+    public function updateDamage(Request $request, Order $booking): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+        $this->assertOwnsOrder($booking, $vendor);
+
+        if ($booking->status !== 'returned') {
+            return $this->error('Damage deduction can only be recorded for returned bookings.', 422);
+        }
+
+        $data = $this->validateVendor($request, VendorValidationRules::bookingDamage());
+
+        $booking->update([
+            'damage_note' => $data['damage_note'] ?? null,
+            'damage_deduct_percent' => $data['damage_deduct_percent'] ?? null,
+        ]);
+
+        return $this->success([
+            'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
+        ], 'Damage deduction updated.');
     }
 }

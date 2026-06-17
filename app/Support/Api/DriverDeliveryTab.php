@@ -36,32 +36,40 @@ class DriverDeliveryTab
         return ['nullable', 'string', Rule::in(self::tabs())];
     }
 
+    /** @return list<string> */
+    public static function activeDeliveryStatuses(): array
+    {
+        return ['in_progress', 're_intransit'];
+    }
+
     public static function applyToQuery(Builder $query, Driver $driver, ?string $tab): Builder
     {
+        $dispatchStatuses = self::activeDeliveryStatuses();
+
         return match ($tab) {
             self::TAB_NEW => $query
-                ->where('status', 'in_progress')
+                ->whereIn('status', $dispatchStatuses)
                 ->whereNull('driver_id'),
             self::TAB_ACCEPTED => $query
                 ->where('driver_id', $driver->id)
-                ->where('status', 'in_progress')
+                ->whereIn('status', $dispatchStatuses)
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_ACCEPTED),
             self::TAB_OUT_FOR_DELIVERY => $query
                 ->where('driver_id', $driver->id)
-                ->where('status', 'in_progress')
+                ->whereIn('status', $dispatchStatuses)
                 ->whereIn('driver_delivery_status', [
                     Order::DRIVER_STATUS_PICKED_UP,
                     Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
                 ]),
             self::TAB_COMPLETED => $query
                 ->where('driver_id', $driver->id)
-                ->where('status', 'delivered'),
+                ->whereIn('status', ['delivered', 're_delivered']),
             self::TAB_CANCELLED => $query
                 ->where('driver_id', $driver->id)
                 ->where('status', 'cancelled'),
-            default => $query->where(function (Builder $builder) use ($driver) {
-                $builder->where(function (Builder $available) {
-                    $available->where('status', 'in_progress')->whereNull('driver_id');
+            default => $query->where(function (Builder $builder) use ($driver, $dispatchStatuses) {
+                $builder->where(function (Builder $available) use ($dispatchStatuses) {
+                    $available->whereIn('status', $dispatchStatuses)->whereNull('driver_id');
                 })->orWhere('driver_id', $driver->id);
             }),
         };
