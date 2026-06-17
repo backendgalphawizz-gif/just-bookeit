@@ -49,11 +49,19 @@ class PaymentController extends DriverApiController
 
         $driver->refresh();
 
+        $payload = DriverApiPresenter::paginator(
+            $transactions,
+            fn (DriverWalletTransaction $transaction) => DriverApiPresenter::walletTransaction($transaction)
+        );
+
+        if ($transactions->total() === 0) {
+            $payload['items'] = DriverApiPresenter::sampleWalletTransactions();
+            $payload['total'] = count($payload['items']);
+            $payload['is_sample_data'] = true;
+        }
+
         return $this->success([
-            ...DriverApiPresenter::paginator(
-                $transactions,
-                fn (DriverWalletTransaction $transaction) => DriverApiPresenter::walletTransaction($transaction)
-            ),
+            ...$payload,
             'wallet' => [
                 'total_earnings' => (float) $driver->total_earnings,
                 'available_balance' => (float) $driver->wallet_balance,
