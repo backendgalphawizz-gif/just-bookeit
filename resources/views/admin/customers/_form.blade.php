@@ -49,7 +49,3 @@
     'max' => \App\Support\AdminValidationRules::listDateMax(),
     'hint' => 'Must be between Jan 1, 1970 and today.',
 ])
-<div class="jb-checkbox-row sm:col-span-2">
-    <input type="checkbox" name="is_verified" value="1" id="is_verified" @checked(old('is_verified', $customer?->is_verified ?? false))>
-    <label for="is_verified" class="text-sm font-medium text-slate-700">Verified customer</label>
-</div>

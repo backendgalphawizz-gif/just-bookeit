@@ -30,13 +30,6 @@ class CustomerRequest extends AdminFormRequest
         ]);
     }
 
-    protected function passedValidation(): void
-    {
-        $this->merge([
-            'is_verified' => $this->boolean('is_verified'),
-        ]);
-    }
-
     public function customerData(): array
     {
         $data = $this->safe()->except([
