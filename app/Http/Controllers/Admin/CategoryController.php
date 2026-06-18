@@ -60,7 +60,7 @@ class CategoryController extends AdminController
         } catch (UniqueConstraintViolationException) {
             return back()
                 ->withInput()
-                ->with('error', 'A category with a similar name already exists. Try a different name.');
+                ->withErrors(['name' => $this->duplicateCategoryMessage($data['type'])]);
         }
 
         return redirect()
@@ -103,7 +103,7 @@ class CategoryController extends AdminController
         } catch (UniqueConstraintViolationException) {
             return back()
                 ->withInput()
-                ->with('error', 'A category with a similar name already exists. Try a different name.');
+                ->withErrors(['name' => $this->duplicateCategoryMessage($data['type'])]);
         }
 
         return redirect()
@@ -239,5 +239,14 @@ class CategoryController extends AdminController
         }
 
         return null;
+    }
+
+    protected function duplicateCategoryMessage(string $type): string
+    {
+        return match ($type) {
+            Category::TYPE_SUB => 'This sub-category is already present under the selected parent.',
+            Category::TYPE_SERVICE => 'This service category is already present.',
+            default => 'This category is already present.',
+        };
     }
 }
