@@ -256,7 +256,7 @@ class VendorController extends AdminController
             $data['rejection_reason'],
         );
 
-        return back()->with('success', "Vendor {$vendor->brand_name} inactivated.");
+        return back()->with('success', "Vendor {$vendor->brand_name} blocked.");
     }
 
     public function activate(Vendor $vendor): RedirectResponse
@@ -278,7 +278,7 @@ class VendorController extends AdminController
             'active',
         );
 
-        return back()->with('success', "Vendor {$vendor->brand_name} reactivated.");
+        return back()->with('success', "Vendor {$vendor->brand_name} unblocked.");
     }
 
     private function applyVendorImages(Vendor $vendor, VendorRequest $request): void

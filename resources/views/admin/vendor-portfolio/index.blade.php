@@ -94,7 +94,7 @@
                             <td class="jb-col-category">
                                 <span class="block truncate text-sm" title="{{ $vendor->city }}">{{ $vendor->city ?? '—' }}</span>
                             </td>
-                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $vendor->status])</td>
+                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])</td>
                             <td class="jb-col-amount text-center text-sm font-medium text-slate-700">{{ $vendor->portfolio_photos_count }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">

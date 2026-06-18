@@ -17,6 +17,7 @@ use App\Models\Role;
 use App\Models\Vendor;
 use App\Models\VendorPayout;
 use App\Services\Export\ListExportService;
+use App\Support\AdminAccountStatus;
 use App\Support\AdminCityScope;
 use App\Support\AdminListOrder;
 use App\Support\AppliesListDateFilter;
@@ -107,7 +108,7 @@ class AdminListExporter
                     $customer->email ?? '',
                     $customer->mobile,
                     $customer->city ?? '',
-                    $customer->status,
+                    AdminAccountStatus::labelFor($customer->status),
                     $customer->registered_at?->format('Y-m-d') ?? '',
                     $customer->total_orders,
                 ],
@@ -141,7 +142,7 @@ class AdminListExporter
                     $vendor->mobile ?? '',
                     $vendor->business_mobile ?? '',
                     $vendor->city ?? '',
-                    $vendor->status,
+                    AdminAccountStatus::labelFor($vendor->status),
                     $vendor->rating,
                     $vendor->orders_completed,
                     $vendor->digital_wallet_balance,
@@ -174,7 +175,7 @@ class AdminListExporter
                     $driver->email ?? '',
                     $driver->city ?? '',
                     $driver->vehicle_no ?? '',
-                    $driver->status,
+                    AdminAccountStatus::labelFor($driver->status),
                     $driver->created_at?->format('Y-m-d') ?? '',
                 ],
             ],

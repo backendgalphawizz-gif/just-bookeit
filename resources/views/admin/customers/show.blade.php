@@ -11,7 +11,7 @@
     @if (auth('admin')->user()->hasPermission('customers', 'edit'))
         @if ($customer->status !== 'active')
             <form method="POST" action="{{ route('admin.customers.activate', $customer) }}" class="inline-flex">@csrf
-                <x-admin.button variant="success" type="submit">Activate</x-admin.button>
+                <x-admin.button variant="success" type="submit">Unblock</x-admin.button>
             </form>
         @endif
         @if ($customer->status === 'active')
@@ -19,14 +19,14 @@
                 method="POST"
                 action="{{ route('admin.customers.inactivate', $customer) }}"
                 class="inline-flex"
-                data-jb-confirm="This customer will be marked inactive and will not be able to log in. The reason you enter will be visible to them."
-                data-jb-confirm-title="Mark customer inactive"
+                data-jb-confirm="This customer will be blocked and will not be able to log in. The reason you enter will be visible to them."
+                data-jb-confirm-title="Block customer"
                 data-jb-confirm-variant="error"
-                data-jb-confirm-label="Mark Inactive"
-                data-jb-confirm-requires-reason="Reason for inactivation"
+                data-jb-confirm-label="Block"
+                data-jb-confirm-requires-reason="Reason for blocking"
             >
                 @csrf
-                <x-admin.button variant="danger" type="submit">Mark Inactive</x-admin.button>
+                <x-admin.button variant="danger" type="submit">Block</x-admin.button>
             </form>
         @endif
         <x-admin.button variant="secondary" :href="route('admin.customers.edit', $customer)">Edit</x-admin.button>
@@ -50,7 +50,7 @@
 @section('content')
     @if ($customer->status === 'inactive')
         @include('admin.partials.account-status-banner', [
-            'title' => 'Account inactive',
+            'title' => 'Account blocked',
             'reason' => $customer->rejection_reason,
             'emptyReason' => 'No reason recorded.',
         ])
@@ -64,7 +64,7 @@
                 :title="$customer->name"
                 :subtitle="$customer->customer_code"
             >
-                @include('admin.components.status-badge', ['status' => $customer->status])
+                @include('admin.components.status-badge', ['status' => $customer->status, 'label' => \App\Support\AdminAccountStatus::labelFor($customer->status)])
             </x-admin.actor-profile-header>
             <dl class="jb-dl">
                 <div><dt>Mobile No</dt><dd>{{ $customer->mobile }}</dd></div>

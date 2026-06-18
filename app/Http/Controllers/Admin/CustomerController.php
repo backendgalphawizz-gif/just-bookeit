@@ -157,7 +157,7 @@ class CustomerController extends AdminController
             'active',
         );
 
-        return back()->with('success', "Customer {$customer->name} activated.");
+        return back()->with('success', "Customer {$customer->name} unblocked.");
     }
 
     public function inactivate(Request $request, Customer $customer): RedirectResponse
@@ -165,7 +165,7 @@ class CustomerController extends AdminController
         $this->authorizeAdmin('edit');
 
         if ($customer->hasActiveOrders()) {
-            return back()->with('error', 'This customer has active orders and cannot be inactivated right now.');
+            return back()->with('error', 'This customer has active orders and cannot be blocked right now.');
         }
 
         $data = $request->validate(
@@ -189,7 +189,7 @@ class CustomerController extends AdminController
             $data['rejection_reason'],
         );
 
-        return back()->with('success', "Customer {$customer->name} inactivated.");
+        return back()->with('success', "Customer {$customer->name} blocked.");
     }
 
     private function applyProfileImage(Customer $customer, CustomerRequest $request): void
