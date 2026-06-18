@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Order;
+use App\Observers\OrderObserver;
 use App\View\Composers\AdminLayoutComposer;
 use App\View\Composers\GuestLayoutComposer;
 use App\View\Composers\VendorLayoutComposer;
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Order::observe(OrderObserver::class);
+
         View::composer('admin.layouts.app', AdminLayoutComposer::class);
         View::composer(['admin.layouts.guest', 'admin.auth.login'], GuestLayoutComposer::class);
         View::composer([
