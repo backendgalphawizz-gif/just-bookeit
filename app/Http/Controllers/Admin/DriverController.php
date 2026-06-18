@@ -134,22 +134,25 @@ class DriverController extends AdminController
         $this->authorizeAdmin('edit');
 
         $previousStatus = $driver->status;
+        $wasBlocked = $previousStatus === 'inactive';
 
         $driver->update([
             'status' => 'active',
-            'approved_at' => now(),
+            'approved_at' => $wasBlocked ? ($driver->approved_at ?? now()) : now(),
             'is_verified' => true,
             'rejection_reason' => null,
         ]);
 
         $this->recordAccountStatusHistory(
             $driver,
-            AccountStatusHistory::ACTION_APPROVE,
+            $wasBlocked ? AccountStatusHistory::ACTION_ACTIVATE : AccountStatusHistory::ACTION_APPROVE,
             $previousStatus,
             'active',
         );
 
-        return back()->with('success', "Driver {$driver->name} approved.");
+        return back()->with('success', $wasBlocked
+            ? "Driver {$driver->name} unblocked."
+            : "Driver {$driver->name} approved.");
     }
 
     public function reject(Request $request, Driver $driver): RedirectResponse
@@ -207,7 +210,7 @@ class DriverController extends AdminController
             $data['rejection_reason'],
         );
 
-        return back()->with('success', "Driver {$driver->name} inactivated.");
+        return back()->with('success', "Driver {$driver->name} blocked.");
     }
 
     private function driverData(DriverRequest $request): array

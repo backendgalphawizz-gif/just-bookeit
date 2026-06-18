@@ -22,8 +22,8 @@
 <div>
     <label for="status" class="jb-label">Status</label>
     <select id="status" name="status" class="jb-select" required>
-        @foreach (['pending', 'active', 'inactive', 'rejected'] as $status)
-            <option value="{{ $status }}" @selected(old('status', $driver?->status ?? 'pending') === $status)>{{ ucfirst($status) }}</option>
+        @foreach (\App\Support\AdminAccountStatus::filterOptionsForVendorOrDriver() as $status)
+            <option value="{{ $status }}" @selected(old('status', $driver?->status ?? 'pending') === $status)>{{ \App\Support\AdminAccountStatus::labelFor($status) }}</option>
         @endforeach
     </select>
 </div>

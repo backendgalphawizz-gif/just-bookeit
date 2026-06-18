@@ -19,8 +19,8 @@
                 <label class="jb-label">Status</label>
                 <select name="status" class="jb-select">
                     <option value="">All</option>
-                    @foreach (['pending', 'active', 'inactive', 'rejected'] as $s)
-                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
+                    @foreach (\App\Support\AdminAccountStatus::filterOptionsForVendorOrDriver() as $s)
+                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ \App\Support\AdminAccountStatus::labelFor($s) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -63,7 +63,7 @@
                                 </div>
                             </td>
                             <td>{{ $driver->mobile }}</td>
-                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $driver->status])</td>
+                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $driver->status, 'label' => \App\Support\AdminAccountStatus::labelFor($driver->status)])</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.drivers.show', $driver)" />

@@ -21,8 +21,8 @@
                 <label class="jb-label">Status</label>
                 <select name="status" class="jb-select">
                     <option value="">All statuses</option>
-                    @foreach (['active', 'inactive'] as $s)
-                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
+                    @foreach (\App\Support\AdminAccountStatus::filterOptionsForCustomer() as $s)
+                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ \App\Support\AdminAccountStatus::labelFor($s) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -77,7 +77,7 @@
                             <td>{{ $customer->city ?? '—' }}</td>
                             <td class="jb-col-date text-sm text-slate-600">{{ $customer->registered_at?->format('M d, Y') ?? '—' }}</td>
                             <td class="text-center">{{ $customer->total_orders }}</td>
-                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $customer->status])</td>
+                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $customer->status, 'label' => \App\Support\AdminAccountStatus::labelFor($customer->status)])</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.customers.show', $customer)" />

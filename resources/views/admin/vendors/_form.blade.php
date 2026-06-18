@@ -23,8 +23,8 @@
     $createStatusOptions = ['pending', 'active', 'inactive', 'rejected'];
     $statusHelp = match ($currentStatus) {
         'pending', 'rejected' => 'Approve or reject this vendor from their profile page — status cannot be changed here.',
-        'inactive' => 'Activate this vendor from their profile page — status cannot be changed here.',
-        default => 'Mark this vendor inactive from their profile page — status cannot be changed here.',
+        'inactive' => 'Unblock this vendor from their profile page — status cannot be changed here.',
+        default => 'Block this vendor from their profile page — status cannot be changed here.',
     };
 @endphp
 
@@ -142,7 +142,7 @@
     <div class="sm:col-span-2">
         <label class="jb-label">Status</label>
         <div class="mt-1.5 flex flex-wrap items-center gap-3">
-            @include('admin.components.status-badge', ['status' => $currentStatus])
+            @include('admin.components.status-badge', ['status' => $currentStatus, 'label' => \App\Support\AdminAccountStatus::labelFor($currentStatus)])
             <input type="hidden" name="status" value="{{ $currentStatus }}">
         </div>
         <p class="mt-2 text-sm text-slate-500">{{ $statusHelp }}</p>
@@ -150,7 +150,7 @@
 @else
     <x-admin.form-select label="Status" name="status" :required="true">
         @foreach ($createStatusOptions as $s)
-            <option value="{{ $s }}" @selected($currentStatus === $s)>{{ ucfirst($s) }}</option>
+            <option value="{{ $s }}" @selected($currentStatus === $s)>{{ \App\Support\AdminAccountStatus::labelFor($s) }}</option>
         @endforeach
     </x-admin.form-select>
 @endif

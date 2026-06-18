@@ -28,15 +28,15 @@
     <div class="sm:col-span-2">
         <label class="jb-label">Status</label>
         <div class="mt-1.5 flex flex-wrap items-center gap-3">
-            @include('admin.components.status-badge', ['status' => $currentStatus])
+            @include('admin.components.status-badge', ['status' => $currentStatus, 'label' => \App\Support\AdminAccountStatus::labelFor($currentStatus)])
             <input type="hidden" name="status" value="{{ $currentStatus }}">
         </div>
-        <p class="mt-2 text-sm text-slate-500">Mark this customer inactive from their profile page — status cannot be changed here.</p>
+        <p class="mt-2 text-sm text-slate-500">Block or unblock this customer from their profile page — status cannot be changed here.</p>
     </div>
 @else
     <x-admin.form-select label="Status" name="status" :required="true">
-        @foreach (['active', 'inactive'] as $s)
-            <option value="{{ $s }}" @selected($currentStatus === $s)>{{ ucfirst($s) }}</option>
+        @foreach (\App\Support\AdminAccountStatus::filterOptionsForCustomer() as $s)
+            <option value="{{ $s }}" @selected($currentStatus === $s)>{{ \App\Support\AdminAccountStatus::labelFor($s) }}</option>
         @endforeach
     </x-admin.form-select>
 @endif

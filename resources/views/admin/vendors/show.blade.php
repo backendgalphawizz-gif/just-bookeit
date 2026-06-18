@@ -24,21 +24,21 @@
         @endif
     @endif
     @if ($vendor->status === 'inactive' && auth('admin')->user()->hasPermission('vendors', 'edit'))
-        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}" class="inline-flex">@csrf<x-admin.button variant="success" type="submit">Activate</x-admin.button></form>
+        <form method="POST" action="{{ route('admin.vendors.activate', $vendor) }}" class="inline-flex">@csrf<x-admin.button variant="success" type="submit">Unblock</x-admin.button></form>
     @endif
     @if ($vendor->status === 'active' && auth('admin')->user()->hasPermission('vendors', 'edit'))
         <form
             method="POST"
             action="{{ route('admin.vendors.inactivate', $vendor) }}"
             class="inline-flex"
-            data-jb-confirm="This vendor will be marked inactive. Login and listings will be disabled. The reason you enter will be visible to them."
-            data-jb-confirm-title="Mark vendor inactive"
+            data-jb-confirm="This vendor will be blocked. Login and listings will be disabled. The reason you enter will be visible to them."
+            data-jb-confirm-title="Block vendor"
             data-jb-confirm-variant="error"
-            data-jb-confirm-label="Mark Inactive"
-            data-jb-confirm-requires-reason="Reason for inactivation"
+            data-jb-confirm-label="Block"
+            data-jb-confirm-requires-reason="Reason for blocking"
         >
             @csrf
-            <x-admin.button variant="danger" type="submit">Mark Inactive</x-admin.button>
+            <x-admin.button variant="danger" type="submit">Block</x-admin.button>
         </form>
     @endif
     <x-admin.account-history :histories="$vendor->statusHistories" title="Vendor account history" />
@@ -49,12 +49,12 @@
 @section('content')
     @if ($vendor->isInactive())
         @include('admin.partials.account-status-banner', [
-            'title' => 'Account inactive',
+            'title' => 'Account blocked',
             'reason' => $vendor->rejection_reason,
             'emptyReason' => 'No reason recorded.',
             'showAction' => auth('admin')->user()->hasPermission('vendors', 'edit'),
             'actionRoute' => route('admin.vendors.activate', $vendor),
-            'actionLabel' => 'Activate account',
+            'actionLabel' => 'Unblock account',
         ])
     @endif
 
@@ -96,7 +96,7 @@
                 :title="$vendor->shop_name ?? $vendor->brand_name"
                 :subtitle="$vendor->vendor_code"
             >
-                @include('admin.components.status-badge', ['status' => $vendor->status])
+                @include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])
             </x-admin.actor-profile-header>
             <div class="jb-doc-image-grid mt-4">
                 <div>
@@ -204,7 +204,7 @@
                     <dt>Categories</dt>
                     <dd>{{ filled($vendor->categories) ? implode(', ', $vendor->categories) : '—' }}</dd>
                 </div>
-                <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $vendor->status])</dd></div>
+                <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])</dd></div>
                 <div><dt>Commission</dt><dd>{{ $vendor->commission ? $vendor->commission . '%' : 'Using global commission' }}</dd></div>
                 <div><dt>Rating</dt><dd>{{ $vendor->rating }} / 5</dd></div>
                 <div><dt>Orders completed</dt><dd>{{ number_format($vendor->orders_completed) }}</dd></div>

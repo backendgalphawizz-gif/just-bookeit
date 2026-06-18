@@ -26,7 +26,7 @@
                 :title="$vendor->shop_name ?? $vendor->brand_name"
                 :subtitle="$vendor->vendor_code"
             >
-                @include('admin.components.status-badge', ['status' => $vendor->status])
+                @include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])
             </x-admin.actor-profile-header>
 
             <dl class="jb-dl jb-dl--grid">

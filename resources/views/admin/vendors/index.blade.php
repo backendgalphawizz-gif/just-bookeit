@@ -25,8 +25,8 @@ in this table  i need @extends('admin.layouts.app')
                 <label class="jb-label">Status</label>
                 <select name="status" class="jb-select">
                     <option value="">All</option>
-                    @foreach (['pending', 'active', 'inactive', 'rejected'] as $s)
-                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
+                    @foreach (\App\Support\AdminAccountStatus::filterOptionsForVendorOrDriver() as $s)
+                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ \App\Support\AdminAccountStatus::labelFor($s) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -143,7 +143,7 @@ in this table  i need @extends('admin.layouts.app')
                             <td>{{ $vendor->city ?? '—' }}</td>
                             <td>{{ $vendor->created_at ? $vendor->created_at->format('M d, Y') : '—' }}</td>
                             <td class="jb-col-status">
-                                @include('admin.components.status-badge', ['status' => $vendor->status])
+                                @include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])
                                 @if ($vendor->status === 'inactive' && $vendor->rejection_reason)
                                     <p class="mt-1 max-w-[12rem] truncate text-xs text-rose-700" title="{{ $vendor->rejection_reason }}">{{ $vendor->rejection_reason }}</p>
                                 @endif
