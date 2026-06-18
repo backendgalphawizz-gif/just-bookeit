@@ -52,4 +52,20 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return redirect()->back()->with('error', $message);
         });
+
+        $exceptions->render(function (\Illuminate\Database\UniqueConstraintViolationException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || ! $request->is('admin/*')) {
+                return null;
+            }
+
+            $message = 'This record already exists. Please use a different name or value.';
+
+            if (str_contains(strtolower($e->getMessage()), 'categories_slug_unique')) {
+                $message = 'A category with this name already exists. Try a different name or check sub-categories under another parent.';
+            }
+
+            return redirect()->back()
+                ->withInput($request->except('_token'))
+                ->with('error', $message);
+        });
     })->create();

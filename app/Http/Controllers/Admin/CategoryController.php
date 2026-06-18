@@ -7,10 +7,11 @@ use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Support\AppliesListDateFilter;
+use App\Support\CategorySlugResolver;
 use App\Support\StoresUploadedFiles;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CategoryController extends AdminController
@@ -43,14 +44,24 @@ class CategoryController extends AdminController
     {
         $data = $request->validated();
         unset($data['image']);
-        $data['slug'] = Str::slug($data['name']);
         $data['parent_id'] = $this->resolveParentId($data['type'], $data['parent_id'] ?? null);
+        $data['slug'] = CategorySlugResolver::forCategory(
+            $data['name'],
+            $data['type'],
+            $data['parent_id'],
+        );
 
         if ($request->hasFile('image')) {
             $data['image_path'] = StoresUploadedFiles::store($request->file('image'), 'categories');
         }
 
-        Category::query()->create($data);
+        try {
+            Category::query()->create($data);
+        } catch (UniqueConstraintViolationException) {
+            return back()
+                ->withInput()
+                ->with('error', 'A category with a similar name already exists. Try a different name.');
+        }
 
         return redirect()
             ->route('admin.categories.index', ['type' => $this->indexTypeForCategory($data['type'])])
@@ -73,8 +84,13 @@ class CategoryController extends AdminController
     {
         $data = $request->validated();
         unset($data['image']);
-        $data['slug'] = Str::slug($data['name']);
         $data['parent_id'] = $this->resolveParentId($data['type'], $data['parent_id'] ?? null);
+        $data['slug'] = CategorySlugResolver::forCategory(
+            $data['name'],
+            $data['type'],
+            $data['parent_id'],
+            $category->id,
+        );
 
         $data['image_path'] = StoresUploadedFiles::replace(
             $request->file('image'),
@@ -82,7 +98,13 @@ class CategoryController extends AdminController
             'categories'
         );
 
-        $category->update($data);
+        try {
+            $category->update($data);
+        } catch (UniqueConstraintViolationException) {
+            return back()
+                ->withInput()
+                ->with('error', 'A category with a similar name already exists. Try a different name.');
+        }
 
         return redirect()
             ->route('admin.categories.index', ['type' => $this->indexTypeForCategory($category->type)])
