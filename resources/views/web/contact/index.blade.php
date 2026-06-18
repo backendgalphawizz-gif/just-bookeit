@@ -4,13 +4,13 @@
 
 @section('content')
 <div class="jbw-container">
-    <div class="jbw-page-head">
+    <!-- <div class="jbw-page-head">
         <span class="jbw-eyebrow">Support</span>
         <h1 class="jbw-page-title">Contact Us</h1>
         <p class="jbw-page-subtitle">We are here to help with bookings, rentals, and account questions.</p>
-    </div>
+    </div> -->
 
-    <div class="jbw-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:0">
+    <!-- <div class="jbw-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:0">
         @if ($supportEmail)
             <div class="jbw-card">
                 <p class="jbw-label">Email</p>
@@ -29,9 +29,9 @@
                 <p style="margin:0;line-height:1.6;color:var(--c-muted)">{{ $contactAddress }}</p>
             </div>
         @endif
-    </div>
+    </div> -->
 
-    <div class="jbw-card" style="margin-top:1.5rem;text-align:center">
+    <!-- <div class="jbw-card" style="margin-top:1.5rem;text-align:center">
         <p style="margin:0 0 1rem;color:var(--c-muted)">Need to book an outfit or track an order?</p>
         <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
             <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary">Browse catalog</a>
@@ -46,6 +46,51 @@
             @endauth
             <a href="{{ route('web.faq') }}" class="jbw-btn jbw-btn--outline">FAQs</a>
         </div>
-    </div>
+    </div> -->
+    <div class="contact-form-card jbw-card">
+    <h2>Get in Touch</h2>
+
+    <form>
+        <div class="contact-form-grid">
+
+            <div class="form-group">
+                <label>Select Type</label>
+                <select class="contact-select">
+                    <option>Inquiry Type</option>
+                    <option>Booking</option>
+                    <option>Order Tracking</option>
+                    <option>Support</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email"
+                       class="contact-input"
+                       placeholder="julianne@example.com">
+            </div>
+
+            <div class="form-group full-width">
+                <label>Subject</label>
+                <input type="text"
+                       class="contact-input"
+                       placeholder="What is this regarding?">
+            </div>
+
+            <div class="form-group full-width">
+                <label>Description</label>
+                <textarea class="contact-textarea"
+                          placeholder="Tell us more about your request..."></textarea>
+            </div>
+
+        </div>
+
+        <div class="contact-submit-wrap">
+            <button type="submit" class="contact-submit">
+                SEND MESSAGE →
+            </button>
+        </div>
+    </form>
+</div>
 </div>
 @endsection

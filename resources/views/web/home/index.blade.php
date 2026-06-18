@@ -36,7 +36,7 @@ $categoryFallbacks = [
 @endphp
 
 {{-- ── Hero ──────────────────────────────────────────────────────── --}}
-<section class="jbw-hero borderbanner" data-hero-carousel>
+<section class="jbw-hero borderbanner" data-hero-carousel style="margin-bottom: 20px;">
     <div class="jbw-hero-slides" aria-hidden="true">
         @foreach ($heroSlides as $index => $slide)
             <div class="jbw-hero-slide{{ $index === 0 ? ' is-active' : '' }}">
