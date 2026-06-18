@@ -243,9 +243,13 @@ class AdminListExporter
                         'order',
                         fn (Builder $order) => $order->where('vendor_id', $request->integer('vendor_id'))
                     ))
-                    ->when($request->filled('search'), function (Builder $q) use ($request) {
-                        $term = '%'.$request->string('search').'%';
-                        $q->whereHas('customer', fn (Builder $c) => $c->where('name', 'like', $term));
+                    ->when($request->filled('customer'), function (Builder $q) use ($request) {
+                        $term = '%'.$request->string('customer').'%';
+                        $q->whereHas('customer', fn (Builder $customer) => $customer->where('name', 'like', $term));
+                    })
+                    ->when($request->filled('order_id'), function (Builder $q) use ($request) {
+                        $term = '%'.$request->string('order_id').'%';
+                        $q->whereHas('order', fn (Builder $order) => $order->where('order_number', 'like', $term));
                     })
                     ->orderByDesc('created_at'),
                 'map' => fn (Refund $refund) => [
