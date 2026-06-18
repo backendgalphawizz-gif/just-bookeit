@@ -71,10 +71,28 @@
                             </div>
                         </td>
                         <td>₹{{ number_format($item->rentalPriceAmount(), 0) }}{{ $type !== 'fashion-designer' ? '/day' : '' }}</td>
-                        <td>⭐ {{ number_format($item->vendor?->rating ?? 0, 1) }}</td>
-                        <td>
+                        <td><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#FFC107">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+</svg> {{ number_format($item->vendor?->rating ?? 0, 1) }}</td>
+                        <!-- <td>
                             <span class="vp-badge vp-badge--{{ $item->status === 'approved' ? 'done' : ($item->status === 'rejected' ? 'failed' : 'pending') }}">{{ ucfirst($item->status) }}</span>
-                        </td>
+                        </td> -->
+                        <td>
+    <div class="vp-toggle-status-container">
+        <!-- Visual custom toggle representation -->
+        <label class="vp-status-toggle-switch">
+            <input type="checkbox" name="status" value="approved"
+                   {{ $item->status === 'approved' ? 'checked' : '' }}
+                   disabled> {{-- Remove 'disabled' if you want it clickable --}}
+            <span class="vp-toggle-slider"></span>
+        </label>
+
+        <!-- Condition label matching image_e1b53f.png -->
+        <span class="vp-toggle-status-text {{ $item->status === 'approved' ? 'vp-status-active' : 'vp-status-inactive' }}">
+            {{ $item->status }}
+        </span>
+    </div>
+</td>
                         <td>
                             <div class="vp-actions">
                                 <a href="{{ route('vendor.products.edit', $item) }}" class="vp-btn vp-btn--outline vp-btn--sm">Edit</a>

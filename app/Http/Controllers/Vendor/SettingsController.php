@@ -174,6 +174,7 @@ class SettingsController extends VendorController
         return [
             ['key' => 'profile', 'label' => 'Personal Profile', 'icon' => 'user'],
             ['key' => 'bio', 'label' => 'Bio / Description', 'icon' => 'bio'],
+            ['key' => 'portfolio', 'label' => 'Portfolio', 'icon' => 'folder'],
             ['key' => 'business', 'label' => 'Business Info', 'icon' => 'business'],
             ['key' => 'bank', 'label' => 'Bank Info', 'icon' => 'bank'],
             ['key' => 'password', 'label' => 'Password', 'icon' => 'password'],

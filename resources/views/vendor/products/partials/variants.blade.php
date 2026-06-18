@@ -43,9 +43,9 @@
                     <div>
                         <label class="vp-label">Variant image</label>
                         @if (! empty($variant['image_url']))
-                            <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger" style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
+                            <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger " style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
                         @endif
-                        <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file">
+                        <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file vp-input">
                     </div>
                     <div>
                         <button type="button" class="vp-btn vp-btn--ghost vp-btn--sm" style="color:#dc2626;" data-vp-variants-remove>Remove</button>
@@ -65,7 +65,7 @@
                 <div><label class="vp-label">Size</label><input type="text" name="variants[__INDEX__][size]" class="vp-input" placeholder="e.g. M, 32"></div>
                 <div><label class="vp-label">Color</label><input type="text" name="variants[__INDEX__][color]" class="vp-input" placeholder="e.g. Red"></div>
                 <div><label class="vp-label">Price (₹)</label><input type="number" name="variants[__INDEX__][price]" class="vp-input" min="0" step="0.01" placeholder="0"></div>
-                <div><label class="vp-label">Variant image</label><input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file"></div>
+                <div><label class="vp-label">Variant image</label><input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file vp-input"></div>
                 <div><button type="button" class="vp-btn vp-btn--ghost vp-btn--sm" style="color:#dc2626;" data-vp-variants-remove>Remove</button></div>
             </div>
         </div>

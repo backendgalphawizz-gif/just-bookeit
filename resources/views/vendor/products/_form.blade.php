@@ -59,35 +59,35 @@
 
     <div class="vp-field">
         <label class="vp-label">Title <span class="vp-required">*</span></label>
-        <input type="text" name="title" class="vp-input @error('title') vp-input--error @enderror" value="{{ old('title', $item->title) }}" required maxlength="255" data-vp-restrict="title">
+        <input type="text" name="title" class="vp-input @error('title') vp-input--error @enderror" value="{{ old('title', $item->title) }}" required maxlength="255" data-vp-restrict="title" placeholder="Enter title">
         @error('title')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
     <div class="vp-field">
         <label class="vp-label">Price per day (₹) @if($isCreate)<span class="vp-required">*</span>@endif</label>
-        <input type="number" name="price_per_day" class="vp-input @error('price_per_day') vp-input--error @enderror" value="{{ old('price_per_day', $item->price_per_day) }}" min="0" step="0.01" {{ $isCreate ? 'required' : '' }}>
+        <input placeholder="Enter price per day" type="number" name="price_per_day" class="vp-input @error('price_per_day') vp-input--error @enderror" value="{{ old('price_per_day', $item->price_per_day) }}" min="0" step="0.01" {{ $isCreate ? 'required' : '' }}>
         @error('price_per_day')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
     <div class="vp-field">
         <label class="vp-label">Advance amount (₹)</label>
-        <input type="number" name="advance_amount" class="vp-input @error('advance_amount') vp-input--error @enderror" value="{{ old('advance_amount', $item->advance_amount) }}" min="0" step="0.01">
+        <input placeholder="Enter advance amount" type="number" name="advance_amount" class="vp-input @error('advance_amount') vp-input--error @enderror" value="{{ old('advance_amount', $item->advance_amount) }}" min="0" step="0.01">
         @error('advance_amount')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
     <div class="vp-field vp-field--full">
         <label class="vp-label">Description</label>
-        <textarea name="description" class="vp-textarea @error('description') vp-textarea--error @enderror" rows="4" maxlength="5000" data-vp-restrict="text">{{ old('description', $item->description) }}</textarea>
+        <textarea placeholder="Enter description" name="description" class="vp-textarea @error('description') vp-textarea--error @enderror" rows="4" maxlength="5000" data-vp-restrict="text">{{ old('description', $item->description) }}</textarea>
         @error('description')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
     <div class="vp-field vp-field--full vp-form-section">
-        <label class="vp-label">Primary image @if($isCreate)<span class="vp-required">*</span>@else<span class="vp-field-hint"> (optional)</span>@endif</label>
+        <label class="vp-label ">Primary image @if($isCreate)<span class="vp-required">*</span>@else<span class="vp-field-hint"> (optional)</span>@endif</label>
         <p class="vp-field-hint">Main cover photo shown in listings.</p>
         @if ($item->displayImageUrl())
             <img src="{{ url($item->displayImageUrl()) }}" alt="" class="vp-product-preview panel-lightbox-trigger">
         @endif
-        <input type="file" name="image" class="vp-file" accept="image/jpeg,image/jpg,image/png,image/webp" {{ $isCreate ? 'required' : '' }}>
+        <input type="file" name="image" class="vp-file vp-input" accept="image/jpeg,image/jpg,image/png,image/webp" {{ $isCreate ? 'required' : '' }}>
         <p class="vp-field-hint">JPEG, PNG or WebP — max 20 MB</p>
         @error('image')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
@@ -111,7 +111,7 @@
             </div>
         @endif
 
-        <input type="file" name="gallery_images[]" class="vp-file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple>
+        <input type="file" name="gallery_images[]" class="vp-file vp-input" accept="image/jpeg,image/jpg,image/png,image/webp" multiple>
         @error('gallery_images')<p class="vp-field-error">{{ $message }}</p>@enderror
         @error('gallery_images.*')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
