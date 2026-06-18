@@ -147,6 +147,9 @@ class PlatformDataSeeder extends Seeder
                 $status = fake()->randomElement($orderStatuses);
                 $orderType = fake()->randomElement(['rental', 'rental', 'rental', 'sale']);
                 $createdAt = $monthStart->copy()->addDays(rand(0, 27));
+                if ($createdAt->isFuture()) {
+                    $createdAt = now()->subHours(rand(2, 72));
+                }
                 $amount = rand(1500, 45000);
                 $paymentStatus = in_array($status, ['cancelled', 'refunded'])
                     ? ($status === 'refunded' ? 'refunded' : 'failed')

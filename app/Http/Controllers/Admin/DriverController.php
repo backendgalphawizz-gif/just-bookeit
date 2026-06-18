@@ -39,7 +39,7 @@ class DriverController extends AdminController
                 });
             })
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->orderByDesc('created_at')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

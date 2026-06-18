@@ -24,7 +24,7 @@ class BannerController extends AdminController
         $banners = $this->applyDateRange(Banner::query()->forAudience($audience), $request)
             ->when($request->filled('search'), fn ($q) => $q->where('title', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
-            ->orderByDesc('created_at')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

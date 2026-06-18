@@ -131,6 +131,16 @@
                     <div><span>Tax (GST)</span><span>₹{{ number_format($order->tax_amount ?? 0, 0) }}</span></div>
                 </div>
                 <div class="jbw-payment-total"><span>Total amount</span><strong>₹{{ number_format($order->grandTotal(), 0) }}</strong></div>
+                @if ($order->payment_status === 'pending')
+                    <a href="{{ route('web.bookings.payment', $order) }}" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1rem;border-radius:10px">
+                        Pay now — ₹{{ number_format($order->grandTotal(), 0) }}
+                    </a>
+                @else
+                    <p class="jbw-booking-product-meta" style="margin-top:0.75rem;margin-bottom:0">
+                        Payment: <strong>{{ ucfirst($order->payment_status) }}</strong>
+                        @if ($order->payment_method) · {{ str_replace('_', ' ', ucfirst($order->payment_method)) }}@endif
+                    </p>
+                @endif
             </div>
 
             <div class="jbw-booking-card">

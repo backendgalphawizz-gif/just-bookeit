@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
+use Carbon\Carbon;
 
 class BookingPricingService
 {
@@ -13,15 +14,31 @@ class BookingPricingService
 
     public const DEFAULT_GST_PERCENT = 18.0;
 
+    public static function rentalDays(?string $startDate, ?string $endDate): int
+    {
+        if (! $startDate || ! $endDate) {
+            return 1;
+        }
+
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = Carbon::parse($endDate)->startOfDay();
+
+        return max(1, (int) $start->diffInDays($end) + 1);
+    }
+
     public static function forPortfolioItem(PortfolioItem $item, array $options = []): array
     {
-        $subtotal = (float) ($options['subtotal'] ?? $item->rentalPriceAmount());
+        $dailyRate = (float) ($options['daily_rate'] ?? $item->rentalPriceAmount());
+        $rentalDays = max(1, (int) ($options['rental_days'] ?? 1));
+        $subtotal = round($dailyRate * $rentalDays, 2);
         $shipping = (float) ($options['shipping_fee'] ?? self::shippingFee($options['shipment_required'] ?? true));
         $gstPercent = (float) ($options['gst_percent'] ?? self::gstPercent());
         $tax = round($subtotal * ($gstPercent / 100), 2);
         $total = round($subtotal + $shipping + $tax, 2);
 
         return [
+            'daily_rate' => $dailyRate,
+            'rental_days' => $rentalDays,
             'subtotal' => $subtotal,
             'shipping_fee' => $shipping,
             'tax_percent' => $gstPercent,
@@ -34,6 +51,8 @@ class BookingPricingService
     public static function fromOrder(Order $order): array
     {
         return [
+            'daily_rate' => $order->rentalDurationDays() ? round($order->subtotal() / max(1, $order->rentalDurationDays()), 2) : $order->subtotal(),
+            'rental_days' => $order->rentalDurationDays() ?? 1,
             'subtotal' => $order->subtotal(),
             'shipping_fee' => (float) ($order->delivery_fee ?? 0),
             'tax_percent' => self::gstPercent(),

@@ -347,8 +347,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/home",
-								"description": "Public endpoint. Bearer token optional. When logged in, includes `notifications.unread_count` and `notifications.total_count` for the bell badge."
+								"url": "{{base_url}}/v1/home?city=Indore",
+								"description": "Public endpoint. Bearer token optional. `?city=` filters featured designers by vendor city; when logged in without `city`, uses the customer profile city. Includes notifications when Bearer token is sent."
 							}
 						},
 						{
@@ -731,7 +731,7 @@
 								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
 								"body": {"mode": "raw", "raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"quantity\": 1\n}"},
 								"url": "{{base_url}}/v1/cart",
-								"description": "Add product to cart. Returns 422 if cart already has items from another vendor."
+								"description": "Add product to cart. Returns 422 if the product is already in the cart or if cart already has items from another vendor."
 							}
 						},
 						{
@@ -792,7 +792,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings/preview/{{v1_portfolio_item_id}}?shipment_required=1"
+								"url": "{{base_url}}/v1/bookings/preview/{{v1_portfolio_item_id}}?shipment_required=1",
+								"description": "Checkout preview for a product. Includes cart summary/items when the customer has cart entries, plus cart_item_status for the previewed product (in_cart, message when already added)."
 							}
 						},
 						{

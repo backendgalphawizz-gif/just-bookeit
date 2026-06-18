@@ -41,7 +41,7 @@ class CustomerController extends AdminController
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('city'), fn ($q) => $q->where('city', $request->string('city')))
             ->when($request->filled('registered_on'), fn ($q) => $q->whereDate('registered_at', $request->date('registered_on')))
-            ->orderByDesc('registered_at')
+            ->newestFirst('registered_at')
             ->paginate(15)
             ->withQueryString();
 

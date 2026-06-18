@@ -520,6 +520,8 @@ class CustomerApiPresenter
             'max_reference_images' => 5,
             'payment_summary' => $pricing,
             'shipment_required' => (bool) ($options['shipment_required'] ?? true),
+            'cart' => $options['cart'] ?? null,
+            'cart_item_status' => $options['cart_item_status'] ?? null,
         ];
     }
 
