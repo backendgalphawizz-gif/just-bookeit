@@ -126,7 +126,7 @@ $categoryFallbacks = [
     <div class="service-slider" id="serviceSlider">
         @forelse ($services as $index => $service)
             <a class="service-card textalign"
-               href="{{ route('web.catalog.index', ['service' => $service->id]) }}">
+               href="{{ route('web.services.index', ['service' => $service->id]) }}">
 
                 <div class="jbw-tile">
                     <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}"
@@ -139,7 +139,7 @@ $categoryFallbacks = [
             </a>
         @empty
             @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
-                <a href="{{ route('web.catalog.index') }}" class="service-card textalign">
+                <a href="{{ route('web.services.index') }}" class="service-card textalign">
                     <div class="jbw-tile">
                         <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
                     </div>
