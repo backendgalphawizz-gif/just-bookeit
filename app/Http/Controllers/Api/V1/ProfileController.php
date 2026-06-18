@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
+use App\Support\Api\CustomerApiPresenter;
 use App\Models\Faq;
 use App\Models\PlatformSetting;
 use App\Services\PlatformConfigService;
@@ -22,14 +23,7 @@ class ProfileController extends ApiController
         $customer = $request->user();
 
         return $this->success([
-            'user' => [
-                'id' => $customer->id,
-                'name' => $customer->name,
-                'mobile' => $customer->mobile,
-                'email' => $customer->email,
-                'city' => $customer->city,
-                'profile_image_url' => $customer->profileImageUrl(),
-            ],
+            'user' => CustomerApiPresenter::customerProfile($customer),
             'menu' => [
                 ['key' => 'edit_profile', 'label' => 'Edit Profile'],
                 ['key' => 'booking_history', 'label' => 'Booking History', 'route' => '/v1/bookings'],

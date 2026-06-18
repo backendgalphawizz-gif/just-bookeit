@@ -82,6 +82,7 @@ class CatalogFilter
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'subcategory_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_SUB)],
             'subcategory' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -265,7 +266,25 @@ class CatalogFilter
             $query->whereHas('subcategory', fn (Builder $sub) => $sub->where('parent_id', $mainCategoryId));
         }
 
+        self::applyVendorCity($query, $request->string('city')->toString());
+
         return $query;
+    }
+
+    public static function applyVendorCity(Builder $query, ?string $city): Builder
+    {
+        $city = trim((string) $city);
+
+        if ($city === '') {
+            return $query;
+        }
+
+        return $query->whereHas('vendor', fn (Builder $vendor) => self::applyCityOnVendorQuery($vendor, $city));
+    }
+
+    public static function applyCityOnVendorQuery(Builder $query, string $city): Builder
+    {
+        return $query->whereRaw('LOWER(TRIM(city)) = ?', [strtolower(trim($city))]);
     }
 
     public static function applyCustomerCatalogConstraints(Builder $query): Builder
@@ -290,8 +309,11 @@ class CatalogFilter
         $mainCategoryId = self::resolveMainCategoryId($request);
         $mainCategory = $mainCategoryId ? Category::query()->find($mainCategoryId) : null;
 
+        $city = trim($request->string('city')->toString());
+
         return array_filter([
             'audience' => $audience,
+            'city' => $city !== '' ? $city : null,
             'vendor_id' => $request->filled('vendor_id') ? $request->integer('vendor_id') : null,
             'service' => $serviceCategory ? [
                 'id' => $serviceCategory->id,
