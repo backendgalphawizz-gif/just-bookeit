@@ -46,7 +46,7 @@
                     <div>
                         <label class="vp-label">Variant image</label>
                         @if (! empty($variant['image_url']))
-                            <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger" style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
+                            <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger " style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
                         @endif
                         <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file" data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-file-label="Variant image">
                     </div>

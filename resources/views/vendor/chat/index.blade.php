@@ -30,7 +30,7 @@
         <a href="{{ route('vendor.chat.show', $chat) }}" class="vp-chat-item">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
                 <div>
-                    <strong>{{ $chat->customer?->name ?? 'Customer' }}</strong>
+                    <strong>{{ $chat->customer?->name ?? 'Customer' }} <font class="viewchat">View Chat</font></strong>
                     <div style="font-size:.82rem;color:var(--vp-muted);margin-top:.25rem;">
                         {{ \Illuminate\Support\Str::limit($chat->latestMessage?->body ?? 'No messages yet', 60) }}
                     </div>

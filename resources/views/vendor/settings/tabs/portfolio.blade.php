@@ -1,6 +1,6 @@
-<h2 class="vp-settings-panel-title">Personal Profile</h2>
+<h2 class="vp-settings-panel-title">Portfolio</h2>
 
-<form method="POST" action="{{ route('vendor.settings.update') }}" enctype="multipart/form-data">
+<form method="POST" action="{{ route('vendor.settings.portfolio') }}" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="tab" value="profile">
     <input type="hidden" name="upload_only" id="profile-upload-only" value="">
