@@ -33,6 +33,10 @@ class DisputeController extends AdminController
             ->with(['order.customer', 'order.vendor', 'category'])
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
             ->when($raisedBy, fn ($q) => $q->where('raised_by', $raisedBy))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term = '%'.$request->string('search').'%';
+                $q->whereHas('order', fn ($order) => $order->where('order_number', 'like', $term));
+            })
             ->when(
                 $request->get('status') === '_open_' || $request->boolean('open_only'),
                 fn ($q) => $q->whereIn('status', Dispute::OPEN_STATUSES)

@@ -269,6 +269,10 @@ class AdminListExporter
                         $request->filled('raised_by') && in_array($request->string('raised_by')->toString(), ['customer', 'vendor'], true),
                         fn (Builder $q) => $q->where('raised_by', $request->string('raised_by'))
                     )
+                    ->when($request->filled('search'), function (Builder $q) use ($request) {
+                        $term = '%'.$request->string('search').'%';
+                        $q->whereHas('order', fn (Builder $order) => $order->where('order_number', 'like', $term));
+                    })
                     ->when(
                         $request->get('status') === '_open_' || $request->boolean('open_only'),
                         fn (Builder $q) => $q->whereIn('status', Dispute::OPEN_STATUSES)
