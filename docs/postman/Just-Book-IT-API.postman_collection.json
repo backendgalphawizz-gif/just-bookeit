@@ -13,6 +13,20 @@
 	],
 	"item": [
 		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Clear Cache & Storage",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/system/clear-cache",
+						"description": "Runs migrate --force, optimize:clear, cache:clear, config:clear, view:clear, route:clear and clears storage/framework cache + compiled views. No auth required."
+					}
+				}
+			]
+		},
+		{
 			"name": "v1 — User (Customer)",
 			"item": [
 				{
