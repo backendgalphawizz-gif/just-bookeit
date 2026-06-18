@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\Category;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class DamageDeductionCategoryResolver
@@ -179,21 +178,17 @@ class DamageDeductionCategoryResolver
         ?int $parentId,
         callable $scope
     ): Category {
-        $slug = Str::slug($name);
         $needle = strtolower($name);
 
         $existing = $scope(Category::query())
-            ->where(function ($query) use ($needle, $slug) {
-                $query->whereRaw('LOWER(name) = ?', [$needle])
-                    ->orWhere('slug', $slug);
-            })
+            ->whereRaw('LOWER(name) = ?', [$needle])
             ->first();
 
         if ($existing) {
             return $existing;
         }
 
-        $slug = $this->uniqueSlug($slug);
+        $slug = CategorySlugResolver::forCategory($name, $type, $parentId);
 
         $maxSort = (int) ($scope(Category::query())->max('sort_order') ?? 0);
 
@@ -205,19 +200,5 @@ class DamageDeductionCategoryResolver
             'is_active' => true,
             'sort_order' => $maxSort + 1,
         ]);
-    }
-
-    protected function uniqueSlug(string $baseSlug): string
-    {
-        $slug = $baseSlug !== '' ? $baseSlug : 'category';
-        $candidate = $slug;
-        $suffix = 1;
-
-        while (Category::query()->where('slug', $candidate)->exists()) {
-            $candidate = $slug.'-'.$suffix;
-            $suffix++;
-        }
-
-        return $candidate;
     }
 }
