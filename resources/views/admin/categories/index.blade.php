@@ -7,10 +7,16 @@
         $isCatalog = $type === 'catalog';
         $isService = $type === \App\Models\Category::TYPE_SERVICE;
         $subcategoryTotal = $subcategoryTotal ?? 0;
+        $activeFilter = request()->has('active') ? (string) request('active') : '';
+        $activeTabs = [
+            '' => 'All',
+            '1' => 'Active',
+            '0' => 'Inactive',
+        ];
         $filterParams = array_filter([
             'type' => $type,
             'search' => request('search'),
-            'active' => request('active'),
+            'active' => $activeFilter !== '' ? $activeFilter : null,
             'parent_id' => request('parent_id'),
         ], fn ($value) => $value !== null && $value !== '');
     @endphp
@@ -43,6 +49,9 @@
     @endpush
     <form method="GET" class="jb-filters">
         <input type="hidden" name="type" value="{{ $type }}">
+        @if ($activeFilter !== '')
+            <input type="hidden" name="active" value="{{ $activeFilter }}">
+        @endif
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
@@ -59,17 +68,26 @@
                     </select>
                 </div>
             @endif
-            <div class="jb-filters-field">
-                <label class="jb-label">Active</label>
-                <select name="active" class="jb-select">
-                    <option value="">All</option>
-                    <option value="1" @selected(request('active') === '1')>Yes</option>
-                    <option value="0" @selected(request('active') === '0')>No</option>
-                </select>
-            </div>
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.categories.index', ['type' => $type])])
         </div>
     </form>
+
+    <div class="jb-tabs-row jb-tabs-row--nested">
+        <div class="jb-tabs-list">
+            @foreach ($activeTabs as $key => $tabLabel)
+                @php
+                    $tabParams = array_merge(
+                        request()->except('page', 'active'),
+                        $key !== '' ? ['active' => $key] : []
+                    );
+                @endphp
+                <a href="{{ route('admin.categories.index', $tabParams) }}"
+                   class="jb-settings-tab {{ $activeFilter === (string) $key ? 'jb-settings-tab--active' : '' }}">
+                    {{ $tabLabel }}
+                </a>
+            @endforeach
+        </div>
+    </div>
 
     <div class="jb-card" @if ($isCatalog) x-data="jbCategoryTree(@js($categories->pluck('id')->values()))" @endif>
         @unless ($isCatalog)
@@ -92,7 +110,7 @@
                             <th>Under category</th>
                         @endif
                         <th class="text-center">Sort</th>
-                        <th class="text-center">Active</th>
+                        <th class="jb-col-status">Status</th>
                         <th class="jb-table-actions-col">Actions</th>
                     </tr>
                 </thead>
@@ -129,7 +147,9 @@
                                 </td>
                                 <td class="text-slate-400">—</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
-                                <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $category->is_active ? 'active' : 'inactive'])
+                                </td>
                                 <td class="jb-table-actions-col">
                                     <div class="jb-actions">
                                         @if (auth('admin')->user()->hasPermission('categories', 'edit'))
@@ -156,7 +176,9 @@
                                     </td>
                                     <td>{{ $category->name }}</td>
                                     <td class="text-center">{{ $subcategory->sort_order }}</td>
-                                    <td class="text-center">{{ $subcategory->is_active ? 'Yes' : 'No' }}</td>
+                                    <td class="jb-col-status">
+                                        @include('admin.components.status-badge', ['status' => $subcategory->is_active ? 'active' : 'inactive'])
+                                    </td>
                                     <td class="jb-table-actions-col">
                                         <div class="jb-actions">
                                             @if (auth('admin')->user()->hasPermission('categories', 'edit'))
@@ -192,7 +214,9 @@
                                 @include('admin.partials.table-index-cell', ['paginator' => $categories])
                                 <td class="jb-col-name font-semibold">{{ $category->name }}</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
-                                <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $category->is_active ? 'active' : 'inactive'])
+                                </td>
                                 <td class="jb-table-actions-col">
                                     <div class="jb-actions">
                                         @if (auth('admin')->user()->hasPermission('categories', 'edit'))
