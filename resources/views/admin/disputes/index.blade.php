@@ -31,7 +31,7 @@
     </div>
 
     @push('filter_actions')
-        <x-admin.export-dropdown module="disputes" :params="['category', 'raised_by', 'status', 'from', 'to']" />
+        <x-admin.export-dropdown module="disputes" :params="['category', 'raised_by', 'status', 'search', 'from', 'to']" />
     @endpush
     <form method="GET" class="jb-filters">
         @if ($categoryId)
@@ -41,11 +41,22 @@
             <input type="hidden" name="raised_by" value="{{ $raisedBy }}">
         @endif
         <div class="jb-filters-grid">
+            <div class="jb-filters-field jb-filters-field--wide">
+                <label class="jb-label" for="disputes-filter-search">Order ID</label>
+                <input
+                    type="text"
+                    id="disputes-filter-search"
+                    name="search"
+                    value="{{ request('search') }}"
+                    placeholder="e.g. JB-WALLET-HELD-001"
+                    class="jb-input"
+                >
+            </div>
             <div class="jb-filters-field">
                 <label class="jb-label">Status</label>
                 <select name="status" class="jb-select">
                     <option value="">All</option>
-                    <option value="_open_" @selected(request('status') === '_open_' || request()->boolean('open_only'))>Open only</option>
+                    <option value="_open_" @selected(request('status') === '_open_' || request()->boolean('open_only'))>Open</option>
                     @foreach (['raised', 'under_review', 'resolved', 'closed'] as $s)
                         <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst(str_replace('_', ' ', $s)) }}</option>
                     @endforeach
@@ -82,6 +93,9 @@
                 @endif
                 @if ($raisedBy)
                     · {{ ucfirst($raisedBy) }}
+                @endif
+                @if (request('search'))
+                    · Order: {{ request('search') }}
                 @endif
             </p>
         </div>
