@@ -148,6 +148,67 @@
         input.classList.remove('border-rose-400', 'ring-rose-200');
     }
 
+    function showGroupError(wrapper, message) {
+        if (!wrapper) {
+            return;
+        }
+        let el = wrapper.querySelector('[data-jb-group-error]');
+        if (!el) {
+            el = document.createElement('p');
+            el.dataset.jbGroupError = '1';
+            el.className = 'mt-1.5 text-xs font-medium text-rose-600';
+            wrapper.appendChild(el);
+        }
+        el.textContent = message;
+    }
+
+    function clearGroupError(wrapper) {
+        wrapper?.querySelector('[data-jb-group-error]')?.remove();
+    }
+
+    function validateVendorCategoryGroups(form) {
+        let valid = true;
+
+        const audienceWrap = form.querySelector('[data-jb-audience-categories]');
+        if (audienceWrap) {
+            const checked = audienceWrap.querySelectorAll('input[name="audience_category_ids[]"]:checked').length;
+            if (checked === 0) {
+                showGroupError(audienceWrap, 'Select at least one category: Men, Women, or Kids.');
+                valid = false;
+            } else {
+                clearGroupError(audienceWrap);
+            }
+        }
+
+        const serviceWrap = form.querySelector('[data-jb-service-categories]');
+        if (serviceWrap) {
+            const selected = serviceWrap.querySelectorAll('input[name="service_category_ids[]"]').length;
+            if (selected === 0) {
+                showGroupError(serviceWrap, 'Select at least one service category.');
+                valid = false;
+            } else {
+                clearGroupError(serviceWrap);
+            }
+        }
+
+        return valid;
+    }
+
+    function bindVendorCategoryValidation(form) {
+        const audienceWrap = form.querySelector('[data-jb-audience-categories]');
+        if (!audienceWrap) {
+            return;
+        }
+
+        audienceWrap.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                if (audienceWrap.querySelectorAll('input[name="audience_category_ids[]"]:checked').length > 0) {
+                    clearGroupError(audienceWrap);
+                }
+            });
+        });
+    }
+
     function bindCharCounter(input) {
         const max = parseInt(input.dataset.jbMaxChars, 10);
         if (!max) {
@@ -335,6 +396,33 @@
         form.querySelector('[data-jb-form-upload-error]')?.remove();
     }
 
+    function fileTooLargeMessage(file, maxBytes) {
+        const selectedMb = formatUploadMb(file.size);
+        const maxMb = formatUploadMb(maxBytes);
+        const name = file.name ? `"${file.name}"` : 'The selected file';
+        return `${name} is too large (${selectedMb} MB). Maximum size is ${maxMb} MB.`;
+    }
+
+    function validateFilesOnInput(input, maxBytes) {
+        const files = filesFromInput(input);
+        if (!files.length) {
+            clearFieldError(input);
+            return true;
+        }
+
+        for (const file of files) {
+            if (file.size > maxBytes) {
+                showFieldError(input, fileTooLargeMessage(file, maxBytes));
+                input.value = '';
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                return false;
+            }
+        }
+
+        clearFieldError(input);
+        return true;
+    }
+
     function validateFormUploads(form) {
         const limits = readUploadLimits();
         let totalBytes = 0;
@@ -344,12 +432,11 @@
 
         form.querySelectorAll('input[type="file"]').forEach((input) => {
             const maxBytes = maxBytesForFileInput(input);
-            const maxMb = maxBytes / (1024 * 1024);
 
             filesFromInput(input).forEach((file) => {
                 totalBytes += file.size;
                 if (file.size > maxBytes) {
-                    showFieldError(input, 'One of the images is too large. Please choose a smaller photo.');
+                    showFieldError(input, fileTooLargeMessage(file, maxBytes));
                     input.value = '';
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                     blocked = true;
@@ -374,25 +461,9 @@
             return;
         }
         const maxBytes = maxBytesForFileInput(input);
-        const maxMb = maxBytes / (1024 * 1024);
 
         input.addEventListener('change', () => {
-            const files = filesFromInput(input);
-            if (!files.length) {
-                clearFieldError(input);
-                return;
-            }
-
-            for (const file of files) {
-                if (file.size > maxBytes) {
-                    showFieldError(input, 'One of the images is too large. Please choose a smaller photo.');
-                    input.value = '';
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                    return;
-                }
-            }
-
-            clearFieldError(input);
+            validateFilesOnInput(input, maxBytes);
         });
     }
 
@@ -545,6 +616,7 @@
         form.querySelectorAll('input[type="file"][data-jb-max-mb]').forEach(bindFileSizeLimit);
         bindBankDetailsValidation(form);
         bindVehicleAccountType(form);
+        bindVendorCategoryValidation(form);
 
         form.addEventListener('submit', (event) => {
             let valid = true;
@@ -552,6 +624,10 @@
             if (!validateFormUploads(form)) {
                 event.preventDefault();
                 return;
+            }
+
+            if (!validateVendorCategoryGroups(form)) {
+                valid = false;
             }
 
             form.querySelectorAll('[data-jb-restrict="gst"]').forEach((input) => {
@@ -563,11 +639,10 @@
             });
             form.querySelectorAll('input[type="file"]').forEach((input) => {
                 const maxBytes = maxBytesForFileInput(input);
-                const maxMb = maxBytes / (1024 * 1024);
 
                 filesFromInput(input).forEach((file) => {
                     if (file.size > maxBytes) {
-                        showFieldError(input, 'One of the images is too large. Please choose a smaller photo.');
+                        showFieldError(input, fileTooLargeMessage(file, maxBytes));
                         valid = false;
                     }
                 });
@@ -618,7 +693,7 @@
                 valid = false;
             }
             form.querySelectorAll('[required]').forEach((input) => {
-                if (input.disabled || input.type === 'file') {
+                if (input.disabled || input.type === 'file' || input.classList.contains('jb-sr-only')) {
                     return;
                 }
                 if (!String(input.value ?? '').trim()) {

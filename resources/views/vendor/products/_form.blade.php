@@ -1,5 +1,8 @@
 @php
+    use App\Support\VendorValidationRules;
+
     $isCreate = ! $item->exists;
+    $productImageMaxMb = (int) (VendorValidationRules::MAX_IMAGE_KB / 1024);
     $selectedSubcategoryId = old('subcategory_id', $item->subcategory_id);
     $selectedMainCategoryId = old('main_category_id', $item->subcategory?->parent_id);
     $subcategoryOptions = $subcategories->map(fn ($sub) => [
@@ -87,8 +90,16 @@
         @if ($item->displayImageUrl())
             <img src="{{ url($item->displayImageUrl()) }}" alt="" class="vp-product-preview panel-lightbox-trigger">
         @endif
-        <input type="file" name="image" class="vp-file" accept="image/jpeg,image/jpg,image/png,image/webp" {{ $isCreate ? 'required' : '' }}>
-        <p class="vp-field-hint">JPEG, PNG or WebP — max 20 MB</p>
+        <input
+            type="file"
+            name="image"
+            class="vp-file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}"
+            data-vp-file-label="Primary image"
+            {{ $isCreate ? 'required' : '' }}
+        >
+        <p class="vp-field-hint">JPEG, PNG or WebP — max {{ $productImageMaxMb }} MB</p>
         @error('image')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
@@ -111,7 +122,16 @@
             </div>
         @endif
 
-        <input type="file" name="gallery_images[]" class="vp-file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple>
+        <input
+            type="file"
+            name="gallery_images[]"
+            class="vp-file"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            multiple
+            data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}"
+            data-vp-file-label="Gallery image"
+        >
+        <p class="vp-field-hint">Up to 10 images — max {{ $productImageMaxMb }} MB each</p>
         @error('gallery_images')<p class="vp-field-error">{{ $message }}</p>@enderror
         @error('gallery_images.*')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>

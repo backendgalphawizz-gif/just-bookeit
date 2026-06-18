@@ -199,23 +199,46 @@
 
     window.vpShowAlert = vpShowAlert;
 
-    function bindFileInput(input) {
+    function fileTooLargeMessage(file, maxBytes, label) {
+        const selectedMb = (file.size / (1024 * 1024)).toFixed(1);
+        const maxLabel = formatMaxSize(maxBytes);
+        const name = file.name ? `"${file.name}"` : 'The selected file';
+        return `${name} is too large (${selectedMb} MB). ${label} must be ${maxLabel} or smaller.`;
+    }
+
+    function validateFileInput(input, { alertOnError = false } = {}) {
         const maxBytes = parseInt(input.dataset.vpMaxFileBytes || String(VP_DEFAULT_MAX_FILE_BYTES), 10);
-        const label = input.dataset.vpFileLabel || 'Image';
+        const label = input.dataset.vpFileLabel || 'Each image';
+        const files = input.files ? Array.from(input.files) : [];
 
-        input.addEventListener('change', () => {
-            const file = input.files?.[0];
-            if (!file) {
-                return;
-            }
+        if (!files.length) {
+            clearFieldError(input);
+            return true;
+        }
 
+        for (const file of files) {
             if (file.size > maxBytes) {
                 input.value = '';
-                vpShowAlert({
-                    type: 'warning',
-                    title: 'File too large',
-                    message: `${label} must be ${formatMaxSize(maxBytes)} or smaller.`,
-                });
+                const message = fileTooLargeMessage(file, maxBytes, label);
+                showFieldError(input, message);
+                if (alertOnError) {
+                    vpShowAlert({
+                        type: 'warning',
+                        title: 'Image too large',
+                        message,
+                    });
+                }
+                return false;
+            }
+        }
+
+        clearFieldError(input);
+        return true;
+    }
+
+    function bindFileInput(input) {
+        input.addEventListener('change', () => {
+            if (!validateFileInput(input, { alertOnError: true })) {
                 return;
             }
 
@@ -235,4 +258,38 @@
     }
 
     document.querySelectorAll('input[type="file"][data-vp-max-file-bytes]').forEach(bindFileInput);
+
+    document.querySelectorAll('[data-vp-product-form]').forEach((form) => {
+        form.addEventListener('change', (event) => {
+            const input = event.target;
+            if (input instanceof HTMLInputElement && input.type === 'file' && form.contains(input)) {
+                if (!input.dataset.vpMaxFileBytes) {
+                    input.dataset.vpMaxFileBytes = String(VP_DEFAULT_MAX_FILE_BYTES);
+                }
+                validateFileInput(input, { alertOnError: true });
+            }
+        });
+
+        form.addEventListener('submit', (event) => {
+            let valid = true;
+            form.querySelectorAll('input[type="file"]').forEach((input) => {
+                if (!input.dataset.vpMaxFileBytes) {
+                    input.dataset.vpMaxFileBytes = String(VP_DEFAULT_MAX_FILE_BYTES);
+                }
+                if (!validateFileInput(input)) {
+                    valid = false;
+                }
+            });
+            if (!valid) {
+                event.preventDefault();
+                const firstInvalid = form.querySelector('[data-vp-live-error]');
+                firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                vpShowAlert({
+                    type: 'warning',
+                    title: 'Image too large',
+                    message: 'One or more images exceed the 20 MB limit. Choose smaller photos and try again.',
+                });
+            }
+        });
+    });
 })();

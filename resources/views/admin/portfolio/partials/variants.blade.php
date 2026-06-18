@@ -1,4 +1,7 @@
 @php
+    use App\Support\VendorValidationRules;
+
+    $productImageMaxMb = (int) (VendorValidationRules::MAX_IMAGE_KB / 1024);
     $variantRows = old('variants');
     if (! is_array($variantRows)) {
         $variantRows = $portfolio->relationLoaded('variants') && $portfolio->variants->isNotEmpty()
@@ -44,7 +47,7 @@
                     @if (! empty($variant['image_url']))
                         <img src="{{ $variant['image_url'] }}" alt="" class="mb-2 h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
                     @endif
-                    <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input">
+                    <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
                 </div>
                 <div class="flex items-end">
                     <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
@@ -73,7 +76,7 @@
             </div>
             <div>
                 <label class="jb-label">Variant image</label>
-                <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input">
+                <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
             </div>
             <div class="flex items-end">
                 <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
