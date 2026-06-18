@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Vendor;
+use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,19 @@ class DesignerController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'featured' => ['nullable', 'boolean'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
+        ]);
+
         $query = Vendor::query()->active()->where('is_listing_active', true);
+
+        if ($request->filled('city')) {
+            CatalogFilter::applyCityOnVendorQuery($query, $request->string('city')->toString());
+        }
 
         if ($request->filled('search')) {
             $term = '%'.$request->string('search').'%';

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Category;
 use App\Models\PortfolioItem;
+use App\Models\Vendor;
 use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
@@ -66,12 +67,25 @@ class CatalogController extends ApiController
             ->orderBy('name')
             ->get();
 
+        $cities = Vendor::query()
+            ->where('status', 'active')
+            ->where('is_listing_active', true)
+            ->whereNotNull('city')
+            ->where('city', '!=', '')
+            ->whereHas('portfolioItems', fn ($portfolio) => $portfolio->where('status', 'approved'))
+            ->orderBy('city')
+            ->distinct()
+            ->pluck('city')
+            ->values()
+            ->all();
+
         return $this->success([
             ...CustomerApiPresenter::paginator($items, fn (PortfolioItem $item) => CustomerApiPresenter::catalogItem($item)),
             'filters' => [
                 'shop_categories' => $shopCategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'subcategories' => $subcategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'cities' => $cities,
                 'applied' => CatalogFilter::applied($request),
             ],
         ]);
