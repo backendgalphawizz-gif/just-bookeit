@@ -16,6 +16,7 @@ use App\Http\Controllers\Web\VendorController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('web.home');
+Route::get('/services', [CatalogController::class, 'services'])->name('web.services.index');
 Route::get('/catalog', [CatalogController::class, 'index'])->name('web.catalog.index');
 Route::get('/catalog/{item}', [CatalogController::class, 'show'])->name('web.catalog.show');
 Route::get('/contact', [ContactController::class, 'index'])->name('web.contact');

@@ -8,8 +8,8 @@
 
         <nav class="jbw-nav" aria-label="Main">
             <a href="{{ route('web.home') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.home')])>Home</a>
-            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') || request()->routeIs('web.vendors.*') || request()->routeIs('web.bookings.overview')])>Services</a>
-            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') || request()->routeIs('web.vendors.*') || request()->routeIs('web.bookings.overview')])>Categories</a>
+            <a href="{{ route('web.services.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.services.*')])>Services</a>
+            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')])>Categories</a>
             @auth('customer')
                 @unless ($webCustomer->is_guest)
                     <a href="{{ route('web.bookings.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.bookings.*') && ! request()->routeIs('web.bookings.overview')])>My bookings</a>
@@ -91,9 +91,13 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 Home
             </a>
-            <a href="{{ route('web.catalog.index') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.catalog.*') || request()->routeIs('web.vendors.*')]) @click="mobileOpen=false">
+            <a href="{{ route('web.services.index') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.services.*')]) @click="mobileOpen=false">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+                Services
+            </a>
+            <a href="{{ route('web.catalog.index') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')]) @click="mobileOpen=false">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                Catalog
+                Categories
             </a>
             @auth('customer')
                 @unless ($webCustomer->is_guest)

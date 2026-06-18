@@ -26,11 +26,11 @@
             <p class="jbw-footer-heading">Services</p>
             <ul class="jbw-footer-links">
                 @forelse ($webServiceCategories ?? [] as $service)
-                    <li><a href="{{ route('web.catalog.index', ['service' => $service->id]) }}">{{ $service->name }}</a></li>
+                    <li><a href="{{ route('web.services.index', ['service' => $service->id]) }}">{{ $service->name }}</a></li>
                 @empty
-                    <li><a href="{{ route('web.catalog.index') }}">Fashion Designer Booking</a></li>
-                    <li><a href="{{ route('web.catalog.index') }}">Rental Dresses</a></li>
-                    <li><a href="{{ route('web.catalog.index') }}">Rental Jewellery</a></li>
+                    <li><a href="{{ route('web.services.index') }}">Fashion Designer Booking</a></li>
+                    <li><a href="{{ route('web.services.index') }}">Rental Dresses</a></li>
+                    <li><a href="{{ route('web.services.index') }}">Rental Jewellery</a></li>
                 @endforelse
             </ul>
         </div>

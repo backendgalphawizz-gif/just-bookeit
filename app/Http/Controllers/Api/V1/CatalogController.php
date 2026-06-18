@@ -22,6 +22,11 @@ class CatalogController extends ApiController
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ], CatalogFilter::validationRules()));
 
+        $browseMode = $request->string('browse', CatalogFilter::BROWSE_CATEGORIES)->toString();
+        if (! in_array($browseMode, [CatalogFilter::BROWSE_CATEGORIES, CatalogFilter::BROWSE_SERVICES], true)) {
+            $browseMode = CatalogFilter::BROWSE_CATEGORIES;
+        }
+
         $query = PortfolioItem::query()
             ->with(['vendor', 'category', 'subcategory.parent']);
 
@@ -34,7 +39,7 @@ class CatalogController extends ApiController
             });
         }
 
-        CatalogFilter::applyToQuery($query, $request);
+        CatalogFilter::applyToQuery($query, $request, $browseMode);
 
         if ($request->filled('vendor_id')) {
             $query->where('vendor_id', $request->integer('vendor_id'));
@@ -86,7 +91,7 @@ class CatalogController extends ApiController
                 'subcategories' => $subcategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'cities' => $cities,
-                'applied' => CatalogFilter::applied($request),
+                'applied' => CatalogFilter::applied($request, $browseMode),
             ],
         ]);
     }
