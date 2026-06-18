@@ -8,6 +8,16 @@ use Illuminate\Validation\Validator;
 
 class CategoryRequest extends AdminFormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        parent::prepareForValidation();
+
+        $this->merge([
+            'is_active' => $this->boolean('is_active'),
+            'sort_order' => (int) ($this->input('sort_order') ?? 0),
+        ]);
+    }
+
     public function rules(): array
     {
         return [
@@ -19,8 +29,6 @@ class CategoryRequest extends AdminFormRequest
     protected function passedValidation(): void
     {
         $this->merge([
-            'is_active' => $this->boolean('is_active', true),
-            'sort_order' => (int) ($this->input('sort_order') ?? 0),
             'parent_id' => $this->input('type') === Category::TYPE_SERVICE ? null : $this->input('parent_id'),
         ]);
     }
