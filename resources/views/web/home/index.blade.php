@@ -297,6 +297,7 @@ $categoryFallbacks = [
                     <p class="jbw-step-title">Browse &amp; choose</p>
                     <p class="jbw-step-text">Explore hundreds of designer outfits and jewellery from verified boutiques near you.</p>
                 </div>
+
             </div>
             <div class="jbw-step">
                 <div class="jbw-step-num">02</div>

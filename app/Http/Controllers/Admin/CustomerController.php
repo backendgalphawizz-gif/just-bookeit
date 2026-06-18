@@ -60,7 +60,7 @@ class CustomerController extends AdminController
         $customer = Customer::query()->create([
             ...$data,
             'customer_code' => CodeGenerator::customerCode(),
-            'is_verified' => $request->boolean('is_verified'),
+            'is_verified' => true,
             'registered_at' => $data['registered_at'] ?? now(),
         ]);
 
@@ -103,7 +103,6 @@ class CustomerController extends AdminController
         }
 
         $customer->fill($attributes->all());
-        $customer->is_verified = $request->boolean('is_verified');
 
         if (! $customer->registered_at || $customer->registered_at->year < 1970) {
             $customer->registered_at = $customer->created_at ?? now();

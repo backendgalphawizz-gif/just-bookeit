@@ -76,7 +76,6 @@
                 <div><dt>Country</dt><dd>{{ $customer->country ?? '—' }}</dd></div>
                 <div><dt>Pincode</dt><dd>{{ $customer->pincode ?? '—' }}</dd></div>
                 @endif
-                <div><dt>Verified</dt><dd>{{ $customer->is_verified ? 'Yes' : 'No' }}</dd></div>
                 <div><dt>Registered</dt><dd>{{ $customer->registered_at?->format('M d, Y') }}</dd></div>
             </dl>
         </div>
