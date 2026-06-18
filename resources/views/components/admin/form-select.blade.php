@@ -6,7 +6,7 @@
 ])
 
 <div {{ $attributes->class([$full ? 'sm:col-span-2' : '']) }}>
-    <label for="{{ $name }}" class="jb-label">{{ $label }}</label>
+    <label for="{{ $name }}" class="jb-label">{{ $label }}@if ($required)<span class="text-rose-600"> *</span>@endif</label>
     <select id="{{ $name }}" name="{{ $name }}" class="jb-select" {{ $required ? 'required' : '' }}>
         {{ $slot }}
     </select>

@@ -7,10 +7,16 @@
         $isCatalog = $type === 'catalog';
         $isService = $type === \App\Models\Category::TYPE_SERVICE;
         $subcategoryTotal = $subcategoryTotal ?? 0;
+        $activeFilter = request()->has('active') ? (string) request('active') : '';
+        $activeTabs = [
+            '' => 'All',
+            '1' => 'Active',
+            '0' => 'Inactive',
+        ];
         $filterParams = array_filter([
             'type' => $type,
             'search' => request('search'),
-            'active' => request('active'),
+            'active' => $activeFilter !== '' ? $activeFilter : null,
             'parent_id' => request('parent_id'),
         ], fn ($value) => $value !== null && $value !== '');
     @endphp
@@ -43,6 +49,9 @@
     @endpush
     <form method="GET" class="jb-filters">
         <input type="hidden" name="type" value="{{ $type }}">
+        @if ($activeFilter !== '')
+            <input type="hidden" name="active" value="{{ $activeFilter }}">
+        @endif
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
@@ -59,17 +68,26 @@
                     </select>
                 </div>
             @endif
-            <div class="jb-filters-field">
-                <label class="jb-label">Active</label>
-                <select name="active" class="jb-select">
-                    <option value="">All</option>
-                    <option value="1" @selected(request('active') === '1')>Yes</option>
-                    <option value="0" @selected(request('active') === '0')>No</option>
-                </select>
-            </div>
             @include('admin.partials.filters-end', ['resetUrl' => route('admin.categories.index', ['type' => $type])])
         </div>
     </form>
+
+    <div class="jb-tabs-row jb-tabs-row--nested">
+        <div class="jb-tabs-list">
+            @foreach ($activeTabs as $key => $tabLabel)
+                @php
+                    $tabParams = array_merge(
+                        request()->except('page', 'active'),
+                        $key !== '' ? ['active' => $key] : []
+                    );
+                @endphp
+                <a href="{{ route('admin.categories.index', $tabParams) }}"
+                   class="jb-settings-tab {{ $activeFilter === (string) $key ? 'jb-settings-tab--active' : '' }}">
+                    {{ $tabLabel }}
+                </a>
+            @endforeach
+        </div>
+    </div>
 
     <div class="jb-card" @if ($isCatalog) x-data="jbCategoryTree(@js($categories->pluck('id')->values()))" @endif>
         @unless ($isCatalog)
@@ -87,12 +105,13 @@
                         @if ($isCatalog)
                             <th class="jb-col-status">Type</th>
                         @endif
+                        <th class="jb-col-image">Image</th>
                         <th class="jb-col-name">Name</th>
                         @if ($isCatalog)
                             <th>Under category</th>
                         @endif
                         <th class="text-center">Sort</th>
-                        <th class="text-center">Active</th>
+                        <th class="jb-col-status">Status</th>
                         <th class="jb-table-actions-col">Actions</th>
                     </tr>
                 </thead>
@@ -104,6 +123,7 @@
                                 <td class="jb-col-status">
                                     <span class="jb-category-type jb-category-type--main">Category</span>
                                 </td>
+                                @include('admin.categories._image-cell', ['category' => $category])
                                 <td class="jb-col-name font-semibold text-slate-900">
                                     <div class="jb-category-name-cell">
                                         @if ($category->subcategories->isNotEmpty())
@@ -129,7 +149,9 @@
                                 </td>
                                 <td class="text-slate-400">—</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
-                                <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $category->is_active ? 'active' : 'inactive'])
+                                </td>
                                 <td class="jb-table-actions-col">
                                     <div class="jb-actions">
                                         @if (auth('admin')->user()->hasPermission('categories', 'edit'))
@@ -151,12 +173,15 @@
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
                                     </td>
+                                    @include('admin.categories._image-cell', ['category' => $subcategory])
                                     <td class="jb-col-name">
                                         <span class="jb-category-child-name">{{ $subcategory->name }}</span>
                                     </td>
                                     <td>{{ $category->name }}</td>
                                     <td class="text-center">{{ $subcategory->sort_order }}</td>
-                                    <td class="text-center">{{ $subcategory->is_active ? 'Yes' : 'No' }}</td>
+                                    <td class="jb-col-status">
+                                        @include('admin.components.status-badge', ['status' => $subcategory->is_active ? 'active' : 'inactive'])
+                                    </td>
                                     <td class="jb-table-actions-col">
                                         <div class="jb-actions">
                                             @if (auth('admin')->user()->hasPermission('categories', 'edit'))
@@ -178,21 +203,24 @@
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
                                     </td>
-                                    <td colspan="5" class="text-sm text-slate-400">No sub-categories yet.</td>
+                                    <td colspan="6" class="text-sm text-slate-400">No sub-categories yet.</td>
                                 </tr>
                             @endforelse
                         @empty
                             <tr>
-                                <td colspan="7" class="jb-table-empty">No categories yet.</td>
+                                <td colspan="8" class="jb-table-empty">No categories yet.</td>
                             </tr>
                         @endforelse
                     @else
                         @forelse ($categories as $category)
                             <tr>
                                 @include('admin.partials.table-index-cell', ['paginator' => $categories])
+                                @include('admin.categories._image-cell', ['category' => $category])
                                 <td class="jb-col-name font-semibold">{{ $category->name }}</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
-                                <td class="text-center">{{ $category->is_active ? 'Yes' : 'No' }}</td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $category->is_active ? 'active' : 'inactive'])
+                                </td>
                                 <td class="jb-table-actions-col">
                                     <div class="jb-actions">
                                         @if (auth('admin')->user()->hasPermission('categories', 'edit'))
@@ -210,7 +238,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="jb-table-empty">No service categories yet.</td>
+                                <td colspan="6" class="jb-table-empty">No service categories yet.</td>
                             </tr>
                         @endforelse
                     @endif
@@ -310,6 +338,28 @@
         font-weight: 600;
         color: #475569;
         white-space: nowrap;
+    }
+
+    .jb-col-image {
+        width: 4.5rem;
+    }
+
+    .jb-category-table-img {
+        display: block;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        object-fit: cover;
+        background: #fff;
+    }
+
+    .jb-category-table-img--empty {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        background: #f8fafc;
     }
 </style>
 @endpush

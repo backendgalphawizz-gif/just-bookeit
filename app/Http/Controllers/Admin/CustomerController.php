@@ -41,7 +41,7 @@ class CustomerController extends AdminController
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('city'), fn ($q) => $q->where('city', $request->string('city')))
             ->when($request->filled('registered_on'), fn ($q) => $q->whereDate('registered_at', $request->date('registered_on')))
-            ->orderByDesc('registered_at')
+            ->newestFirst('created_at')
             ->paginate(15)
             ->withQueryString();
 
@@ -60,7 +60,7 @@ class CustomerController extends AdminController
         $customer = Customer::query()->create([
             ...$data,
             'customer_code' => CodeGenerator::customerCode(),
-            'is_verified' => $request->boolean('is_verified'),
+            'is_verified' => true,
             'registered_at' => $data['registered_at'] ?? now(),
         ]);
 
@@ -103,7 +103,6 @@ class CustomerController extends AdminController
         }
 
         $customer->fill($attributes->all());
-        $customer->is_verified = $request->boolean('is_verified');
 
         if (! $customer->registered_at || $customer->registered_at->year < 1970) {
             $customer->registered_at = $customer->created_at ?? now();
@@ -157,7 +156,7 @@ class CustomerController extends AdminController
             'active',
         );
 
-        return back()->with('success', "Customer {$customer->name} activated.");
+        return back()->with('success', "Customer {$customer->name} unblocked.");
     }
 
     public function inactivate(Request $request, Customer $customer): RedirectResponse
@@ -165,7 +164,7 @@ class CustomerController extends AdminController
         $this->authorizeAdmin('edit');
 
         if ($customer->hasActiveOrders()) {
-            return back()->with('error', 'This customer has active orders and cannot be inactivated right now.');
+            return back()->with('error', 'This customer has active orders and cannot be blocked right now.');
         }
 
         $data = $request->validate(
@@ -189,7 +188,7 @@ class CustomerController extends AdminController
             $data['rejection_reason'],
         );
 
-        return back()->with('success', "Customer {$customer->name} inactivated.");
+        return back()->with('success', "Customer {$customer->name} blocked.");
     }
 
     private function applyProfileImage(Customer $customer, CustomerRequest $request): void

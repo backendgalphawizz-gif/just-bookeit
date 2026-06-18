@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\BookingController;
+use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ChatController;
@@ -37,6 +39,8 @@ use App\Http\Controllers\Api\V3\NotificationController as DriverNotificationCont
 use App\Http\Controllers\Api\V3\PaymentController as DriverPaymentController;
 use App\Http\Controllers\Api\V3\ProfileController as DriverProfileController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('system/clear-cache', [SystemController::class, 'clearCache'])->name('system.clear-cache');
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('config', [ConfigController::class, 'index'])->name('config');
@@ -77,6 +81,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('bookings/{booking}/dispute', [DisputeController::class, 'store'])->name('bookings.dispute.store');
         Route::get('bookings/{booking}/dispute', [DisputeController::class, 'show'])->name('bookings.dispute.show');
         Route::post('bookings/{booking}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('bookings.dispute.messages');
+
+        Route::get('cart', [CartController::class, 'index'])->name('cart.index');
+        Route::post('cart', [CartController::class, 'store'])->name('cart.store');
+        Route::delete('cart/items/{cartItem}', [CartController::class, 'destroy'])->name('cart.destroy');
 
         Route::get('payment/methods', [PaymentController::class, 'methods'])->name('payment.methods');
         Route::get('payment/bookings/{booking}', [PaymentController::class, 'summary'])->name('payment.summary');

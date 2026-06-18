@@ -9,6 +9,10 @@ use Illuminate\Validation\Rule;
 
 class CatalogFilter
 {
+    public const BROWSE_CATEGORIES = 'categories';
+
+    public const BROWSE_SERVICES = 'services';
+
     public const AUDIENCES = ['women', 'men', 'kids'];
 
     public const SERVICE_SLUGS = [
@@ -82,6 +86,8 @@ class CatalogFilter
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'subcategory_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_SUB)],
             'subcategory' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'browse' => ['nullable', 'string', Rule::in([self::BROWSE_CATEGORIES, self::BROWSE_SERVICES])],
         ];
     }
 
@@ -241,20 +247,28 @@ class CatalogFilter
         return null;
     }
 
-    public static function applyToQuery(Builder $query, Request $request): Builder
+    public static function applyToQuery(Builder $query, Request $request, string $browseMode = self::BROWSE_CATEGORIES): Builder
     {
         self::applyCustomerCatalogConstraints($query);
+
+        if ($browseMode === self::BROWSE_SERVICES) {
+            $serviceCategoryId = self::resolveServiceCategoryId($request);
+
+            if ($serviceCategoryId !== null) {
+                $query->where('category_id', $serviceCategoryId);
+            } else {
+                $query->whereHas('category', fn (Builder $category) => $category->where('type', Category::TYPE_SERVICE));
+            }
+
+            self::applyVendorCity($query, $request->string('city')->toString());
+
+            return $query;
+        }
 
         $audience = self::resolveAudience($request);
 
         if ($audience !== null) {
             $query->where('audience', $audience);
-        }
-
-        $serviceCategoryId = self::resolveServiceCategoryId($request);
-
-        if ($serviceCategoryId !== null) {
-            $query->where('category_id', $serviceCategoryId);
         }
 
         $subcategoryId = self::resolveSubcategoryId($request);
@@ -263,9 +277,29 @@ class CatalogFilter
             $query->where('subcategory_id', $subcategoryId);
         } elseif (($mainCategoryId = self::resolveMainCategoryId($request)) !== null) {
             $query->whereHas('subcategory', fn (Builder $sub) => $sub->where('parent_id', $mainCategoryId));
+        } else {
+            $query->whereNotNull('subcategory_id');
         }
 
+        self::applyVendorCity($query, $request->string('city')->toString());
+
         return $query;
+    }
+
+    public static function applyVendorCity(Builder $query, ?string $city): Builder
+    {
+        $city = trim((string) $city);
+
+        if ($city === '') {
+            return $query;
+        }
+
+        return $query->whereHas('vendor', fn (Builder $vendor) => self::applyCityOnVendorQuery($vendor, $city));
+    }
+
+    public static function applyCityOnVendorQuery(Builder $query, string $city): Builder
+    {
+        return $query->whereRaw('LOWER(TRIM(city)) = ?', [strtolower(trim($city))]);
     }
 
     public static function applyCustomerCatalogConstraints(Builder $query): Builder
@@ -278,7 +312,7 @@ class CatalogFilter
     }
 
     /** @return array<string, mixed> */
-    public static function applied(Request $request): array
+    public static function applied(Request $request, string $browseMode = self::BROWSE_CATEGORIES): array
     {
         $audience = self::resolveAudience($request);
         $serviceCategoryId = self::resolveServiceCategoryId($request);
@@ -290,8 +324,15 @@ class CatalogFilter
         $mainCategoryId = self::resolveMainCategoryId($request);
         $mainCategory = $mainCategoryId ? Category::query()->find($mainCategoryId) : null;
 
+        $city = trim($request->string('city')->toString());
+        $browse = $request->filled('browse')
+            ? $request->string('browse')->toString()
+            : $browseMode;
+
         return array_filter([
+            'browse' => in_array($browse, [self::BROWSE_CATEGORIES, self::BROWSE_SERVICES], true) ? $browse : null,
             'audience' => $audience,
+            'city' => $city !== '' ? $city : null,
             'vendor_id' => $request->filled('vendor_id') ? $request->integer('vendor_id') : null,
             'service' => $serviceCategory ? [
                 'id' => $serviceCategory->id,

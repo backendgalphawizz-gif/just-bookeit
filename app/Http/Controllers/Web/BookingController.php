@@ -47,7 +47,7 @@ class BookingController extends WebController
 
     public function overview(PortfolioItem $item): View|RedirectResponse
     {
-        abort_unless($item->status === 'approved', 404);
+        abort_unless($item->isCatalogAvailable(), 404);
 
         $customer = Auth::guard('customer')->user();
 
@@ -56,14 +56,22 @@ class BookingController extends WebController
         $addresses = $customer->addresses()->orderByDesc('is_default')->orderByDesc('id')->get();
         $defaultAddress = $customer->defaultAddress();
         $measurement = $customer->measurements()->latest('id')->first();
-        $pricing = BookingPricingService::forPortfolioItem($item);
 
-        return view('web.bookings.overview', compact('item', 'addresses', 'defaultAddress', 'measurement', 'pricing'));
+        $rentalDays = BookingPricingService::rentalDays(
+            old('rental_start_date'),
+            old('rental_end_date'),
+        );
+
+        $pricing = BookingPricingService::forPortfolioItem($item, [
+            'rental_days' => $rentalDays,
+        ]);
+
+        return view('web.bookings.overview', compact('item', 'addresses', 'defaultAddress', 'measurement', 'pricing', 'rentalDays'));
     }
 
     public function store(Request $request, PortfolioItem $item): RedirectResponse
     {
-        abort_unless($item->status === 'approved', 404);
+        abort_unless($item->isCatalogAvailable(), 404);
 
         $customer = Auth::guard('customer')->user();
         $this->bookings->assertCanBook($customer);
@@ -98,8 +106,8 @@ class BookingController extends WebController
         $result = $this->bookings->createFromRequest($customer, $item, $data, $request);
 
         return redirect()
-            ->route('web.bookings.show', $result['order'])
-            ->with('success', 'Booking request submitted! The designer will confirm shortly.');
+            ->route('web.bookings.payment', $result['order'])
+            ->with('success', 'Booking created. Complete payment to send your request to the designer.');
     }
 
     public function cancel(Request $request, Order $order): RedirectResponse

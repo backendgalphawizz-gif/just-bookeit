@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
+use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,32 +16,37 @@ class SearchController extends ApiController
     {
         $request->validate([
             'q' => ['required', 'string', 'min:1', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
         ]);
 
         $term = '%'.$request->string('q').'%';
 
-        $items = PortfolioItem::query()
+        $itemsQuery = PortfolioItem::query()
             ->with(['vendor', 'category'])
-            ->where('status', 'approved')
-            ->whereHas('vendor', fn ($vendor) => $vendor->where('status', 'active')->where('is_listing_active', true))
             ->where(function ($q) use ($term) {
                 $q->where('title', 'like', $term)
                     ->orWhere('description', 'like', $term);
-            })
-            ->latest('id')
-            ->limit(10)
-            ->get();
+            });
 
-        $designers = Vendor::query()
+        CatalogFilter::applyCustomerCatalogConstraints($itemsQuery);
+        CatalogFilter::applyVendorCity($itemsQuery, $request->string('city')->toString());
+
+        $items = $itemsQuery->latest('id')->limit(10)->get();
+
+        $designersQuery = Vendor::query()
             ->active()
+            ->where('is_listing_active', true)
             ->where(function ($q) use ($term) {
                 $q->where('brand_name', 'like', $term)
                     ->orWhere('shop_name', 'like', $term)
                     ->orWhere('city', 'like', $term);
-            })
-            ->orderByDesc('rating')
-            ->limit(6)
-            ->get();
+            });
+
+        if ($request->filled('city')) {
+            CatalogFilter::applyCityOnVendorQuery($designersQuery, $request->string('city')->toString());
+        }
+
+        $designers = $designersQuery->orderByDesc('rating')->limit(6)->get();
 
         return $this->success([
             'query' => $request->string('q'),

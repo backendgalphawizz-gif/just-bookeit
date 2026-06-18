@@ -21,7 +21,7 @@ class PaymentController extends AdminController
             ->with(['customer', 'vendor'])
             ->when($request->filled('payment_status'), fn ($q) => $q->where('payment_status', $request->string('payment_status')))
             ->when($request->filled('search'), fn ($q) => $q->where('order_number', 'like', '%'.$request->string('search').'%'))
-            ->orderByDesc('created_at')
+            ->latestIdFirst()
             ->paginate(15)
             ->withQueryString();
 

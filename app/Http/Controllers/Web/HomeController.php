@@ -6,14 +6,9 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Vendor;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 
 class HomeController extends WebController
 {
-    // public function index(): RedirectResponse
-    // {
-    //     return redirect()->route('admin.login');
-    // }
     public function index(): View
     {
         $banners = Banner::query()
@@ -37,6 +32,7 @@ class HomeController extends WebController
 
         $featuredDesigners = Vendor::query()
             ->active()
+            ->where('is_listing_active', true)
             ->orderByDesc('rating')
             ->limit(7)
             ->get();

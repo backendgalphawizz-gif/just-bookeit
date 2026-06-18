@@ -17,11 +17,16 @@ class WebBookingService
     /** @return array{order: Order, pricing: array<string, mixed>} */
     public function createFromRequest(Customer $customer, PortfolioItem $item, array $data, ?Request $request = null): array
     {
-        abort_unless($item->status === 'approved', 404);
-        abort_unless($item->vendor && $item->vendor->status === 'active', 422, 'Designer is not available.');
+        abort_unless($item->isCatalogAvailable(), 404);
+
+        $rentalDays = BookingPricingService::rentalDays(
+            $data['rental_start_date'] ?? null,
+            $data['rental_end_date'] ?? null,
+        );
 
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'shipment_required' => (bool) ($data['shipment_required'] ?? true),
+            'rental_days' => $rentalDays,
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
@@ -31,6 +36,8 @@ class WebBookingService
             'customer_id' => $customer->id,
             'vendor_id' => $item->vendor_id,
             'category_id' => $item->category_id,
+            'portfolio_item_id' => $item->id,
+            'subcategory_id' => $item->subcategory_id,
             'order_type' => 'rental',
             'item_title' => $item->title,
             'item_description' => $item->description,
@@ -74,7 +81,7 @@ class WebBookingService
         $count = Order::query()->where('customer_id', $customer->id)->count();
         $customer->update(['total_orders' => $count]);
 
-        $order->load(['vendor', 'category', 'customer']);
+        $order->load(['vendor', 'category', 'subcategory', 'customer']);
 
         return [
             'order' => $order,

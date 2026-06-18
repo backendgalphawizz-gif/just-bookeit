@@ -59,8 +59,8 @@
                                                     {{ $entry->actionLabel() }}
                                                 </span>
                                             </td>
-                                            <td class="jb-history-status">{{ $entry->previous_status ? ucfirst($entry->previous_status) : '—' }}</td>
-                                            <td class="jb-history-status">{{ $entry->new_status ? ucfirst($entry->new_status) : '—' }}</td>
+                                            <td class="jb-history-status">{{ $entry->previous_status ? \App\Support\AdminAccountStatus::labelFor($entry->previous_status) : '—' }}</td>
+                                            <td class="jb-history-status">{{ $entry->new_status ? \App\Support\AdminAccountStatus::labelFor($entry->new_status) : '—' }}</td>
                                             <td class="jb-history-reason">{{ $entry->reason ?: '—' }}</td>
                                             <td class="jb-history-admin">{{ $entry->admin?->name ?? 'System' }}</td>
                                         </tr>

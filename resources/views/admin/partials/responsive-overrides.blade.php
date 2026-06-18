@@ -3289,4 +3289,241 @@
         color: rgb(148 163 184);
         cursor: not-allowed;
     }
+
+    /* Payout detail page */
+    .jb-payout-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .jb-payout-code {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        letter-spacing: -0.02em;
+    }
+
+    .jb-payout-header-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.375rem;
+    }
+
+    .jb-payout-created {
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+        white-space: nowrap;
+    }
+
+    .jb-payout-amount-card {
+        background: linear-gradient(135deg, rgb(255 251 235) 0%, rgb(254 243 199 / 0.45) 100%);
+        border: 1px solid rgb(253 230 138);
+        border-radius: 0.875rem;
+        padding: 1.25rem 1.375rem;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    }
+
+    .jb-payout-amount-card--paid {
+        background: linear-gradient(135deg, rgb(236 253 245) 0%, rgb(209 250 229 / 0.5) 100%);
+        border-color: rgb(167 243 208);
+    }
+
+    .jb-payout-amount-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgb(146 64 14);
+    }
+
+    .jb-payout-amount-card--paid .jb-payout-amount-label {
+        color: rgb(4 120 87);
+    }
+
+    .jb-payout-amount-value {
+        margin-top: 0.25rem;
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: rgb(120 53 15);
+        line-height: 1.1;
+    }
+
+    .jb-payout-amount-card--paid .jb-payout-amount-value {
+        color: rgb(6 95 70);
+    }
+
+    .jb-payout-breakdown {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0.75rem 1rem;
+        margin-top: 1.25rem;
+        padding-top: 1.125rem;
+        border-top: 1px solid rgb(0 0 0 / 0.06);
+    }
+
+    .jb-payout-breakdown-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
+    .jb-payout-breakdown-item--total .jb-payout-breakdown-value {
+        font-weight: 800;
+        color: rgb(15 23 42);
+    }
+
+    .jb-payout-breakdown-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: rgb(100 116 139);
+    }
+
+    .jb-payout-breakdown-muted {
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .jb-payout-breakdown-value {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: rgb(51 65 85);
+    }
+
+    .jb-payout-breakdown-value--deduct {
+        color: rgb(190 18 60);
+    }
+
+    .jb-payout-breakdown-op {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: rgb(148 163 184);
+        padding-bottom: 0.125rem;
+    }
+
+    .jb-payout-paid-card {
+        background: linear-gradient(160deg, rgb(236 253 245) 0%, rgb(255 255 255) 55%);
+        border: 1px solid rgb(167 243 208);
+        border-radius: 0.875rem;
+        padding: 1.375rem 1.25rem;
+        text-align: center;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    }
+
+    .jb-payout-paid-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        margin: 0 auto 0.75rem;
+        border-radius: 9999px;
+        background: rgb(209 250 229);
+        color: rgb(5 150 105);
+    }
+
+    .jb-payout-paid-title {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        color: rgb(6 95 70);
+    }
+
+    .jb-payout-paid-text {
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: rgb(51 65 85);
+    }
+
+    .jb-payout-paid-meta,
+    .jb-payout-paid-ref {
+        margin-top: 0.75rem;
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-payout-paid-ref span {
+        font-weight: 600;
+        color: rgb(51 65 85);
+        word-break: break-all;
+    }
+
+    .jb-payout-record-card {
+        background: #fff;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.875rem;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    }
+
+    .jb-payout-record-head {
+        padding: 1.125rem 1.25rem;
+        background: linear-gradient(180deg, rgb(248 250 252) 0%, rgb(255 255 255) 100%);
+        border-bottom: 1px solid rgb(226 232 240);
+    }
+
+    .jb-payout-record-title {
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-payout-record-sub {
+        margin-top: 0.25rem;
+        font-size: 0.8125rem;
+        line-height: 1.45;
+        color: rgb(100 116 139);
+    }
+
+    .jb-payout-record-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.125rem 1.25rem 1.25rem;
+    }
+
+    .jb-payout-record-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border-radius: 0.625rem;
+        background: rgb(255 251 235);
+        border: 1px solid rgb(253 230 138);
+        font-size: 0.8125rem;
+        color: rgb(120 53 15);
+    }
+
+    .jb-payout-record-summary strong {
+        font-size: 1.0625rem;
+        font-weight: 800;
+        color: rgb(146 64 14);
+    }
+
+    @media (max-width: 639px) {
+        .jb-payout-breakdown {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .jb-payout-breakdown-op {
+            display: none;
+        }
+
+        .jb-payout-breakdown-item--total {
+            padding-top: 0.5rem;
+            border-top: 1px dashed rgb(0 0 0 / 0.08);
+        }
+    }
 </style>

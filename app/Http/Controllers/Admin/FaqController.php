@@ -25,8 +25,7 @@ class FaqController extends AdminController
                         ->orWhere('answer', 'like', $term);
                 });
             })
-            ->orderBy('sort_order')
-            ->orderBy('id')
+            ->newestFirst()
             ->paginate(20)
             ->withQueryString();
 

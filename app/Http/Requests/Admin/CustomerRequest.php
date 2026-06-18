@@ -30,26 +30,20 @@ class CustomerRequest extends AdminFormRequest
         ]);
     }
 
-    protected function passedValidation(): void
-    {
-        $this->merge([
-            'is_verified' => $this->boolean('is_verified'),
-        ]);
-
-        if ($this->filled('country_id') || $this->filled('state_id') || $this->filled('city_id')
-            || $this->filled('country_other') || $this->filled('state_other') || $this->filled('city_other')) {
-            $resolved = LocationResolver::resolve($this->all());
-            $this->merge($resolved);
-        }
-    }
-
     public function customerData(): array
     {
-        return $this->safe()->except([
+        $data = $this->safe()->except([
             'country_id', 'country_other',
             'state_id', 'state_other',
             'city_id', 'city_other',
             'profile_image',
         ]);
+
+        if ($this->filled('country_id') || $this->filled('state_id') || $this->filled('city_id')
+            || $this->filled('country_other') || $this->filled('state_other') || $this->filled('city_other')) {
+            $data = array_merge($data, LocationResolver::resolve($this->all()));
+        }
+
+        return $data;
     }
 }

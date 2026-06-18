@@ -67,7 +67,7 @@ Auto-saved variables: `v1_token`, `v1_otp`, `v1_portfolio_item_id`, `v1_designer
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/v1/home` | Banners, services, shop categories, featured designers. `location.address` is set when a Bearer token is sent. |
+| GET | `/v1/home` | Banners, services, shop categories, featured designers. `?city=` filters designers by vendor city (defaults to profile city when Bearer token sent). |
 | GET | `/v1/categories` | `?type=service`, `?roots=1`, `?parent_id=` — each category includes `image_url` |
 
 **`GET /v1/categories?roots=1`** returns shop categories and services separately:
@@ -96,7 +96,7 @@ Upload images in **Admin → Categories** when creating or editing a category.
 |--------|----------|-------------|
 | GET | `/v1/bookings` | History. `?tab=rental_dress\|rental_jewellery\|designers` |
 | GET | `/v1/bookings/{id}` | Booking detail + tracking steps |
-| GET | `/v1/bookings/preview/{portfolioItemId}` | Checkout preview (item, address, sizes, payment summary). `?shipment_required=1` |
+| GET | `/v1/bookings/preview/{portfolioItemId}` | Checkout preview (item, address, sizes, payment summary, cart). `?shipment_required=1`. Includes `cart_item_status.in_cart` for duplicate detection. |
 | POST | `/v1/bookings` | Create booking (`multipart` if reference images). See body below. |
 | POST | `/v1/bookings/{id}/cancel` | Cancel when status is `new` or `pending_acceptance` |
 | GET | `/v1/bookings/addresses` | Saved addresses from past orders |

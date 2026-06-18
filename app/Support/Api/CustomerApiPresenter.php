@@ -3,6 +3,7 @@
 namespace App\Support\Api;
 
 use App\Models\Banner;
+use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
@@ -91,6 +92,44 @@ class CustomerApiPresenter
             'rating' => (float) $vendor->rating,
             'profile_image_url' => $vendor->profileImageUrl(),
             'shop_logo_url' => $vendor->shopLogoUrl(),
+        ];
+    }
+
+    public static function customerProfile(Customer $customer): array
+    {
+        return [
+            'id' => $customer->id,
+            'customer_code' => $customer->customer_code,
+            'name' => $customer->name,
+            'mobile' => $customer->mobile,
+            'mobile_no' => $customer->mobile,
+            'email' => $customer->email,
+            'address' => $customer->address,
+            'city' => $customer->city,
+            'state' => $customer->state,
+            'country' => $customer->country,
+            'pincode' => $customer->pincode,
+            'profile_image_url' => $customer->profileImageUrl(),
+            'status' => $customer->status,
+            'is_verified' => (bool) $customer->is_verified,
+            'is_guest' => (bool) $customer->is_guest,
+        ];
+    }
+
+    public static function cartItem(CartItem $cartItem): array
+    {
+        $cartItem->loadMissing(['portfolioItem.vendor', 'portfolioItem.category', 'portfolioItem.subcategory.parent', 'vendor']);
+        $item = $cartItem->portfolioItem;
+
+        return [
+            'id' => $cartItem->id,
+            'quantity' => $cartItem->quantity,
+            'vendor_id' => $cartItem->vendor_id,
+            'portfolio_item_id' => $cartItem->portfolio_item_id,
+            'product' => $item ? self::catalogItem($item) : null,
+            'vendor' => $cartItem->vendor ? self::designerSummary($cartItem->vendor) : null,
+            'line_total' => $item ? round((float) $item->rentalPriceAmount() * $cartItem->quantity, 2) : 0,
+            'added_at' => $cartItem->created_at?->toIso8601String(),
         ];
     }
 
@@ -481,6 +520,8 @@ class CustomerApiPresenter
             'max_reference_images' => 5,
             'payment_summary' => $pricing,
             'shipment_required' => (bool) ($options['shipment_required'] ?? true),
+            'cart' => $options['cart'] ?? null,
+            'cart_item_status' => $options['cart_item_status'] ?? null,
         ];
     }
 

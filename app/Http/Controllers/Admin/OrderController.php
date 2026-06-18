@@ -40,7 +40,7 @@ class OrderController extends AdminController
             ->when($request->filled('payment_status'), fn ($q) => $q->where('payment_status', $request->string('payment_status')))
             ->when($request->filled('vendor_id'), fn ($q) => $q->where('vendor_id', $request->integer('vendor_id')))
             ->when($request->filled('category_id'), fn ($q) => $q->where('category_id', $request->integer('category_id')))
-            ->orderByDesc('created_at')
+            ->latestIdFirst()
             ->paginate(15)
             ->withQueryString();
 
@@ -135,7 +135,7 @@ class OrderController extends AdminController
         $this->applyStatusSideEffects($order, $data['status']);
         $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
-        return back()->with('success', 'Order status updated to '.Order::statusLabelFor($data['status']).'.');
+        return back()->with('success', $this->statusUpdateMessage($order->fresh(), $data['status']));
     }
 
     public function manage(Request $request, Order $order): RedirectResponse
@@ -155,7 +155,7 @@ class OrderController extends AdminController
         $this->applyStatusSideEffects($order, $data['status'], $data['payment_status']);
         $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
-        return back()->with('success', 'Order updated successfully.');
+        return back()->with('success', $this->manageSuccessMessage($order->fresh(), $data));
     }
 
     protected function syncWalletOnPaymentSuccess(Order $order, string $previousPaymentStatus): void
@@ -185,6 +185,27 @@ class OrderController extends AdminController
         if ($status === 'cancelled' && $order->payment_status === 'pending') {
             $order->update(['payment_status' => 'failed']);
         }
+    }
+
+    protected function statusUpdateMessage(Order $order, string $status): string
+    {
+        $message = 'Order status updated to '.Order::statusLabelFor($status).'.';
+
+        if ($status === 'cancelled' && $order->refund) {
+            $message .= ' A refund request has been created for the paid amount.';
+        }
+
+        return $message;
+    }
+
+    /** @param array{status: string} $data */
+    protected function manageSuccessMessage(Order $order, array $data): string
+    {
+        if ($data['status'] === 'cancelled' && $order->refund) {
+            return 'Order updated. A refund request has been created for the paid amount.';
+        }
+
+        return 'Order updated successfully.';
     }
 
     protected function syncCustomerOrderCount(int $customerId): void

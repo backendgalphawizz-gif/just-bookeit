@@ -13,6 +13,20 @@
 	],
 	"item": [
 		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Clear Cache & Storage",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": "{{base_url}}/system/clear-cache",
+						"description": "Runs migrate --force, optimize:clear, cache:clear, config:clear, view:clear, route:clear and clears storage/framework cache + compiled views. No auth required."
+					}
+				}
+			]
+		},
+		{
 			"name": "v1 — User (Customer)",
 			"item": [
 				{
@@ -142,7 +156,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"mobile_no\": \"{{v1_mobile}}\",\n  \"email\": \"customer@example.com\"\n}"
+									"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"mobile_no\": \"{{v1_mobile}}\",\n  \"email\": \"customer@example.com\",\n  \"address\": \"12 MG Road, Block A\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"pincode\": \"400001\"\n}"
 								},
 								"url": "{{base_url}}/v1/auth/register"
 							}
@@ -240,6 +254,26 @@
 											"type": "text"
 										},
 										{
+											"key": "address",
+											"value": "12 MG Road, Block A",
+											"type": "text"
+										},
+										{
+											"key": "state",
+											"value": "Maharashtra",
+											"type": "text"
+										},
+										{
+											"key": "country",
+											"value": "India",
+											"type": "text"
+										},
+										{
+											"key": "pincode",
+											"value": "400001",
+											"type": "text"
+										},
+										{
 											"key": "profile_image",
 											"type": "file",
 											"src": []
@@ -313,8 +347,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/home",
-								"description": "Public endpoint. Bearer token optional. When logged in, includes `notifications.unread_count` and `notifications.total_count` for the bell badge."
+								"url": "{{base_url}}/v1/home?city=Indore",
+								"description": "Public endpoint. Bearer token optional. `?city=` filters featured designers by vendor city; when logged in without `city`, uses the customer profile city. Includes notifications when Bearer token is sent."
 							}
 						},
 						{
@@ -568,6 +602,11 @@
 											"description": "Optional — sub-category slug (e.g. women-sarees). Alias: subcategory_id"
 										},
 										{
+											"key": "city",
+											"value": "Mumbai",
+											"description": "Optional — filter by vendor city (exact match, case-insensitive)"
+										},
+										{
 											"key": "search",
 											"value": ""
 										},
@@ -577,7 +616,7 @@
 										}
 									]
 								},
-								"description": "Catalog list with filters: audience, service, subcategory slug (`women-sarees` or short `sarees` with audience), optional `vendor_id`. Each item includes `is_available`."
+								"description": "Catalog list with filters: audience, service, subcategory slug, vendor_id, city (vendor city). Response includes filters.cities list. Each item includes `is_available`."
 							}
 						},
 						{
@@ -672,6 +711,42 @@
 					]
 				},
 				{
+					"name": "Cart",
+					"item": [
+						{
+							"name": "Get Cart",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v1/cart",
+								"description": "Returns cart summary and items. Cart supports products from one vendor only."
+							}
+						},
+						{
+							"name": "Add To Cart",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"quantity\": 1\n}"},
+								"url": "{{base_url}}/v1/cart",
+								"description": "Add product to cart. Returns 422 if the product is already in the cart or if cart already has items from another vendor."
+							}
+						},
+						{
+							"name": "Remove Cart Item",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "DELETE",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v1/cart/items/{{v1_cart_item_id}}",
+								"description": "Remove one item from cart by cart item id."
+							}
+						}
+					]
+				},
+				{
 					"name": "Bookings",
 					"item": [
 						{
@@ -717,7 +792,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/bookings/preview/{{v1_portfolio_item_id}}?shipment_required=1"
+								"url": "{{base_url}}/v1/bookings/preview/{{v1_portfolio_item_id}}?shipment_required=1",
+								"description": "Checkout preview for a product. Includes cart summary/items when the customer has cart entries, plus cart_item_status for the previewed product (in_cart, message when already added)."
 							}
 						},
 						{

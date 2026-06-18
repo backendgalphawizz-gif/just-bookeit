@@ -14,10 +14,10 @@ class PermissionController extends AdminController
     {
         $permissions = Permission::query()
             ->with(['roles' => fn ($q) => $q->orderBy('name')])
-            ->orderBy('name')
+            ->newestFirst()
             ->get();
 
-        $roles = Role::query()->with('permissions')->orderBy('name')->get();
+        $roles = Role::query()->with('permissions')->newestFirst()->get();
 
         return view('admin.permissions.index', compact('permissions', 'roles'));
     }

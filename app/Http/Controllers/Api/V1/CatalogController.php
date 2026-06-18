@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Category;
 use App\Models\PortfolioItem;
+use App\Models\Vendor;
 use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,11 @@ class CatalogController extends ApiController
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ], CatalogFilter::validationRules()));
 
+        $browseMode = $request->string('browse', CatalogFilter::BROWSE_CATEGORIES)->toString();
+        if (! in_array($browseMode, [CatalogFilter::BROWSE_CATEGORIES, CatalogFilter::BROWSE_SERVICES], true)) {
+            $browseMode = CatalogFilter::BROWSE_CATEGORIES;
+        }
+
         $query = PortfolioItem::query()
             ->with(['vendor', 'category', 'subcategory.parent']);
 
@@ -33,7 +39,7 @@ class CatalogController extends ApiController
             });
         }
 
-        CatalogFilter::applyToQuery($query, $request);
+        CatalogFilter::applyToQuery($query, $request, $browseMode);
 
         if ($request->filled('vendor_id')) {
             $query->where('vendor_id', $request->integer('vendor_id'));
@@ -66,13 +72,26 @@ class CatalogController extends ApiController
             ->orderBy('name')
             ->get();
 
+        $cities = Vendor::query()
+            ->where('status', 'active')
+            ->where('is_listing_active', true)
+            ->whereNotNull('city')
+            ->where('city', '!=', '')
+            ->whereHas('portfolioItems', fn ($portfolio) => $portfolio->where('status', 'approved'))
+            ->orderBy('city')
+            ->distinct()
+            ->pluck('city')
+            ->values()
+            ->all();
+
         return $this->success([
             ...CustomerApiPresenter::paginator($items, fn (PortfolioItem $item) => CustomerApiPresenter::catalogItem($item)),
             'filters' => [
                 'shop_categories' => $shopCategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'subcategories' => $subcategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
-                'applied' => CatalogFilter::applied($request),
+                'cities' => $cities,
+                'applied' => CatalogFilter::applied($request, $browseMode),
             ],
         ]);
     }

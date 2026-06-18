@@ -44,12 +44,30 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (PostTooLargeException $e, \Illuminate\Http\Request $request) {
-            $message = UploadLimits::postTooLargeMessage();
+            $message = str_contains($request->path(), 'portfolio') || str_contains($request->path(), 'products')
+                ? 'One or more images are too large. Maximum size is 20 MB per image. Please choose smaller photos and try again.'
+                : UploadLimits::postTooLargeMessage();
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 413);
             }
 
             return redirect()->back()->with('error', $message);
+        });
+
+        $exceptions->render(function (\Illuminate\Database\UniqueConstraintViolationException $e, \Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || ! $request->is('admin/*')) {
+                return null;
+            }
+
+            $message = 'This record already exists. Please use a different name or value.';
+
+            if (str_contains(strtolower($e->getMessage()), 'categories_slug_unique')) {
+                $message = 'A category with this name already exists. Try a different name or check sub-categories under another parent.';
+            }
+
+            return redirect()->back()
+                ->withInput($request->except('_token'))
+                ->with('error', $message);
         });
     })->create();

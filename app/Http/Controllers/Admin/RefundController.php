@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Refund;
+use App\Models\Vendor;
 use App\Http\Requests\Admin\RefundStoreRequest;
 use App\Http\Requests\Admin\RefundUpdateRequest;
 use App\Services\Vendor\VendorWalletService;
@@ -24,7 +25,7 @@ class RefundController extends AdminController
         $this->validateListDateRange($request);
 
         $refunds = $this->applyDateRange(Refund::query(), $request)
-            ->with(['customer', 'order'])
+            ->with(['customer', 'order.vendor'])
             ->when(
                 $request->get('status') === '_open_' || $request->boolean('open_only'),
                 fn ($q) => $q->whereIn('status', Refund::OPEN_STATUSES)
@@ -33,15 +34,27 @@ class RefundController extends AdminController
                 $request->filled('status') && $request->get('status') !== '_open_',
                 fn ($q) => $q->where('status', $request->string('status'))
             )
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = '%'.$request->string('search').'%';
-                $q->whereHas('customer', fn ($c) => $c->where('name', 'like', $term));
+            ->when($request->filled('customer'), function ($q) use ($request) {
+                $term = '%'.$request->string('customer').'%';
+                $q->whereHas('customer', fn ($customer) => $customer->where('name', 'like', $term));
             })
-            ->orderByDesc('created_at')
+            ->when($request->filled('vendor_id'), function ($q) use ($request) {
+                $q->whereHas('order', fn ($order) => $order->where('vendor_id', $request->integer('vendor_id')));
+            })
+            ->when($request->filled('order_id'), function ($q) use ($request) {
+                $term = '%'.$request->string('order_id').'%';
+                $q->whereHas('order', fn ($order) => $order->where('order_number', 'like', $term));
+            })
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.refunds.index', compact('refunds'));
+        $vendors = Vendor::query()
+            ->where('status', 'active')
+            ->orderBy('brand_name')
+            ->get(['id', 'brand_name', 'shop_name']);
+
+        return view('admin.refunds.index', compact('refunds', 'vendors'));
     }
 
     public function create(): View
