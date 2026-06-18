@@ -114,7 +114,7 @@
             <div class="jbw-overview-card jbw-overview-card--accent">
                 <p class="jbw-overview-label">Payment Summary</p>
                 <div class="jbw-payment-lines" style="margin-bottom:0">
-                    <div><span>Rental price</span><span>₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span></div>
+                    <div><span>Rental ({{ $pricing['rental_days'] ?? 1 }} {{ Str::plural('day', $pricing['rental_days'] ?? 1) }})</span><span>₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span></div>
                     <div><span>Delivery</span><span>₹{{ number_format($pricing['shipping_fee'] ?? 150, 0) }}</span></div>
                     <div><span>GST &amp; tax</span><span>₹{{ number_format($pricing['tax_amount'] ?? 0, 0) }}</span></div>
                 </div>
@@ -123,10 +123,10 @@
                     <strong>₹{{ number_format($pricing['total_amount'] ?? $item->rentalPriceAmount(), 0) }}</strong>
                 </div>
                 <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1.25rem;border-radius:10px;padding:0.9375rem">
-                    Submit booking request
+                    Continue to payment
                 </button>
                 <p style="text-align:center;font-size:0.75rem;color:var(--c-muted);margin:0.75rem 0 0">
-                    Payment is collected after the designer accepts your booking.
+                    You will pay securely on the next step before the designer is notified.
                 </p>
             </div>
         </div>

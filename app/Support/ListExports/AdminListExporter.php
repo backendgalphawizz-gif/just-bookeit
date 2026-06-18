@@ -18,6 +18,7 @@ use App\Models\Vendor;
 use App\Models\VendorPayout;
 use App\Services\Export\ListExportService;
 use App\Support\AdminCityScope;
+use App\Support\AdminListOrder;
 use App\Support\AppliesListDateFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -99,7 +100,7 @@ class AdminListExporter
                     ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
                     ->when($request->filled('city'), fn (Builder $q) => $q->where('city', $request->string('city')))
                     ->when($request->filled('registered_on'), fn (Builder $q) => $q->whereDate('registered_at', $request->date('registered_on')))
-                    ->orderByDesc('registered_at'),
+                    ->newestFirst('registered_at'),
                 'map' => fn (Customer $customer) => [
                     $customer->customer_code,
                     $customer->name,
@@ -131,7 +132,7 @@ class AdminListExporter
                     })
                     ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
                     ->when($request->filled('city'), fn (Builder $q) => $q->where('city', 'like', '%'.$request->string('city').'%'))
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (Vendor $vendor) => [
                     $vendor->vendor_code,
                     $vendor->brand_name,
@@ -165,7 +166,7 @@ class AdminListExporter
                         });
                     })
                     ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (Driver $driver) => [
                     $driver->driver_code,
                     $driver->name,
@@ -181,14 +182,14 @@ class AdminListExporter
                 'title' => 'Categories Export',
                 'basename' => 'categories',
                 'headers' => ['Name', 'Slug', 'Type', 'Parent', 'Active', 'Sort Order', 'Created'],
-                'query' => fn (Request $request) => $this->applyDateRange(Category::query(), $request)
-                    ->with('parent')
-                    ->when($request->string('type')->toString() === 'catalog', fn (Builder $q) => $q->whereIn('type', [Category::TYPE_MAIN, Category::TYPE_SUB]))
-                    ->when($request->filled('type') && $request->string('type')->toString() !== 'catalog', fn (Builder $q) => $q->where('type', $request->string('type')))
-                    ->when($request->filled('search'), fn (Builder $q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
-                    ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
-                    ->orderBy('sort_order')
-                    ->orderBy('name'),
+                'query' => fn (Request $request) => AdminListOrder::newestFirst(
+                    $this->applyDateRange(Category::query(), $request)
+                        ->with('parent')
+                        ->when($request->string('type')->toString() === 'catalog', fn (Builder $q) => $q->whereIn('type', [Category::TYPE_MAIN, Category::TYPE_SUB]))
+                        ->when($request->filled('type') && $request->string('type')->toString() !== 'catalog', fn (Builder $q) => $q->where('type', $request->string('type')))
+                        ->when($request->filled('search'), fn (Builder $q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
+                        ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
+                ),
                 'map' => fn (Category $category) => [
                     $category->name,
                     $category->slug,
@@ -212,7 +213,7 @@ class AdminListExporter
                     ->when($request->filled('payment_status'), fn (Builder $q) => $q->where('payment_status', $request->string('payment_status')))
                     ->when($request->filled('vendor_id'), fn (Builder $q) => $q->where('vendor_id', $request->integer('vendor_id')))
                     ->when($request->filled('category_id'), fn (Builder $q) => $q->where('category_id', $request->integer('category_id')))
-                    ->orderByDesc('created_at'),
+                    ->latestIdFirst(),
                 'map' => fn (Order $order) => [
                     $order->order_number,
                     $order->customer?->name ?? '',
@@ -251,7 +252,7 @@ class AdminListExporter
                         $term = '%'.$request->string('order_id').'%';
                         $q->whereHas('order', fn (Builder $order) => $order->where('order_number', 'like', $term));
                     })
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (Refund $refund) => [
                     $refund->order?->order_number ?? '',
                     $refund->customer?->name ?? '',
@@ -285,7 +286,7 @@ class AdminListExporter
                         $request->filled('status') && $request->get('status') !== '_open_',
                         fn (Builder $q) => $q->where('status', $request->string('status'))
                     )
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (Dispute $dispute) => [
                     $dispute->category?->name ?? $dispute->order?->category?->name ?? '',
                     $dispute->order?->order_number ?? '',
@@ -303,7 +304,7 @@ class AdminListExporter
                     ->with(['customer', 'vendor'])
                     ->when($request->filled('payment_status'), fn (Builder $q) => $q->where('payment_status', $request->string('payment_status')))
                     ->when($request->filled('search'), fn (Builder $q) => $q->where('order_number', 'like', '%'.$request->string('search').'%'))
-                    ->orderByDesc('created_at'),
+                    ->latestIdFirst(),
                 'map' => fn (Order $order) => [
                     $order->order_number,
                     $order->customer?->name ?? '',
@@ -337,7 +338,7 @@ class AdminListExporter
                                 ->orWhereHas('vendor', fn (Builder $v) => $v->where('brand_name', 'like', $term));
                         });
                     })
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (VendorPayout $payout) => [
                     $payout->payout_code,
                     $payout->vendor?->brand_name ?? '',
@@ -364,7 +365,7 @@ class AdminListExporter
                                 ->orWhereHas('vendor', fn (Builder $v) => $v->where('brand_name', 'like', $term));
                         });
                     })
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (PortfolioItem $item) => [
                     $item->title,
                     $item->vendor?->brand_name ?? '',
@@ -381,7 +382,7 @@ class AdminListExporter
                     ->when($request->filled('audience'), fn (Builder $q) => $q->where('audience', $request->string('audience')))
                     ->when($request->filled('search'), fn (Builder $q) => $q->where('title', 'like', '%'.$request->string('search').'%'))
                     ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (Banner $banner) => [
                     Banner::audienceLabel($banner->audience),
                     $banner->title,
@@ -403,17 +404,17 @@ class AdminListExporter
                         $audience = Faq::AUDIENCE_USER;
                     }
 
-                    return Faq::query()
-                        ->forAudience($audience)
-                        ->when($request->filled('search'), function (Builder $q) use ($request) {
-                            $term = '%'.$request->string('search').'%';
-                            $q->where(function (Builder $q) use ($term) {
-                                $q->where('question', 'like', $term)
-                                    ->orWhere('answer', 'like', $term);
-                            });
-                        })
-                        ->orderBy('sort_order')
-                        ->orderBy('id');
+                    return AdminListOrder::newestFirst(
+                        Faq::query()
+                            ->forAudience($audience)
+                            ->when($request->filled('search'), function (Builder $q) use ($request) {
+                                $term = '%'.$request->string('search').'%';
+                                $q->where(function (Builder $q) use ($term) {
+                                    $q->where('question', 'like', $term)
+                                        ->orWhere('answer', 'like', $term);
+                                });
+                            })
+                    );
                 },
                 'map' => fn (Faq $faq) => [
                     $faq->audience,
@@ -429,7 +430,7 @@ class AdminListExporter
                 'headers' => ['Title', 'Channel', 'Audience', 'Status', 'Sent By', 'Sent At'],
                 'query' => fn (Request $request) => $this->applyDateRange(NotificationLog::query(), $request)
                     ->with('admin')
-                    ->orderByDesc('created_at'),
+                    ->newestFirst(),
                 'map' => fn (NotificationLog $log) => [
                     $log->title,
                     $log->channel,
@@ -444,9 +445,9 @@ class AdminListExporter
                 'basename' => 'admin-users',
                 'headers' => ['Name', 'Email', 'Role', 'City', 'Status', 'Last Login'],
                 'validate_dates' => false,
-                'query' => fn (Request $request) => Admin::query()
-                    ->with(['role', 'assignedCities'])
-                    ->orderBy('name'),
+                'query' => fn (Request $request) => AdminListOrder::newestFirst(
+                    Admin::query()->with(['role', 'assignedCities'])
+                ),
                 'map' => fn (Admin $admin) => [
                     $admin->name,
                     $admin->email,
@@ -461,9 +462,9 @@ class AdminListExporter
                 'basename' => 'roles',
                 'headers' => ['Name', 'Slug', 'Admins', 'Active', 'Description'],
                 'validate_dates' => false,
-                'query' => fn (Request $request) => Role::query()
-                    ->withCount('admins')
-                    ->orderBy('name'),
+                'query' => fn (Request $request) => AdminListOrder::newestFirst(
+                    Role::query()->withCount('admins')
+                ),
                 'map' => fn (Role $role) => [
                     $role->name,
                     $role->slug,

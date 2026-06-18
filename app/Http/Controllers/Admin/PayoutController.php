@@ -38,7 +38,7 @@ class PayoutController extends AdminController
                         ->orWhereHas('vendor', fn ($v) => $v->where('brand_name', 'like', $term));
                 });
             })
-            ->orderByDesc('created_at')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

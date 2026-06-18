@@ -22,12 +22,7 @@ class CartController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        $items = $this->cart->itemsFor($customer);
-
-        return $this->success([
-            'summary' => $this->cart->summary($customer),
-            'items' => $items->map(fn (CartItem $item) => CustomerApiPresenter::cartItem($item))->values()->all(),
-        ]);
+        return $this->success($this->cart->apiPayload($customer));
     }
 
     public function store(Request $request): JsonResponse

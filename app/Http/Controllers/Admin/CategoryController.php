@@ -8,6 +8,7 @@ use App\Models\Vendor;
 use App\Http\Requests\Admin\CategoryRequest;
 use App\Support\AppliesListDateFilter;
 use App\Support\CategorySlugResolver;
+use App\Support\AdminListOrder;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -174,8 +175,7 @@ class CategoryController extends AdminController
         )
             ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
             ->when($request->filled('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
-            ->orderBy('sort_order')
-            ->orderBy('name')
+            ->newestFirst()
             ->paginate(20)
             ->withQueryString();
 
@@ -204,12 +204,10 @@ class CategoryController extends AdminController
             })
             ->when($activeFilter !== null, fn ($q) => $q->where('is_active', $activeFilter))
             ->with(['subcategories' => function ($q) use ($activeFilter) {
-                $q->when($activeFilter !== null, fn ($sub) => $sub->where('is_active', $activeFilter))
-                    ->orderBy('sort_order')
-                    ->orderBy('name');
+                $q->when($activeFilter !== null, fn ($sub) => $sub->where('is_active', $activeFilter));
+                AdminListOrder::newestFirst($q);
             }])
-            ->orderBy('sort_order')
-            ->orderBy('name')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

@@ -40,7 +40,7 @@ class VendorPortfolioController extends AdminController
             ->when($request->filled('city'), fn ($q) => $q->where('city', 'like', '%'.$request->string('city').'%'))
             ->whereHas('portfolioImages', $portfolioFilter)
             ->withCount(['portfolioImages as portfolio_photos_count' => $portfolioFilter])
-            ->orderBy('brand_name')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

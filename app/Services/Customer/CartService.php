@@ -5,6 +5,7 @@ namespace App\Services\Customer;
 use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\PortfolioItem;
+use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -17,6 +18,42 @@ class CartService
             ->where('customer_id', $customer->id)
             ->latest('id')
             ->get();
+    }
+
+    public function findForProduct(Customer $customer, int $portfolioItemId): ?CartItem
+    {
+        return CartItem::query()
+            ->where('customer_id', $customer->id)
+            ->where('portfolio_item_id', $portfolioItemId)
+            ->first();
+    }
+
+    /** @return array<string, mixed> */
+    public function apiPayload(Customer $customer): array
+    {
+        $items = $this->itemsFor($customer);
+
+        return [
+            'summary' => $this->summary($customer),
+            'items' => $items
+                ->map(fn (CartItem $item) => CustomerApiPresenter::cartItem($item))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function itemStatusForProduct(Customer $customer, int $portfolioItemId): array
+    {
+        $cartItem = $this->findForProduct($customer, $portfolioItemId);
+
+        return [
+            'portfolio_item_id' => $portfolioItemId,
+            'in_cart' => $cartItem !== null,
+            'cart_item_id' => $cartItem?->id,
+            'quantity' => $cartItem?->quantity,
+            'message' => $cartItem ? 'This product is already in your cart.' : null,
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -65,16 +102,18 @@ class CartService
             throw new InvalidArgumentException('Cart can only contain products from one vendor. Remove existing items before adding from another vendor.');
         }
 
-        $cartItem = CartItem::query()->firstOrNew([
+        $existing = $this->findForProduct($customer, $portfolioItem->id);
+
+        if ($existing) {
+            throw new InvalidArgumentException('This product is already in your cart.');
+        }
+
+        $cartItem = CartItem::query()->create([
             'customer_id' => $customer->id,
             'portfolio_item_id' => $portfolioItem->id,
+            'vendor_id' => $portfolioItem->vendor_id,
+            'quantity' => $quantity,
         ]);
-
-        $cartItem->vendor_id = $portfolioItem->vendor_id;
-        $cartItem->quantity = $cartItem->exists
-            ? $cartItem->quantity + $quantity
-            : $quantity;
-        $cartItem->save();
 
         return $cartItem->fresh(['portfolioItem.vendor', 'portfolioItem.category', 'portfolioItem.subcategory.parent', 'vendor']);
     }

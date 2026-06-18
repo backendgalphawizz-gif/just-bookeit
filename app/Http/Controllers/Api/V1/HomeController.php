@@ -7,6 +7,7 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Vendor;
 use App\Services\NotificationInboxService;
+use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,10 @@ class HomeController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
+        $request->validate([
+            'city' => ['nullable', 'string', 'max:100'],
+        ]);
+
         $banners = Banner::query()
             ->forAudience(Banner::AUDIENCE_CUSTOMER)
             ->published()
@@ -40,13 +45,24 @@ class HomeController extends ApiController
             ->limit(10)
             ->get();
 
-        $featuredDesigners = Vendor::query()
-            ->active()
-            ->orderByDesc('rating')
-            ->limit(7)
-            ->get();
-
         $customer = $request->user('sanctum');
+
+        $city = $request->filled('city')
+            ? trim($request->string('city')->toString())
+            : trim((string) ($customer?->city ?? ''));
+        $city = $city !== '' ? $city : null;
+
+        $featuredDesignersQuery = Vendor::query()
+            ->active()
+            ->where('is_listing_active', true)
+            ->orderByDesc('rating')
+            ->limit(7);
+
+        if ($city) {
+            CatalogFilter::applyCityOnVendorQuery($featuredDesignersQuery, $city);
+        }
+
+        $featuredDesigners = $featuredDesignersQuery->get();
 
         $notificationSummary = $customer
             ? [
@@ -60,9 +76,13 @@ class HomeController extends ApiController
 
         return $this->success([
             'location' => [
-                'label' => 'Home',
-                'address' => $customer?->city,
+                'label' => $city ?? 'Home',
+                'city' => $city,
+                'address' => $city ?? $customer?->city,
             ],
+            'filters' => array_filter([
+                'city' => $city,
+            ]),
             'notifications' => $notificationSummary,
             'banners' => $banners->map(fn ($banner) => CustomerApiPresenter::banner($banner))->values()->all(),
             'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),

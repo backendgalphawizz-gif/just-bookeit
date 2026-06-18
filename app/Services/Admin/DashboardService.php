@@ -270,7 +270,7 @@ class DashboardService
         }
 
         if ($admin?->hasPermission('orders', 'view')) {
-            $this->scopedOrders($admin)->with('customer')->latest()->limit(8)->get()->each(function (Order $order) use ($activities) {
+            $this->scopedOrders($admin)->with('customer')->latest('id')->limit(8)->get()->each(function (Order $order) use ($activities) {
                 $activities->push([
                     'type' => 'new_order',
                     'title' => 'New order',

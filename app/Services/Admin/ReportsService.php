@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Refund;
 use App\Models\Vendor;
 use App\Support\AdminCityScope;
+use App\Support\AdminListOrder;
 use App\Support\AppliesListDateFilter;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -181,15 +182,16 @@ class ReportsService
 
     protected function ordersReportQuery(Request $request): Builder
     {
-        return AdminCityScope::scopeOrders(
-            $this->applyDateRange(Order::query(), $request)
-        )
-            ->with(['customer', 'vendor', 'category'])
-            ->when($request->filled('search'), fn (Builder $q) => $q->where('order_number', 'like', '%'.$request->string('search').'%'))
-            ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
-            ->when($request->filled('payment_status'), fn (Builder $q) => $q->where('payment_status', $request->string('payment_status')))
-            ->when($request->filled('vendor_id'), fn (Builder $q) => $q->where('vendor_id', $request->integer('vendor_id')))
-            ->orderByDesc('created_at');
+        return AdminListOrder::latestIdFirst(
+            AdminCityScope::scopeOrders(
+                $this->applyDateRange(Order::query(), $request)
+            )
+                ->with(['customer', 'vendor', 'category'])
+                ->when($request->filled('search'), fn (Builder $q) => $q->where('order_number', 'like', '%'.$request->string('search').'%'))
+                ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
+                ->when($request->filled('payment_status'), fn (Builder $q) => $q->where('payment_status', $request->string('payment_status')))
+                ->when($request->filled('vendor_id'), fn (Builder $q) => $q->where('vendor_id', $request->integer('vendor_id')))
+        );
     }
 
     public function vendorReport(Request $request): LengthAwarePaginator
@@ -206,21 +208,22 @@ class ReportsService
 
     protected function vendorReportQuery(Request $request): Builder
     {
-        return AdminCityScope::scopeVendors(
-            $this->applyDateRange(Vendor::query(), $request)
-        )
-            ->when($request->filled('search'), function (Builder $q) use ($request) {
-                $term = '%'.$request->string('search').'%';
-                $q->where(function (Builder $q) use ($term) {
-                    $q->where('brand_name', 'like', $term)
-                        ->orWhere('owner_name', 'like', $term)
-                        ->orWhere('email', 'like', $term)
-                        ->orWhere('vendor_code', 'like', $term);
-                });
-            })
-            ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
-            ->when($request->filled('city'), fn (Builder $q) => $q->where('city', 'like', '%'.$request->string('city').'%'))
-            ->orderByDesc('earnings');
+        return AdminListOrder::newestFirst(
+            AdminCityScope::scopeVendors(
+                $this->applyDateRange(Vendor::query(), $request)
+            )
+                ->when($request->filled('search'), function (Builder $q) use ($request) {
+                    $term = '%'.$request->string('search').'%';
+                    $q->where(function (Builder $q) use ($term) {
+                        $q->where('brand_name', 'like', $term)
+                            ->orWhere('owner_name', 'like', $term)
+                            ->orWhere('email', 'like', $term)
+                            ->orWhere('vendor_code', 'like', $term);
+                    });
+                })
+                ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
+                ->when($request->filled('city'), fn (Builder $q) => $q->where('city', 'like', '%'.$request->string('city').'%'))
+        );
     }
 
     public function refundReport(Request $request): LengthAwarePaginator
@@ -244,25 +247,26 @@ class ReportsService
             $query->whereHas('order', fn (Builder $orderQuery) => AdminCityScope::scopeOrders($orderQuery, $admin));
         }
 
-        return $this->applyDateRange($query, $request)
-            ->with(['customer', 'order.vendor'])
-            ->when(
-                $request->get('status') === '_open_' || $request->boolean('open_only'),
-                fn (Builder $q) => $q->whereIn('status', Refund::OPEN_STATUSES)
-            )
-            ->when(
-                $request->filled('status') && $request->get('status') !== '_open_',
-                fn (Builder $q) => $q->where('status', $request->string('status'))
-            )
-            ->when($request->filled('vendor_id'), fn (Builder $q) => $q->whereHas(
-                'order',
-                fn (Builder $order) => $order->where('vendor_id', $request->integer('vendor_id'))
-            ))
-            ->when($request->filled('search'), function (Builder $q) use ($request) {
-                $term = '%'.$request->string('search').'%';
-                $q->whereHas('customer', fn (Builder $c) => $c->where('name', 'like', $term));
-            })
-            ->orderByDesc('created_at');
+        return AdminListOrder::newestFirst(
+            $this->applyDateRange($query, $request)
+                ->with(['customer', 'order.vendor'])
+                ->when(
+                    $request->get('status') === '_open_' || $request->boolean('open_only'),
+                    fn (Builder $q) => $q->whereIn('status', Refund::OPEN_STATUSES)
+                )
+                ->when(
+                    $request->filled('status') && $request->get('status') !== '_open_',
+                    fn (Builder $q) => $q->where('status', $request->string('status'))
+                )
+                ->when($request->filled('vendor_id'), fn (Builder $q) => $q->whereHas(
+                    'order',
+                    fn (Builder $order) => $order->where('vendor_id', $request->integer('vendor_id'))
+                ))
+                ->when($request->filled('search'), function (Builder $q) use ($request) {
+                    $term = '%'.$request->string('search').'%';
+                    $q->whereHas('customer', fn (Builder $c) => $c->where('name', 'like', $term));
+                })
+        );
     }
 
     public function customerGrowth(): int

@@ -10,6 +10,7 @@ use App\Http\Controllers\Web\FaqController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\LocationController;
 use App\Http\Controllers\Web\NotificationController;
+use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +49,8 @@ Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::post('/bookings/{order}/dispute', [DisputeController::class, 'store'])->name('web.bookings.dispute.store');
     Route::get('/bookings/{order}/dispute', [DisputeController::class, 'show'])->name('web.bookings.dispute.show');
     Route::post('/bookings/{order}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('web.bookings.dispute.messages');
+    Route::get('/bookings/{order}/payment', [PaymentController::class, 'show'])->name('web.bookings.payment');
+    Route::post('/bookings/{order}/payment', [PaymentController::class, 'pay'])->name('web.bookings.payment.pay');
     Route::get('/book/{item}', [BookingController::class, 'overview'])->name('web.bookings.overview');
     Route::post('/book/{item}', [BookingController::class, 'store'])->name('web.bookings.store');
 

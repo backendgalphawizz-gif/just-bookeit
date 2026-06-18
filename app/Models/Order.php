@@ -57,6 +57,8 @@ class Order extends Model
         'vendor_id',
         'driver_id',
         'category_id',
+        'portfolio_item_id',
+        'subcategory_id',
         'order_type',
         'item_title',
         'item_description',
@@ -192,6 +194,16 @@ class Order extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function portfolioItem(): BelongsTo
+    {
+        return $this->belongsTo(PortfolioItem::class);
+    }
+
+    public function subcategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'subcategory_id');
     }
 
     public function refund(): HasOne

@@ -45,7 +45,7 @@ class RefundController extends AdminController
                 $term = '%'.$request->string('order_id').'%';
                 $q->whereHas('order', fn ($order) => $order->where('order_number', 'like', $term));
             })
-            ->orderByDesc('created_at')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

@@ -45,7 +45,7 @@ class DisputeController extends AdminController
                 $request->filled('status') && $request->get('status') !== '_open_',
                 fn ($q) => $q->where('status', $request->string('status'))
             )
-            ->orderByDesc('created_at')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

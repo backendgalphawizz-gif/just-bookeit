@@ -25,7 +25,7 @@ class NotificationController extends AdminController
 
         $logs = $this->applyDateRange(NotificationLog::query(), $request)
             ->with('admin')
-            ->orderByDesc('created_at')
+            ->newestFirst()
             ->paginate(15)
             ->withQueryString();
 

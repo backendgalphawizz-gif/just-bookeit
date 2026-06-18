@@ -9,6 +9,7 @@ use App\Models\OrderReview;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Services\Booking\BookingPricingService;
+use App\Services\Customer\CartService;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\OrderDispatchSupport;
 use App\Support\Api\CustomerBookingTab;
@@ -19,6 +20,10 @@ use Illuminate\Http\Request;
 
 class BookingController extends ApiController
 {
+    public function __construct(
+        protected CartService $cart
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         /** @var Customer $customer */
@@ -59,12 +64,16 @@ class BookingController extends ApiController
     {
         abort_unless($item->isApprovedForCatalog(), 404);
 
-        /** @var Customer|null $customer */
+        /** @var Customer $customer */
         $customer = $request->user();
 
-        return $this->success(CustomerApiPresenter::bookingPreview($item, $customer, [
+        $options = [
             'shipment_required' => $request->boolean('shipment_required', true),
-        ]));
+            'cart' => $this->cart->apiPayload($customer),
+            'cart_item_status' => $this->cart->itemStatusForProduct($customer, $item->id),
+        ];
+
+        return $this->success(CustomerApiPresenter::bookingPreview($item, $customer, $options));
     }
 
     public function store(Request $request): JsonResponse
@@ -100,6 +109,10 @@ class BookingController extends ApiController
 
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'shipment_required' => $request->boolean('shipment_required', true),
+            'rental_days' => BookingPricingService::rentalDays(
+                $data['rental_start_date'] ?? null,
+                $data['rental_end_date'] ?? null,
+            ),
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
@@ -112,6 +125,8 @@ class BookingController extends ApiController
             'customer_id' => $customer->id,
             'vendor_id' => $item->vendor_id,
             'category_id' => $item->category_id,
+            'portfolio_item_id' => $item->id,
+            'subcategory_id' => $item->subcategory_id,
             'order_type' => 'rental',
             'item_title' => $item->title,
             'item_description' => $item->description,

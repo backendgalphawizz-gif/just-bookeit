@@ -18,7 +18,7 @@ class AdminUserController extends AdminController
     {
         $admins = Admin::query()
             ->with(['role', 'assignedCities'])
-            ->orderBy('name')
+            ->newestFirst()
             ->paginate(15);
 
         return view('admin.admins.index', compact('admins'));

@@ -3,19 +3,18 @@
 @section('title', 'Catalog')
 
 @section('content')
-@php
-    $fashionFallbacks = [
-        'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80',
-        'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=600&q=80',
-        'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80',
-        'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80',
-        'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=600&q=80',
-        'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=600&q=80',
-        'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80',
-        'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=600&q=80',
-    ];
-    $hasFilters = request('search') || request('category') || request('subcategory') || request('service');
-@endphp
+    @php
+        $filterParams = fn (array $extra = []) => array_filter(array_merge([
+            'category' => request('category'),
+            'subcategory' => request('subcategory'),
+            'service' => request('service'),
+            'designer' => request('designer'),
+            'city' => request('city'),
+            'search' => request('search'),
+        ], $extra), fn ($value) => $value !== null && $value !== '');
+        $hasFilters = request('search') || request('designer') || request('city') || request('category') || request('subcategory') || request('service');
+        $activeCategoryId = request('category');
+    @endphp
 
 <div class="jbw-container">
     <div class="jbw-page-head" >
@@ -43,59 +42,31 @@
             <p class="jbw-filter-title">Filter By</p>
 
             <form method="GET" action="{{ route('web.catalog.index') }}">
-                 <div class="jbw-field" style="margin-top:1rem">
-                    <label class="jbw-label" for="category">Category</label>
-                 <div class="jbw-subcategory-strip" style="gap:0rem; margin-bottom:0rem; padding-bottom:0rem;">
-                    @foreach ($mainCategories as $cat)
-                        <a
-                            href="{{ route('web.catalog.index', array_filter(['category' => $cat->id, 'service' => request('service'), 'search' => request('search')])) }}"
-                            class="jbw-subcategory-chip" style="border:none !important; gap:0rem; min-width:4.5rem"
-                        >
-                            @if ($cat->imageUrl())
-                                <img src="{{ $cat->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
-                            @endif
-                            <span class="jbw-subcategory-chip-label">{{ $cat->name }}</span>
-                        </a>
-                    @endforeach
-                </div>
-                 </div>
-                   <!-- <div class="jbw-field" style="margin-top:1rem">
-                    <label class="jbw-label" for="category">Category</label>
-                    <select id="category" name="category" class="jbw-select" onchange="this.form.submit()">
-                        <option value="">All categories</option>
+                @if (request('category'))
+                    <input type="hidden" name="category" value="{{ request('category') }}">
+                @endif
+                @if (request('subcategory'))
+                    <input type="hidden" name="subcategory" value="{{ request('subcategory') }}">
+                @endif
+
+                <div class="jbw-field" style="margin-top:1rem">
+                    <label class="jbw-label">Shop for</label>
+                    <div class="jbw-subcategory-strip" style="gap:0rem; margin-bottom:0rem; padding-bottom:0rem;">
                         @foreach ($mainCategories as $cat)
-                            <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
+                            <a
+                                href="{{ route('web.catalog.index', $filterParams(['category' => $cat->id, 'subcategory' => null])) }}"
+                                @class(['jbw-subcategory-chip', 'is-active' => (int) request('category') === $cat->id])
+                                style="border:none !important; gap:0rem; min-width:4.5rem"
+                            >
+                                @if ($cat->imageUrl())
+                                    <img src="{{ $cat->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
+                                @endif
+                                <span class="jbw-subcategory-chip-label">{{ $cat->name }}</span>
+                            </a>
                         @endforeach
-                    </select>
-                </div> -->
-
-                <div class="jbw-field" style="margin-top:1rem; margin-bottom:1rem;">
-    <label class="jbw-label">Price Range</label>
-
-    <div class="jbw-price-range">
-        <div class="jbw-price-range-fill"></div>
-        <span class="jbw-price-thumb jbw-price-thumb-left"></span>
-        <span class="jbw-price-thumb jbw-price-thumb-right"></span>
-    </div>
-
-    <div class="jbw-price-labels">
-        <span>₹0</span>
-        <span>₹50,000</span>
-    </div>
-</div>
-<div class="jbw-field">
-                    <label class="jbw-label" for="search">Designer</label>
-                    <input id="search" type="search" name="search" class="jbw-input borderradius" value="{{ request('search') }}" placeholder="Enter designers...">
-                </div>
-                <div class="jbw-field">
-                    <label class="jbw-label" for="search">Location</label>
-                    <input id="search" type="search" name="search" class="jbw-input borderradius" value="{{ request('search') }}" placeholder="Enter location...">
+                    </div>
                 </div>
 
-                <!-- <div class="jbw-field">
-                    <label class="jbw-label" for="search">Search</label>
-                    <input id="search" type="search" name="search" class="jbw-input" value="{{ request('search') }}" placeholder="Gown, lehenga...">
-                </div>
                 <div class="jbw-field" style="margin-top:1rem">
                     <label class="jbw-label" for="service">Service type</label>
                     <select id="service" name="service" class="jbw-select">
@@ -104,25 +75,17 @@
                             <option value="{{ $service->id }}" @selected(request('service') == $service->id)>{{ $service->name }}</option>
                         @endforeach
                     </select>
-                </div> -->
-                <!-- <div class="jbw-field" style="margin-top:1rem">
-                    <label class="jbw-label" for="category">Category</label>
-                    <select id="category" name="category" class="jbw-select" onchange="this.form.submit()">
-                        <option value="">All categories</option>
-                        @foreach ($mainCategories as $cat)
-                            <option value="{{ $cat->id }}" @selected(request('category') == $cat->id)>{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
-                </div> -->
-                <!-- <div class="jbw-field" style="margin-top:1rem">
-                    <label class="jbw-label" for="subcategory">Sub-category</label>
-                    <select id="subcategory" name="subcategory" class="jbw-select" @disabled(! request('category'))>
-                        <option value="">All sub-categories</option>
-                        @foreach ($subcategories as $sub)
-                            <option value="{{ $sub->id }}" @selected(request('subcategory') == $sub->id)>{{ $sub->name }}</option>
-                        @endforeach
-                    </select>
-                </div> -->
+                </div>
+
+                <div class="jbw-field" style="margin-top:1rem">
+                    <label class="jbw-label" for="designer">Designer</label>
+                    <input id="designer" type="search" name="designer" class="jbw-input borderradius" value="{{ request('designer', request('search')) }}" placeholder="Designer name">
+                </div>
+                <div class="jbw-field">
+                    <label class="jbw-label" for="city">City</label>
+                    <input id="city" type="search" name="city" class="jbw-input borderradius" value="{{ request('city') }}" placeholder="e.g. Mumbai">
+                </div>
+
                 <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1.25rem;border-radius:10px">Apply filters</button>
                 @if($hasFilters)
                     <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--ghost jbw-btn--block" style="margin-top:0.5rem;border-radius:10px">Clear filters</a>
@@ -132,16 +95,16 @@
 
         <div class="jbw-catalog-results">
             @if ($subcategories->isNotEmpty() && request('category'))
-                <!-- <div class="jbw-subcategory-strip">
+                <div class="jbw-subcategory-strip">
                     <a
-                        href="{{ route('web.catalog.index', array_filter(['category' => request('category'), 'service' => request('service'), 'search' => request('search')])) }}"
+                        href="{{ route('web.catalog.index', $filterParams(['subcategory' => null])) }}"
                         @class(['jbw-subcategory-chip', 'is-active' => ! request('subcategory')])
                     >
                         <span class="jbw-subcategory-chip-label">All</span>
                     </a>
-                    @foreach ($subcategories as $i => $sub)
+                    @foreach ($subcategories as $sub)
                         <a
-                            href="{{ route('web.catalog.index', array_filter(['category' => request('category'), 'subcategory' => $sub->id, 'service' => request('service'), 'search' => request('search')])) }}"
+                            href="{{ route('web.catalog.index', $filterParams(['subcategory' => $sub->id])) }}"
                             @class(['jbw-subcategory-chip', 'is-active' => request('subcategory') == $sub->id])
                         >
                             @if ($sub->imageUrl())
@@ -150,30 +113,23 @@
                             <span class="jbw-subcategory-chip-label">{{ $sub->name }}</span>
                         </a>
                     @endforeach
-                </div> -->
-            @elseif (! request('category') && $mainCategories->isNotEmpty())
-                <!-- <div class="jbw-subcategory-strip">
-                    @foreach ($mainCategories as $cat)
-                        <a
-                            href="{{ route('web.catalog.index', array_filter(['category' => $cat->id, 'service' => request('service'), 'search' => request('search')])) }}"
-                            class="jbw-subcategory-chip"
-                        >
-                            @if ($cat->imageUrl())
-                                <img src="{{ $cat->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
-                            @endif
-                            <span class="jbw-subcategory-chip-label">{{ $cat->name }}</span>
-                        </a>
-                    @endforeach
-                </div> -->
+                </div>
             @endif
 
-            <!-- @if($hasFilters)
-                <p class="jbw-catalog-count">
-                    {{ $items->total() }} result{{ $items->total() != 1 ? 's' : '' }}
-                    @if(request('search')) for "<strong>{{ request('search') }}</strong>"@endif
+            @if ($hasFilters)
+                <p class="jbw-catalog-count" style="margin:0 0 1rem;font-size:0.875rem;color:var(--c-muted)">
+                    {{ $items->total() }} result{{ $items->total() === 1 ? '' : 's' }}
                 </p>
-            @endif -->
+            @endif
 
+            @php
+                $fashionFallbacks = [
+                    'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80',
+                    'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=600&q=80',
+                    'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&q=80',
+                    'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&q=80',
+                ];
+            @endphp
             <div class="jbw-product-grid">
                 @forelse ($items as $item)
                     @php $fallback = $fashionFallbacks[$item->id % count($fashionFallbacks)]; @endphp

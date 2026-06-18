@@ -20,7 +20,7 @@ class RoleController extends AdminController
         $roles = Role::query()
             ->withCount('admins')
             ->with('permissions')
-            ->orderBy('name')
+            ->newestFirst()
             ->get();
 
         return view('admin.roles.index', compact('roles'));

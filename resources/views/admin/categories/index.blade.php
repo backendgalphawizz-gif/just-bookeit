@@ -105,6 +105,7 @@
                         @if ($isCatalog)
                             <th class="jb-col-status">Type</th>
                         @endif
+                        <th class="jb-col-image">Image</th>
                         <th class="jb-col-name">Name</th>
                         @if ($isCatalog)
                             <th>Under category</th>
@@ -122,6 +123,7 @@
                                 <td class="jb-col-status">
                                     <span class="jb-category-type jb-category-type--main">Category</span>
                                 </td>
+                                @include('admin.categories._image-cell', ['category' => $category])
                                 <td class="jb-col-name font-semibold text-slate-900">
                                     <div class="jb-category-name-cell">
                                         @if ($category->subcategories->isNotEmpty())
@@ -171,6 +173,7 @@
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
                                     </td>
+                                    @include('admin.categories._image-cell', ['category' => $subcategory])
                                     <td class="jb-col-name">
                                         <span class="jb-category-child-name">{{ $subcategory->name }}</span>
                                     </td>
@@ -200,18 +203,19 @@
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
                                     </td>
-                                    <td colspan="5" class="text-sm text-slate-400">No sub-categories yet.</td>
+                                    <td colspan="6" class="text-sm text-slate-400">No sub-categories yet.</td>
                                 </tr>
                             @endforelse
                         @empty
                             <tr>
-                                <td colspan="7" class="jb-table-empty">No categories yet.</td>
+                                <td colspan="8" class="jb-table-empty">No categories yet.</td>
                             </tr>
                         @endforelse
                     @else
                         @forelse ($categories as $category)
                             <tr>
                                 @include('admin.partials.table-index-cell', ['paginator' => $categories])
+                                @include('admin.categories._image-cell', ['category' => $category])
                                 <td class="jb-col-name font-semibold">{{ $category->name }}</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
                                 <td class="jb-col-status">
@@ -234,7 +238,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="jb-table-empty">No service categories yet.</td>
+                                <td colspan="6" class="jb-table-empty">No service categories yet.</td>
                             </tr>
                         @endforelse
                     @endif
@@ -334,6 +338,28 @@
         font-weight: 600;
         color: #475569;
         white-space: nowrap;
+    }
+
+    .jb-col-image {
+        width: 4.5rem;
+    }
+
+    .jb-category-table-img {
+        display: block;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e2e8f0;
+        object-fit: cover;
+        background: #fff;
+    }
+
+    .jb-category-table-img--empty {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        background: #f8fafc;
     }
 </style>
 @endpush
