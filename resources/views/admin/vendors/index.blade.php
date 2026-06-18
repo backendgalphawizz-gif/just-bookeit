@@ -1,4 +1,4 @@
-in this table  i need @extends('admin.layouts.app')
+@extends('admin.layouts.app')
 @section('title', 'Vendors')
 @section('page_title', 'Vendors')
 @section('page_subtitle', 'Designer onboarding and vendor operations')
