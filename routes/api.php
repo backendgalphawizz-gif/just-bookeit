@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\SystemController;
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CartController;
@@ -38,6 +39,8 @@ use App\Http\Controllers\Api\V3\NotificationController as DriverNotificationCont
 use App\Http\Controllers\Api\V3\PaymentController as DriverPaymentController;
 use App\Http\Controllers\Api\V3\ProfileController as DriverProfileController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('system/clear-cache', [SystemController::class, 'clearCache'])->name('system.clear-cache');
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('config', [ConfigController::class, 'index'])->name('config');
