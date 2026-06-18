@@ -101,7 +101,7 @@ class AdminListExporter
                     ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
                     ->when($request->filled('city'), fn (Builder $q) => $q->where('city', $request->string('city')))
                     ->when($request->filled('registered_on'), fn (Builder $q) => $q->whereDate('registered_at', $request->date('registered_on')))
-                    ->newestFirst('registered_at'),
+                    ->newestFirst('created_at'),
                 'map' => fn (Customer $customer) => [
                     $customer->customer_code,
                     $customer->name,
