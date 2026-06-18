@@ -37,10 +37,7 @@ class RoleController extends AdminController
 
     public function store(RoleRequest $request): RedirectResponse
     {
-        $data = $request->validated();
-        unset($data['permissions']);
-
-        $role = Role::query()->create($data);
+        $role = Role::query()->create($request->roleData());
         $this->syncRolePermissions($role, $request);
 
         return redirect()->route('admin.roles.index')->with('success', 'Role created successfully.');
@@ -60,8 +57,7 @@ class RoleController extends AdminController
 
     public function update(RoleRequest $request, Role $role): RedirectResponse
     {
-        $data = $request->validated();
-        unset($data['permissions']);
+        $data = $request->roleData();
 
         if ($role->slug === 'super_admin') {
             unset($data['slug']);

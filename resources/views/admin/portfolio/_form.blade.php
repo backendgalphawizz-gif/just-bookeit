@@ -1,5 +1,8 @@
 @php
+    use App\Support\VendorValidationRules;
+
     $isCreate = ! $portfolio->exists;
+    $productImageMaxMb = (int) (VendorValidationRules::MAX_IMAGE_KB / 1024);
     $selectedSubcategoryId = old('subcategory_id', $portfolio->subcategory_id);
     $selectedMainCategoryId = old('main_category_id', $portfolio->subcategory?->parent_id);
     $subcategoryOptions = $subcategories->map(fn ($sub) => [
@@ -118,8 +121,16 @@
         @if ($portfolio->displayImageUrl())
             <img src="{{ $portfolio->displayImageUrl() }}" alt="{{ $portfolio->title }}" class="mb-3 h-20 w-20 rounded-xl object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
         @endif
-        <input type="file" name="image" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" {{ $isCreate ? 'required' : '' }}>
-        <p class="mt-1.5 text-xs text-slate-500">JPEG, PNG or WebP — max 20 MB.</p>
+        <input
+            type="file"
+            name="image"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            class="jb-input"
+            data-jb-max-mb="{{ $productImageMaxMb }}"
+            data-jb-file-label="Primary image"
+            {{ $isCreate ? 'required' : '' }}
+        >
+        <p class="mt-1.5 text-xs text-slate-500">JPEG, PNG or WebP — max {{ $productImageMaxMb }} MB.</p>
         @error('image')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>
 
@@ -148,7 +159,16 @@
             </div>
         @endif
 
-        <input type="file" name="gallery_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" multiple class="jb-input">
+        <input
+            type="file"
+            name="gallery_images[]"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
+            multiple
+            class="jb-input"
+            data-jb-max-mb="{{ $productImageMaxMb }}"
+            data-jb-file-label="Gallery image"
+        >
+        <p class="mt-1.5 text-xs text-slate-500">Up to 10 images — max {{ $productImageMaxMb }} MB each.</p>
         @error('gallery_images')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
         @error('gallery_images.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>

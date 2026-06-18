@@ -19,6 +19,7 @@
 
 <div
     class="jb-multi-select"
+    @if ($required) data-jb-service-categories @endif
     x-data="{
         open: false,
         selected: @js($selectedIds),

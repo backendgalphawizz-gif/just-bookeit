@@ -107,7 +107,7 @@
         <a href="{{ route('admin.categories.index') }}" class="ml-2 text-xs font-semibold text-rose-600 hover:text-rose-700">Manage categories</a>
     @endif
 </p>
-<div class="sm:col-span-2">
+<div class="sm:col-span-2" data-jb-audience-categories>
     <p class="jb-label">Categories <span class="text-rose-600">*</span></p>
     <p class="mb-3 text-xs text-slate-500">Select one or more: Men, Women, Kids.</p>
     <div class="flex flex-wrap gap-4">

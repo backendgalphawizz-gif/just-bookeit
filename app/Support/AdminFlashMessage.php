@@ -59,11 +59,11 @@ class AdminFlashMessage
             str_contains($lower, 'approved') => 'Approved',
             str_contains($lower, 'rejected') => 'Rejected',
             str_contains($lower, 'suspended') => 'Suspended',
-            str_contains($lower, 'blocked') => 'Blocked',
             str_contains($lower, 'unblocked') => 'Unblocked',
-            str_contains($lower, 'inactivated') => 'Blocked',
-            str_contains($lower, 'activated') => 'Unblocked',
             str_contains($lower, 'reactivated') => 'Unblocked',
+            str_contains($lower, 'inactivated') => 'Blocked',
+            str_contains($lower, 'blocked') => 'Blocked',
+            str_contains($lower, 'activated') => 'Unblocked',
             default => 'Success',
         };
     }

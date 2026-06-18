@@ -44,7 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (PostTooLargeException $e, \Illuminate\Http\Request $request) {
-            $message = UploadLimits::postTooLargeMessage();
+            $message = str_contains($request->path(), 'portfolio') || str_contains($request->path(), 'products')
+                ? 'One or more images are too large. Maximum size is 20 MB per image. Please choose smaller photos and try again.'
+                : UploadLimits::postTooLargeMessage();
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 413);
