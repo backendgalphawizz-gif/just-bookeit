@@ -88,16 +88,107 @@ $categoryFallbacks = [
     @endif
 </section>
 
-{{-- ── Our services ──────────────────────────────────────────────── --}}
+
+
+<!-- our services  -->
 <section class="jbw-section-band">
     <div class="jbw-container">
+        <div class="jbw-section-head designers-header">
+            <h2 class="jbw-section-title">Our services</h2>
+
+            <div class="designer-nav">
+                <button class="designer-arrow prev" onclick="slideServices(-1)">&#10094;</button>
+                <button class="designer-arrow next" onclick="slideServices(1)">&#10095;</button>
+            </div>
+        </div>
+
+        <div class="service-slider-wrapper">
+            <div class="service-slider" id="serviceSlider">
+                @forelse ($services as $index => $service)
+                    <!-- CHANGED: Turned from <a> into a button/div to prevent instant redirect -->
+                    <div class="service-card textalign"
+                         style="cursor: pointer;"
+                         onclick="openGenderModal('{{ route('web.services.index', ['service' => $service->id]) }}')">
+
+                        <div class="jbw-tile">
+                            <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}"
+                                 alt="{{ $service->name }}">
+                        </div>
+
+                        <p class="jbw-step-title textalign">
+                            {{ $service->name }}
+                        </p>
+                    </div>
+                @empty
+                    @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
+                        <div class="service-card textalign"
+                             style="cursor: pointer;"
+                             onclick="openGenderModal('{{ route('web.services.index') }}')">
+                            <div class="jbw-tile">
+                                <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
+                            </div>
+
+                            <p class="jbw-step-title textalign">
+                                {{ $svc[0] }}
+                            </p>
+                        </div>
+                    @endforeach
+                @endforelse
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- NEW: Pop-up Selection Modal matching image_64c9e4.png -->
+<div id="jbwGenderModal" class="jbw-modal-overlay" style="display: none;">
+    <div class="jbw-modal-content">
+        <button class="jbw-modal-close" onclick="closeGenderModal()">&times;</button>
+
+        <div class="jbw-modal-options-grid">
+            <!-- Women Selection Column -->
+            <div class="jbw-modal-option" onclick="selectGender('women')">
+                <div class="jbw-modal-circle-thumb">
+                    <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=400&q=80" alt="Women Selection">
+                </div>
+                <h3>WOMEN</h3>
+            </div>
+
+            <!-- Men Selection Column -->
+            <div class="jbw-modal-option" onclick="selectGender('men')">
+                <div class="jbw-modal-circle-thumb">
+                    <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80" alt="Men Selection">
+                </div>
+                <h3>Men</h3>
+            </div>
+
+            <!-- Kids Selection Column -->
+            <div class="jbw-modal-option" onclick="selectGender('kids')">
+                <div class="jbw-modal-circle-thumb">
+                    <img src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=400&q=80" alt="Kids Selection">
+                </div>
+                <h3>KIDS</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+{{-- ── Our services ──────────────────────────────────────────────── --}}
+<!-- old -->
+<!-- <section class="jbw-section-band">
+    <div class="jbw-container"> -->
+        <!-- old -->
         <!-- <div class="jbw-section-head alignmentheading ma"> -->
         <!-- <span class="jbw-eyebrow">Our services</span> -->
         <!-- <h2 class="jbw-section-title ">Our services</h2> -->
         <!-- <h2 class="jbw-section-title">Choose how you want to look fabulous</h2> -->
         <!-- <p class="jbw-section-sub">From complete designer consultations to rental dresses for a single evening - we have you covered.</p> -->
         <!-- </div> -->
-        <div class="jbw-section-head designers-header">
+              <!-- old -->
+        <!-- <div class="jbw-section-head designers-header">
             <h2 class="jbw-section-title">Our services</h2>
 
 
@@ -111,7 +202,8 @@ $categoryFallbacks = [
                 </button>
             </div>
 
-        </div>
+        </div> -->
+             <!-- old -->
         {{-- Legacy grid layout kept for reference
         <div class="jbw-grid-3">
             @forelse ($services as $index => $service)
@@ -119,7 +211,8 @@ $categoryFallbacks = [
             @endforelse
         </div>
         --}}
-        <div class="service-slider-wrapper">
+             <!-- old -->
+        <!-- <div class="service-slider-wrapper">
 
 
 
@@ -153,7 +246,8 @@ $categoryFallbacks = [
     </div>
         </div>
     </div>
-</section>
+</section> -->
+     <!-- old -->
 
 {{-- ── Shop by category ──────────────────────────────────────────── --}}
 <section class="jbw-section-band">
@@ -251,7 +345,7 @@ $categoryFallbacks = [
 
 
 {{-- ── Banner Section ──────────────────────────────────────────────── --}}
-<section class="jbw-section-band p-0">
+<section class="jbw-section-band p-0" style="padding-top: 15px; padding-bottom:0px;">
     <div class="jbw-container">
         <img src="../../../../assets/frontend/bannerjustbook.png" />
     </div>
@@ -284,11 +378,11 @@ $categoryFallbacks = [
 </section> -->
 
 {{-- ── How it works ─────────────────────────────────────────────── --}}
-<!-- <section class="jbw-section-band jbw-section-band--warm" id="how-it-works">
+<section class="jbw-section-band jbw-section-band--warm" id="how-it-works" style="margin-top: 2rem; background:none">
     <div class="jbw-container">
         <div class="jbw-section-head">
-            <span class="jbw-eyebrow">How it works</span>
-            <h2 class="jbw-section-title">Three steps to your perfect look</h2>
+            <!-- <span class="jbw-eyebrow">How it works</span> -->
+            <h2 class="jbw-section-title" style="text-align: start;">How it works</h2>
         </div>
         <div class="jbw-steps">
             <div class="jbw-step">
@@ -315,7 +409,7 @@ $categoryFallbacks = [
             </div>
         </div>
     </div>
-</section> -->
+</section>
 
 
 {{-- Legacy duplicate sections removed (were HTML comments but Blade still compiled them) --}}
@@ -390,6 +484,39 @@ $categoryFallbacks = [
         restartTimer();
     })();
 </script>
+<script>
+    let currentServiceUrl = '';
+
+function openGenderModal(baseRouteUrl) {
+    currentServiceUrl = baseRouteUrl;
+    document.getElementById('jbwGenderModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Lock background scrolling
+}
+
+function closeGenderModal() {
+    document.getElementById('jbwGenderModal').style.display = 'none';
+    document.body.style.overflow = ''; // Release scroll lock
+}
+
+function selectGender(selectedGenderKey) {
+    if (currentServiceUrl) {
+        // Parse current query parameters to avoid breaking existing service variables
+        const separator = currentServiceUrl.includes('?') ? '&' : '?';
+        const finalRedirectUrl = `${currentServiceUrl}${separator}gender=${selectedGenderKey}`;
+
+        // Push view redirection path natively
+        window.location.href = finalRedirectUrl;
+    }
+}
+
+// Close the modal window gracefully if clicked anywhere outside the content box
+window.onclick = function(event) {
+    const modalElement = document.getElementById('jbwGenderModal');
+    if (event.target === modalElement) {
+        closeGenderModal();
+    }
+}
+    </script>
 @endpush
 
 @endsection

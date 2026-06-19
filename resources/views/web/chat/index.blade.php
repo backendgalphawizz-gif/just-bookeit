@@ -139,12 +139,25 @@
     </div>
 </div>
 
-@if ($activeChat)
+<!-- @if ($activeChat)
 <script>
     (function() {
         const box = document.getElementById('jbw-chat-messages');
         if (box) box.scrollTop = box.scrollHeight;
     })();
+</script>
+@endif -->
+@if ($activeChat)
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const box = document.getElementById('jbw-chat-messages');
+
+    if (box) {
+        setTimeout(() => {
+            box.scrollTop = box.scrollHeight;
+        }, 100);
+    }
+});
 </script>
 @endif
 @endsection

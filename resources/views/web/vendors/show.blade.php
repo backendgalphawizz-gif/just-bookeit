@@ -15,28 +15,28 @@
             <span class="jbw-vendor-head-avatar jbw-designer-fallback" style="display:grid;place-items:center;font-size:1.5rem">{{ strtoupper(substr($vendor->brand_name, 0, 1)) }}</span>
         @endif
         <div>
-            <h1 class="jbw-page-title" style="font-family:var(--font-serif);margin:0">{{ $vendor->brand_name }}</h1>
-            <p class="jbw-page-subtitle">
+            <h2 class="jbw-section-title" style="font-family:var(--font-serif); margin-bottom:0rem !important; margin-top:1.5rem; font-size:1.25rem; margin-bottom:1rem;">{{ $vendor->brand_name }}</h2>
+            <p class="jbw-page-subtitle" style="margin-top: 0rem;">
                 ★ {{ number_format($vendor->rating, 1) }}
                 @if($vendor->city) · {{ $vendor->city }} @endif
-                @if($vendor->mobile) · {{ $vendor->mobile }} @endif
+                <!-- @if($vendor->mobile) · {{ $vendor->mobile }} @endif -->
             </p>
             <div class="jbw-detail-actions" style="margin-top:0.75rem">
                 @auth('customer')
                     @unless ($webCustomer->is_guest)
-                        <a href="{{ route('web.chat.start', $vendor) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <a href="{{ route('web.chat.start', $vendor) }}" class="jbw-product-price jbw-btn jbw-btn--outline jbw-btn--sm">
+                            <img src="../../../../assets/frontend/chat11.png"/>
                             Chat
                         </a>
                     @else
                         <a href="{{ route('web.register', ['redirect' => route('web.chat.start', $vendor)]) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                            <img src="../../../../assets/frontend/chat11.png"/>
                             Chat
                         </a>
                     @endunless
                 @else
                     <a href="{{ route('web.login', ['redirect' => route('web.chat.start', $vendor)]) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <img src="../../../../assets/frontend/chat11.png"/>
                         Chat
                     </a>
                 @endauth

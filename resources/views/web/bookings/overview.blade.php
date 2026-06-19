@@ -8,16 +8,16 @@
 @endphp
 
 <div class="jbw-container">
-    <nav class="jbw-breadcrumb">
+    <nav class="jbw-breadcrumb" style="margin-bottom: 0rem;">
         <a href="{{ route('web.catalog.show', $item) }}" class="jbw-breadcrumb-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             Back to item
         </a>
     </nav>
 
-    <div class="jbw-page-head" style="padding-top:1rem">
+    <div class="jbw-page-head" style="padding-top:0rem; margin-bottom:0.5rem;">
         <h1 class="jbw-page-title">Booking Overview</h1>
-        <p class="jbw-page-subtitle">Review your selection and submit your rental request</p>
+        <p class="jbw-page-subtitle" style="margin-top: 0rem;">Review your selection and submit your rental request</p>
     </div>
 
     <form method="POST" action="{{ route('web.bookings.store', $item) }}" class="jbw-booking-layout">
@@ -37,9 +37,9 @@
                 </div>
             </div>
 
-            <div class="jbw-overview-card">
+            <div class="jbw-overview-card" >
                 <p class="jbw-overview-label">Rental Period</p>
-                <div class="jbw-measure-form-grid" style="grid-template-columns:1fr 1fr">
+                <div class="jbw-measure-form-grids" style="grid-template-columns:1fr 1fr;">
                     <div class="jbw-field">
                         <label class="jbw-label" for="rental_start_date">Start date</label>
                         <input type="date" id="rental_start_date" name="rental_start_date" class="jbw-input" value="{{ old('rental_start_date') }}" min="{{ now()->format('Y-m-d') }}" required>

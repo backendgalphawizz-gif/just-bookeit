@@ -5,7 +5,7 @@
 @section('content')
 <div class="jbw-container">
     <div class="jbw-page-head">
-        <span class="jbw-eyebrow">Help</span>
+        <!-- <span class="jbw-eyebrow">Help</span> -->
         <h1 class="jbw-page-title">Frequently Asked Questions</h1>
         <p class="jbw-page-subtitle">Answers to common questions about bookings, rentals, and your account.</p>
     </div>

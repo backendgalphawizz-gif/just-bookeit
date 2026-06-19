@@ -18,9 +18,26 @@
         </form>
 
         <p class="jbw-auth-resend">
-            <a href="{{ $otpSession['type'] === 'register' ? route('web.register') : route('web.login') }}" id="resend-link">Request new code</a>
+            <a  href="{{ $otpSession['type'] === 'register' ? route('web.register') : route('web.login') }}" id="resend-link">Request new code</a>
             <span id="resend-timer" class="jbw-auth-timer">00:48</span>
         </p>
+      <a href="{{ route('web.login') }}" class="jbw-auth-footer textmanage">
+    <p> <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"></path>
+        <path d="M12 19L5 12L12 5"></path>
+    </svg> Back to Login</p>
+</a>
+
+<a href="{{ url('/') }}" class="jbw-auth-footer textmanage">
+    <p> <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"></path>
+        <path d="M12 19L5 12L12 5"></path>
+    </svg> Go To Home </p>
+</a>
     </x-web.auth-shell>
 
     <script>

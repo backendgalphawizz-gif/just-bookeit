@@ -711,8 +711,8 @@ border-radius: 8px !important;
 
 .jbw-section-band--warm {
     background: linear-gradient(135deg, #fdf6f0 0%, #fef9f5 40%, #f5f0ea 100%);
-    border-top: 1px solid #ede8e0;
-    border-bottom: 1px solid #ede8e0;
+    /* border-top: 1px solid #ede8e0;
+    border-bottom: 1px solid #ede8e0; */
 }
 
 .jbw-section-band--dark {
@@ -885,7 +885,7 @@ border-radius: 8px !important;
 
 .jbw-footer-bottom {
     border-top: 1px solid #1e3340;
-    padding: 1.25rem 0 1.75rem;
+    padding: 0.25rem 0 1.75rem;
     font-size: 0.8125rem;
     color: #5a7582;
     display: flex;
@@ -998,6 +998,18 @@ border-radius: 8px !important;
     border-color: var(--c-primary);
     box-shadow: 0 0 0 3px rgb(242 81 35 / 0.1);
 }
+
+.jbw-measure-form-grids {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .jbw-measure-form-grids {
+        grid-template-columns: 1fr !important;
+    }
+}
 .jbw-input.is-invalid {
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgb(239 68 68 / 0.08);
@@ -1034,9 +1046,38 @@ border-radius: 8px !important;
     border: 1px solid var(--c-border);
     border-radius: var(--r-card);
     box-shadow: var(--c-shadow-sm);
-    padding: 1.5rem;
+    padding: 1.0rem;
 }
 
+
+.jbw-faq-question {
+    position: relative;
+    cursor: pointer;
+    list-style: none;
+    padding-right: 32px;
+    font-weight: 600;
+}
+
+.jbw-faq-question::-webkit-details-marker {
+    display: none;
+}
+
+.jbw-faq-question::after {
+    content: "";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-70%) rotate(45deg);
+    transition: transform 0.25s ease;
+}
+
+.jbw-faq-item[open] .jbw-faq-question::after {
+    transform: translateY(-30%) rotate(-135deg);
+}
 .jbw-faq-list { display: grid; gap: 0.75rem; }
 .jbw-faq-item { padding: 0; overflow: hidden; }
 .jbw-faq-question {
@@ -1090,7 +1131,8 @@ border-radius: 8px !important;
     padding-top: 0rem !important;
     margin-bottom: 0.5rem !important;
 }
-.jbw-page-head { margin-bottom: 1.5rem; padding-top: 1rem; }
+/* .jbw-page-head { margin-bottom: 1.5rem; padding-top: 1rem; } */
+.jbw-page-head { margin-bottom: 1.5rem; padding-top: 0rem; }
 .jbw-page-title { font-family: var(--font-serif); font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 600; margin: 0; }
 .jbw-page-subtitle { color: var(--c-muted); margin: 0.375rem 0 0; font-size: 0.9375rem; }
 .jbw-back-link { text-decoration: none; color: var(--c-text); font-weight: 700; }
@@ -1522,15 +1564,28 @@ border-radius: 8px !important;
     margin-bottom: 20px;
 }
 
-.service-slider {
+/* .service-slider {
     display: flex;
     gap: 20px;
     overflow: hidden;
     scroll-behavior: smooth;
+} */
+
+    .service-slider {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
+.service-slider::-webkit-scrollbar {
+    display: none;
+}
 .service-card {
-    min-width: 280px;
+    min-width: 306px;
     flex-shrink: 0;
     text-decoration: none;
 }
@@ -1545,6 +1600,154 @@ border-radius: 8px !important;
     font-size: 18px;
     cursor: pointer;
 }
+/* our service modal */
+
+/* Modal Panel Wrapper Mask Layer */
+.jbw-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+/* Modal Content Card matching image_64c9e4.png configuration */
+.jbw-modal-content {
+    background-color: #ffffff;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 820px;
+    padding: 3.0rem 2.0rem 2.0rem 2.0rem;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Top Right Close Button Icon Wrapper */
+.jbw-modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: 1px solid #cbd5e1;
+    font-size: 1.5rem;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.jbw-modal-close:hover {
+    background-color: #f1f5f9;
+    color: #000;
+}
+
+/* Three Columns Layout Engine Grid */
+.jbw-modal-options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0rem;
+    text-align: center;
+}
+
+.jbw-modal-option {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    group: hover;
+}
+
+/* Perfect Circular Image Frames */
+.jbw-modal-circle-thumb {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jbw-modal-circle-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Interactive Hover Feedback Scaling Animations */
+.jbw-modal-option:hover .jbw-modal-circle-thumb {
+    transform: scale(1.04);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Captions Styles */
+.jbw-modal-option h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #1e293b;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+/* Responsive Scaling Overrides for Smaller Mobile viewports */
+@media (max-width: 640px) {
+    /* Main Content Card scaling adjustments */
+    .jbw-modal-content {
+        padding: 2.5rem 1.5rem 2rem 1.5rem;
+        width: 85%;
+        max-height: 90vh;
+        overflow-y: auto; /* Fallback for exceptionally small screens */
+    }
+
+    /* Change grid from horizontal columns into a stacked vertical list */
+    .jbw-modal-options-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    /* Keep items centered in a vertical row layout or flex align */
+    .jbw-modal-option {
+        flex-direction: row; /* Switch layout inline for scannability, or keep 'column' to match desktop */
+        justify-content: flex-start;
+        align-items: center;
+        gap: 1.25rem;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 0.75rem;
+        width: 100%;
+    }
+
+    /* Remove border highlight from the final list option */
+    .jbw-modal-option:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    /* Resize circle thumbnails smoothly for mobile finger taps */
+    .jbw-modal-circle-thumb {
+        width: 70px;
+        height: 70px;
+        margin-bottom: 0; /* Clear bottom margin since text sits next to it now */
+    }
+
+    /* Typography size enhancements for mobile scanning */
+    .jbw-modal-option h3 {
+        font-size: 1.1rem;
+        letter-spacing: 0.03em;
+        text-align: left;
+    }
+}
+
 /* ─── Featured designers row ─────────────────────────────────────── */
 
 
@@ -1753,7 +1956,7 @@ border-radius: 8px !important;
 }
 
 /* ─── Product detail ─────────────────────────────────────────────── */
-.jbw-product-detail { display: grid; gap: 2.5rem; margin-bottom: 3rem; }
+.jbw-product-detail { display: grid; gap: 2.5rem; margin-bottom: 1rem; }
 .jbw-gallery-main { border-radius: 20px; overflow: hidden; background: #f0ede8; }
 .jbw-gallery-main img { width: 100%; display: block; aspect-ratio: 1/; object-fit: cover; }
 .jbw-product-detail-title { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; margin: 0 0 0.625rem; }
@@ -1772,6 +1975,14 @@ border-radius: 8px !important;
     max-height:450px;
     overflow-y:auto;
     padding-right:4px;
+}
+@media (max-width: 767px) {
+    .jbw-gallery-thumbs {
+        max-height: 200px; /* adjust as needed */
+    }
+    .jbw-breadcrumb {
+         padding-top: 0rem !important;
+        }
 }
 
 .jbw-gallery-thumbs::-webkit-scrollbar{
@@ -1917,7 +2128,7 @@ border-radius: 8px !important;
 }
 
 /* ─── Bookings ────────────────────────────────────────────────────── */
-.jbw-booking-tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--c-border); }
+.jbw-booking-tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--c-border); }
 .jbw-booking-tab {
     padding: 0.875rem 0.25rem;
     margin-right: 1.25rem;
@@ -1945,7 +2156,22 @@ border-radius: 8px !important;
     background: #f0ede8;
 }
 
+.viewdetails {
+    /* background: #dbeafe; */
+    color: #000000;
+    height: fit-content;
+    display: inline-flex;
+    padding: 0.15rem 1.75rem;
+    border-radius: 999px;
+    font-size: 0.7875rem !important;
+    font-weight: 700;
+    text-decoration: none;
+
+    letter-spacing: 0.04em;
+    border: 1px solid var(--c-border);
+}
 .jbw-status {
+    height: fit-content;
     display: inline-flex;
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
@@ -1963,7 +2189,7 @@ border-radius: 8px !important;
 /* booking detail */
 .jbw-booking-layout { display: grid; gap: 1.5rem; }
 .jbw-booking-main,
-.jbw-booking-sidebar { display: grid; gap: 1.25rem; }
+.jbw-booking-sidebar { display: grid; gap: 1.25rem; height: fit-content; }
 .jbw-booking-card {
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -2009,7 +2235,7 @@ border-radius: 8px !important;
 .jbw-payment-total strong { font-size: 1.375rem; color: var(--c-primary); }
 
 /* ─── Measurements ────────────────────────────────────────────────── */
-.jbw-measure-page { padding-top: 1.0rem; padding-bottom: 4rem; }
+.jbw-measure-page { padding-top: 1.0rem; padding-bottom: 1rem; }
 .jbw-measure-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
 .jbw-measure-back {
     display: inline-flex; align-items: center; gap: 0.5rem;
@@ -2045,7 +2271,7 @@ border-radius: 8px !important;
 .jbw-measure-actions { display: flex; justify-content: flex-end; margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--c-border); }
 .jbw-measure-form-grid { display: grid; gap: 1rem 1.25rem; }
 @media (min-width: 768px) { .jbw-measure-form-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 767px) { .jbw-measure-form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 767px) { .jbw-measure-form-grid { grid-template-columns: repeat(1, 1fr); } }
 
 .jbw-measures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.625rem; }
 .jbw-measure { background: var(--c-bg); border-radius: 10px; padding: 0.75rem; text-align: center; }
@@ -2118,6 +2344,28 @@ border-radius: 8px !important;
     overflow: hidden;
     min-height: 38vh;
 }
+@media (max-width: 768px) {
+    .jbw-auth-page-brand {
+        min-height: 12vh;
+        padding: 1.5rem 1rem;
+    }
+     .auth-logo {
+        height: 100px !important;
+    }
+    .jbw-auth-page-form {
+        padding-top: 0rem !important;
+    }
+    .jbw-auth-page-form {
+        padding: 0rem 1.25rem 3rem !important;
+    }
+}
+.textmanage {
+    font-weight: 800;
+    color: #e95433 !important;
+    text-decoration: none;
+
+}
+
 
 .jbw-auth-brand-bg {
     position: absolute; inset: 0;
@@ -2351,7 +2599,7 @@ border-radius: 8px !important;
 }
 
 /* ─── Breadcrumb ─────────────────────────────────────────────────── */
-.jbw-breadcrumb { margin-bottom: 1.5rem; padding-top: 1.5rem; }
+.jbw-breadcrumb { margin-bottom: 1.5rem; padding-top: 0.5rem; }
 .jbw-breadcrumb-link {
     display: inline-flex; align-items: center; gap: 0.375rem;
     text-decoration: none; color: var(--c-muted);
@@ -2384,7 +2632,7 @@ border-radius: 8px !important;
     display: flex;
     gap: 0.75rem;
     overflow-x: auto;
-    padding-bottom: 1rem;
+    padding-bottom: 0.5rem;
     margin-bottom: 1rem;
     scrollbar-width: thin;
 }
@@ -2868,14 +3116,20 @@ background: #AE2A0B;
 
 /* Container gets tighter padding on small screens */
 @media (max-width: 480px) {
-    .jbw-container { width: min(100%, 100% - 1.5rem); }
+    .jbw-container { width: min(100%, 100%); }
 }
+/* @media (max-width: 480px) {
+    .jbw-container { width: min(100%, 100% - 1.5rem); }
+} */
 
 /* Hero - smaller on mobile */
 @media (max-width: 640px) {
     .jbw-hero {
         height: clamp(360px, 52vh, 480px);
         min-height: 360px;
+    }
+    .jbw-hero-content {
+        max-width: 85%;
     }
 
     .jbw-hero-content { padding: 1.25rem 1rem; }
@@ -2886,16 +3140,16 @@ background: #AE2A0B;
     .jbw-hero-scroll { display: none; }
     .jbw-hero-arrow { width: 2.25rem; height: 2.25rem; font-size: 1rem; }
     .category-card {
-        flex-basis: clamp(180px, 62vw, 240px);
+        flex-basis: clamp(306px, 62vw, 240px);
         min-width: clamp(180px, 62vw, 240px);
     }
 }
 
 /* Section bands — less padding on mobile */
 @media (max-width: 768px) {
-    .jbw-section-band { padding: 3rem 0; }
+    .jbw-section-band { padding: 0.180rem 0; }
     .jbw-section-band--cta { padding: 3.5rem 0; }
-    .jbw-section-head { margin-bottom: 1.75rem; }
+    .jbw-section-head { margin-bottom: 0.75rem; }
     .jbw-section-title { font-size: clamp(1.375rem, 5vw, 1.875rem); }
     .jbw-steps { gap: 1.25rem; }
     .jbw-cta-actions { gap: 0.75rem; }
@@ -2962,15 +3216,17 @@ background: #AE2A0B;
 
 /* Footer responsive */
 @media (max-width: 479px) {
-    .jbw-footer { padding-top: 2.5rem; margin-top: 2.5rem; }
-    .jbw-footer-grid { gap: 2rem; }
+    /* .jbw-footer { padding-top: 2.5rem; margin-top: 2.5rem; padding-left: 1rem; } */
+        .jbw-footer { padding-top: 2.5rem; margin-top: 0.5rem; padding-left: 1rem; }
+    .jbw-footer-grid { gap: 1rem; }
     .jbw-footer-about { max-width: 100%; }
     .jbw-footer-bottom { flex-direction: column; text-align: center; gap: 0.375rem; }
 }
 
 /* Page heads on mobile */
 @media (max-width: 640px) {
-    .jbw-page-head { padding-top: 1.5rem; margin-bottom: 1.25rem; }
+    /* .jbw-page-head { padding-top: 1.5rem; margin-bottom: 1.25rem; } */
+        .jbw-page-head { padding-top: 0rem; margin-bottom: 0rem; }
     .jbw-page-title { font-size: 1.5rem; }
     .jbw-page-subtitle { font-size: 0.875rem; }
     .jbw-card { padding: 1.125rem; }

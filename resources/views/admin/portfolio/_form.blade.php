@@ -125,7 +125,7 @@
             type="file"
             name="image"
             accept="image/jpeg,image/jpg,image/png,image/webp"
-            class="jb-input"
+            class="jb-input vp-input"
             data-jb-max-mb="{{ $productImageMaxMb }}"
             data-jb-file-label="Primary image"
             {{ $isCreate ? 'required' : '' }}
@@ -164,7 +164,7 @@
             name="gallery_images[]"
             accept="image/jpeg,image/jpg,image/png,image/webp"
             multiple
-            class="jb-input"
+            class="jb-input vp-input"
             data-jb-max-mb="{{ $productImageMaxMb }}"
             data-jb-file-label="Gallery image"
         >

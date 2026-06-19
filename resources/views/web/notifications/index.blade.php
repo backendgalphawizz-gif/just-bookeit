@@ -6,7 +6,7 @@
 <div class="jbw-container">
     <div class="jbw-page-head" style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:1rem">
         <div>
-            <span class="jbw-eyebrow">Inbox</span>
+            <!-- <span class="jbw-eyebrow">Inbox</span> -->
             <h1 class="jbw-page-title">Notifications</h1>
             <p class="jbw-page-subtitle">
                 @if ($unreadCount > 0)

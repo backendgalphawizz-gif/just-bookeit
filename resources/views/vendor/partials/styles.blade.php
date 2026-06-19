@@ -3507,7 +3507,7 @@ border-bottom: 0px !important;
     .vp-form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 5px;
 }
 
 .vp-field-full {
