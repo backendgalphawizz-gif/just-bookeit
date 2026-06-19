@@ -52,6 +52,13 @@ class ChatController extends WebController
                 ->update(['read_at' => now()]);
         }
 
+        if ($activeChat && ! $request->filled('chat')) {
+            return redirect()->route('web.chat.index', array_filter([
+                'chat' => $activeChat->id,
+                'search' => $request->input('search'),
+            ]));
+        }
+
         return view('web.chat.index', compact('conversations', 'activeChat', 'messages'));
     }
 
@@ -115,7 +122,7 @@ class ChatController extends WebController
 
         $chat->update(['last_message_at' => $message->created_at]);
 
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'message' => WebChatLivePresenter::message($message, ChatMessage::SENDER_CUSTOMER),
             ]);
