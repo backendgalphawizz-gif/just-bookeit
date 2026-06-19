@@ -81,7 +81,16 @@ class DeliveryController extends DriverApiController
     public function accept(Request $request, Order $delivery): JsonResponse
     {
         $driver = $this->driver($request);
-        $this->assertAvailableDelivery($delivery);
+        $this->assertCanAcceptDelivery($delivery, $driver);
+
+        if (
+            (int) $delivery->driver_id === (int) $driver->id
+            && $delivery->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED
+        ) {
+            return $this->success([
+                'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category']), $driver),
+            ], 'Delivery already accepted.');
+        }
 
         $delivery->update([
             'driver_id' => $driver->id,

@@ -23,8 +23,26 @@ abstract class DriverApiController extends ApiController
         abort_unless($order->driver_id === $driver->id, 403);
     }
 
-    protected function assertAvailableDelivery(Order $order): void
+    protected function assertCanAcceptDelivery(Order $order, Driver $driver): void
     {
-        abort_unless(OrderDispatchSupport::isDispatchStatus($order->status) && $order->driver_id === null, 422, 'This delivery is no longer available.');
+        if (! OrderDispatchSupport::isDispatchStatus($order->status)) {
+            abort(422, 'This delivery is not available yet. The vendor must mark the order in progress first.');
+        }
+
+        if ($order->driver_id !== null && (int) $order->driver_id !== (int) $driver->id) {
+            abort(422, 'This delivery has already been assigned to another driver.');
+        }
+
+        if (
+            $order->driver_id === null
+            || (
+                (int) $order->driver_id === (int) $driver->id
+                && in_array($order->driver_delivery_status, [null, Order::DRIVER_STATUS_ACCEPTED], true)
+            )
+        ) {
+            return;
+        }
+
+        abort(422, 'This delivery is no longer available.');
     }
 }

@@ -3875,6 +3875,7 @@ background: #AE2A0B;
     overflow-x: hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding: 0;
@@ -3978,16 +3979,43 @@ background: #AE2A0B;
 @media (max-width: 899px) {
     .jbw-chat-layout {
         grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr);
     }
-    .jbw-chat-main { min-height: 0; }
+    .jbw-chat-sidebar,
+    .jbw-chat-main {
+        min-height: 0;
+        height: 100%;
+        align-self: stretch;
+    }
+    .jbw-chat-sidebar--mobile-hide { display: none; }
+    .jbw-chat-main--mobile-hide { display: none; }
+    .jbw-chat-back { display: inline-flex; }
+    .jbw-page--chat-active .jbw-page-head--chat { display: none; }
+}
+.jbw-chat-back {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin-right: 0.15rem;
+    text-decoration: none;
+    color: var(--c-muted);
+    font-size: 1.35rem;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 /* Chat page: fit viewport, no page scrollbar */
 .jbw-body--chat {
     overflow: hidden;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+}
+.jbw-body--chat .jbw-header {
+    flex-shrink: 0;
 }
 .jbw-body--chat .jbw-main {
     flex: 1 1 auto;
@@ -4006,18 +4034,23 @@ background: #AE2A0B;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    width: min(100%, 1080px);
-    max-width: 1080px;
-    margin-inline: auto;
-    padding-inline: clamp(1rem, 4vw, 2rem);
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: clamp(0.75rem, 3vw, 2rem);
     box-sizing: border-box;
+}
+.jbw-page-head--chat {
+    padding-top: 0;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
 }
 .jbw-body--chat .jbw-chat-layout {
     display: grid;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
-    max-width: 1080px;
+    max-width: none;
     height: auto;
     max-height: none;
     margin-bottom: 0;

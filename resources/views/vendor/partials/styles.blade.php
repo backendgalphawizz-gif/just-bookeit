@@ -486,7 +486,8 @@ img { max-width: 100%; display: block; }
 /* Chat */
 .vp-page-head--compact { margin-bottom: 0.75rem; }
 .vp-page--chat .vp-page-head--compact {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
+    flex-shrink: 0;
 }
 .vp-page--chat .vp-page-title {
     font-size: 1.35rem;
@@ -494,10 +495,9 @@ img { max-width: 100%; display: block; }
 }
 .vp-chat-layout {
     display: grid;
-    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
     gap: 0.75rem;
     width: 100%;
-    max-width: 1080px;
     height: calc(100vh - 9rem);
     max-height: calc(100vh - 9rem);
     min-height: 20rem;
@@ -516,7 +516,8 @@ img { max-width: 100%; display: block; }
     display: flex;
     flex-direction: column;
     min-width: 0;
-    max-width: 260px;
+    height: 100%;
+    align-self: stretch;
 }
 .vp-chat-sidebar-title {
     margin: 0;
@@ -604,6 +605,7 @@ img { max-width: 100%; display: block; }
     flex-direction: column;
     min-height: 0;
     height: 100%;
+    align-self: stretch;
 }
 .vp-chat-main-head {
     display: flex;
@@ -790,6 +792,8 @@ img { max-width: 100%; display: block; }
 }
 .vp-body--chat .vp-main {
     overflow: hidden;
+    height: 100vh;
+    min-height: 0;
 }
 .vp-body--chat .vp-content {
     flex: 1 1 auto;
@@ -797,7 +801,7 @@ img { max-width: 100%; display: block; }
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding-bottom: 1rem;
+    padding: 0.65rem 1rem 0.75rem;
 }
 .vp-page--chat {
     flex: 1 1 auto;
@@ -806,18 +810,19 @@ img { max-width: 100%; display: block; }
     flex-direction: column;
     overflow: hidden;
     width: 100%;
-    max-width: 1080px;
-    margin-inline: auto;
+    max-width: none;
+    margin-inline: 0;
 }
 .vp-body--chat .vp-chat-layout {
     display: grid;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
-    max-width: 1080px;
+    max-width: none;
     height: auto;
     max-height: none;
     margin-bottom: 0;
+    align-content: stretch;
 }
 
 /* Settings */

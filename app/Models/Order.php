@@ -151,6 +151,16 @@ class Order extends Model
             if ($order->isDirty('status') && in_array($order->status, ['in_progress', 're_intransit'], true)) {
                 OrderDispatchSupport::prepareForTransit($order);
             }
+
+            if (
+                $order->isDirty('driver_id')
+                && $order->driver_id !== null
+                && OrderDispatchSupport::isDispatchStatus($order->status)
+                && blank($order->driver_delivery_status)
+            ) {
+                $order->driver_delivery_status = self::DRIVER_STATUS_ACCEPTED;
+                $order->driver_assigned_at = $order->driver_assigned_at ?? now();
+            }
         });
 
         static::creating(function (Order $order) {

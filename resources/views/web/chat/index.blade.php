@@ -3,8 +3,8 @@
 @section('title', 'Chat')
 
 @section('content')
-<div class="jbw-page--chat">
-    <div class="jbw-page-head" style="padding-top:0rem; margin-bottom:0rem;">
+<div class="jbw-page--chat @if($activeChat) jbw-page--chat-active @endif">
+    <div class="jbw-page-head jbw-page-head--chat">
         <h1 class="jbw-page-title">Chat</h1>
         <!-- <p class="jbw-page-subtitle">Message designers about outfits, fittings, and bookings</p> -->
     </div>
@@ -19,7 +19,7 @@
         data-chat-search="{{ request('search') }}"
     >
         {{-- Conversation list --}}
-        <aside class="jbw-chat-sidebar">
+        <aside @class(['jbw-chat-sidebar', 'jbw-chat-sidebar--mobile-hide' => $activeChat])>
             <p class="jbw-chat-sidebar-title">Messages</p>
             <form method="GET" action="{{ route('web.chat.index') }}" class="jbw-chat-search">
                 @if ($activeChat)
@@ -62,10 +62,11 @@
         </aside>
 
         {{-- Active thread --}}
-        <div class="jbw-chat-main">
+        <div @class(['jbw-chat-main', 'jbw-chat-main--mobile-hide' => ! $activeChat])>
             @if ($activeChat && $activeChat->vendor)
             <div class="jbw-chat-main-head">
                 <div class="jbw-chat-main-vendor">
+                    <a href="{{ route('web.chat.index', array_filter(['search' => request('search')])) }}" class="jbw-chat-back" aria-label="Back to messages">←</a>
                     @if ($activeChat->vendor->profileImageUrl() || $activeChat->vendor->shopLogoUrl())
                     <img src="{{ $activeChat->vendor->profileImageUrl() ?: $activeChat->vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
                     @else
