@@ -10,7 +10,7 @@
     @include('vendor.partials.styles')
     @include('partials.panel-lightbox-assets')
 </head>
-<body class="vp-body" x-data="{ sidebarOpen: false, productsOpen: {{ request()->routeIs('vendor.products.*') ? 'true' : 'false' }}, notificationOpen: false }" @keydown.escape.window="notificationOpen = false">
+<body @class(['vp-body', 'vp-body--chat' => request()->routeIs('vendor.chat.*')]) x-data="{ sidebarOpen: false, productsOpen: {{ request()->routeIs('vendor.products.*') ? 'true' : 'false' }}, notificationOpen: false }" @keydown.escape.window="notificationOpen = false">
 <div class="vp-shell">
     <div class="vp-overlay lg:hidden" x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"></div>
 

@@ -3,6 +3,7 @@
 @section('title', 'Chat')
 
 @section('content')
+<div class="vp-page--chat">
 <div class="vp-page-head vp-page-head--compact">
     <div>
         <h1 class="vp-page-title">Chat</h1>
@@ -149,6 +150,7 @@
             </div>
         @endif
     </div>
+</div>
 </div>
 
 @push('scripts')

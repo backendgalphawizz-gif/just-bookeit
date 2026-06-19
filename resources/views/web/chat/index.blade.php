@@ -3,7 +3,7 @@
 @section('title', 'Chat')
 
 @section('content')
-<div class="jbw-container">
+<div class="jbw-page--chat">
     <div class="jbw-page-head" style="padding-top:0rem; margin-bottom:0rem;">
         <h1 class="jbw-page-title">Chat</h1>
         <!-- <p class="jbw-page-subtitle">Message designers about outfits, fittings, and bookings</p> -->

@@ -15,13 +15,10 @@
             <div class="jbw-dev-otp-badge" role="status">{{ $devOtp }}</div>
         @endif
 
-        @if (session('success') || session('error') || ($errors->any()) || (session('info') && ! $devOtp))
-            <div class="jbw-auth-flash">
-                @include('web.partials.alert', ['skipInfo' => (bool) $devOtp])
-            </div>
-        @endif
         @yield('content')
     </main>
+    @include('web.partials.toast', ['skipInfo' => (bool) $devOtp])
+    <script defer src="/js/web-toast.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </body>
 </html>

@@ -3,17 +3,14 @@
 <head>
     @include('web.partials.head')
 </head>
-<body class="jbw-body">
+<body @class(['jbw-body', 'jbw-body--chat' => request()->routeIs('web.chat.*')])>
     @include('web.partials.header')
     <main class="jbw-main bannercss jbw-container" style="overflow-x:hidden">
-        @if (session('success') || session('error') || session('info') || $errors->any())
-            <div class="jbw-container jbw-flash-wrap">
-                @include('web.partials.alert')
-            </div>
-        @endif
         @yield('content')
     </main>
     @include('web.partials.footer')
+    @include('web.partials.toast')
+    <script defer src="/js/web-toast.js"></script>
     <script defer src="/js/chat-compose.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     @stack('scripts')

@@ -17,7 +17,7 @@ use Illuminate\View\View;
 
 class ChatController extends WebController
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
 
