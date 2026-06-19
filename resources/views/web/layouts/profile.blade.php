@@ -7,7 +7,6 @@
     @include('web.partials.header')
     <main class="jbw-main jbw-main--profile">
         <div class="jbw-container" style="padding: 8px;">
-            @include('web.partials.alert')
             <div class="jbw-page-head">
                 @if (! empty($showBack))
                     <a href="{{ $backUrl ?? url()->previous() }}" class="jbw-back-link">← @yield('page_title', 'Profile')</a>
@@ -27,6 +26,8 @@
         </div>
     </main>
     @include('web.partials.footer')
+    @include('web.partials.toast')
+    <script defer src="/js/web-toast.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@ use Illuminate\View\View;
 
 class ChatController extends VendorController
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $vendor = $this->vendor();
 
