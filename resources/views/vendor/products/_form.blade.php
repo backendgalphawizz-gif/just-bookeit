@@ -93,7 +93,7 @@
         <input
             type="file"
             name="image"
-            class="vp-file"
+            class="vp-file vp-input"
             accept="image/jpeg,image/jpg,image/png,image/webp"
             data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}"
             data-vp-file-label="Primary image"
@@ -125,7 +125,7 @@
         <input
             type="file"
             name="gallery_images[]"
-            class="vp-file"
+            class="vp-file vp-input"
             accept="image/jpeg,image/jpg,image/png,image/webp"
             multiple
             data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}"

@@ -150,7 +150,7 @@
     </div>
 </div>
 
-@push('scripts')
+<!-- @if ($activeChat)
 <script>
 (function () {
     const box = document.getElementById('jbw-chat-messages');
@@ -161,6 +161,18 @@
     window.addEventListener('load', scroll);
 })();
 </script>
-<script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
-@endpush
+@endif -->
+@if ($activeChat)
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const box = document.getElementById('jbw-chat-messages');
+
+    if (box) {
+        setTimeout(() => {
+            box.scrollTop = box.scrollHeight;
+        }, 100);
+    }
+});
+</script>
+@endif
 @endsection

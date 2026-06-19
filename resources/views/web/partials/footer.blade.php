@@ -10,7 +10,7 @@
             <p class="jbw-footer-heading">Quick Links</p>
             <ul class="jbw-footer-links">
                 <li><a href="{{ route('web.home') }}#how-it-works">How It Works</a></li>
-                <li><a href="{{ route('web.catalog.index') }}">Browse Catalog</a></li>
+                <li><a href="{{ route('web.catalog.index') }}">Browse Categories</a></li>
                 <li><a href="{{ route('web.faq') }}">FAQs</a></li>
                 @auth('customer')
                     @unless ($webCustomer->is_guest)

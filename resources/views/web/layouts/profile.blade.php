@@ -6,7 +6,7 @@
 <body class="jbw-body">
     @include('web.partials.header')
     <main class="jbw-main jbw-main--profile">
-        <div class="jbw-container">
+        <div class="jbw-container" style="padding: 8px;">
             @include('web.partials.alert')
             <div class="jbw-page-head">
                 @if (! empty($showBack))
