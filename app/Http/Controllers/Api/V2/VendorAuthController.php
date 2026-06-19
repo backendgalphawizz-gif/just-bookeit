@@ -8,6 +8,7 @@ use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\LocationResolver;
+use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,11 +36,11 @@ class VendorAuthController extends ApiController
 
     public function verifyOtp(Request $request): JsonResponse
     {
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'mobile' => ['required', 'string', 'max:20'],
             'otp' => ['required', 'digits:4'],
             'type' => ['required', 'in:login,register'],
-        ]);
+        ], StoresActorFcmToken::validationRules()));
 
         $payload = $this->otp->verify(
             OtpService::ACTOR_VENDOR,
@@ -48,6 +49,14 @@ class VendorAuthController extends ApiController
             $data['type']
         );
 
+        $mobile = $this->otp->normalizeMobile($data['mobile']);
+
+        if ($data['type'] === 'login') {
+            StoresActorFcmToken::saveForMobile(OtpService::ACTOR_VENDOR, $mobile, $data['fcm_token'] ?? null);
+        } else {
+            StoresActorFcmToken::rememberPending(OtpService::ACTOR_VENDOR, $mobile, $data['fcm_token'] ?? null);
+        }
+
         return $this->success($payload, $payload['message']);
     }
 
@@ -55,10 +64,12 @@ class VendorAuthController extends ApiController
     {
         $data = $request->validate(array_merge(
             ['registration_token' => ['required', 'string']],
+            StoresActorFcmToken::validationRules(),
             $this->vendorFieldRules(required: true)
         ));
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_VENDOR, $data['registration_token']);
+        $fcmToken = $data['fcm_token'] ?? StoresActorFcmToken::pullPending(OtpService::ACTOR_VENDOR, $mobile);
 
         if (Vendor::query()->where('mobile', $mobile)->exists()) {
             return $this->error('Vendor already registered.', 409);
@@ -74,11 +85,9 @@ class VendorAuthController extends ApiController
         $this->applyVendorFiles($vendor, $request);
         $vendor->save();
 
-        $token = $vendor->createToken('vendor-api')->plainTextToken;
+        StoresActorFcmToken::saveForActor($vendor, $fcmToken);
 
         return $this->success([
-            'token' => $token,
-            'token_type' => 'Bearer',
             'user' => $this->otp->formatActor(OtpService::ACTOR_VENDOR, $vendor),
         ], 'Vendor registration submitted for approval.', 201);
     }

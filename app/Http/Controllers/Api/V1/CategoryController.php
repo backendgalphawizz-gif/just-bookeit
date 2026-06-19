@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Category;
+use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class CategoryController extends ApiController
                 ->active()
                 ->main()
                 ->whereNull('parent_id')
-                ->with(['subcategories' => fn ($query) => $query->active()->orderBy('sort_order')->orderBy('name')])
+                ->with(['subcategories' => fn ($query) => $query->with('serviceCategory')->active()->orderBy('sort_order')->orderBy('name')])
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
@@ -45,7 +46,15 @@ class CategoryController extends ApiController
             $query->where('parent_id', $request->integer('parent_id'));
         }
 
-        $categories = $query->orderBy('sort_order')->orderBy('name')->get();
+        if ($request->filled('service_category_id') || $request->filled('service')) {
+            $serviceCategoryId = CatalogFilter::resolveServiceCategoryId($request);
+
+            if ($serviceCategoryId) {
+                CatalogFilter::applySubcategoryServiceFilter($query, $serviceCategoryId);
+            }
+        }
+
+        $categories = $query->with('serviceCategory')->orderBy('sort_order')->orderBy('name')->get();
 
         return $this->success([
             'items' => $categories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),

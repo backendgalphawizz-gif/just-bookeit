@@ -18,6 +18,7 @@ class Driver extends Authenticatable
         'driver_code',
         'name',
         'mobile',
+        'fcm_token',
         'email',
         'city',
         'vehicle_no',

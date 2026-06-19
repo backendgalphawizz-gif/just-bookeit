@@ -38,11 +38,7 @@ class LoginController extends VendorController
 
         $payload = $this->otp->send(OtpService::ACTOR_VENDOR, $data['mobile'], $data['type']);
 
-        $request->session()->put('vendor_otp', [
-            'mobile' => $payload['mobile'],
-            'type' => $data['type'],
-            'sent_at' => now()->timestamp,
-        ]);
+        $this->storeVendorOtpSession($request, $payload['mobile'], $data['type']);
 
         if (config('app.debug') && isset($payload['otp'])) {
             $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
@@ -51,14 +47,59 @@ class LoginController extends VendorController
         return redirect()->route('vendor.verify-otp');
     }
 
+    public function resendOtp(Request $request): RedirectResponse
+    {
+        $otpSession = $request->session()->get('vendor_otp');
+
+        if (! $otpSession) {
+            return redirect()->route('vendor.login')->with('error', 'Session expired. Enter your mobile number again.');
+        }
+
+        $cooldown = $this->otpResendCooldownSeconds();
+        $elapsed = now()->timestamp - (int) ($otpSession['sent_at'] ?? 0);
+
+        if ($elapsed < $cooldown) {
+            $wait = $cooldown - $elapsed;
+
+            return back()->with('error', 'Please wait '.$wait.' seconds before requesting a new code.');
+        }
+
+        try {
+            $payload = $this->otp->send(
+                OtpService::ACTOR_VENDOR,
+                $otpSession['mobile'],
+                $otpSession['type']
+            );
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return back()->withErrors($exception->errors());
+        }
+
+        $this->storeVendorOtpSession($request, $payload['mobile'], $otpSession['type']);
+
+        if (config('app.debug') && isset($payload['otp'])) {
+            $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
+        }
+
+        return redirect()
+            ->route('vendor.verify-otp')
+            ->with('success', 'A new OTP has been sent to your mobile number.');
+    }
+
     public function showVerifyOtp(Request $request): View|RedirectResponse
     {
         if (! $request->session()->has('vendor_otp')) {
             return redirect()->route('vendor.login')->with('error', 'Enter your mobile number first.');
         }
 
+        $otpSession = $request->session()->get('vendor_otp');
+        $cooldown = $this->otpResendCooldownSeconds();
+        $elapsed = now()->timestamp - (int) ($otpSession['sent_at'] ?? 0);
+
         return view('vendor.auth.verify-otp', [
-            'otpSession' => $request->session()->get('vendor_otp'),
+            'otpSession' => $otpSession,
+            'maskedMobile' => '+91 ******'.substr($otpSession['mobile'], -3),
+            'resendIn' => max(0, $cooldown - $elapsed),
+            'resendCooldown' => $cooldown,
         ]);
     }
 
@@ -158,12 +199,10 @@ class LoginController extends VendorController
             'aadhar_back_path' => StoresUploadedFiles::store($request->file('aadhar_back'), 'vendors/aadhar/back'),
         ]);
 
-        Auth::guard('vendor')->login($vendor);
         $request->session()->forget('vendor_register');
-        $request->session()->regenerate();
 
-        return redirect()->route('vendor.dashboard')
-            ->with('success', 'Registration submitted. Your account is pending admin approval.');
+        return redirect()->route('vendor.login')
+            ->with('success', 'Registration submitted. You can login once admin approves your account.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -173,5 +212,19 @@ class LoginController extends VendorController
         $request->session()->regenerateToken();
 
         return redirect()->route('vendor.login')->with('success', 'Logged out successfully.');
+    }
+
+    protected function storeVendorOtpSession(Request $request, string $mobile, string $type): void
+    {
+        $request->session()->put('vendor_otp', [
+            'mobile' => $mobile,
+            'type' => $type,
+            'sent_at' => now()->timestamp,
+        ]);
+    }
+
+    protected function otpResendCooldownSeconds(): int
+    {
+        return max(1, (int) config('api.otp_resend_cooldown_seconds', 48));
     }
 }

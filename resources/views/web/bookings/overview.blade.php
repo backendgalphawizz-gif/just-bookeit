@@ -89,11 +89,24 @@
             @if ($measurement)
                 <div class="jbw-overview-card">
                     <p class="jbw-overview-label">Measurements on file</p>
-                    <div class="jbw-measures">
-                        <div class="jbw-measure"><span class="jbw-measure-label">Height</span><span class="jbw-measure-value">{{ $measurement->height_cm ?? '—' }}</span></div>
-                        <div class="jbw-measure"><span class="jbw-measure-label">Chest</span><span class="jbw-measure-value">{{ $measurement->chest_cm ?? '—' }}</span></div>
-                        <div class="jbw-measure"><span class="jbw-measure-label">Waist</span><span class="jbw-measure-value">{{ $measurement->waist_cm ?? '—' }}</span></div>
-                    </div>
+                    @if ($measurement->measurement_type)
+                        <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:var(--c-muted)">Type: {{ ucfirst($measurement->measurement_type) }}</p>
+                    @endif
+                    @php $fieldMap = \App\Support\WebMeasurementForm::labelToField(); @endphp
+                    @foreach ($measurementSections as $title => $fields)
+                        <div style="margin-bottom:1rem">
+                            <p style="margin:0 0 0.5rem;font-size:0.75rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.04em">{{ $title }}</p>
+                            <div class="jbw-measures" style="grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))">
+                                @foreach ($fields as $label)
+                                    @php $key = $fieldMap[$label]; @endphp
+                                    <div class="jbw-measure">
+                                        <span class="jbw-measure-label">{{ $label }}</span>
+                                        <span class="jbw-measure-value">{{ $measurementValues[$key] ?? '—' }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
                     <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create') }}" style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
                 </div>
             @else

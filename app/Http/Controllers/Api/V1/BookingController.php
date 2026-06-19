@@ -13,6 +13,7 @@ use App\Services\Customer\CartService;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\OrderDispatchSupport;
 use App\Support\Api\CustomerBookingTab;
+use App\Support\BookingMeasurementSupport;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -81,10 +82,9 @@ class BookingController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'portfolio_item_id' => ['required', 'integer', 'exists:portfolio_items,id'],
             'size' => ['nullable', 'string', 'max:10'],
-            'measurement_type' => ['nullable', 'in:women,men,kid'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'delivery_address' => ['required', 'string', 'max:500'],
             'billing_address' => ['nullable', 'string', 'max:500'],
@@ -93,12 +93,9 @@ class BookingController extends ApiController
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'shipment_required' => ['nullable', 'boolean'],
-            'measure_height_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
-            'measure_chest_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
-            'measure_waist_cm' => ['nullable', 'integer', 'min:0', 'max:300'],
             'reference_images' => ['nullable', 'array', 'max:5'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-        ]);
+        ], BookingMeasurementSupport::validationRules()));
 
         $item = PortfolioItem::query()
             ->with(['vendor', 'category'])
@@ -116,9 +113,10 @@ class BookingController extends ApiController
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
-        if (! empty($data['measurement_type'])) {
-            $notes = trim('Measurement: '.ucfirst($data['measurement_type']).($notes ? "\n".$notes : ''));
-        }
+        $measurements = BookingMeasurementSupport::normalizeForOrder(
+            $data,
+            $customer->measurements()->latest('id')->first(),
+        );
 
         $order = Order::query()->create([
             'order_number' => CodeGenerator::orderNumber(),
@@ -143,9 +141,11 @@ class BookingController extends ApiController
             'delivery_fee' => $pricing['shipping_fee'],
             'tax_amount' => $pricing['tax_amount'],
             'customer_notes' => $notes !== '' ? $notes : null,
-            'measure_height_cm' => $data['measure_height_cm'] ?? null,
-            'measure_chest_cm' => $data['measure_chest_cm'] ?? null,
-            'measure_waist_cm' => $data['measure_waist_cm'] ?? null,
+            'measure_height_cm' => $measurements['measure_height_cm'],
+            'measure_chest_cm' => $measurements['measure_chest_cm'],
+            'measure_waist_cm' => $measurements['measure_waist_cm'],
+            'measurement_type' => $measurements['measurement_type'],
+            'measure_extra' => $measurements['measure_extra'],
             'payment_status' => 'pending',
             'status' => 'new',
         ]);

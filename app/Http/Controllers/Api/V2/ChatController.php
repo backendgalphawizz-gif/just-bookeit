@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V2;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Support\Api\VendorApiPresenter;
+use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,25 @@ class ChatController extends VendorApiController
 
         $chat->load('customer');
 
+        if ($request->filled('since_id')) {
+            $messages = $chat->messages()
+                ->where('id', '>', $request->integer('since_id'))
+                ->orderBy('id')
+                ->get();
+
+            $chat->messages()
+                ->where('sender_type', ChatMessage::SENDER_CUSTOMER)
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+
+            return $this->success([
+                'messages' => $messages
+                    ->map(fn (ChatMessage $message) => VendorApiPresenter::chatMessage($message))
+                    ->values()
+                    ->all(),
+            ]);
+        }
+
         $messages = $chat->messages()
             ->orderBy('id')
             ->paginate($request->integer('per_page', 50));
@@ -69,7 +89,7 @@ class ChatController extends VendorApiController
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000', 'required_without:attachment'],
-            'attachment' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096', 'required_without:body'],
+            'attachment' => ChatAttachmentSupport::validationRules(true),
         ]);
 
         abort_if(empty($data['body']) && ! $request->hasFile('attachment'), 422, 'Message body or attachment is required.');

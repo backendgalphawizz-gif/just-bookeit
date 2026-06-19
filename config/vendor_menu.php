@@ -23,12 +23,6 @@ return [
         ],
     ],
     [
-        'label' => 'Portfolio',
-        'route' => 'vendor.portfolio.index',
-        'icon' => 'portfolio',
-        'match' => ['vendor.portfolio.*'],
-    ],
-    [
         'label' => 'Payment Management',
         'route' => 'vendor.payments.index',
         'icon' => 'payments',

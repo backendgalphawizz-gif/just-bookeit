@@ -7,6 +7,7 @@ use App\Models\Driver;
 use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
+use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,11 +35,11 @@ class DriverAuthController extends ApiController
 
     public function verifyOtp(Request $request): JsonResponse
     {
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'mobile' => ['required', 'string', 'max:20'],
             'otp' => ['required', 'digits:4'],
             'type' => ['required', 'in:login,register'],
-        ]);
+        ], StoresActorFcmToken::validationRules()));
 
         $payload = $this->otp->verify(
             OtpService::ACTOR_DRIVER,
@@ -47,6 +48,14 @@ class DriverAuthController extends ApiController
             $data['type']
         );
 
+        $mobile = $this->otp->normalizeMobile($data['mobile']);
+
+        if ($data['type'] === 'login') {
+            StoresActorFcmToken::saveForMobile(OtpService::ACTOR_DRIVER, $mobile, $data['fcm_token'] ?? null);
+        } else {
+            StoresActorFcmToken::rememberPending(OtpService::ACTOR_DRIVER, $mobile, $data['fcm_token'] ?? null);
+        }
+
         return $this->success($payload, $payload['message']);
     }
 
@@ -54,10 +63,12 @@ class DriverAuthController extends ApiController
     {
         $data = $request->validate(array_merge(
             ['registration_token' => ['required', 'string']],
+            StoresActorFcmToken::validationRules(),
             $this->driverFieldRules(required: true)
         ));
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_DRIVER, $data['registration_token']);
+        $fcmToken = $data['fcm_token'] ?? StoresActorFcmToken::pullPending(OtpService::ACTOR_DRIVER, $mobile);
 
         if (Driver::query()->where('mobile', $mobile)->exists()) {
             return $this->error('Driver already registered.', 409);
@@ -75,11 +86,9 @@ class DriverAuthController extends ApiController
         $this->applyDriverFiles($driver, $request);
         $driver->save();
 
-        $token = $driver->createToken('driver-api')->plainTextToken;
+        StoresActorFcmToken::saveForActor($driver, $fcmToken);
 
         return $this->success([
-            'token' => $token,
-            'token_type' => 'Bearer',
             'user' => $this->otp->formatActor(OtpService::ACTOR_DRIVER, $driver),
         ], 'Driver registration submitted for approval.', 201);
     }

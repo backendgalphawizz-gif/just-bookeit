@@ -59,14 +59,10 @@ trait ManagesPortfolioProducts
             return;
         }
 
-        $variantImages = $this->uploadedProductFiles($request, 'variant_images');
-
         foreach ($variants as $index => $variant) {
-            $imagePath = null;
+            $imagePath = ProductVariantUpload::storeVariantImage($request, (int) $index, $variant);
 
-            if (isset($variantImages[$index]) && $variantImages[$index] instanceof UploadedFile) {
-                $imagePath = StoresUploadedFiles::store($variantImages[$index], 'portfolio/variants');
-            } elseif ($old = $oldVariants->get($index)) {
+            if ($imagePath === null && ($old = $oldVariants->get($index))) {
                 $imagePath = $old->image_path;
             }
 

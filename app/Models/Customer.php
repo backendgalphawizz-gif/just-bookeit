@@ -17,6 +17,7 @@ class Customer extends Authenticatable
         'customer_code',
         'name',
         'mobile',
+        'fcm_token',
         'email',
         'address',
         'city',

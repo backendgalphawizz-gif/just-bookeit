@@ -31,11 +31,14 @@
                 @if ($message->body)
                     <p class="jb-dispute-chat__msg-body">{{ $message->body }}</p>
                 @endif
-                @if ($message->attachmentUrl())
-                    <a href="{{ $message->attachmentUrl() }}" target="_blank" rel="noopener" class="jb-dispute-chat__attachment">
-                        <img src="{{ $message->attachmentUrl() }}" alt="Attachment" class="panel-lightbox-trigger">
-                    </a>
-                @endif
+                        @if ($message->attachmentUrl())
+                            @include('partials.chat-attachment-media', [
+                                'url' => $message->attachmentUrl(),
+                                'path' => $message->attachment_path,
+                                'type' => $message->attachmentType(),
+                                'class' => 'jb-dispute-chat__attachment',
+                            ])
+                        @endif
             </div>
         @empty
             <p class="jb-dispute-chat__empty">
@@ -49,15 +52,15 @@
     </div>
 
     @if ($dispute->isChatOpen() && auth('admin')->user()->hasPermission('disputes', 'edit'))
-        <form method="POST" action="{{ route('admin.disputes.messages', $dispute) }}" enctype="multipart/form-data" class="jb-dispute-chat__compose">
+        <form method="POST" action="{{ route('admin.disputes.messages', $dispute) }}" enctype="multipart/form-data" class="jb-dispute-chat__compose" data-chat-compose>
             @csrf
             <label class="jb-label" for="dispute-chat-body">Your message</label>
-            <textarea id="dispute-chat-body" name="body" rows="3" class="jb-textarea" placeholder="Type your reply to the customer...">{{ old('body') }}</textarea>
+            <textarea id="dispute-chat-body" name="body" rows="3" class="jb-textarea" placeholder="Type your reply... (Enter to send, Shift+Enter for new line)" data-chat-input>{{ old('body') }}</textarea>
             @error('body')
                 <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
             @enderror
             <div class="jb-dispute-chat__compose-actions">
-                <input type="file" name="attachment" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif" class="jb-input">
+                <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}" class="jb-input">
                 <x-admin.button variant="primary" type="submit" size="sm">Send message</x-admin.button>
             </div>
         </form>
@@ -127,28 +130,6 @@
         if (thread) {
             thread.scrollTop = thread.scrollHeight;
         }
-
-        const composeForm = document.querySelector('.jb-dispute-chat__compose');
-        const textarea = document.getElementById('dispute-chat-body');
-        if (! composeForm || ! textarea) {
-            return;
-        }
-
-        textarea.addEventListener('keydown', function (event) {
-            if (event.key !== 'Enter' || event.shiftKey) {
-                return;
-            }
-
-            event.preventDefault();
-
-            const hasText = textarea.value.trim().length > 0;
-            const fileInput = composeForm.querySelector('input[type="file"]');
-            const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
-
-            if (hasText || hasFile) {
-                composeForm.requestSubmit();
-            }
-        });
     });
 </script>
 @endpush

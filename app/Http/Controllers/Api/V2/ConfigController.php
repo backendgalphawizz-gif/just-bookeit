@@ -16,6 +16,7 @@ class ConfigController extends ApiController
         $mainCategories = Category::query()
             ->active()
             ->main()
+            ->with(['subcategories' => fn ($query) => $query->with('serviceCategory')->active()->orderBy('sort_order')->orderBy('name')])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -23,18 +24,33 @@ class ConfigController extends ApiController
         $subcategories = Category::query()
             ->active()
             ->sub()
+            ->with('serviceCategory')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $serviceCategories = Category::query()
+            ->active()
+            ->service()
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
         return $this->success([
-            'product_categories' => [
-                ['type' => 'rented-dress', 'label' => 'Rental Dresses'],
-                ['type' => 'rented-jewellery', 'label' => 'Rental Jewellery'],
-                ['type' => 'fashion-designer', 'label' => 'Fashion Designer'],
-            ],
-            'shop_categories' => $mainCategories
+            'product_categories' => $serviceCategories
+                ->map(fn (Category $category) => [
+                    'type' => $category->slug,
+                    'label' => $category->name,
+                    'id' => $category->id,
+                ])
+                ->values()
+                ->all(),
+            'service_categories' => $serviceCategories
                 ->map(fn (Category $category) => CustomerApiPresenter::category($category))
+                ->values()
+                ->all(),
+            'shop_categories' => $mainCategories
+                ->map(fn (Category $category) => CustomerApiPresenter::category($category, includeSubcategories: true))
                 ->values()
                 ->all(),
             'subcategories' => $subcategories

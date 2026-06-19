@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
+use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,11 +36,11 @@ class UserAuthController extends ApiController
 
     public function verifyOtp(Request $request): JsonResponse
     {
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'mobile' => ['required', 'string', 'max:20'],
             'otp' => ['required', 'digits:4'],
             'type' => ['required', 'in:login,register'],
-        ]);
+        ], StoresActorFcmToken::validationRules()));
 
         $payload = $this->otp->verify(
             OtpService::ACTOR_CUSTOMER,
@@ -48,6 +49,14 @@ class UserAuthController extends ApiController
             $data['type']
         );
 
+        $mobile = $this->otp->normalizeMobile($data['mobile']);
+
+        if ($data['type'] === 'login') {
+            StoresActorFcmToken::saveForMobile(OtpService::ACTOR_CUSTOMER, $mobile, $data['fcm_token'] ?? null);
+        } else {
+            StoresActorFcmToken::rememberPending(OtpService::ACTOR_CUSTOMER, $mobile, $data['fcm_token'] ?? null);
+        }
+
         return $this->success($payload, $payload['message']);
     }
 
@@ -55,10 +64,12 @@ class UserAuthController extends ApiController
     {
         $data = $request->validate(array_merge(
             ['registration_token' => ['required', 'string']],
+            StoresActorFcmToken::validationRules(),
             $this->customerFieldRules(required: true)
         ));
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_CUSTOMER, $data['registration_token']);
+        $fcmToken = $data['fcm_token'] ?? StoresActorFcmToken::pullPending(OtpService::ACTOR_CUSTOMER, $mobile);
 
         if (isset($data['mobile_no']) && $this->otp->normalizeMobile($data['mobile_no']) !== $mobile) {
             throw ValidationException::withMessages([
@@ -79,6 +90,8 @@ class UserAuthController extends ApiController
             'is_guest' => false,
             'registered_at' => now(),
         ]);
+
+        StoresActorFcmToken::saveForActor($customer, $fcmToken);
 
         $token = $customer->createToken('customer-api')->plainTextToken;
 

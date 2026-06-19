@@ -9,7 +9,15 @@
         <!-- <p class="jbw-page-subtitle">Message designers about outfits, fittings, and bookings</p> -->
     </div>
 
-    <div class="jbw-chat-layout">
+    <div
+        class="jbw-chat-layout"
+        data-chat-live
+        data-poll-url="{{ route('web.chat.poll', [], false) }}"
+        data-chat-id="{{ $activeChat?->id }}"
+        data-last-message-id="{{ $messages->last()?->id ?? 0 }}"
+        data-chat-theme="customer"
+        data-chat-search="{{ request('search') }}"
+    >
         {{-- Conversation list --}}
         <aside class="jbw-chat-sidebar">
             <p class="jbw-chat-sidebar-title">Messages</p>
@@ -20,7 +28,7 @@
                 <input type="search" name="search" value="{{ request('search') }}" placeholder="Search designers…" class="jbw-input">
             </form>
 
-            <div class="jbw-chat-threads">
+            <div class="jbw-chat-threads" data-chat-threads>
                 @forelse ($conversations as $conversation)
                 @php
                 $isActive = $activeChat && $activeChat->id === $conversation->id;
@@ -28,7 +36,7 @@
                 $preview = $conversation->latestMessage?->body ?? 'No messages yet';
                 @endphp
                 <a
-                    href="{{ route('web.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')])) }}"
+                    href="{{ route('web.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
                     @class(['jbw-chat-thread', 'is-active'=> $isActive])
                     >
                     @if ($vendor?->profileImageUrl() || $vendor?->shopLogoUrl())
@@ -69,9 +77,13 @@
                 <img src="../../../../assets/frontend/Container.png"/>
             </div>
 
-            <div class="jbw-chat-messages" id="jbw-chat-messages">
+            <div class="jbw-chat-messages" id="jbw-chat-messages" data-chat-messages>
                 @forelse ($messages as $message)
-                <div class="jbw-chat-message-wrapper">
+                <div @class([
+                    'jbw-chat-message-wrapper',
+                    'jbw-chat-message-wrapper--mine' => $message->isFromCustomer(),
+                    'jbw-chat-message-wrapper--theirs' => ! $message->isFromCustomer(),
+                ]) data-message-id="{{ $message->id }}">
                     <div @class([ 'jbw-chat-bubble' , 'jbw-chat-bubble--mine'=> $message->isFromCustomer(),
                         'jbw-chat-bubble--theirs' => ! $message->isFromCustomer()
                         ])>
@@ -80,7 +92,12 @@
                         @endif
 
                         @if ($message->attachmentUrl())
-                        <img src="{{ $message->attachmentUrl() }}" alt="Attachment" class="jbw-chat-attachment">
+                        @include('partials.chat-attachment-media', [
+                            'url' => $message->attachmentUrl(),
+                            'path' => $message->attachment_path,
+                            'type' => $message->attachmentType(),
+                            'class' => 'jbw-chat-attachment',
+                        ])
                         @endif
                     </div>
 
@@ -92,27 +109,21 @@
             </div>
 
             <form method="POST"
-                action="{{ route('web.chat.messages', $activeChat) }}"
+                action="{{ route('web.chat.messages', $activeChat, false) }}"
                 enctype="multipart/form-data"
-                class="jbw-chat-compose">
+                class="jbw-chat-compose"
+                data-chat-compose>
                 @csrf
 
-                <!-- <label class="jbw-chat-attach" aria-label="Attach image">
-        <input type="file" name="attachment" accept="image/*" hidden> -->
-                <!-- <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-        </svg> -->
-                <!-- <span class="jbw-plus-icon">+</span>
-    </label> -->
-                <label class="jbw-chat-attach" aria-label="Attach image">
-                    <input type="file" name="attachment" accept="image/*" hidden>
+                <label class="jbw-chat-attach" aria-label="Attach image or video">
+                    <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}" hidden>
                     <span class="jbw-plus-icon"><span>+</span></span>
                 </label>
                 <textarea name="body"
                     rows="1"
                     class="jbw-chat-input"
-                    placeholder="Type a message...">{{ old('body') }}</textarea>
+                    placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+                    data-chat-input>{{ old('body') }}</textarea>
 
                 <button type="submit" class="jbw-chat-send">
                     <svg width="17" height="17"
@@ -139,12 +150,17 @@
     </div>
 </div>
 
-@if ($activeChat)
+@push('scripts')
 <script>
-    (function() {
-        const box = document.getElementById('jbw-chat-messages');
-        if (box) box.scrollTop = box.scrollHeight;
-    })();
+(function () {
+    const box = document.getElementById('jbw-chat-messages');
+    if (!box) return;
+    const scroll = function () { box.scrollTop = box.scrollHeight; };
+    scroll();
+    document.addEventListener('DOMContentLoaded', scroll);
+    window.addEventListener('load', scroll);
+})();
 </script>
-@endif
+<script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
+@endpush
 @endsection

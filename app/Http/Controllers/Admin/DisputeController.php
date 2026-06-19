@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Http\Requests\Admin\DisputeStoreRequest;
 use App\Http\Requests\Admin\DisputeUpdateRequest;
 use App\Support\AppliesListDateFilter;
+use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -118,11 +119,11 @@ class DisputeController extends AdminController
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000'],
-            'attachment' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+            'attachment' => ChatAttachmentSupport::validationRules(),
         ]);
 
         if (blank($data['body']) && ! $request->hasFile('attachment')) {
-            return back()->withErrors(['body' => 'Enter a message or attach an image.'])->withInput();
+            return back()->withErrors(['body' => 'Enter a message or attach a file.'])->withInput();
         }
 
         $admin = auth('admin')->user();

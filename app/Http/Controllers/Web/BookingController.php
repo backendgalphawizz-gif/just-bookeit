@@ -7,6 +7,8 @@ use App\Models\PortfolioItem;
 use App\Services\Booking\BookingPricingService;
 use App\Services\Web\WebBookingService;
 use App\Support\Api\CustomerBookingTab;
+use App\Support\BookingMeasurementSupport;
+use App\Support\WebMeasurementForm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -66,7 +68,10 @@ class BookingController extends WebController
             'rental_days' => $rentalDays,
         ]);
 
-        return view('web.bookings.overview', compact('item', 'addresses', 'defaultAddress', 'measurement', 'pricing', 'rentalDays'));
+        $measurementValues = WebMeasurementForm::valuesFromProfile($measurement);
+        $measurementSections = WebMeasurementForm::sections();
+
+        return view('web.bookings.overview', compact('item', 'addresses', 'defaultAddress', 'measurement', 'pricing', 'rentalDays', 'measurementValues', 'measurementSections'));
     }
 
     public function store(Request $request, PortfolioItem $item): RedirectResponse
@@ -76,7 +81,7 @@ class BookingController extends WebController
         $customer = Auth::guard('customer')->user();
         $this->bookings->assertCanBook($customer);
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge([
             'delivery_address' => ['required', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'pincode' => ['nullable', 'string', 'max:10'],
@@ -85,7 +90,7 @@ class BookingController extends WebController
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'size' => ['nullable', 'string', 'max:10'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
-        ]);
+        ], BookingMeasurementSupport::validationRules()));
 
         if ($request->filled('address_id')) {
             $address = $customer->addresses()->find($request->integer('address_id'));
@@ -98,9 +103,7 @@ class BookingController extends WebController
 
         $measurement = $customer->measurements()->latest('id')->first();
         if ($measurement) {
-            $data['measure_height_cm'] = $measurement->height_cm;
-            $data['measure_chest_cm'] = $measurement->chest_cm;
-            $data['measure_waist_cm'] = $measurement->waist_cm;
+            $data['_measurement_profile'] = $measurement;
         }
 
         $result = $this->bookings->createFromRequest($customer, $item, $data, $request);

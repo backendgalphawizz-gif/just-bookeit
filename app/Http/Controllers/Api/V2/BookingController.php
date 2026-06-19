@@ -121,7 +121,7 @@ class BookingController extends VendorApiController
             return $this->error('Invalid booking status.', 422);
         }
 
-        if (! OrderDispatchSupport::canTransitionTo($booking->status, $nextStatus)) {
+        if (! OrderDispatchSupport::canTransitionTo($booking, $nextStatus)) {
             return $this->error(
                 'Invalid status transition from '.VendorBookingStatus::toApi($booking->status).' to '.VendorBookingStatus::toApi($nextStatus).'.',
                 422

@@ -7,30 +7,15 @@ use App\Support\StoresUploadedFiles;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class PortfolioController extends VendorController
 {
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        $vendor = $this->vendor();
-        $portfolioByAudience = [];
-
-        foreach (['women' => 'Women', 'men' => 'Men', 'kids' => 'Kids'] as $key => $label) {
-            $portfolioByAudience[$key] = [
-                'label' => $label,
-                'images' => VendorPortfolioImage::query()
-                    ->where('vendor_id', $vendor->id)
-                    ->where('audience', $key)
-                    ->orderBy('sort_order')
-                    ->orderByDesc('id')
-                    ->get(),
-            ];
-        }
-
-        $photoCount = collect($portfolioByAudience)->sum(fn (array $group) => $group['images']->count());
-
-        return view('vendor.portfolio.index', compact('portfolioByAudience', 'photoCount', 'vendor'));
+        return redirect()->route('vendor.settings.index', array_filter([
+            'tab' => 'portfolio',
+            'audience' => request('audience'),
+        ]));
     }
 
     public function store(Request $request): RedirectResponse
@@ -51,7 +36,10 @@ class PortfolioController extends VendorController
         ]);
 
         return redirect()
-            ->route('vendor.portfolio.index', ['audience' => $data['audience']])
+            ->route('vendor.settings.index', [
+                'tab' => 'portfolio',
+                'audience' => $data['audience'],
+            ])
             ->with('success', 'Portfolio image added.');
     }
 
@@ -64,7 +52,10 @@ class PortfolioController extends VendorController
         $portfolioImage->delete();
 
         return redirect()
-            ->route('vendor.portfolio.index', ['audience' => $audience])
+            ->route('vendor.settings.index', [
+                'tab' => 'portfolio',
+                'audience' => $audience,
+            ])
             ->with('success', 'Portfolio image removed.');
     }
 }

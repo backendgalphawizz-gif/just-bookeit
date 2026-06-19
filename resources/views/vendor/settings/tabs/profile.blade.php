@@ -36,7 +36,7 @@
 
         <div class="vp-cover-block">
             <span class="vp-cover-label">Cover &amp; Profile Image</span>
-            <!-- <p class="vp-field-hint" style="margin-bottom:.65rem;">The small circle photo appears in the header. The large image is your cover banner only.</p> -->
+            <p class="vp-field-hint" style="margin-bottom:.65rem;">The small circle photo appears in the header. The large image is your cover banner only.</p>
             <div class="vp-cover-frame">
                 @if ($vendor->coverImageUrl())
                     <img src="{{ $vendor->coverImageUrl() }}" alt="Cover" class="panel-lightbox-trigger">

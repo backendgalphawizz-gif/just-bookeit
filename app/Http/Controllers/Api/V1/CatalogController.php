@@ -28,7 +28,7 @@ class CatalogController extends ApiController
         }
 
         $query = PortfolioItem::query()
-            ->with(['vendor', 'category', 'subcategory.parent']);
+            ->with(['vendor', 'category', 'subcategory.parent', 'variants']);
 
         if ($request->filled('search')) {
             $term = '%'.$request->string('search').'%';
@@ -63,11 +63,14 @@ class CatalogController extends ApiController
             ->get();
 
         $mainCategoryId = CatalogFilter::resolveMainCategoryId($request);
+        $serviceCategoryId = CatalogFilter::resolveServiceCategoryId($request);
 
         $subcategories = Category::query()
             ->active()
             ->sub()
+            ->with('serviceCategory')
             ->when($mainCategoryId, fn ($query) => $query->where('parent_id', $mainCategoryId))
+            ->when($serviceCategoryId, fn ($query) => CatalogFilter::applySubcategoryServiceFilter($query, $serviceCategoryId))
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -101,10 +104,10 @@ class CatalogController extends ApiController
         abort_unless($item->status === 'approved', 404);
         abort_unless($item->vendor && $item->vendor->status === 'active' && $item->vendor->is_listing_active, 404);
 
-        $item->load(['vendor', 'category', 'subcategory.parent']);
+        $item->load(['vendor', 'category', 'subcategory.parent', 'variants']);
 
         $related = PortfolioItem::query()
-            ->with(['vendor', 'category', 'subcategory.parent'])
+            ->with(['vendor', 'category', 'subcategory.parent', 'variants'])
             ->where('vendor_id', $item->vendor_id)
             ->where('id', '!=', $item->id)
             ->where('status', 'approved')

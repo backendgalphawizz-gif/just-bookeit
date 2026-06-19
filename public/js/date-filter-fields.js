@@ -1,7 +1,153 @@
 /**
- * Text-based YYYY-MM-DD filter fields — avoids native date input year typing issues.
+ * Native date filter fields with min/max bounds (admin + vendor list filters).
  */
 (function () {
+    function isUsableFilterDate(value, minDate, maxDate) {
+        if (! /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+            return false;
+        }
+
+        return value >= minDate && value <= maxDate;
+    }
+
+    function formatIsoDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function clampIsoDate(value, minDate, maxDate) {
+        if (! isUsableFilterDate(value, minDate, maxDate)) {
+            if (value < minDate) {
+                return minDate;
+            }
+
+            if (value > maxDate) {
+                return maxDate;
+            }
+        }
+
+        return value;
+    }
+
+    window.jbFilterDateRange = (minDate, maxDate, initialFrom = '', initialTo = '') => ({
+        minDate,
+        maxDate,
+        from: initialFrom,
+        to: initialTo,
+        isUsableDate(value) {
+            return isUsableFilterDate(value, this.minDate, this.maxDate);
+        },
+        maxForFrom() {
+            if (this.isUsableDate(this.to)) {
+                return this.to;
+            }
+
+            return this.maxDate;
+        },
+        minForTo() {
+            if (this.isUsableDate(this.from)) {
+                return this.from;
+            }
+
+            return this.minDate;
+        },
+        applyRange(from, to) {
+            let nextFrom = clampIsoDate(from, this.minDate, this.maxDate);
+            let nextTo = clampIsoDate(to, this.minDate, this.maxDate);
+
+            if (nextTo < nextFrom) {
+                nextTo = nextFrom;
+            }
+
+            this.from = nextFrom;
+            this.to = nextTo;
+
+            if (this.$refs.fromInput) {
+                this.$refs.fromInput.value = nextFrom;
+            }
+
+            if (this.$refs.toInput) {
+                this.$refs.toInput.value = nextTo;
+            }
+        },
+        setLast7Days() {
+            const today = new Date();
+            const from = new Date(today);
+            from.setDate(today.getDate() - 6);
+
+            this.applyRange(formatIsoDate(from), formatIsoDate(today));
+        },
+        setThisMonth() {
+            const today = new Date();
+            const from = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            this.applyRange(formatIsoDate(from), formatIsoDate(today));
+        },
+        clearDates() {
+            this.from = '';
+            this.to = '';
+
+            if (this.$refs.fromInput) {
+                this.$refs.fromInput.value = '';
+            }
+
+            if (this.$refs.toInput) {
+                this.$refs.toInput.value = '';
+            }
+        },
+        syncFrom(event) {
+            const value = event.target.value;
+
+            if (value === '') {
+                this.from = '';
+
+                return;
+            }
+
+            if (! this.isUsableDate(value)) {
+                return;
+            }
+
+            this.from = value;
+
+            if (this.isUsableDate(this.to) && this.to < value && this.$refs.toInput) {
+                this.$refs.toInput.value = value;
+                this.to = value;
+            }
+        },
+        syncTo(event) {
+            const value = event.target.value;
+
+            if (value === '') {
+                this.to = '';
+
+                return;
+            }
+
+            if (! this.isUsableDate(value)) {
+                return;
+            }
+
+            if (this.isUsableDate(this.from) && value < this.from) {
+                event.target.value = this.from;
+                this.to = this.from;
+
+                return;
+            }
+
+            this.to = value;
+        },
+    });
+
+    window.jbFilterSingleDate = (minDate, maxDate) => ({
+        minDate,
+        maxDate,
+    });
+
+    /** @deprecated Use jbFilterDateRange with native type="date" inputs. */
     function isCompleteDate(value) {
         return /^\d{4}-\d{2}-\d{2}$/.test(value);
     }

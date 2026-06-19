@@ -35,9 +35,12 @@
                             <p style="margin:0;white-space:pre-wrap;line-height:1.5">{{ $message->body }}</p>
                         @endif
                         @if ($message->attachmentUrl())
-                            <a href="{{ $message->attachmentUrl() }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:0.5rem">
-                                <img src="{{ $message->attachmentUrl() }}" alt="Attachment" style="max-width:10rem;border-radius:0.5rem">
-                            </a>
+                            @include('partials.chat-attachment-media', [
+                                'url' => $message->attachmentUrl(),
+                                'path' => $message->attachment_path,
+                                'type' => $message->attachmentType(),
+                                'class' => '',
+                            ])
                         @endif
                     </div>
                 </div>
@@ -50,14 +53,14 @@
     @if ($dispute->isChatOpen())
         <div class="jbw-booking-card">
             <h3 class="jbw-booking-card-title">Send a message</h3>
-            <form method="POST" action="{{ route('web.bookings.dispute.messages', $order) }}" enctype="multipart/form-data" style="margin-top:0.75rem">
+            <form method="POST" action="{{ route('web.bookings.dispute.messages', $order) }}" enctype="multipart/form-data" style="margin-top:0.75rem" data-chat-compose>
                 @csrf
-                <textarea name="body" rows="3" class="jbw-input" placeholder="Describe your issue..." style="width:100%;resize:vertical">{{ old('body') }}</textarea>
+                <textarea name="body" rows="3" class="jbw-input" placeholder="Describe your issue... (Enter to send, Shift+Enter for new line)" style="width:100%;resize:vertical" data-chat-input>{{ old('body') }}</textarea>
                 @error('body')
                     <p style="margin:0.35rem 0 0;font-size:0.75rem;color:#e11d48">{{ $message }}</p>
                 @enderror
                 <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-top:0.75rem">
-                    <input type="file" name="attachment" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif">
+                    <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}">
                     <button type="submit" class="jbw-btn jbw-btn--primary">Send message</button>
                 </div>
             </form>

@@ -47,7 +47,7 @@
                     @if (! empty($variant['image_url']))
                         <img src="{{ $variant['image_url'] }}" alt="" class="mb-2 h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
                     @endif
-                    <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
+                    <input type="file" name="variants[{{ $index }}][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
                 </div>
                 <div class="flex items-end">
                     <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
@@ -58,7 +58,7 @@
 
     @error('variants')<p class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     @error('variants.*')<p class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-    @error('variant_images.*')<p class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+    @error('variants.*.image')<p class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
 
     <template data-product-variants-template>
         <div class="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8rem_minmax(0,10rem)_auto]" data-product-variants-row>
@@ -76,7 +76,7 @@
             </div>
             <div>
                 <label class="jb-label">Variant image</label>
-                <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
+                <input type="file" name="variants[__INDEX__][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
             </div>
             <div class="flex items-end">
                 <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
@@ -96,7 +96,7 @@
 
         const reindexRows = () => {
             list.querySelectorAll('[data-product-variants-row]').forEach((row, index) => {
-                row.querySelectorAll('input[type="text"], input[type="number"]').forEach((input) => {
+                row.querySelectorAll('input[type="text"], input[type="number"], input[type="file"]').forEach((input) => {
                     input.name = input.name.replace(/variants\[\d+]/, `variants[${index}]`);
                 });
             });

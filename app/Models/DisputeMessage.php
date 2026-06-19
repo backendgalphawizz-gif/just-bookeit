@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,6 +37,11 @@ class DisputeMessage extends Model
     public function attachmentUrl(): ?string
     {
         return StoresUploadedFiles::url($this->attachment_path);
+    }
+
+    public function attachmentType(): ?string
+    {
+        return ChatAttachmentSupport::typeFromPath($this->attachment_path);
     }
 
     public function isFromAdmin(): bool

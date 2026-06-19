@@ -6,11 +6,14 @@ use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\CustomerMeasurement;
 use App\Models\Order;
+use App\Models\OrderReview;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Models\VendorPortfolioImage;
 use App\Models\VendorWalletTransaction;
 use App\Services\Booking\BookingPricingService;
+use App\Support\BookingMeasurementSupport;
+use App\Support\OrderDispatchSupport;
 use App\Support\Api\VendorBookingStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -235,12 +238,12 @@ class VendorApiPresenter
                 'delivered_at' => $order->driver_delivered_at?->toIso8601String(),
                 'delivered_at_label' => $order->driver_delivered_at?->format('d M Y, g:i A'),
             ] : null,
-            'customer_review' => in_array($order->status, ['delivered', 're_delivered'], true)
-                ? self::bookingCustomerReview($order)
-                : null,
-            'review' => in_array($order->status, ['delivered', 're_delivered'], true)
-                ? self::bookingCustomerReview($order)
-                : null,
+            'customer_review' => self::bookingCustomerReview($order),
+            'review' => self::bookingCustomerReview($order),
+            'allowed_next_statuses' => collect(OrderDispatchSupport::allowedNextStatuses($order))
+                ->map(fn (string $status) => VendorBookingStatus::toApi($status))
+                ->values()
+                ->all(),
         ];
     }
 
@@ -366,36 +369,27 @@ class VendorApiPresenter
     /** @return array<string, mixed> */
     public static function orderMeasurements(Order $order): array
     {
-        $measurements = [
-            'measurement_type' => self::parseOrderMeasurementType($order),
-            'size' => $order->size,
-            'height_cm' => $order->measure_height_cm,
-            'chest_cm' => $order->measure_chest_cm,
-            'waist_cm' => $order->measure_waist_cm,
-        ];
-
-        foreach (CustomerMeasurement::EXTRA_FIELDS as $field) {
-            $measurements[$field] = null;
-        }
-
+        $measurements = BookingMeasurementSupport::orderMeasurements($order);
         $profile = $order->customer?->measurements()->latest('id')->first();
 
-        if ($profile) {
-            $profileFields = CustomerApiPresenter::measurementDetail($profile);
+        if (! $profile) {
+            return $measurements;
+        }
 
-            foreach ($profileFields as $key => $value) {
-                if (in_array($key, ['id', 'name', 'updated_at', 'extra_measurements'], true)) {
-                    continue;
-                }
+        $profileFields = CustomerApiPresenter::measurementDetail($profile);
 
-                if (($measurements[$key] ?? null) === null && $value !== null && $value !== '') {
-                    $measurements[$key] = $value;
-                }
+        foreach ($profileFields as $key => $value) {
+            if (in_array($key, ['id', 'name', 'updated_at', 'extra_measurements'], true)) {
+                continue;
             }
 
-            if ($measurements['measurement_type'] === null && ! empty($profile->measurement_type)) {
-                $measurements['measurement_type'] = $profile->measurement_type;
+            if (($measurements[$key] ?? null) === null && $value !== null && $value !== '') {
+                $measurements[$key] = $value;
             }
+        }
+
+        if ($measurements['measurement_type'] === null && ! empty($profile->measurement_type)) {
+            $measurements['measurement_type'] = $profile->measurement_type;
         }
 
         return $measurements;
@@ -403,13 +397,7 @@ class VendorApiPresenter
 
     protected static function parseOrderMeasurementType(Order $order): ?string
     {
-        $notes = (string) ($order->customer_notes ?? '');
-
-        if (preg_match('/Measurement:\s*(Women|Men|Kid)/i', $notes, $matches)) {
-            return strtolower($matches[1]) === 'kid' ? 'kid' : strtolower($matches[1]);
-        }
-
-        return null;
+        return BookingMeasurementSupport::parseMeasurementTypeFromNotes($order);
     }
 
     /** @return array<string, mixed>|null */
@@ -426,7 +414,7 @@ class VendorApiPresenter
 
     public static function productSummary(PortfolioItem $item): array
     {
-        $item->loadMissing(['category', 'subcategory.parent', 'vendor', 'variants', 'damageDeductions']);
+        $item->loadMissing(['category', 'subcategory.parent', 'subcategory.serviceCategory', 'vendor', 'variants', 'damageDeductions']);
         $isFashionDesigner = $item->category?->slug === 'fashion-designer';
         $mainCategory = $item->subcategory?->parent;
 
@@ -457,14 +445,14 @@ class VendorApiPresenter
                 'damage_type' => $rule->damage_type,
                 'percent' => (float) $rule->percent,
             ])->values()->all(),
-            'rating' => (float) ($item->vendor?->rating ?? 0),
-            'reviews' => CustomerApiPresenter::placeholderReviews(),
+            ...self::productReviewPayload($item),
             'brand_name' => strtoupper($item->vendor?->brand_name ?? ''),
             'service' => $item->category ? CustomerApiPresenter::category($item->category) : null,
             'category' => $mainCategory ? CustomerApiPresenter::category($mainCategory) : null,
             'subcategory' => $item->subcategory ? CustomerApiPresenter::category($item->subcategory) : null,
             'category_type' => $item->category?->slug,
             'status' => $item->status,
+            'is_listing_active' => (bool) ($item->is_listing_active ?? true),
             'is_available' => $item->isCatalogAvailable(),
             'rejection_reason' => $item->rejection_reason,
             'updated_at' => $item->updated_at?->format('M d, Y'),
@@ -478,14 +466,32 @@ class VendorApiPresenter
 
     public static function productDetail(PortfolioItem $item): array
     {
-        $item->loadMissing(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions']);
+        $item->loadMissing(['category', 'subcategory.parent', 'subcategory.serviceCategory', 'vendor', 'images', 'variants', 'damageDeductions']);
 
         return [
             ...self::productSummary($item),
-            'review_summary' => [
-                'average_rating' => (float) ($item->vendor?->rating ?? 0),
-                'total_reviews' => count(CustomerApiPresenter::placeholderReviews()),
-            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected static function productReviewPayload(PortfolioItem $item): array
+    {
+        $item->loadMissing('vendor.reviews.customer');
+
+        $vendor = $item->vendor;
+        $reviewSummary = $vendor
+            ? CustomerApiPresenter::reviewSummaryForVendor($vendor)
+            : ['average_rating' => 0.0, 'total_reviews' => 0];
+
+        $reviews = $vendor
+            ? $vendor->reviews()->with('customer')->latest('id')->limit(10)->get()
+                ->map(fn (OrderReview $review) => CustomerApiPresenter::orderReview($review))->values()->all()
+            : [];
+
+        return [
+            'rating' => (float) ($reviewSummary['average_rating'] ?? 0),
+            'reviews' => $reviews,
+            'review_summary' => $reviewSummary,
         ];
     }
 
@@ -533,6 +539,7 @@ class VendorApiPresenter
             'sender_type' => $message->sender_type,
             'body' => $message->body,
             'attachment_url' => $message->attachmentUrl(),
+            'attachment_type' => $message->attachmentType(),
             'is_mine' => $message->sender_type === ChatMessage::SENDER_VENDOR,
             'is_read' => $message->read_at !== null,
             'sent_at' => $message->created_at?->format('g:i A'),

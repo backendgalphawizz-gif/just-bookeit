@@ -3,9 +3,11 @@
 namespace App\Services\Web;
 
 use App\Models\Customer;
+use App\Models\CustomerMeasurement;
 use App\Models\Order;
 use App\Models\PortfolioItem;
 use App\Services\Booking\BookingPricingService;
+use App\Support\BookingMeasurementSupport;
 use App\Support\CodeGenerator;
 use App\Support\OrderDispatchSupport;
 use App\Support\StoresUploadedFiles;
@@ -30,6 +32,13 @@ class WebBookingService
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
+        $profile = $data['_measurement_profile'] ?? null;
+        unset($data['_measurement_profile']);
+
+        $measurements = BookingMeasurementSupport::normalizeForOrder(
+            $data,
+            $profile instanceof CustomerMeasurement ? $profile : null,
+        );
 
         $order = Order::query()->create([
             'order_number' => CodeGenerator::orderNumber(),
@@ -54,9 +63,11 @@ class WebBookingService
             'delivery_fee' => $pricing['shipping_fee'],
             'tax_amount' => $pricing['tax_amount'],
             'customer_notes' => $notes !== '' ? $notes : null,
-            'measure_height_cm' => $data['measure_height_cm'] ?? null,
-            'measure_chest_cm' => $data['measure_chest_cm'] ?? null,
-            'measure_waist_cm' => $data['measure_waist_cm'] ?? null,
+            'measure_height_cm' => $measurements['measure_height_cm'],
+            'measure_chest_cm' => $measurements['measure_chest_cm'],
+            'measure_waist_cm' => $measurements['measure_waist_cm'],
+            'measurement_type' => $measurements['measurement_type'],
+            'measure_extra' => $measurements['measure_extra'],
             'payment_status' => 'pending',
             'status' => 'new',
         ]);

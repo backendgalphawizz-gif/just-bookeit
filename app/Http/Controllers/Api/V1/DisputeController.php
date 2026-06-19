@@ -7,6 +7,7 @@ use App\Models\Dispute;
 use App\Models\DisputeMessage;
 use App\Models\Order;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,6 +73,7 @@ class DisputeController extends ApiController
                 'sender_type' => $message->sender_type,
                 'body' => $message->body,
                 'attachment_url' => $message->attachmentUrl(),
+                'attachment_type' => $message->attachmentType(),
                 'created_at' => $message->created_at?->toIso8601String(),
             ])->values()->all(),
         ]);
@@ -93,11 +95,11 @@ class DisputeController extends ApiController
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000'],
-            'attachment' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+            'attachment' => ChatAttachmentSupport::validationRules(),
         ]);
 
         if (blank($data['body']) && ! $request->hasFile('attachment')) {
-            return $this->error('Enter a message or attach an image.', 422);
+            return $this->error('Enter a message or attach a file.', 422);
         }
 
         $message = $dispute->messages()->create([
@@ -115,6 +117,7 @@ class DisputeController extends ApiController
                 'sender_type' => $message->sender_type,
                 'body' => $message->body,
                 'attachment_url' => $message->attachmentUrl(),
+                'attachment_type' => $message->attachmentType(),
                 'created_at' => $message->created_at?->toIso8601String(),
             ],
         ], 'Message sent.', 201);

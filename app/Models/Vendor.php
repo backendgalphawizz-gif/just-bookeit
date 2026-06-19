@@ -19,6 +19,7 @@ class Vendor extends Authenticatable
         'shop_name',
         'owner_name',
         'mobile',
+        'fcm_token',
         'business_mobile',
         'email',
         'business_email',

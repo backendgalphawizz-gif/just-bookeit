@@ -227,6 +227,12 @@ class CatalogFilter
 
     public static function resolveServiceCategoryId(Request $request): ?int
     {
+        if ($request->filled('service_category_id')) {
+            $category = Category::query()->find($request->integer('service_category_id'));
+
+            return ($category && $category->isService()) ? $category->id : null;
+        }
+
         if ($request->filled('service_id')) {
             $category = Category::query()->find($request->integer('service_id'));
 
@@ -245,6 +251,74 @@ class CatalogFilter
         }
 
         return null;
+    }
+
+    /** Dress sub-categories are managed under Rented Dress but also used by Fashion Designer. */
+    public const DRESS_SERVICE_SLUG = 'rented-dress';
+
+    /** @return list<int>|null Null means no service filter should be applied. */
+    public static function productServiceCategoryIds(?int $serviceCategoryId): ?array
+    {
+        if ($serviceCategoryId === null) {
+            return null;
+        }
+
+        $serviceCategory = Category::query()->find($serviceCategoryId);
+
+        if (! $serviceCategory?->isService()) {
+            return [$serviceCategoryId];
+        }
+
+        if ($serviceCategory->slug === 'fashion-designer') {
+            $ids = Category::query()
+                ->service()
+                ->active()
+                ->whereIn('slug', ['fashion-designer', self::DRESS_SERVICE_SLUG])
+                ->pluck('id')
+                ->all();
+
+            return $ids !== [] ? $ids : [$serviceCategoryId];
+        }
+
+        return [$serviceCategoryId];
+    }
+
+    /** @return list<int>|null Null means no service filter should be applied. */
+    public static function subcategoryServiceCategoryIds(?int $serviceCategoryId): ?array
+    {
+        if ($serviceCategoryId === null) {
+            return null;
+        }
+
+        $serviceCategory = Category::query()->find($serviceCategoryId);
+
+        if (! $serviceCategory?->isService()) {
+            return [$serviceCategoryId];
+        }
+
+        if ($serviceCategory->slug === 'fashion-designer') {
+            $ids = Category::query()
+                ->service()
+                ->active()
+                ->whereIn('slug', ['fashion-designer', self::DRESS_SERVICE_SLUG])
+                ->pluck('id')
+                ->all();
+
+            return $ids !== [] ? $ids : [$serviceCategoryId];
+        }
+
+        return [$serviceCategoryId];
+    }
+
+    public static function applySubcategoryServiceFilter(Builder $query, ?int $serviceCategoryId): Builder
+    {
+        $ids = self::subcategoryServiceCategoryIds($serviceCategoryId);
+
+        if ($ids === null) {
+            return $query;
+        }
+
+        return $query->whereIn('service_category_id', $ids);
     }
 
     public static function applyToQuery(Builder $query, Request $request, string $browseMode = self::BROWSE_CATEGORIES): Builder
@@ -269,6 +343,13 @@ class CatalogFilter
 
         if ($audience !== null) {
             $query->where('audience', $audience);
+        }
+
+        $serviceCategoryId = self::resolveServiceCategoryId($request);
+        $serviceCategoryIds = self::productServiceCategoryIds($serviceCategoryId);
+
+        if ($serviceCategoryIds !== null) {
+            $query->whereIn('category_id', $serviceCategoryIds);
         }
 
         $subcategoryId = self::resolveSubcategoryId($request);
@@ -320,7 +401,7 @@ class CatalogFilter
             ? Category::query()->find($serviceCategoryId)
             : null;
         $subcategoryId = self::resolveSubcategoryId($request);
-        $subcategory = $subcategoryId ? Category::query()->with('parent')->find($subcategoryId) : null;
+        $subcategory = $subcategoryId ? Category::query()->with(['parent', 'serviceCategory'])->find($subcategoryId) : null;
         $mainCategoryId = self::resolveMainCategoryId($request);
         $mainCategory = $mainCategoryId ? Category::query()->find($mainCategoryId) : null;
 
@@ -349,6 +430,8 @@ class CatalogFilter
                 'name' => $subcategory->name,
                 'slug' => $subcategory->slug,
                 'parent_id' => $subcategory->parent_id,
+                'service_category_id' => $subcategory->service_category_id,
+                'service_type' => $subcategory->serviceCategory?->slug,
             ] : null,
         ], fn ($value) => $value !== null);
     }

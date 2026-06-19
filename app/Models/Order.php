@@ -88,6 +88,8 @@ class Order extends Model
         'measure_height_cm',
         'measure_chest_cm',
         'measure_waist_cm',
+        'measurement_type',
+        'measure_extra',
         'payment_status',
         'payment_method',
         'paid_at',
@@ -122,6 +124,7 @@ class Order extends Model
             'measure_height_cm' => 'integer',
             'measure_chest_cm' => 'integer',
             'measure_waist_cm' => 'integer',
+            'measure_extra' => 'array',
             'reference_image_paths' => 'array',
             'event_date' => 'date',
             'rental_start_date' => 'date',
@@ -595,15 +598,24 @@ class Order extends Model
             'in_progress' => [
                 ['label' => 'Mark delivered', 'url' => $route('delivered'), 'status' => 'delivered', 'variant' => 'success'],
             ],
-            'delivered' => [
-                ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'primary'],
-                ['label' => 'Send for rework', 'url' => $route('rework'), 'status' => 'rework', 'variant' => 'primary'],
-            ],
+            'delivered' => $this->isRental()
+                ? [
+                    ['label' => 'Start return pickup', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
+                    ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'primary'],
+                ]
+                : [
+                    ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'primary'],
+                    ['label' => 'Send for rework', 'url' => $route('rework'), 'status' => 'rework', 'variant' => 'primary'],
+                ],
+            're_intransit' => $this->isRental()
+                ? [
+                    ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'success'],
+                ]
+                : [
+                    ['label' => 'Mark re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'success'],
+                ],
             'rework' => [
                 ['label' => 'Dispatch rework', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
-            ],
-            're_intransit' => [
-                ['label' => 'Mark re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'success'],
             ],
             default => [],
         };
