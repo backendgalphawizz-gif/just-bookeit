@@ -19,7 +19,7 @@
 
     <div class="jbw-card">
         @forelse ($orders as $order)
-            <div class="jbw-booking-row">
+            <div class="jbw-booking-row" style="border-bottom: none; padding:0rem;">
                 @if ($order->itemImageUrl())
                     <img src="{{ $order->itemImageUrl() }}" alt="">
                 @else
@@ -50,7 +50,8 @@
                     @endphp
                     <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $order->statusLabel() }}</span>
                     <p style="font-size:0.75rem;color:var(--jbw-muted);margin:0.5rem 0 0">#{{ $order->order_number }}</p>
-                    <a href="{{ route('web.bookings.show', $order) }}" style="font-size:0.8125rem;font-weight:700;color:var(--jbw-primary)">View details</a>
+                    <a href="{{ route('web.bookings.show', $order) }}"
+                    class="viewdetails">View Details</a>
                 </div>
             </div>
         @empty

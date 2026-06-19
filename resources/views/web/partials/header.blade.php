@@ -12,7 +12,7 @@
             <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')])>Categories</a>
             @auth('customer')
                 @unless ($webCustomer->is_guest)
-                    <a href="{{ route('web.bookings.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.bookings.*') && ! request()->routeIs('web.bookings.overview')])>My bookings</a>
+                    <!-- <a href="{{ route('web.bookings.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.bookings.*') && ! request()->routeIs('web.bookings.overview')])>My bookings</a> -->
                     <a href="{{ route('web.chat.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
                 @else
                     <a href="{{ route('web.register', ['redirect' => route('web.chat.index')]) }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
@@ -20,7 +20,7 @@
             @else
                 <a href="{{ route('web.login', ['redirect' => route('web.chat.index')]) }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
             @endauth
-            <a href="{{ route('web.contact') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.contact')])>Contact</a>
+            <a href="{{ route('web.contact') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.contact')])>Contact Us</a>
         </nav>
 
         <div class="jbw-header-tools">
@@ -96,7 +96,14 @@
                 Services
             </a>
             <a href="{{ route('web.catalog.index') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')]) @click="mobileOpen=false">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+     stroke="currentColor" stroke-width="2" stroke-linecap="round"
+     stroke-linejoin="round">
+    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+</svg>
                 Categories
             </a>
             @auth('customer')
@@ -122,8 +129,12 @@
                 </a>
             @endauth
             <a href="{{ route('web.contact') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.contact')]) @click="mobileOpen=false">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.27 9.5a19.79 19.79 0 01-3-8.59A2 2 0 012.22 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.91a16 16 0 006.2 6.2l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                Contact
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 115.82 1c0 2-3 3-3 3"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 17h.01"></path>
+        <circle cx="12" cy="12" r="10"></circle>
+    </svg>
+                Contact Us
             </a>
         </nav>
         @auth('customer')

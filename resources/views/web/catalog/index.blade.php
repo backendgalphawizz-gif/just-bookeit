@@ -138,11 +138,11 @@
                 </div>
             @endif
 
-            @if ($hasFilters)
+            <!-- @if ($hasFilters)
                 <p class="jbw-catalog-count" style="margin:0 0 1rem;font-size:0.875rem;color:var(--c-muted)">
                     {{ $items->total() }} result{{ $items->total() === 1 ? '' : 's' }}
                 </p>
-            @endif
+            @endif -->
 
             @php
                 $fashionFallbacks = [
