@@ -11,6 +11,12 @@ class AdminValidationRules
     /** Earliest value accepted by MySQL TIMESTAMP columns. */
     public const MYSQL_MIN_TIMESTAMP_DATE = '1970-01-01';
 
+    /** Earliest date allowed in admin/vendor list filters (booking history). */
+    public static function listFilterMinDate(): string
+    {
+        return '2024-01-01';
+    }
+
     public static function listDateMax(): string
     {
         return now()->format('Y-m-d');
@@ -162,7 +168,7 @@ class AdminValidationRules
 
     public static function listDateRange(): array
     {
-        $minDate = self::MYSQL_MIN_TIMESTAMP_DATE;
+        $minDate = self::listFilterMinDate();
         $maxDate = self::listDateMax();
 
         return [
@@ -383,6 +389,7 @@ class AdminValidationRules
             'name' => ['required', 'string', 'max:255', 'regex:'.self::REGEX_TITLE],
             'type' => ['required', 'in:main,service,sub'],
             'parent_id' => ['nullable', 'exists:categories,id'],
+            'service_category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
@@ -569,6 +576,7 @@ class AdminValidationRules
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
             'variant_images' => ['nullable', 'array', 'max:50'],
             'variant_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'variants.*.image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
             'damage_deductions' => ['nullable', 'array', 'max:20'],
             'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],

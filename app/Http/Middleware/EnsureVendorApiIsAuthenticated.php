@@ -20,10 +20,15 @@ class EnsureVendorApiIsAuthenticated
             ], 401);
         }
 
-        if (in_array($user->status, ['rejected', 'inactive'], true)) {
+        if ($user->status !== 'active') {
             return response()->json([
                 'success' => false,
-                'message' => 'Your vendor account cannot access the app right now.',
+                'message' => match ($user->status) {
+                    'pending' => 'Your vendor account is pending approval.',
+                    'rejected' => 'Your vendor account was rejected.',
+                    'inactive' => 'Your vendor account has been deactivated.',
+                    default => 'Your vendor account cannot access the app right now.',
+                },
             ], 403);
         }
 

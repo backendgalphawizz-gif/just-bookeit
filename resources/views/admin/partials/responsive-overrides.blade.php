@@ -3138,12 +3138,17 @@
         overflow-wrap: anywhere;
     }
 
-    .jb-dispute-chat__attachment img {
+    .jb-dispute-chat__attachment img,
+    .jb-dispute-chat__attachment video {
         display: block;
         max-width: 180px;
         margin-top: 0.5rem;
         border-radius: 0.5rem;
         border: 1px solid rgb(226 232 240);
+    }
+
+    .jb-dispute-chat__attachment video {
+        background: #000;
     }
 
     .jb-dispute-chat__empty {

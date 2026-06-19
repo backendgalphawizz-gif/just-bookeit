@@ -329,8 +329,8 @@
 								{ "key": "audience", "value": "women", "type": "text", "description": "Category dropdown: women | men | kids" },
 								{ "key": "image", "type": "file", "src": [], "description": "Primary product image (required if no gallery_images)" },
 								{ "key": "gallery_images", "type": "file", "src": [], "description": "Extra product images (add multiple rows with same key)" },
-								{ "key": "variants", "value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200}]", "type": "text", "description": "JSON array of variants (size, color, price)" },
-								{ "key": "variant_images", "type": "file", "src": [], "description": "Variant image — index 0 matches variants[0]" },
+								{ "key": "variants", "value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200},{\"size\":\"L\",\"color\":\"Blue\",\"price\":1100}]", "type": "text", "description": "JSON array — size, color, price (no image in JSON when using variant_images)" },
+								{ "key": "variant_images", "type": "file", "src": [], "description": "Variant image index 0 — add more rows with same key for index 1, 2, …" },
 								{ "key": "damage_deductions", "value": "[{\"damage_type\":\"Tear\",\"percent\":10},{\"damage_type\":\"Stain\",\"percent\":5}]", "type": "text", "description": "JSON array of damage rules (damage_type, percent)" }
 							]
 						},
@@ -354,8 +354,8 @@
 								{ "key": "audience", "value": "women", "type": "text" },
 								{ "key": "image", "type": "file", "src": [] },
 								{ "key": "gallery_images", "type": "file", "src": [] },
-								{ "key": "variants", "value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]", "type": "text" },
-								{ "key": "variant_images", "type": "file", "src": [] },
+								{ "key": "variants", "value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]", "type": "text", "description": "JSON array — replaces all variants. Use variant_images by index." },
+								{ "key": "variant_images", "type": "file", "src": [], "description": "Variant image for index 0" },
 								{ "key": "damage_deductions", "value": "[{\"damage_type\":\"Tear\",\"percent\":12}]", "type": "text" }
 							]
 						},

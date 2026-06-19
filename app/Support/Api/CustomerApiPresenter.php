@@ -14,9 +14,12 @@ use App\Models\NotificationLog;
 use App\Models\Order;
 use App\Models\OrderReview;
 use App\Models\PortfolioItem;
+use App\Models\PortfolioItemVariant;
 use App\Models\SupportTicket;
+use App\Models\VendorPortfolioImage;
 use App\Models\Vendor;
 use App\Services\Booking\BookingPricingService;
+use App\Support\BookingMeasurementSupport;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -70,6 +73,19 @@ class CustomerApiPresenter
             'parent_id' => $category->parent_id,
             'image_url' => $category->imageUrl(),
         ];
+
+        if ($category->isSub()) {
+            $payload['service_category_id'] = $category->service_category_id;
+
+            if ($category->relationLoaded('serviceCategory') && $category->serviceCategory) {
+                $payload['service_type'] = $category->serviceCategory->slug;
+                $payload['service_category'] = [
+                    'id' => $category->serviceCategory->id,
+                    'name' => $category->serviceCategory->name,
+                    'slug' => $category->serviceCategory->slug,
+                ];
+            }
+        }
 
         if ($includeSubcategories && $category->relationLoaded('subcategories')) {
             $payload['subcategories'] = $category->subcategories
@@ -135,9 +151,14 @@ class CustomerApiPresenter
 
     public static function designerDetail(Vendor $vendor, ?Collection $portfolio = null): array
     {
-        $vendor->loadMissing('shopImages');
+        $vendor->loadMissing(['shopImages', 'portfolioImages']);
 
         $products = ($portfolio ?? collect())->map(fn (PortfolioItem $item) => self::catalogItem($item))->values()->all();
+        $profilePortfolio = $vendor->portfolioImages
+            ->sortBy(['sort_order', 'id'])
+            ->map(fn (VendorPortfolioImage $image) => self::profilePortfolioImage($image))
+            ->values()
+            ->all();
         $reviews = $vendor->reviews()
             ->with('customer')
             ->latest('id')
@@ -165,7 +186,20 @@ class CustomerApiPresenter
             'review_count' => (int) $vendor->reviews()->count(),
             'reviews' => $reviews->map(fn (OrderReview $review) => self::orderReview($review))->values()->all(),
             'products' => $products,
-            'portfolio' => $products,
+            'profile_portfolio' => $profilePortfolio,
+            'portfolio' => $profilePortfolio,
+        ];
+    }
+
+    public static function profilePortfolioImage(VendorPortfolioImage $image): array
+    {
+        $imageUrl = $image->imageUrl();
+
+        return [
+            'id' => $image->id,
+            'audience' => $image->audience,
+            'image_url' => $imageUrl ? url($imageUrl) : null,
+            'sort_order' => $image->sort_order,
         ];
     }
 
@@ -256,9 +290,12 @@ class CustomerApiPresenter
 
     public static function catalogItem(PortfolioItem $item): array
     {
-        $item->loadMissing(['vendor', 'category', 'subcategory.parent']);
+        $item->loadMissing(['vendor', 'category', 'subcategory.parent', 'subcategory.serviceCategory', 'variants']);
 
         $mainCategory = $item->subcategory?->parent;
+        $variants = $item->variants
+            ->map(fn (PortfolioItemVariant $variant) => self::catalogVariant($variant))
+            ->values();
 
         return [
             'id' => $item->id,
@@ -272,8 +309,24 @@ class CustomerApiPresenter
             'service' => $item->category ? self::category($item->category) : null,
             'category' => $mainCategory ? self::category($mainCategory) : null,
             'subcategory' => $item->subcategory ? self::category($item->subcategory) : null,
+            'variants' => $variants->all(),
+            'sizes' => $variants->pluck('size')->filter()->unique()->values()->all(),
+            'colors' => $variants->pluck('color')->filter()->unique()->values()->all(),
             'designer' => $item->vendor ? self::designerSummary($item->vendor) : null,
             'is_available' => $item->isCatalogAvailable(),
+        ];
+    }
+
+    public static function catalogVariant(PortfolioItemVariant $variant): array
+    {
+        $imageUrl = $variant->imageUrl();
+
+        return [
+            'id' => $variant->id,
+            'size' => $variant->size,
+            'color' => $variant->color,
+            'price' => (float) $variant->price,
+            'image_url' => $imageUrl ? url($imageUrl) : null,
         ];
     }
 
@@ -412,6 +465,7 @@ class CustomerApiPresenter
             'sender_type' => $message->sender_type,
             'body' => $message->body,
             'attachment_url' => $message->attachmentUrl(),
+            'attachment_type' => $message->attachmentType(),
             'is_mine' => $message->isFromCustomer(),
             'is_read' => $message->read_at !== null,
             'sent_at' => $message->created_at?->format('g:i A'),
@@ -474,11 +528,7 @@ class CustomerApiPresenter
             'reference_image_urls' => $order->referenceImageUrls(),
             'rental_start_date' => $order->rental_start_date?->format('Y-m-d'),
             'rental_end_date' => $order->rental_end_date?->format('Y-m-d'),
-            'measurements' => [
-                'height_cm' => $order->measure_height_cm,
-                'chest_cm' => $order->measure_chest_cm,
-                'waist_cm' => $order->measure_waist_cm,
-            ],
+            'measurements' => BookingMeasurementSupport::orderMeasurements($order),
             'payment_summary' => BookingPricingService::fromOrder($order),
             'tracking_steps' => $order->trackBookingSteps(),
             'delivery_otp' => $order->ensureDeliveryOtp(),

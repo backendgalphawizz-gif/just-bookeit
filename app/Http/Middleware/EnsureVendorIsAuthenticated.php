@@ -19,6 +19,13 @@ class EnsureVendorIsAuthenticated
                 ->with('error', 'Please sign in to continue.');
         }
 
+        if ($vendor->status === 'pending') {
+            Auth::guard('vendor')->logout();
+
+            return redirect()->route('vendor.login')
+                ->with('error', 'Your vendor account is pending admin approval. You can login once approved.');
+        }
+
         if ($vendor->status === 'rejected') {
             Auth::guard('vendor')->logout();
 

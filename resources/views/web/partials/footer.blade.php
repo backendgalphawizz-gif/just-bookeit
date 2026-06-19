@@ -51,6 +51,6 @@
     </div>
     <div class="jbw-container jbw-footer-bottom">
         <p>© {{ date('Y') }} {{ $webBranding['name'] ?? 'Just Book IT' }}. All rights reserved.</p>
-        <p>Designed & Developed by Alphawizz Technologies pvt. ltd</p>
+        <p>Made with ♥ in India</p>
     </div>
 </footer>

@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Web;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Vendor;
+use App\Services\ChatLiveService;
+use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
+use App\Support\WebChatLivePresenter;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -51,6 +55,26 @@ class ChatController extends WebController
         return view('web.chat.index', compact('conversations', 'activeChat', 'messages'));
     }
 
+    public function poll(Request $request, ChatLiveService $live): JsonResponse
+    {
+        $customer = Auth::guard('customer')->user();
+
+        $query = $customer->conversations();
+
+        if ($request->filled('search')) {
+            $term = '%'.$request->string('search').'%';
+            $query->whereHas('vendor', fn ($vendor) => $vendor->where('brand_name', 'like', $term));
+        }
+
+        return $live->poll(
+            $request,
+            $query,
+            ChatMessage::SENDER_CUSTOMER,
+            fn (Conversation $conversation) => WebChatLivePresenter::customerThread($conversation),
+            fn (Conversation $chat) => abort_unless($chat->customer_id === $customer->id, 403),
+        );
+    }
+
     public function start(Vendor $vendor): RedirectResponse
     {
         abort_unless($vendor->status === 'active', 404);
@@ -68,14 +92,14 @@ class ChatController extends WebController
         return redirect()->route('web.chat.index', ['chat' => $conversation->id]);
     }
 
-    public function sendMessage(Request $request, Conversation $chat): RedirectResponse
+    public function sendMessage(Request $request, Conversation $chat): RedirectResponse|JsonResponse
     {
         $customer = Auth::guard('customer')->user();
         abort_unless($chat->customer_id === $customer->id, 403);
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000', 'required_without:attachment'],
-            'attachment' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'attachment' => ChatAttachmentSupport::validationRules(),
         ]);
 
         abort_if(blank($data['body'] ?? null) && ! $request->hasFile('attachment'), 422);
@@ -90,6 +114,12 @@ class ChatController extends WebController
         ]);
 
         $chat->update(['last_message_at' => $message->created_at]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => WebChatLivePresenter::message($message, ChatMessage::SENDER_CUSTOMER),
+            ]);
+        }
 
         return redirect()
             ->route('web.chat.index', ['chat' => $chat->id])

@@ -22,6 +22,13 @@
             <option value="{{ $parent->id }}" @selected(old('parent_id', $category?->parent_id) == $parent->id)>{{ $parent->name }}</option>
         @endforeach
     </x-admin.form-select>
+
+    <x-admin.form-select label="Service type" name="service_category_id" :required="true">
+        <option value="">Select service type</option>
+        @foreach ($serviceCategories ?? [] as $serviceCategory)
+            <option value="{{ $serviceCategory->id }}" @selected(old('service_category_id', $category?->service_category_id) == $serviceCategory->id)>{{ $serviceCategory->name }}</option>
+        @endforeach
+    </x-admin.form-select>
 @endif
 
 @include('admin.partials.form-input', [

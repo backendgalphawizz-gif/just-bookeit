@@ -8,6 +8,7 @@ use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Vendor;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -79,6 +80,25 @@ class ChatController extends ApiController
 
         $chat->load('vendor');
 
+        if ($request->filled('since_id')) {
+            $messages = $chat->messages()
+                ->where('id', '>', $request->integer('since_id'))
+                ->orderBy('id')
+                ->get();
+
+            $chat->messages()
+                ->where('sender_type', ChatMessage::SENDER_VENDOR)
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+
+            return $this->success([
+                'messages' => $messages
+                    ->map(fn (ChatMessage $message) => CustomerApiPresenter::chatMessage($message))
+                    ->values()
+                    ->all(),
+            ]);
+        }
+
         $messages = $chat->messages()
             ->orderBy('id')
             ->paginate($request->integer('per_page', 50));
@@ -102,7 +122,7 @@ class ChatController extends ApiController
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000', 'required_without:attachment'],
-            'attachment' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096', 'required_without:body'],
+            'attachment' => ChatAttachmentSupport::validationRules(true),
         ]);
 
         abort_if(empty($data['body']) && ! $request->hasFile('attachment'), 422, 'Message body or attachment is required.');

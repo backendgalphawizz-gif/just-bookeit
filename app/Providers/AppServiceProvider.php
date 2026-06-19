@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\ChatMessage;
 use App\Models\Order;
+use App\Observers\ChatMessageObserver;
 use App\Observers\OrderObserver;
 use App\Support\AdminListOrder;
 use App\View\Composers\AdminLayoutComposer;
@@ -11,6 +13,7 @@ use App\View\Composers\VendorLayoutComposer;
 use App\View\Composers\WebLayoutComposer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,6 +26,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if (! $this->app->runningInConsole()) {
+            $request = request();
+
+            if ($request->hasHeader('Host')) {
+                URL::forceRootUrl($request->getSchemeAndHttpHost());
+            }
+        }
+
         Builder::macro('newestFirst', function (string $column = 'created_at') {
             return AdminListOrder::newestFirst($this, $column);
         });
@@ -32,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Order::observe(OrderObserver::class);
+        ChatMessage::observe(ChatMessageObserver::class);
 
         View::composer('admin.layouts.app', AdminLayoutComposer::class);
         View::composer(['admin.layouts.guest', 'admin.auth.login'], GuestLayoutComposer::class);

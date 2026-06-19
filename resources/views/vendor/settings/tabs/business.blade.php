@@ -32,7 +32,7 @@
             @error('business_mobile')<p class="vp-field-error">{{ $message }}</p>@enderror
         </div>
         <div class="vp-field">
-            <label class="vp-label" for="business_mail">Business Email-id</label>
+            <label class="vp-label" for="business_mail">Business Email</label>
             <input id="business_mail" type="email" name="business_mail" class="vp-input @error('business_mail') vp-input--error @enderror" value="{{ old('business_mail', $vendor->business_email) }}" placeholder="shop@example.com" maxlength="255" data-vp-restrict="email">
             @error('business_mail')<p class="vp-field-error">{{ $message }}</p>@enderror
         </div>
@@ -45,9 +45,9 @@
         @error('gst_no')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
-    <!-- <div class="vp-section-title">Location</div> -->
+    <div class="vp-section-title">Location</div>
     <div class="vp-field">
-        <label class="vp-label" for="address">Location (Full Address)</label>
+        <label class="vp-label" for="address">Full Address</label>
         <textarea id="address" name="address" class="vp-textarea @error('address') vp-textarea--error @enderror" rows="3" maxlength="500" data-vp-restrict="text" placeholder="Shop/Building No, Street...">{{ old('address', $vendor->address) }}</textarea>
         @error('address')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>

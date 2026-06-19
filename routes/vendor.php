@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Vendor\Auth\LoginController;
+use App\Http\Controllers\Vendor\NotificationController;
 use App\Http\Controllers\Vendor\ListExportController;
 use App\Http\Controllers\Vendor\BookingController;
 use App\Http\Controllers\Vendor\ChatController;
@@ -24,6 +25,7 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::get('login', [LoginController::class, 'showLogin'])->name('login');
         Route::get('register', [LoginController::class, 'showRegister'])->name('register');
         Route::post('otp/send', [LoginController::class, 'sendOtp'])->name('otp.send');
+        Route::post('otp/resend', [LoginController::class, 'resendOtp'])->name('otp.resend');
         Route::get('verify-otp', [LoginController::class, 'showVerifyOtp'])->name('verify-otp');
         Route::post('verify-otp', [LoginController::class, 'verifyOtp'])->name('verify-otp.submit');
         Route::get('register/complete', [LoginController::class, 'showRegisterComplete'])->name('register.complete');
@@ -58,7 +60,12 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
 
         Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
 
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+
         Route::get('chat', [ChatController::class, 'index'])->name('chat.index');
+        Route::get('chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
         Route::get('chat/{chat}', [ChatController::class, 'show'])->name('chat.show');
         Route::post('chat/{chat}/messages', [ChatController::class, 'sendMessage'])->name('chat.messages');
 

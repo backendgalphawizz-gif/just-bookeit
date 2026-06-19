@@ -182,13 +182,15 @@ class AdminListExporter
             'categories' => [
                 'title' => 'Categories Export',
                 'basename' => 'categories',
-                'headers' => ['Name', 'Slug', 'Type', 'Parent', 'Active', 'Sort Order', 'Created'],
+                'headers' => ['Name', 'Slug', 'Type', 'Parent', 'Service Type', 'Active', 'Sort Order', 'Created'],
                 'query' => fn (Request $request) => AdminListOrder::newestFirst(
                     $this->applyDateRange(Category::query(), $request)
-                        ->with('parent')
+                        ->with(['parent', 'serviceCategory'])
                         ->when($request->string('type')->toString() === 'catalog', fn (Builder $q) => $q->whereIn('type', [Category::TYPE_MAIN, Category::TYPE_SUB]))
                         ->when($request->filled('type') && $request->string('type')->toString() !== 'catalog', fn (Builder $q) => $q->where('type', $request->string('type')))
                         ->when($request->filled('search'), fn (Builder $q) => $q->where('name', 'like', '%'.$request->string('search').'%'))
+                        ->when($request->filled('parent_id'), fn (Builder $q) => $q->where('parent_id', $request->integer('parent_id')))
+                        ->when($request->filled('service_category_id'), fn (Builder $q) => $q->where('service_category_id', $request->integer('service_category_id')))
                         ->when($request->filled('active'), fn (Builder $q) => $q->where('is_active', $request->boolean('active')))
                 ),
                 'map' => fn (Category $category) => [
@@ -196,6 +198,7 @@ class AdminListExporter
                     $category->slug,
                     $category->type,
                     $category->parent?->name ?? '',
+                    $category->serviceCategory?->name ?? '',
                     $category->is_active ? 'Yes' : 'No',
                     $category->sort_order,
                     $category->created_at?->format('Y-m-d') ?? '',

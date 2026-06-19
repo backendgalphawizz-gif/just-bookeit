@@ -30,6 +30,9 @@ class CategoryRequest extends AdminFormRequest
     {
         $this->merge([
             'parent_id' => $this->input('type') === Category::TYPE_SERVICE ? null : $this->input('parent_id'),
+            'service_category_id' => $this->input('type') === Category::TYPE_SUB
+                ? $this->input('service_category_id')
+                : null,
         ]);
     }
 
@@ -49,6 +52,16 @@ class CategoryRequest extends AdminFormRequest
 
                 if (! $parent || ! $parent->isMain()) {
                     $validator->errors()->add('parent_id', 'Sub-categories must belong to a main category (Women, Men, or Kids).');
+                }
+
+                if (! $this->filled('service_category_id')) {
+                    $validator->errors()->add('service_category_id', 'Select a service type for this sub-category.');
+                } else {
+                    $serviceCategory = Category::query()->find($this->integer('service_category_id'));
+
+                    if (! $serviceCategory || ! $serviceCategory->isService()) {
+                        $validator->errors()->add('service_category_id', 'Select a valid service type (Fashion Designer, Rented Dress, or Rented Jewellery).');
+                    }
                 }
             }
 
@@ -80,7 +93,8 @@ class CategoryRequest extends AdminFormRequest
             ->whereRaw('LOWER(TRIM(name)) = ?', [$name]);
 
         if ($type === Category::TYPE_SUB) {
-            $query->where('parent_id', $this->integer('parent_id'));
+            $query->where('parent_id', $this->integer('parent_id'))
+                ->where('service_category_id', $this->integer('service_category_id'));
         } else {
             $query->whereNull('parent_id');
         }
@@ -95,7 +109,7 @@ class CategoryRequest extends AdminFormRequest
     protected function duplicateNameMessage(?string $type): string
     {
         return match ($type) {
-            Category::TYPE_SUB => 'This sub-category is already present under the selected parent.',
+            Category::TYPE_SUB => 'This sub-category is already present under the selected parent and service type.',
             Category::TYPE_SERVICE => 'This service category is already present.',
             default => 'This category is already present.',
         };

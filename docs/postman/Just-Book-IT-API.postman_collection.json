@@ -122,7 +122,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+									"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\",\n  \"type\": \"{{auth_type}}\",\n  \"fcm_token\": \"{{fcm_token}}\"\n}"
 								},
 								"url": "{{base_url}}/v1/auth/otp/verify"
 							}
@@ -837,7 +837,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"size\": \"XL\",\n  \"measurement_type\": \"women\",\n  \"customer_notes\": \"Add custom notes for fitting.\",\n  \"delivery_address\": \"G-14 1st sabari nagar, sukhliya, Indore\",\n  \"billing_address\": \"G-14 1st sabari nagar, sukhliya, Indore\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452010\",\n  \"rental_start_date\": \"2026-06-15\",\n  \"rental_end_date\": \"2026-06-17\",\n  \"shipment_required\": true,\n  \"measure_height_cm\": 165,\n  \"measure_chest_cm\": 36,\n  \"measure_waist_cm\": 28\n}"
+									"raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"size\": \"XL\",\n  \"measurement_type\": \"women\",\n  \"customer_notes\": \"Add custom notes for fitting.\",\n  \"delivery_address\": \"G-14 1st sabari nagar, sukhliya, Indore\",\n  \"billing_address\": \"G-14 1st sabari nagar, sukhliya, Indore\",\n  \"city\": \"Indore\",\n  \"pincode\": \"452010\",\n  \"rental_start_date\": \"2026-06-15\",\n  \"rental_end_date\": \"2026-06-17\",\n  \"shipment_required\": true,\n  \"blouse_length\": \"24\",\n  \"shoulder\": \"14\",\n  \"sleeve_length\": \"22\",\n  \"sleeve_loose\": \"12\",\n  \"arm_hole\": \"18\",\n  \"chest\": \"36\",\n  \"waist\": \"30\",\n  \"dot_point\": \"10\",\n  \"front_neck\": \"7\",\n  \"back_neck\": \"8\",\n  \"top_length\": \"28\",\n  \"half_length\": \"20\",\n  \"slit\": \"6\",\n  \"hip\": \"38\",\n  \"seat\": \"40\",\n  \"bottom_length\": \"40\",\n  \"leg_loose\": \"22\",\n  \"thigh\": \"24\",\n  \"knees\": \"16\"\n}"
 								},
 								"url": "{{base_url}}/v1/bookings"
 							}
@@ -2062,7 +2062,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+									"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\",\n  \"fcm_token\": \"{{fcm_token}}\"\n}"
 								},
 								"url": "{{base_url}}/v2/auth/otp/verify"
 							}
@@ -2297,7 +2297,7 @@
 									}
 								],
 								"url": "{{base_url}}/v2/categories",
-								"description": "Default product catalog for vendor apps. Returns `categories` (Men/Women/Kids with nested `subcategories`) and `service_categories` (Rented Dress, Fashion Designer, etc.). Use `?include_subcategories=0` for main categories only."
+								"description": "Default product catalog for vendor apps. Returns `categories` (Men/Women/Kids with nested `subcategories`) and `service_categories` (Rented Dress, Fashion Designer, etc.).\n\n**Service filter:** `?service=rented-jewellery` returns only jewellery sub-categories. `?service=rented-dress` returns dress sub-categories. `?service=fashion-designer` returns the **same dress sub-categories** as rented-dress (plus any fashion-designer-specific ones). Invalid or missing `service` returns all data.\n\nAlso accepts `service_category_id` or `service_id`. Response includes `applied` when a service filter is active.\n\nUse `?include_subcategories=0` for main categories only."
 							}
 						},
 						{
@@ -3141,15 +3141,22 @@
 										},
 										{
 											"key": "variants",
-											"value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200}]",
+											"value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200},{\"size\":\"L\",\"color\":\"Blue\",\"price\":1100}]",
 											"type": "text",
-											"description": "JSON array of variants (size, color, price)"
+											"description": "JSON array — size, color, price per variant (no image in JSON when using variant_images)"
 										},
 										{
 											"key": "variant_images",
 											"type": "file",
 											"src": [],
-											"description": "Variant image — index 0 matches variants[0]"
+											"description": "Variant image for index 0 (matches variants[0]). Add another row with the same key for variants[1], etc."
+										},
+										{
+											"key": "variant_images",
+											"type": "file",
+											"src": [],
+											"description": "Variant image for index 1 (optional — add one row per variant index)",
+											"disabled": true
 										},
 										{
 											"key": "damage_deductions",
@@ -3160,7 +3167,7 @@
 									]
 								},
 								"url": "{{base_url}}/v2/products",
-								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`."
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`. Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images` — first file = variants[0], second file = variants[1], etc. Alternative: `variants[0][image]` file fields, or base64 `image` inside each variant object."
 							}
 						},
 						{
@@ -3305,13 +3312,13 @@
 											"key": "variants",
 											"value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]",
 											"type": "text",
-											"description": "Replaces all variants when sent"
+											"description": "JSON array — replaces all variants (size, color, price). Use variant_images for photos by index."
 										},
 										{
 											"key": "variant_images",
 											"type": "file",
 											"src": [],
-											"description": "Variant image — index 0 matches variants[0]"
+											"description": "Variant image for index 0. Add more rows with the same key for index 1, 2, …"
 										},
 										{
 											"key": "damage_deductions",
@@ -4026,7 +4033,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\",\n  \"otp\": \"{{v3_otp}}\",\n  \"type\": \"{{auth_type}}\"\n}"
+							"raw": "{\n  \"mobile\": \"{{v3_mobile}}\",\n  \"otp\": \"{{v3_otp}}\",\n  \"type\": \"{{auth_type}}\",\n  \"fcm_token\": \"{{fcm_token}}\"\n}"
 						},
 						"url": "{{base_url}}/v3/auth/otp/verify"
 					}

@@ -286,6 +286,18 @@ class OtpService
 
     protected function assertActorCanAuthenticate(string $actorType, Customer|Vendor|Driver $actor): void
     {
+        if ($actorType === self::ACTOR_VENDOR && $actor->status === 'pending') {
+            throw ValidationException::withMessages([
+                'mobile' => ['Your vendor account is pending admin approval. You can login once approved.'],
+            ]);
+        }
+
+        if ($actorType === self::ACTOR_DRIVER && $actor->status === 'pending') {
+            throw ValidationException::withMessages([
+                'mobile' => ['Your driver account is pending admin approval. You can login once approved.'],
+            ]);
+        }
+
         if ($actorType === self::ACTOR_VENDOR && $actor->status === 'rejected') {
             throw ValidationException::withMessages([
                 'mobile' => [$this->rejectionMessage('vendor application', $actor->rejection_reason)],

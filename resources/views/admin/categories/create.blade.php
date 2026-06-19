@@ -18,7 +18,7 @@
 @section('content')
     <div class="jb-card"><div class="jb-card-body">
         <form method="POST" action="{{ route('admin.categories.store') }}" enctype="multipart/form-data">@csrf
-            <div class="jb-form-grid">@include('admin.categories._form', compact('parents', 'type'))</div>
+            <div class="jb-form-grid">@include('admin.categories._form', compact('parents', 'type', 'serviceCategories'))</div>
             <div class="jb-form-actions">
                 <x-admin.button variant="primary" type="submit">Save</x-admin.button>
                 <x-admin.button variant="secondary" :href="route('admin.categories.index', ['type' => $indexType])">Cancel</x-admin.button>

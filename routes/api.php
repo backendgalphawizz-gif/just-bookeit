@@ -161,6 +161,9 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::post('products', [VendorProductController::class, 'store'])->name('products.store');
         Route::get('products/{product}', [VendorProductController::class, 'show'])->name('products.show');
         Route::match(['put', 'post'], 'products/{product}', [VendorProductController::class, 'update'])->name('products.update');
+        Route::post('products/{product}/available', [VendorProductController::class, 'markAvailable'])->name('products.available');
+        Route::post('products/{product}/unavailable', [VendorProductController::class, 'markUnavailable'])->name('products.unavailable');
+        Route::post('products/{product}/availability', [VendorProductController::class, 'toggleAvailability'])->name('products.availability');
         Route::delete('products/{product}', [VendorProductController::class, 'destroy'])->name('products.destroy');
 
         Route::get('chats', [VendorChatController::class, 'index'])->name('chats.index');

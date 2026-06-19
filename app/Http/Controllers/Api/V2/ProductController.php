@@ -10,6 +10,7 @@ use App\Models\PortfolioItemVariant;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\AppliesListDateFilter;
 use App\Support\ProductDamageDeductionRules;
+use App\Support\ProductVariantUpload;
 use App\Support\StoresUploadedFiles;
 use App\Support\SubcategoryCatalog;
 use App\Support\VendorValidationRules;
@@ -83,18 +84,22 @@ class ProductController extends VendorApiController
 
         $this->assertHasProductImage($request);
         $this->validateProductUploads($request);
+        ProductVariantUpload::validateImages($request);
         $data = $this->validateVendor($request, array_merge(
             VendorValidationRules::product(true),
             VendorValidationRules::productTypeRules()
         ));
 
-        $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);
+        $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id'], $category->id);
 
         if (! $subcategory) {
             throw ValidationException::withMessages([
-                'subcategory_id' => ['Select a valid sub-category.'],
+                'subcategory_id' => ['Select a valid sub-category for this service type.'],
             ]);
         }
+
+        $this->assertSubcategoryMatchesMainCategory($request, $subcategory);
+        SubcategoryCatalog::assertBelongsToServiceCategory($subcategory, $category->id);
 
         ProductDamageDeductionRules::assertWithinCategoryLimit(
             $subcategory->id,
@@ -112,7 +117,7 @@ class ProductController extends VendorApiController
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'price_per_day' => $data['price_per_day'],
-            'advance_amount' => $data['advance_amount'] ?? null,
+            'advance_amount' => $this->resolveAdvanceAmount($request),
             'audience' => SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $data['audience'] ?? 'women',
             'image_url' => $imagePath,
             'status' => 'pending',
@@ -136,6 +141,7 @@ class ProductController extends VendorApiController
         $this->decodeJsonPayloadFields($request);
 
         $this->validateProductUploads($request);
+        ProductVariantUpload::validateImages($request);
         $data = $this->validateVendor($request, array_merge(
             VendorValidationRules::product(false),
             VendorValidationRules::productTypeRules()
@@ -154,13 +160,17 @@ class ProductController extends VendorApiController
         }
 
         if (array_key_exists('subcategory_id', $data)) {
-            $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);
+            $serviceCategoryId = (int) ($updates['category_id'] ?? $product->category_id);
+            $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id'], $serviceCategoryId);
 
             if (! $subcategory) {
                 throw ValidationException::withMessages([
-                    'subcategory_id' => ['Select a valid sub-category.'],
+                    'subcategory_id' => ['Select a valid sub-category for this service type.'],
                 ]);
             }
+
+            $this->assertSubcategoryMatchesMainCategory($request, $subcategory);
+            SubcategoryCatalog::assertBelongsToServiceCategory($subcategory, $serviceCategoryId);
 
             $updates['subcategory_id'] = $subcategory->id;
             $updates['audience'] = SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $product->audience;
@@ -172,8 +182,8 @@ class ProductController extends VendorApiController
             $updates['price_per_day'] = $data['price_per_day'];
         }
 
-        if (array_key_exists('advance_amount', $data)) {
-            $updates['advance_amount'] = $data['advance_amount'];
+        if ($request->has('advance_amount')) {
+            $updates['advance_amount'] = $this->resolveAdvanceAmount($request);
         }
 
         if (array_key_exists('damage_deductions', $data)) {
@@ -223,6 +233,75 @@ class ProductController extends VendorApiController
         return $this->success(null, 'Product removed.');
     }
 
+    public function markAvailable(Request $request, PortfolioItem $product): JsonResponse
+    {
+        return $this->setProductAvailability($request, $product, true);
+    }
+
+    public function markUnavailable(Request $request, PortfolioItem $product): JsonResponse
+    {
+        return $this->setProductAvailability($request, $product, false);
+    }
+
+    public function toggleAvailability(Request $request, PortfolioItem $product): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+        $this->assertOwnsProduct($product, $vendor);
+
+        $data = $request->validate([
+            'is_available' => ['required', 'boolean'],
+        ]);
+
+        return $this->setProductAvailability($request, $product, (bool) $data['is_available']);
+    }
+
+    protected function setProductAvailability(Request $request, PortfolioItem $product, bool $isAvailable): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+        $this->assertOwnsProduct($product, $vendor);
+
+        if ($product->status !== 'approved') {
+            return $this->error('Only approved products can be marked available or unavailable.', 422);
+        }
+
+        $product->update(['is_listing_active' => $isAvailable]);
+
+        return $this->success([
+            'product' => VendorApiPresenter::productDetail($product->fresh(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions'])),
+            'is_available' => $product->isCatalogAvailable(),
+        ], $isAvailable ? 'Product is now available.' : 'Product is now unavailable.');
+    }
+
+    protected function assertSubcategoryMatchesMainCategory(Request $request, Category $subcategory): void
+    {
+        $mainCategoryId = $this->resolveMainCategoryId($request);
+
+        if ($mainCategoryId === null) {
+            return;
+        }
+
+        SubcategoryCatalog::assertBelongsToMainCategory($subcategory, $mainCategoryId);
+    }
+
+    protected function resolveMainCategoryId(Request $request): ?int
+    {
+        foreach (['main_category_id', 'shop_category_id'] as $field) {
+            if ($request->filled($field)) {
+                return $request->integer($field);
+            }
+        }
+
+        if ($request->filled('category_id') && ! $request->filled('type')) {
+            $category = Category::query()->find($request->integer('category_id'));
+
+            if ($category?->isMain()) {
+                return $category->id;
+            }
+        }
+
+        return null;
+    }
+
     protected function mergeProductAliases(Request $request): void
     {
         if ($request->filled('name') && ! $request->filled('title')) {
@@ -233,8 +312,16 @@ class ProductController extends VendorApiController
             $request->merge(['title' => $request->input('product_name')]);
         }
 
+        if ($request->filled('shop_category_id') && ! $request->filled('main_category_id')) {
+            $request->merge(['main_category_id' => $request->input('shop_category_id')]);
+        }
+
         if ($request->filled('product_price') && ! $request->filled('price_per_day')) {
             $request->merge(['price_per_day' => $request->input('product_price')]);
+        }
+
+        if ($request->has('advance_amount') && $request->input('advance_amount') === '') {
+            $request->merge(['advance_amount' => null]);
         }
 
         if ($request->filled('category') && ! $request->filled('type')) {
@@ -252,6 +339,17 @@ class ProductController extends VendorApiController
     {
         foreach (['gallery_images', 'images', 'variant_images'] as $key) {
             $this->normalizeFileField($request, $key);
+        }
+
+        $this->normalizeIndexedVariantImageFiles($request);
+    }
+
+    protected function normalizeIndexedVariantImageFiles(Request $request): void
+    {
+        $files = ProductVariantUpload::legacyImageFiles($request);
+
+        if ($files !== []) {
+            $request->files->set('variant_images', $files);
         }
     }
 
@@ -325,6 +423,21 @@ class ProductController extends VendorApiController
         }
 
         return [];
+    }
+
+    protected function resolveAdvanceAmount(Request $request): ?float
+    {
+        if (! $request->has('advance_amount')) {
+            return null;
+        }
+
+        $value = $request->input('advance_amount');
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_numeric($value) ? (float) $value : null;
     }
 
     protected function decodeJsonPayloadFields(Request $request): void
@@ -425,14 +538,8 @@ class ProductController extends VendorApiController
             return;
         }
 
-        $variantImages = $this->uploadedFiles($request, 'variant_images');
-
         foreach ($variants as $index => $variant) {
-            $imagePath = null;
-
-            if (isset($variantImages[$index]) && $variantImages[$index] instanceof UploadedFile) {
-                $imagePath = StoresUploadedFiles::store($variantImages[$index], 'portfolio/variants');
-            }
+            $imagePath = ProductVariantUpload::storeVariantImage($request, (int) $index, $variant);
 
             PortfolioItemVariant::query()->create([
                 'portfolio_item_id' => $product->id,

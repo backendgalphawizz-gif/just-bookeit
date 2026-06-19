@@ -3,6 +3,23 @@
 @section('title', 'Bookings')
 
 @section('content')
+@php
+    $statusOptions = [
+        '' => 'All statuses',
+        'new' => 'New',
+        'accepted' => 'Accepted',
+        'in_progress' => 'In progress',
+        'delivered' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ];
+    $activeFilters = collect([
+        'Search' => request('search'),
+        'Status' => request('status') ? ($statusOptions[request('status')] ?? request('status')) : null,
+        'From' => request('from'),
+        'To' => request('to'),
+    ])->filter(fn ($value) => filled($value));
+@endphp
+
 <div class="vp-page-head">
     <div>
         <h1 class="vp-page-title">Bookings</h1>
@@ -18,13 +35,20 @@
     <div class="vp-filters-grid">
         <div class="vp-filters-field vp-filters-field--wide">
             <label class="vp-label" for="booking-search">Search</label>
-            <input type="text" id="booking-search" name="search" value="{{ request('search') }}" class="vp-input" placeholder="Order #, customer, item...">
+            <input
+                type="search"
+                id="booking-search"
+                name="search"
+                value="{{ request('search') }}"
+                class="vp-input"
+                placeholder="Order #, customer, item..."
+                autocomplete="off"
+            >
         </div>
         <div class="vp-filters-field">
             <label class="vp-label" for="booking-status">Status</label>
             <select id="booking-status" name="status" class="vp-select">
-                <option value="">All</option>
-                @foreach (['new' => 'New', 'accepted' => 'Accepted', 'in_progress' => 'In Progress', 'delivered' => 'Completed', 'cancelled' => 'Cancelled'] as $value => $label)
+                @foreach ($statusOptions as $value => $label)
                     <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -32,18 +56,31 @@
         @include('vendor.partials.date-filter')
         @include('vendor.partials.filters-end', ['resetUrl' => route('vendor.bookings.index')])
     </div>
+
+    @if ($activeFilters->isNotEmpty())
+        <div class="vp-filters-active">
+            <span class="vp-filters-active__label">Active:</span>
+            @foreach ($activeFilters as $label => $value)
+                <span class="vp-filter-chip">{{ $label }}: {{ $value }}</span>
+            @endforeach
+            <a href="{{ route('vendor.bookings.index') }}" class="vp-filter-chip vp-filter-chip--clear">Clear all</a>
+        </div>
+    @endif
 </form>
 
 <div class="vp-card">
-    <div class="vp-card-count">{{ $orders->total() }} bookings</div>
+    <div class="vp-card-head">
+        <h3>All bookings</h3>
+        <span class="vp-card-count-inline">{{ $orders->total() }} {{ Str::plural('booking', $orders->total()) }}</span>
+    </div>
     <div class="vp-table-wrap">
         <table class="vp-table">
             <thead>
                 <tr>
-                    <th>Booking Info</th>
+                    <th>Booking info</th>
                     <th>Customer</th>
-                    <th>Service Type</th>
-                    <th>Date &amp; Total</th>
+                    <th>Service type</th>
+                    <th>Date &amp; total</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -60,19 +97,19 @@
                                 @endif
                                 <div>
                                     <strong>{{ $order->itemDisplayName() }}</strong><br>
-                                    <span style="font-size:.78rem;color:var(--vp-muted);">#{{ $order->order_number }}</span>
+                                    <span class="vp-table-meta">#{{ $order->order_number }}</span>
                                 </div>
                             </div>
                         </td>
                         <td>
                             <strong>{{ $order->customer?->name ?? '—' }}</strong><br>
-                            <span style="font-size:.78rem;color:var(--vp-muted);">{{ $order->customer?->mobile }}</span>
+                            <span class="vp-table-meta">{{ $order->customer?->mobile }}</span>
                         </td>
                         <td>
                             {{ $order->category?->name ?? 'Rental' }}<br>
-                            <span style="font-size:.78rem;color:var(--vp-muted);">
+                            <span class="vp-table-meta">
                                 @if ($order->isRental() && $order->rental_start_date && $order->rental_end_date)
-                                    {{ $order->rental_start_date->format('jS M') }} to {{ $order->rental_end_date->format('jS M') }}
+                                    {{ $order->rental_start_date->format('j M') }} – {{ $order->rental_end_date->format('j M') }}
                                 @elseif (! $order->isRental())
                                     Purchase
                                 @endif
@@ -80,7 +117,7 @@
                         </td>
                         <td>
                             <strong>₹{{ number_format($order->grandTotal(), 0) }}</strong><br>
-                            <span style="font-size:.78rem;color:var(--vp-muted);">{{ $order->created_at?->format('M d, Y g:i A') }}</span>
+                            <span class="vp-table-meta">{{ $order->created_at?->format('M d, Y g:i A') }}</span>
                         </td>
                         <td>
                             @php
@@ -112,7 +149,20 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="vp-empty">No bookings found.</td></tr>
+                    <tr>
+                        <td colspan="6">
+                            <div class="vp-empty-state">
+                                <p class="vp-empty-state__title">No bookings found</p>
+                                <p class="vp-empty-state__text">
+                                    @if ($activeFilters->isNotEmpty())
+                                        Try adjusting your filters or <a href="{{ route('vendor.bookings.index') }}">reset them</a>.
+                                    @else
+                                        New customer orders will appear here.
+                                    @endif
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
                 @endforelse
             </tbody>
         </table>

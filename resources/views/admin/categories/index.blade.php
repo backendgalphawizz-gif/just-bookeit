@@ -18,6 +18,7 @@
             'search' => request('search'),
             'active' => $activeFilter !== '' ? $activeFilter : null,
             'parent_id' => request('parent_id'),
+            'service_category_id' => request('service_category_id'),
         ], fn ($value) => $value !== null && $value !== '');
     @endphp
 
@@ -45,7 +46,7 @@
     </div>
 
     @push('filter_actions')
-        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active', 'parent_id']" />
+        <x-admin.export-dropdown module="categories" :params="['type', 'search', 'active', 'parent_id', 'service_category_id']" />
     @endpush
     <form method="GET" class="jb-filters">
         <input type="hidden" name="type" value="{{ $type }}">
@@ -64,6 +65,15 @@
                         <option value="">All categories</option>
                         @foreach ($mainCategories as $mainCategory)
                             <option value="{{ $mainCategory->id }}" @selected(request('parent_id') == $mainCategory->id)>{{ $mainCategory->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="jb-filters-field">
+                    <label class="jb-label">Service type</label>
+                    <select name="service_category_id" class="jb-select">
+                        <option value="">All service types</option>
+                        @foreach ($serviceCategories ?? [] as $serviceCategory)
+                            <option value="{{ $serviceCategory->id }}" @selected(request('service_category_id') == $serviceCategory->id)>{{ $serviceCategory->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -109,6 +119,7 @@
                         <th class="jb-col-name">Name</th>
                         @if ($isCatalog)
                             <th>Under category</th>
+                            <th>Service type</th>
                         @endif
                         <th class="text-center">Sort</th>
                         <th class="jb-col-status">Status</th>
@@ -148,6 +159,7 @@
                                     </div>
                                 </td>
                                 <td class="text-slate-400">—</td>
+                                <td class="text-slate-400">—</td>
                                 <td class="text-center">{{ $category->sort_order }}</td>
                                 <td class="jb-col-status">
                                     @include('admin.components.status-badge', ['status' => $category->is_active ? 'active' : 'inactive'])
@@ -178,6 +190,7 @@
                                         <span class="jb-category-child-name">{{ $subcategory->name }}</span>
                                     </td>
                                     <td>{{ $category->name }}</td>
+                                    <td>{{ $subcategory->serviceCategory?->name ?? '—' }}</td>
                                     <td class="text-center">{{ $subcategory->sort_order }}</td>
                                     <td class="jb-col-status">
                                         @include('admin.components.status-badge', ['status' => $subcategory->is_active ? 'active' : 'inactive'])
@@ -203,12 +216,12 @@
                                     <td class="jb-col-status">
                                         <span class="jb-category-type jb-category-type--sub">Sub-category</span>
                                     </td>
-                                    <td colspan="6" class="text-sm text-slate-400">No sub-categories yet.</td>
+                                    <td colspan="7" class="text-sm text-slate-400">No sub-categories yet.</td>
                                 </tr>
                             @endforelse
                         @empty
                             <tr>
-                                <td colspan="8" class="jb-table-empty">No categories yet.</td>
+                                <td colspan="9" class="jb-table-empty">No categories yet.</td>
                             </tr>
                         @endforelse
                     @else

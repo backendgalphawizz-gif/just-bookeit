@@ -1,7 +1,7 @@
 @php
     use App\Support\AdminValidationRules;
 
-    $minFilterDate = AdminValidationRules::MYSQL_MIN_TIMESTAMP_DATE;
+    $minFilterDate = AdminValidationRules::listFilterMinDate();
     $maxFilterDate = AdminValidationRules::listDateMax();
 @endphp
 <div

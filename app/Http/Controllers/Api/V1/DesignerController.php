@@ -51,15 +51,15 @@ class DesignerController extends ApiController
 
     public function show(Vendor $designer): JsonResponse
     {
-        abort_unless($designer->status === 'active', 404);
+        abort_unless($designer->status === 'active' && $designer->is_listing_active, 404);
 
-        $portfolio = $designer->portfolioItems()
-            ->with(['vendor', 'category'])
-            ->whereIn('status', ['approved', 'pending'])
+        $products = $designer->portfolioItems()
+            ->with(['vendor', 'category', 'subcategory.parent', 'variants'])
+            ->where('status', 'approved')
             ->latest('id')
             ->limit(12)
             ->get();
 
-        return $this->success(CustomerApiPresenter::designerDetail($designer, $portfolio));
+        return $this->success(CustomerApiPresenter::designerDetail($designer, $products));
     }
 }

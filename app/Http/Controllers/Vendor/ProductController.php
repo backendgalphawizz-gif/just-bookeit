@@ -223,8 +223,7 @@ class ProductController extends VendorController
             'image' => [$imageRule, ...$fileRule],
             'gallery_images' => ['nullable', 'array', 'max:10'],
             'gallery_images.*' => $fileRule,
-            'variant_images' => ['nullable', 'array', 'max:50'],
-            'variant_images.*' => ['nullable', ...$fileRule],
+            'variants.*.image' => ['nullable', ...$fileRule],
         ];
     }
 }

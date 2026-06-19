@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\NotificationLog;
 use App\Models\Vendor;
+use App\Services\PushNotificationService;
 use App\Http\Requests\Admin\NotificationStoreRequest;
 use App\Support\AppliesListDateFilter;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,10 @@ class NotificationController extends AdminController
     use AppliesListDateFilter;
 
     protected string $permissionModule = 'notifications';
+
+    public function __construct(
+        protected PushNotificationService $pushNotifications
+    ) {}
 
     public function index(Request $request): View
     {
@@ -63,7 +68,7 @@ class NotificationController extends AdminController
             'drivers' => Driver::query()->where('status', 'active')->count(),
         };
 
-        NotificationLog::query()->create([
+        $notification = NotificationLog::query()->create([
             ...$data,
             'admin_id' => Auth::guard('admin')->id(),
             'status' => 'sent',
@@ -71,9 +76,14 @@ class NotificationController extends AdminController
             'sent_at' => now(),
         ]);
 
+        $successMessage = match ($data['channel']) {
+            'push' => $this->pushSuccessMessage($this->pushNotifications->dispatchNotificationLog($notification)),
+            default => "Notification logged for {$recipients} recipients ({$data['channel']} delivery not yet integrated).",
+        };
+
         return redirect()
             ->route('admin.notifications.index')
-            ->with('success', "Notification queued for {$recipients} recipients (logged for Phase 1 — integrate FCM/SMS provider for live delivery).");
+            ->with('success', $successMessage);
     }
 
     public function show(NotificationLog $notification): View
@@ -81,5 +91,16 @@ class NotificationController extends AdminController
         $notification->load('admin');
 
         return view('admin.notifications.show', compact('notification'));
+    }
+
+    /** @param  array{sent: int, failed: int, tokens: int}  $result */
+    protected function pushSuccessMessage(array $result): string
+    {
+        if ($result['tokens'] === 0) {
+            return 'Push notification logged. No registered FCM tokens found for the selected audience.';
+        }
+
+        return "Push notification sent to {$result['sent']} of {$result['tokens']} device(s)."
+            .($result['failed'] > 0 ? " {$result['failed']} failed." : '');
     }
 }

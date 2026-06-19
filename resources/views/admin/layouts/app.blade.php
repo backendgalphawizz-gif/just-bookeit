@@ -116,6 +116,7 @@
             }
         });
     </script>
+    <script defer src="{{ asset('js/chat-compose.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

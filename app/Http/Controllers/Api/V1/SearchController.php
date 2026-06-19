@@ -22,7 +22,7 @@ class SearchController extends ApiController
         $term = '%'.$request->string('q').'%';
 
         $itemsQuery = PortfolioItem::query()
-            ->with(['vendor', 'category'])
+            ->with(['vendor', 'category', 'variants'])
             ->where(function ($q) use ($term) {
                 $q->where('title', 'like', $term)
                     ->orWhere('description', 'like', $term);

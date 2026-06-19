@@ -21,6 +21,7 @@ class PortfolioItem extends Model
         'image_url',
         'audience',
         'status',
+        'is_listing_active',
         'rejection_reason',
         'reviewed_at',
     ];
@@ -30,6 +31,7 @@ class PortfolioItem extends Model
         return [
             'price_per_day' => 'decimal:2',
             'advance_amount' => 'decimal:2',
+            'is_listing_active' => 'boolean',
             'reviewed_at' => 'datetime',
         ];
     }
@@ -117,6 +119,7 @@ class PortfolioItem extends Model
         $this->loadMissing('vendor');
 
         return $this->status === 'approved'
+            && (bool) ($this->is_listing_active ?? true)
             && ($this->vendor?->status === 'active')
             && (bool) ($this->vendor?->is_listing_active ?? false);
     }

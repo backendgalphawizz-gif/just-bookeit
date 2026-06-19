@@ -56,6 +56,7 @@ Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::post('/book/{item}', [BookingController::class, 'store'])->name('web.bookings.store');
 
     Route::get('/chat', [ChatController::class, 'index'])->name('web.chat.index');
+    Route::get('/chat/poll', [ChatController::class, 'poll'])->name('web.chat.poll');
     Route::get('/chat/start/{vendor}', [ChatController::class, 'start'])->name('web.chat.start');
     Route::post('/chat/{chat}/messages', [ChatController::class, 'sendMessage'])->name('web.chat.messages');
 

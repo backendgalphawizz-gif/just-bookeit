@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Support\SubcategoryCatalog;
 use Illuminate\Validation\Rule;
 
 class VendorValidationRules
@@ -118,9 +119,11 @@ class VendorValidationRules
             'title' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'description' => ['nullable', 'string', 'max:5000', 'regex:'.AdminValidationRules::REGEX_TEXT],
             'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
-            'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'audience' => ['nullable', 'in:women,men,kids'],
-            ...\App\Support\SubcategoryCatalog::subcategoryIdRules($creating),
+            ...SubcategoryCatalog::subcategoryIdRules($creating),
+            ...SubcategoryCatalog::mainCategoryIdRules(false),
+            'main_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', 'main')],
+            'shop_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', 'main')],
             'variants' => ['nullable', 'array', 'max:50'],
             'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],

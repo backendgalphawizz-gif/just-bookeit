@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Vendor;
 
 use App\Models\Faq;
 use App\Models\PlatformSetting;
+use App\Models\VendorPortfolioImage;
 use App\Services\PlatformConfigService;
 use App\Support\StoresUploadedFiles;
 use App\Support\VendorValidationRules;
@@ -21,9 +22,6 @@ class SettingsController extends VendorController
     {
         $vendor = $this->vendor();
         $tab = $request->string('tab', 'profile')->toString();
-        if ($tab === 'portfolio') {
-            return redirect()->route('vendor.portfolio.index');
-        }
 
         $validTabs = collect($this->settingsTabs())->pluck('key')->all();
         if (! in_array($tab, $validTabs, true)) {
@@ -31,14 +29,20 @@ class SettingsController extends VendorController
         }
         $legal = $this->config->legalFor(Faq::AUDIENCE_VENDOR);
 
-        return view('vendor.settings.index', [
+        $viewData = [
             'vendor' => $vendor,
             'tab' => $tab,
             'legal' => $legal,
             'serviceOptions' => VendorValidationRules::SERVICE_TYPES,
             'settingsTabs' => $this->settingsTabs(),
             'legalUpdatedAt' => PlatformSetting::get('legal_updated_at', now()->format('F j, Y')),
-        ]);
+        ];
+
+        if ($tab === 'portfolio') {
+            $viewData = array_merge($viewData, $this->portfolioViewData($vendor));
+        }
+
+        return view('vendor.settings.index', $viewData);
     }
 
     public function update(Request $request): RedirectResponse
@@ -174,13 +178,36 @@ class SettingsController extends VendorController
         return [
             ['key' => 'profile', 'label' => 'Personal Profile', 'icon' => 'user'],
             ['key' => 'bio', 'label' => 'Bio / Description', 'icon' => 'bio'],
-            ['key' => 'portfolio', 'label' => 'Portfolio', 'icon' => 'folder'],
+            ['key' => 'portfolio', 'label' => 'Portfolio', 'icon' => 'portfolio'],
             ['key' => 'business', 'label' => 'Business Info', 'icon' => 'business'],
             ['key' => 'bank', 'label' => 'Bank Info', 'icon' => 'bank'],
             ['key' => 'password', 'label' => 'Password', 'icon' => 'password'],
             ['key' => 'privacy', 'label' => 'Privacy Policy', 'icon' => 'privacy'],
             ['key' => 'terms', 'label' => 'Terms & Conditions', 'icon' => 'terms'],
             ['key' => 'faq', 'label' => "FAQ's", 'icon' => 'faq'],
+        ];
+    }
+
+    /** @return array{portfolioByAudience: array<string, array{label: string, images: \Illuminate\Database\Eloquent\Collection}>, photoCount: int} */
+    protected function portfolioViewData($vendor): array
+    {
+        $portfolioByAudience = [];
+
+        foreach (['women' => 'Women', 'men' => 'Men', 'kids' => 'Kids'] as $key => $label) {
+            $portfolioByAudience[$key] = [
+                'label' => $label,
+                'images' => VendorPortfolioImage::query()
+                    ->where('vendor_id', $vendor->id)
+                    ->where('audience', $key)
+                    ->orderBy('sort_order')
+                    ->orderByDesc('id')
+                    ->get(),
+            ];
+        }
+
+        return [
+            'portfolioByAudience' => $portfolioByAudience,
+            'photoCount' => collect($portfolioByAudience)->sum(fn (array $group) => $group['images']->count()),
         ];
     }
 }

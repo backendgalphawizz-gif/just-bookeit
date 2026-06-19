@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Models\PlatformSetting;
+use App\Services\NotificationInboxService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
@@ -28,9 +29,27 @@ class VendorLayoutComposer
             return $item;
         });
 
+        $vendorNotificationUnread = 0;
+        $vendorNotifications = collect();
+
+        if ($vendor) {
+            $inbox = app(NotificationInboxService::class);
+            $vendorNotificationUnread = $inbox->unreadCount(
+                NotificationInboxService::TYPE_VENDOR,
+                $vendor->id
+            );
+            $vendorNotifications = $inbox->paginate(
+                NotificationInboxService::TYPE_VENDOR,
+                $vendor->id,
+                8
+            )->getCollection();
+        }
+
         $view->with([
             'vendorUser' => $vendor,
             'vendorMenu' => $menu,
+            'vendorNotificationUnread' => $vendorNotificationUnread,
+            'vendorNotifications' => $vendorNotifications,
             'vendorBranding' => [
                 'name' => PlatformSetting::get('platform_name', 'Just Book IT'),
                 'logo_url' => PlatformSetting::mediaUrl('vendor_logo') ?? PlatformSetting::mediaUrl('admin_logo'),

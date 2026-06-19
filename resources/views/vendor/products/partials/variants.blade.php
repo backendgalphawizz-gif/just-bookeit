@@ -46,7 +46,7 @@
                     <div>
                         <label class="vp-label">Variant image</label>
                         @if (! empty($variant['image_url']))
-                            <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger " style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
+                            <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger" style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
                         @endif
                         <input type="file" name="variant_images[]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file vp-input" data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-file-label="Variant image">
                     </div>
@@ -60,7 +60,7 @@
 
     @error('variants')<p class="vp-field-error">{{ $message }}</p>@enderror
     @error('variants.*')<p class="vp-field-error">{{ $message }}</p>@enderror
-    @error('variant_images.*')<p class="vp-field-error">{{ $message }}</p>@enderror
+    @error('variants.*.image')<p class="vp-field-error">{{ $message }}</p>@enderror
 
     <template data-vp-variants-template>
         <div class="vp-repeat-row" data-vp-variants-row>

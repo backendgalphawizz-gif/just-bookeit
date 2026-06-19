@@ -37,8 +37,9 @@ class CategoryController extends AdminController
     {
         $type = $this->resolveType($request->string('type', Category::TYPE_MAIN)->toString());
         $parents = Category::query()->main()->orderBy('name')->get();
+        $serviceCategories = $this->serviceCategories();
 
-        return view('admin.categories.create', compact('parents', 'type'));
+        return view('admin.categories.create', compact('parents', 'type', 'serviceCategories'));
     }
 
     public function store(CategoryRequest $request): RedirectResponse
@@ -77,8 +78,9 @@ class CategoryController extends AdminController
             ->where('id', '!=', $category->id)
             ->orderBy('name')
             ->get();
+        $serviceCategories = $this->serviceCategories();
 
-        return view('admin.categories.edit', compact('category', 'parents', 'type'));
+        return view('admin.categories.edit', compact('category', 'parents', 'type', 'serviceCategories'));
     }
 
     public function update(CategoryRequest $request, Category $category): RedirectResponse
@@ -192,19 +194,32 @@ class CategoryController extends AdminController
     {
         $search = $request->filled('search') ? $request->string('search')->toString() : null;
         $activeFilter = $request->filled('active') ? $request->boolean('active') : null;
+        $serviceCategoryId = $request->filled('service_category_id')
+            ? $request->integer('service_category_id')
+            : null;
 
         $categories = $this->applyDateRange(Category::query()->main(), $request)
             ->when($request->filled('parent_id'), fn ($q) => $q->where('id', $request->integer('parent_id')))
-            ->when($search, function ($q) use ($search) {
+            ->when($serviceCategoryId, fn ($q) => $q->whereHas('subcategories', function ($sub) use ($serviceCategoryId, $activeFilter) {
+                $sub->where('service_category_id', $serviceCategoryId)
+                    ->when($activeFilter !== null, fn ($s) => $s->where('is_active', $activeFilter));
+            }))
+            ->when($search, function ($q) use ($search, $serviceCategoryId, $activeFilter) {
                 $term = '%'.$search.'%';
-                $q->where(function ($q) use ($term) {
+                $q->where(function ($q) use ($term, $serviceCategoryId, $activeFilter) {
                     $q->where('name', 'like', $term)
-                        ->orWhereHas('subcategories', fn ($sub) => $sub->where('name', 'like', $term));
+                        ->orWhereHas('subcategories', function ($sub) use ($term, $serviceCategoryId, $activeFilter) {
+                            $sub->where('name', 'like', $term)
+                                ->when($serviceCategoryId, fn ($s) => $s->where('service_category_id', $serviceCategoryId))
+                                ->when($activeFilter !== null, fn ($s) => $s->where('is_active', $activeFilter));
+                        });
                 });
             })
             ->when($activeFilter !== null, fn ($q) => $q->where('is_active', $activeFilter))
-            ->with(['subcategories' => function ($q) use ($activeFilter) {
-                $q->when($activeFilter !== null, fn ($sub) => $sub->where('is_active', $activeFilter));
+            ->with(['subcategories' => function ($q) use ($activeFilter, $serviceCategoryId) {
+                $q->with('serviceCategory')
+                    ->when($activeFilter !== null, fn ($sub) => $sub->where('is_active', $activeFilter))
+                    ->when($serviceCategoryId, fn ($sub) => $sub->where('service_category_id', $serviceCategoryId));
                 AdminListOrder::newestFirst($q);
             }])
             ->newestFirst()
@@ -214,6 +229,7 @@ class CategoryController extends AdminController
         $subcategoryTotal = Category::query()
             ->sub()
             ->when($request->filled('parent_id'), fn ($q) => $q->where('parent_id', $request->integer('parent_id')))
+            ->when($serviceCategoryId, fn ($q) => $q->where('service_category_id', $serviceCategoryId))
             ->when($search, fn ($q) => $q->where('name', 'like', '%'.$search.'%'))
             ->when($activeFilter !== null, fn ($q) => $q->where('is_active', $activeFilter))
             ->count();
@@ -222,8 +238,19 @@ class CategoryController extends AdminController
             'type' => 'catalog',
             'categories' => $categories,
             'mainCategories' => Category::query()->main()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'serviceCategories' => $this->serviceCategories(),
             'subcategoryTotal' => $subcategoryTotal,
         ];
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Collection<int, Category> */
+    protected function serviceCategories()
+    {
+        return Category::query()
+            ->service()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
     }
 
     protected function resolveParentId(string $type, mixed $parentId): ?int
@@ -242,7 +269,7 @@ class CategoryController extends AdminController
     protected function duplicateCategoryMessage(string $type): string
     {
         return match ($type) {
-            Category::TYPE_SUB => 'This sub-category is already present under the selected parent.',
+            Category::TYPE_SUB => 'This sub-category is already present under the selected parent and service type.',
             Category::TYPE_SERVICE => 'This service category is already present.',
             default => 'This category is already present.',
         };

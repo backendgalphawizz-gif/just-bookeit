@@ -1,15 +1,3 @@
-@extends('vendor.layouts.app')
-
-@section('title', 'Portfolio')
-
-@section('content')
-<div class="vp-page-head">
-    <div>
-        <h1 class="vp-page-title">Portfolio</h1>
-        <p class="vp-page-sub">Your previous work, grouped by audience — not items you sell (use Products for those).</p>
-    </div>
-</div>
-
 <div class="vp-card vp-card-pad" style="margin-bottom:1rem;border-color:#fde68a;background:#fffbeb;">
     <p style="margin:0;font-size:.88rem;color:#92400e;">
         <strong>Portfolio</strong> = photos of work you have already done.
@@ -17,16 +5,16 @@
     </p>
 </div>
 
-<div class="vp-card">
+<div class="vp-card" style="box-shadow:none;border:none;padding:0;">
     <div class="vp-card-count">
         {{ $photoCount }} {{ Str::plural('photo', $photoCount) }} across Women, Men, and Kids
     </div>
-    <div class="vp-card-pad" style="display:flex;flex-direction:column;gap:2rem;">
+    <div class="vp-card-pad" style="display:flex;flex-direction:column;gap:2rem;padding-left:0;padding-right:0;">
         @foreach ($portfolioByAudience as $audienceKey => $group)
             <section id="audience-{{ $audienceKey }}" style="padding-bottom:1.5rem;border-bottom:1px solid var(--vp-border);">
                 <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:1rem;">
                     <div>
-                        <h2 style="margin:0;font-size:1rem;font-weight:700;">{{ $group['label'] }}</h2>
+                        <h3 style="margin:0;font-size:1rem;font-weight:700;">{{ $group['label'] }}</h3>
                         <p style="margin:.25rem 0 0;font-size:.85rem;color:var(--vp-muted);">{{ $group['images']->count() }} {{ Str::plural('photo', $group['images']->count()) }}</p>
                     </div>
                 </div>
@@ -79,8 +67,9 @@
 </div>
 
 @if (request('audience'))
-    <script>
-        document.getElementById('audience-{{ request('audience') }}')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    </script>
+    @push('scripts')
+        <script>
+            document.getElementById('audience-{{ request('audience') }}')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        </script>
+    @endpush
 @endif
-@endsection
