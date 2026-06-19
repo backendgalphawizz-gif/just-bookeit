@@ -202,6 +202,14 @@
 
         const scroll = () => {
             messagesBox.scrollTop = messagesBox.scrollHeight;
+
+            const track = getMessageTrack(container);
+            const lastMessage = track?.querySelector('[data-message-id]:last-of-type');
+
+            if (lastMessage && typeof lastMessage.scrollIntoView === 'function') {
+                lastMessage.scrollIntoView({ block: 'end', inline: 'nearest', behavior: 'auto' });
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            }
         };
 
         scroll();
@@ -209,6 +217,8 @@
             scroll();
             requestAnimationFrame(scroll);
         });
+
+        window.setTimeout(scroll, 120);
 
         messagesBox.querySelectorAll('img, video').forEach((media) => {
             const handler = () => scroll();
@@ -385,6 +395,12 @@
         bindMessageScroll(container);
         container.dataset.chatPinnedBottom = '1';
         scrollMessages(container, true);
+
+        if (window.visualViewport) {
+            const onViewportChange = () => scrollMessages(container, container.dataset.chatPinnedBottom !== '0');
+            window.visualViewport.addEventListener('resize', onViewportChange);
+            window.visualViewport.addEventListener('scroll', onViewportChange);
+        }
 
         if (container.dataset.chatLivePolling === '1') {
             return;

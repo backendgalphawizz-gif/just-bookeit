@@ -208,9 +208,16 @@ class DriverApiPresenter
 
     public static function canAccept(Order $order, ?Driver $viewer): bool
     {
-        return $viewer
-            && OrderDispatchSupport::isDispatchStatus($order->status)
-            && $order->driver_id === null;
+        if (! $viewer || ! OrderDispatchSupport::isDispatchStatus($order->status)) {
+            return false;
+        }
+
+        if ($order->driver_id === null) {
+            return true;
+        }
+
+        return (int) $order->driver_id === (int) $viewer->id
+            && in_array($order->driver_delivery_status, [null, Order::DRIVER_STATUS_ACCEPTED], true);
     }
 
     public static function canReject(Order $order, ?Driver $viewer): bool
