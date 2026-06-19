@@ -1,5 +1,5 @@
 (function () {
-    const POLL_MS = 2500;
+    const POLL_MS = 1000;
 
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -32,6 +32,36 @@
         }
 
         return `${window.location.origin}${path.startsWith('/') ? path : `/${path}`}`;
+    }
+
+    function getMessagesBox(container) {
+        return container.querySelector('[data-chat-messages]');
+    }
+
+    function getMessageTrack(container) {
+        const box = getMessagesBox(container);
+
+        if (!box) {
+            return null;
+        }
+
+        return box.querySelector('[data-chat-messages-track]') || box;
+    }
+
+    async function parseJsonResponse(response) {
+        const contentType = response.headers.get('content-type') || '';
+
+        if (!contentType.includes('application/json')) {
+            throw new Error('invalid_response');
+        }
+
+        const json = await response.json();
+
+        if (json && typeof json === 'object' && json.data !== undefined && json.messages === undefined && json.message === undefined) {
+            return json.data;
+        }
+
+        return json;
     }
 
     function renderAttachment(message, theme) {
@@ -130,13 +160,13 @@
 
     function getLastMessageId(container) {
         const stored = Number(container.dataset.lastMessageId || 0);
-        const messagesBox = container.querySelector('[data-chat-messages]');
+        const track = getMessageTrack(container);
 
-        if (!messagesBox) {
+        if (!track) {
             return Number.isFinite(stored) ? stored : 0;
         }
 
-        const ids = Array.from(messagesBox.querySelectorAll('[data-message-id]'))
+        const ids = Array.from(track.querySelectorAll('[data-message-id]'))
             .map((node) => Number(node.dataset.messageId))
             .filter((id) => Number.isFinite(id));
 
@@ -160,7 +190,8 @@
     }
 
     function scrollMessages(container, force = false) {
-        const messagesBox = container.querySelector('[data-chat-messages]');
+        const messagesBox = getMessagesBox(container);
+
         if (!messagesBox) {
             return;
         }
@@ -189,7 +220,8 @@
     }
 
     function bindMessageScroll(container) {
-        const messagesBox = container.querySelector('[data-chat-messages]');
+        const messagesBox = getMessagesBox(container);
+
         if (!messagesBox || messagesBox.dataset.chatScrollBound === '1') {
             return;
         }
@@ -201,18 +233,19 @@
     }
 
     function appendMessage(container, message, theme, forceScroll = false) {
-        const messagesBox = container.querySelector('[data-chat-messages]');
-        if (!messagesBox || messagesBox.querySelector(`[data-message-id="${message.id}"]`)) {
+        const track = getMessageTrack(container);
+
+        if (!track || track.querySelector(`[data-message-id="${message.id}"]`)) {
             return false;
         }
 
-        const empty = messagesBox.querySelector('.vp-chat-empty-thread, .jbw-chat-empty-thread');
+        const empty = track.querySelector('.vp-chat-empty-thread, .jbw-chat-empty-thread');
         if (empty) {
             empty.remove();
         }
 
         const html = theme === 'vendor' ? renderVendorMessage(message) : renderCustomerMessage(message);
-        messagesBox.insertAdjacentHTML('beforeend', html);
+        track.insertAdjacentHTML('beforeend', html);
         setLastMessageId(container, message.id);
 
         if (forceScroll || container.dataset.chatPinnedBottom !== '0') {
@@ -265,13 +298,11 @@
             cache: 'no-store',
         });
 
-        const contentType = response.headers.get('content-type') || '';
-
-        if (!response.ok || !contentType.includes('application/json')) {
+        if (!response.ok) {
             return;
         }
 
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
 
         (data.messages || []).forEach((message) => {
             appendMessage(container, message, theme);
@@ -311,13 +342,11 @@
                 cache: 'no-store',
             });
 
-            const contentType = response.headers.get('content-type') || '';
-
-            if (!response.ok || !contentType.includes('application/json')) {
+            if (!response.ok) {
                 throw new Error('send_failed');
             }
 
-            const data = await response.json();
+            const data = await parseJsonResponse(response);
 
             if (data.message) {
                 appendMessage(container, data.message, theme, true);
@@ -332,9 +361,7 @@
 
             await poll(container);
         } catch (error) {
-            if (typeof form.requestSubmit === 'function') {
-                form.removeAttribute('data-chat-live-bound');
-            }
+            form.removeAttribute('data-chat-live-bound');
             form.submit();
         } finally {
             form.dataset.chatSending = '0';

@@ -86,30 +86,32 @@
             </div>
 
             <div class="vp-chat-messages" id="vp-chat-messages" data-chat-messages>
-                @forelse ($messages as $message)
-                    <div @class(['vp-chat-row', 'vp-chat-row--mine' => $message->sender_type === 'vendor']) data-message-id="{{ $message->id }}">
-                        <div @class([
-                            'vp-chat-bubble',
-                            'vp-chat-bubble--mine' => $message->sender_type === 'vendor',
-                            'vp-chat-bubble--theirs' => $message->sender_type !== 'vendor',
-                        ])>
-                            @if ($message->body)
-                                <p>{{ $message->body }}</p>
-                            @endif
-                            @if ($message->attachmentUrl())
-                                @include('partials.chat-attachment-media', [
-                                    'url' => $message->attachmentUrl(),
-                                    'path' => $message->attachment_path,
-                                    'type' => $message->attachmentType(),
-                                    'class' => 'vp-chat-attachment',
-                                ])
-                            @endif
+                <div class="vp-chat-messages-track" data-chat-messages-track>
+                    @forelse ($messages as $message)
+                        <div @class(['vp-chat-row', 'vp-chat-row--mine' => $message->sender_type === 'vendor']) data-message-id="{{ $message->id }}">
+                            <div @class([
+                                'vp-chat-bubble',
+                                'vp-chat-bubble--mine' => $message->sender_type === 'vendor',
+                                'vp-chat-bubble--theirs' => $message->sender_type !== 'vendor',
+                            ])>
+                                @if ($message->body)
+                                    <p>{{ $message->body }}</p>
+                                @endif
+                                @if ($message->attachmentUrl())
+                                    @include('partials.chat-attachment-media', [
+                                        'url' => $message->attachmentUrl(),
+                                        'path' => $message->attachment_path,
+                                        'type' => $message->attachmentType(),
+                                        'class' => 'vp-chat-attachment',
+                                    ])
+                                @endif
+                            </div>
+                            <span class="vp-chat-time">{{ $message->created_at?->format('g:i A') }}</span>
                         </div>
-                        <span class="vp-chat-time">{{ $message->created_at?->format('g:i A') }}</span>
-                    </div>
-                @empty
-                    <p class="vp-chat-empty-thread">No messages yet. Say hello to your customer.</p>
-                @endforelse
+                    @empty
+                        <p class="vp-chat-empty-thread">No messages yet. Say hello to your customer.</p>
+                    @endforelse
+                </div>
             </div>
 
             <form
@@ -150,16 +152,6 @@
 </div>
 
 @push('scripts')
-<script>
-(function () {
-    const box = document.getElementById('vp-chat-messages');
-    if (!box) return;
-    const scroll = function () { box.scrollTop = box.scrollHeight; };
-    scroll();
-    document.addEventListener('DOMContentLoaded', scroll);
-    window.addEventListener('load', scroll);
-})();
-</script>
 <script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
 @endpush
 @endsection

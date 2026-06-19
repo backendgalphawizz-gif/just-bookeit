@@ -78,34 +78,36 @@
             </div>
 
             <div class="jbw-chat-messages" id="jbw-chat-messages" data-chat-messages>
-                @forelse ($messages as $message)
-                <div @class([
-                    'jbw-chat-message-wrapper',
-                    'jbw-chat-message-wrapper--mine' => $message->isFromCustomer(),
-                    'jbw-chat-message-wrapper--theirs' => ! $message->isFromCustomer(),
-                ]) data-message-id="{{ $message->id }}">
-                    <div @class([ 'jbw-chat-bubble' , 'jbw-chat-bubble--mine'=> $message->isFromCustomer(),
-                        'jbw-chat-bubble--theirs' => ! $message->isFromCustomer()
-                        ])>
-                        @if ($message->body)
-                        <p>{{ $message->body }}</p>
-                        @endif
+                <div class="jbw-chat-messages-track" data-chat-messages-track>
+                    @forelse ($messages as $message)
+                    <div @class([
+                        'jbw-chat-message-wrapper',
+                        'jbw-chat-message-wrapper--mine' => $message->isFromCustomer(),
+                        'jbw-chat-message-wrapper--theirs' => ! $message->isFromCustomer(),
+                    ]) data-message-id="{{ $message->id }}">
+                        <div @class([ 'jbw-chat-bubble' , 'jbw-chat-bubble--mine'=> $message->isFromCustomer(),
+                            'jbw-chat-bubble--theirs' => ! $message->isFromCustomer()
+                            ])>
+                            @if ($message->body)
+                            <p>{{ $message->body }}</p>
+                            @endif
 
-                        @if ($message->attachmentUrl())
-                        @include('partials.chat-attachment-media', [
-                            'url' => $message->attachmentUrl(),
-                            'path' => $message->attachment_path,
-                            'type' => $message->attachmentType(),
-                            'class' => 'jbw-chat-attachment',
-                        ])
-                        @endif
+                            @if ($message->attachmentUrl())
+                            @include('partials.chat-attachment-media', [
+                                'url' => $message->attachmentUrl(),
+                                'path' => $message->attachment_path,
+                                'type' => $message->attachmentType(),
+                                'class' => 'jbw-chat-attachment',
+                            ])
+                            @endif
+                        </div>
+
+                        <p class="jbw-chat-time">{{ $message->created_at?->format('g:i A') }}</p>
                     </div>
-
-                    <p class="jbw-chat-time">{{ $message->created_at?->format('g:i A') }}</p>
+                    @empty
+                    <p class="jbw-chat-empty-thread">Say hello to start the conversation.</p>
+                    @endforelse
                 </div>
-                @empty
-                <p class="jbw-chat-empty-thread">Say hello to start the conversation.</p>
-                @endforelse
             </div>
 
             <form method="POST"
@@ -150,29 +152,7 @@
     </div>
 </div>
 
-<!-- @if ($activeChat)
-<script>
-(function () {
-    const box = document.getElementById('jbw-chat-messages');
-    if (!box) return;
-    const scroll = function () { box.scrollTop = box.scrollHeight; };
-    scroll();
-    document.addEventListener('DOMContentLoaded', scroll);
-    window.addEventListener('load', scroll);
-})();
-</script>
-@endif -->
-@if ($activeChat)
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const box = document.getElementById('jbw-chat-messages');
-
-    if (box) {
-        setTimeout(() => {
-            box.scrollTop = box.scrollHeight;
-        }, 100);
-    }
-});
-</script>
-@endif
+@push('scripts')
+<script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
+@endpush
 @endsection
