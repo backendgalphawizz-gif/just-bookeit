@@ -2138,7 +2138,7 @@ border-radius: 8px !important;
     border-radius:12px;
 }
 .starcolor {
-    color: gold;
+    color: #f5a623;
     font-size: 14px;
 }
 .buttonheight {
@@ -3483,7 +3483,7 @@ background: #AE2A0B;
 }
 
 .stars {
-    color: #ff6b35;
+    color: #f5a623;
     font-size: 15px;
     letter-spacing: 2px;
 }
@@ -3775,7 +3775,7 @@ background: #AE2A0B;
     border: 1px solid var(--c-border);
     border-radius: var(--r-card);
     box-shadow: var(--c-shadow-sm);
-    overflow: hidden;
+    overflow: visible;
     min-height: 0;
 }
 .jbw-chat-sidebar {
