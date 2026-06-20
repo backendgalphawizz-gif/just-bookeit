@@ -381,6 +381,46 @@
         }
     }
 
+    function bindMobileAside(container) {
+        const sidebar = container.querySelector('[data-chat-aside]');
+
+        if (!sidebar || container.dataset.chatAsideBound === '1') {
+            return;
+        }
+
+        container.dataset.chatAsideBound = '1';
+
+        const openAside = () => {
+            container.classList.add('vp-chat-layout--aside-open');
+            sidebar.classList.add('vp-chat-sidebar--mobile-open');
+        };
+
+        const closeAside = () => {
+            container.classList.remove('vp-chat-layout--aside-open');
+            sidebar.classList.remove('vp-chat-sidebar--mobile-open');
+        };
+
+        container.querySelectorAll('[data-chat-aside-open]').forEach((button) => {
+            button.addEventListener('click', openAside);
+        });
+
+        container.querySelectorAll('[data-chat-aside-close]').forEach((button) => {
+            button.addEventListener('click', closeAside);
+        });
+
+        container.addEventListener('click', (event) => {
+            if (event.target.closest('[data-chat-aside-thread]')) {
+                closeAside();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeAside();
+            }
+        });
+    }
+
     function bindContainer(container) {
         const form = container.querySelector('[data-chat-compose]');
 
@@ -393,6 +433,7 @@
         }
 
         bindMessageScroll(container);
+        bindMobileAside(container);
         container.dataset.chatPinnedBottom = '1';
         scrollMessages(container, true);
 
