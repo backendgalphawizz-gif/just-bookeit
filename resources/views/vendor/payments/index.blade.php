@@ -27,7 +27,7 @@
     <x-vendor.export-dropdown module="payments" :params="['search', 'from', 'to']" />
 @endpush
 
-<form method="GET" class="vp-filters">
+<form method="GET" class="vp-filters vp-card" style="padding: 1rem;">
     <div class="vp-filters-grid">
         <div class="vp-filters-field vp-filters-field--wide">
             <label class="vp-label" for="payment-search">Search</label>
@@ -38,7 +38,7 @@
     </div>
 </form>
 
-<div class="vp-card">
+<div class="vp-card" style="margin-top: 1rem;">
     <div class="vp-card-head">
         <h3>Wallet Activity</h3>
         <div style="display:flex;align-items:center;gap:.75rem;">

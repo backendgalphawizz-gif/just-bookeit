@@ -148,7 +148,7 @@
         </div>
 
         <aside class="jb-product-sidebar">
-            <div class="jb-booking-card jb-booking-card--compact">
+            <div class="jb-booking-card jb-booking-card--compact" style="margin-bottom: 15px;">
                 <h3 class="jb-booking-card-title">Product details</h3>
                 <dl class="jb-product-facts">
                     <div class="jb-product-fact">
@@ -203,7 +203,7 @@
             </div>
 
             @if (in_array($portfolio->status, ['pending', 'rejected'], true) && auth('admin')->user()->hasPermission('portfolio', 'edit'))
-                <div class="jb-booking-card">
+                <div class="jb-booking-card" style="margin-bottom: 15px;">
                     <h3 class="jb-booking-card-title">Moderation</h3>
                     @if ($portfolio->status === 'rejected')
                         <p class="text-sm text-rose-700" style="margin:0 0 .85rem;">This product was rejected. Approve again if the vendor has fixed the issues.</p>

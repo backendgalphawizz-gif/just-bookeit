@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="jb-login-card" x-data="{ showPassword: false }">
-        <aside class="jb-login-brand" aria-hidden="false">
+        <aside class="jb-login-brand logo" aria-hidden="false">
             <img
                 src="{{ $loginBranding['logo_url'] }}"
                 alt="{{ $loginBranding['name'] }}"

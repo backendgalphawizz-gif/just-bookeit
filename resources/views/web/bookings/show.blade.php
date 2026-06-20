@@ -94,7 +94,7 @@
                             <div class="jbw-booking-designer-info">
                                 <a href="{{ route('web.vendors.show', $order->vendor) }}" class="jbw-booking-designer-name">{{ $order->vendor->brand_name }}</a>
                                 <p class="jbw-booking-product-meta">
-                                    ★ {{ number_format($order->vendor->rating, 1) }}
+                                    <font class="starcolor">★</font> {{ number_format($order->vendor->rating, 1) }}
                                     @if ($order->vendor->city) · {{ $order->vendor->city }}@endif
                                 </p>
                             </div>
@@ -231,7 +231,10 @@
                     @endif
                 </div>
 
-                <div class="jbw-overview-card">
+               
+            </div>
+        </aside>
+        <div class="jbw-overview-card">
                     <p class="jbw-overview-label">Need help?</p>
                     @if ($order->category)
                         <p class="jbw-booking-detail-help-meta">Category: <strong>{{ $order->category->name }}</strong></p>
@@ -279,8 +282,6 @@
                         </form>
                     </div>
                 @endif
-            </div>
-        </aside>
     </div>
 </div>
 @endsection

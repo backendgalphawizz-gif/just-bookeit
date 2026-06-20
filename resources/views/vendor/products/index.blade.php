@@ -21,7 +21,7 @@
     <x-vendor.export-dropdown module="products" :params="['type', 'search', 'status', 'from', 'to']" />
 @endpush
 
-<form method="GET" class="vp-filters">
+<form method="GET" class="vp-filters vp-card" style="padding: 1rem;">
     <input type="hidden" name="type" value="{{ $type }}">
     <div class="vp-filters-grid">
         <div class="vp-filters-field vp-filters-field--wide">
@@ -42,7 +42,7 @@
     </div>
 </form>
 
-<div class="vp-card">
+<div class="vp-card" style="margin-top: 1rem;">
     <div class="vp-card-count">{{ $items->total() }} products</div>
     <div class="vp-table-wrap">
         <table class="vp-table">

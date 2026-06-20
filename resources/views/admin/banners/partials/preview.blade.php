@@ -2,7 +2,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 @endpush
 
-<aside class="jb-banner-preview-panel" aria-label="Banner preview">
+<aside style="margin-bottom: 15px;" class="jb-banner-preview-panel" aria-label="Banner preview">
     <div class="jb-banner-preview-panel__head">
         <div>
             <h2 class="jb-banner-preview-panel__title">Live preview</h2>

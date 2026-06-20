@@ -11,6 +11,8 @@
 
     <div
         class="jbw-chat-layout"
+        x-data="{ sidebarOpen: false }"
+        @keydown.escape.window="sidebarOpen = false"
         data-chat-live
         data-poll-url="{{ route('web.chat.poll', [], false) }}"
         data-chat-id="{{ $activeChat?->id }}"
@@ -18,9 +20,30 @@
         data-chat-theme="customer"
         data-chat-search="{{ request('search') }}"
     >
+        {{-- Mobile drawer backdrop --}}
+        <div
+            class="jbw-chat-sidebar-backdrop"
+            x-show="sidebarOpen"
+            x-cloak
+            @click="sidebarOpen = false"
+            aria-hidden="true"
+        ></div>
+
         {{-- Conversation list --}}
-        <aside @class(['jbw-chat-sidebar', 'jbw-chat-sidebar--mobile-hide' => $activeChat])>
-            <p class="jbw-chat-sidebar-title">Messages</p>
+        <aside
+            class="jbw-chat-sidebar"
+            :class="{ 'jbw-chat-sidebar--mobile-open': sidebarOpen }"
+        >
+            <p class="jbw-chat-sidebar-title">
+                <span>Messages</span>
+                <button
+                    type="button"
+                    class="jbw-chat-sidebar-close"
+                    @click="sidebarOpen = false"
+                    aria-label="Close messages"
+                >&times;</button>
+            </p>
+
             <form method="GET" action="{{ route('web.chat.index') }}" class="jbw-chat-search">
                 @if ($activeChat)
                 <input type="hidden" name="chat" value="{{ $activeChat->id }}">
@@ -28,7 +51,11 @@
                 <input type="search" name="search" value="{{ request('search') }}" placeholder="Search designers…" class="jbw-input">
             </form>
 
-            <div class="jbw-chat-threads" data-chat-threads>
+            <div
+                class="jbw-chat-threads"
+                data-chat-threads
+                @click="if ($event.target.closest('a.jbw-chat-thread')) sidebarOpen = false"
+            >
                 @forelse ($conversations as $conversation)
                 @php
                 $isActive = $activeChat && $activeChat->id === $conversation->id;
@@ -37,8 +64,8 @@
                 @endphp
                 <a
                     href="{{ route('web.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
-                    @class(['jbw-chat-thread', 'is-active'=> $isActive])
-                    >
+                    @class(['jbw-chat-thread', 'is-active' => $isActive])
+                >
                     @if ($vendor?->profileImageUrl() || $vendor?->shopLogoUrl())
                     <img src="{{ $vendor->profileImageUrl() ?: $vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
                     @else
@@ -66,7 +93,19 @@
             @if ($activeChat && $activeChat->vendor)
             <div class="jbw-chat-main-head">
                 <div class="jbw-chat-main-vendor">
-                    <a href="{{ route('web.chat.index', array_filter(['search' => request('search')])) }}" class="jbw-chat-back" aria-label="Back to messages">←</a>
+                    <button
+                        type="button"
+                        class="jbw-chat-menu-btn"
+                        @click="sidebarOpen = true"
+                        aria-label="Open messages"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <line x1="4" y1="6" x2="20" y2="6"></line>
+                            <line x1="4" y1="12" x2="20" y2="12"></line>
+                            <line x1="4" y1="18" x2="20" y2="18"></line>
+                        </svg>
+                    </button>
+
                     @if ($activeChat->vendor->profileImageUrl() || $activeChat->vendor->shopLogoUrl())
                     <img src="{{ $activeChat->vendor->profileImageUrl() ?: $activeChat->vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
                     @else
@@ -74,8 +113,7 @@
                     @endif
                     <strong>{{ $activeChat->vendor->brand_name }}</strong>
                 </div>
-                <!-- <a href="{{ route('web.vendors.show', $activeChat->vendor) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">View profile </a> -->
-                <img src="../../../../assets/frontend/Container.png"/>
+                <img src="../../../../assets/frontend/Container.png" alt="">
             </div>
 
             <div class="jbw-chat-messages" id="jbw-chat-messages" data-chat-messages>
@@ -86,9 +124,11 @@
                         'jbw-chat-message-wrapper--mine' => $message->isFromCustomer(),
                         'jbw-chat-message-wrapper--theirs' => ! $message->isFromCustomer(),
                     ]) data-message-id="{{ $message->id }}">
-                        <div @class([ 'jbw-chat-bubble' , 'jbw-chat-bubble--mine'=> $message->isFromCustomer(),
-                            'jbw-chat-bubble--theirs' => ! $message->isFromCustomer()
-                            ])>
+                        <div @class([
+                            'jbw-chat-bubble',
+                            'jbw-chat-bubble--mine' => $message->isFromCustomer(),
+                            'jbw-chat-bubble--theirs' => ! $message->isFromCustomer(),
+                        ])>
                             @if ($message->body)
                             <p>{{ $message->body }}</p>
                             @endif

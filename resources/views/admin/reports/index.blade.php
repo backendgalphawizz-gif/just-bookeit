@@ -255,7 +255,7 @@
             @endif
         </div>
     @else
-        <p class="mt-4 text-sm text-slate-600">Select Orders, Vendors, or Refunds above for detailed tables. Use Export CSV for downloads.</p>
+        <p class="mt-4 text-sm text-slate-600" style="margin-bottom: 15px;">Select Orders, Vendors, or Refunds above for detailed tables. Use Export CSV for downloads.</p>
     @endif
 @endsection
 
