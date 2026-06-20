@@ -127,22 +127,11 @@ class AppPushNotificationService
             return;
         }
 
-        if ($order->customer) {
-            $driverName = $order->driver?->name ?? 'A driver';
-
-            $this->safeSend(fn () => $this->push->sendToCustomer(
-                $order->customer,
-                'Driver assigned',
-                "{$driverName} has been assigned to order {$order->order_number}.",
-                $this->orderPayload($order)
-            ));
-        }
-
         if ($order->vendor && $order->driver) {
             $this->safeSend(fn () => $this->push->sendToVendor(
                 $order->vendor,
                 'Driver assigned',
-                "{$order->driver->name} accepted delivery for order {$order->order_number}.",
+                "{$order->driver->name} has been assigned to order {$order->order_number}. Awaiting driver acceptance.",
                 $this->orderPayload($order)
             ));
         }
@@ -151,7 +140,7 @@ class AppPushNotificationService
             $this->safeSend(fn () => $this->push->sendToDriver(
                 $order->driver,
                 'New delivery assigned',
-                "You have been assigned order {$order->order_number}.",
+                "You have been assigned order {$order->order_number}. Please accept it in the app to start delivery.",
                 $this->orderPayload($order)
             ));
         }
@@ -166,6 +155,7 @@ class AppPushNotificationService
         $order->loadMissing(['customer', 'vendor', 'driver']);
 
         $message = match ($order->driver_delivery_status) {
+            Order::DRIVER_STATUS_ACCEPTED => ($order->driver?->name ?? 'Your driver').' has accepted delivery for your order.',
             Order::DRIVER_STATUS_PICKED_UP => 'Your order has been picked up for delivery.',
             Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'Your order is out for delivery.',
             Order::DRIVER_STATUS_RESCHEDULED => 'Your delivery has been rescheduled.',
@@ -177,6 +167,15 @@ class AppPushNotificationService
                 $order->customer,
                 'Delivery update',
                 "{$message} Order {$order->order_number}.",
+                $this->orderPayload($order)
+            ));
+        }
+
+        if ($order->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED && $order->vendor && $order->driver) {
+            $this->safeSend(fn () => $this->push->sendToVendor(
+                $order->vendor,
+                'Driver accepted delivery',
+                "{$order->driver->name} accepted delivery for order {$order->order_number}.",
                 $this->orderPayload($order)
             ));
         }

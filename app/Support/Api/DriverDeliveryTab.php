@@ -12,6 +12,8 @@ class DriverDeliveryTab
 {
     public const TAB_NEW = 'new';
 
+    public const TAB_IN_PROGRESS = 'in_progress';
+
     public const TAB_ACCEPTED = 'accepted';
 
     public const TAB_PICKUP = 'pickup';
@@ -29,6 +31,7 @@ class DriverDeliveryTab
     {
         return [
             self::TAB_NEW,
+            self::TAB_IN_PROGRESS,
             self::TAB_ACCEPTED,
             self::TAB_PICKUP,
             self::TAB_DISPATCHED,
@@ -57,10 +60,25 @@ class DriverDeliveryTab
         return match ($normalizedTab) {
             self::TAB_NEW => $query
                 ->whereIn('status', $dispatchStatuses)
-                ->whereNull('driver_id')
-                ->whereNotIn('id', DriverDeliverySkip::query()
-                    ->where('driver_id', $driver->id)
-                    ->select('order_id')),
+                ->where(function (Builder $builder) use ($driver) {
+                    $skipped = DriverDeliverySkip::query()
+                        ->where('driver_id', $driver->id)
+                        ->select('order_id');
+
+                    $builder
+                        ->where(function (Builder $pool) use ($skipped) {
+                            $pool->whereNull('driver_id')
+                                ->whereNotIn('id', $skipped);
+                        })
+                        ->orWhere(function (Builder $assigned) use ($driver) {
+                            $assigned->where('driver_id', $driver->id)
+                                ->whereNull('driver_delivery_status');
+                        });
+                }),
+            self::TAB_IN_PROGRESS => $query
+                ->where('driver_id', $driver->id)
+                ->where('status', 'in_progress')
+                ->whereNull('driver_delivery_status'),
             self::TAB_ACCEPTED => $query
                 ->where('driver_id', $driver->id)
                 ->whereIn('status', $dispatchStatuses)
@@ -84,13 +102,28 @@ class DriverDeliveryTab
                 ->whereIn('status', $dispatchStatuses)
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_RESCHEDULED),
             default => $query->where(function (Builder $builder) use ($driver, $dispatchStatuses) {
-                $builder->where(function (Builder $available) use ($driver, $dispatchStatuses) {
+                $skipped = DriverDeliverySkip::query()
+                    ->where('driver_id', $driver->id)
+                    ->select('order_id');
+
+                $builder->where(function (Builder $available) use ($driver, $dispatchStatuses, $skipped) {
                     $available->whereIn('status', $dispatchStatuses)
-                        ->whereNull('driver_id')
-                        ->whereNotIn('id', DriverDeliverySkip::query()
-                            ->where('driver_id', $driver->id)
-                            ->select('order_id'));
-                })->orWhere('driver_id', $driver->id);
+                        ->where(function (Builder $open) use ($driver, $skipped) {
+                            $open->whereNull('driver_id')
+                                ->whereNotIn('id', $skipped)
+                                ->orWhere(function (Builder $assigned) use ($driver) {
+                                    $assigned->where('driver_id', $driver->id)
+                                        ->whereNull('driver_delivery_status');
+                                });
+                        });
+                })->orWhere(function (Builder $owned) use ($driver, $dispatchStatuses) {
+                    $owned->where('driver_id', $driver->id)
+                        ->whereIn('status', $dispatchStatuses)
+                        ->whereNotNull('driver_delivery_status');
+                })->orWhere(function (Builder $completed) use ($driver) {
+                    $completed->where('driver_id', $driver->id)
+                        ->whereIn('status', ['delivered', 're_delivered', 'cancelled']);
+                });
             }),
         };
     }
@@ -105,6 +138,7 @@ class DriverDeliveryTab
 
         return match ($key) {
             'new' => self::TAB_NEW,
+            'in-progress', 'in_progress' => self::TAB_IN_PROGRESS,
             'accepted' => self::TAB_ACCEPTED,
             'pickup' => self::TAB_PICKUP,
             'dispatched', 'out-for-delivery', 'out_for_delivery' => self::TAB_DISPATCHED,

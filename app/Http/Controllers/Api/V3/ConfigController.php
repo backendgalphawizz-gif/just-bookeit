@@ -17,6 +17,7 @@ class ConfigController extends DriverApiController
         return $this->success([
             'delivery_tabs' => [
                 ['key' => 'new', 'label' => 'New'],
+                ['key' => 'in_progress', 'label' => 'In Progress'],
                 ['key' => 'accepted', 'label' => 'Accepted'],
                 ['key' => 'pickup', 'label' => 'Pickup'],
                 ['key' => 'dispatched', 'label' => 'Dispatched'],

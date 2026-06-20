@@ -638,11 +638,29 @@ vp-filters {
 }
 .vp-chat-back {
     display: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-right: 0.15rem;
+    border: 1px solid var(--vp-border);
+    border-radius: 10px;
+    background: #fff;
     text-decoration: none;
-    color: var(--vp-muted);
-    font-size: 1.25rem;
-    line-height: 1;
-    padding-right: .15rem;
+    color: var(--vp-text);
+    flex-shrink: 0;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+    transition: background .15s, border-color .15s;
+}
+.vp-chat-back:hover {
+    background: #f8fafc;
+    border-color: var(--vp-border-strong);
+}
+.vp-chat-back .vp-icon {
+    width: 1.15rem;
+    height: 1.15rem;
 }
 .vp-chat-messages {
     flex: 1 1 auto;
@@ -879,6 +897,8 @@ vp-filters {
 @media (max-width: 1023px) {
     .vp-chat-layout {
         grid-template-columns: 1fr;
+        grid-template-rows: minmax(0, 1fr);
+        position: relative;
     }
     .vp-chat-sidebar,
     .vp-chat-main { min-height: 0; }
@@ -895,6 +915,7 @@ vp-filters {
 .vp-body--chat .vp-main {
     overflow: hidden;
     height: 100vh;
+    height: 100dvh;
     min-height: 0;
 }
 .vp-body--chat .vp-content {

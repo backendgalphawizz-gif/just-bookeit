@@ -37,8 +37,15 @@ abstract class DriverApiController extends ApiController
             $order->driver_id === null
             || (
                 (int) $order->driver_id === (int) $driver->id
-                && in_array($order->driver_delivery_status, [null, Order::DRIVER_STATUS_ACCEPTED], true)
+                && $order->driver_delivery_status === null
             )
+        ) {
+            return;
+        }
+
+        if (
+            (int) $order->driver_id === (int) $driver->id
+            && $order->driver_delivery_status === Order::DRIVER_STATUS_ACCEPTED
         ) {
             return;
         }
