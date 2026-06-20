@@ -12,9 +12,6 @@
  
 <div
     class="vp-chat-layout"
-    x-data="{ asideOpen: false }"
-    :class="{ 'vp-chat-layout--aside-open': asideOpen }"
-    @keydown.escape.window="asideOpen = false"
     data-chat-live
     data-poll-url="{{ route('vendor.chat.poll', [], false) }}"
     data-chat-id="{{ $activeChat?->id }}"
@@ -24,19 +21,21 @@
 >
     <aside
         @class(['vp-chat-sidebar', 'vp-chat-sidebar--mobile-hide' => $activeChat])
-        :class="{ 'vp-chat-sidebar--mobile-open': asideOpen }"
+        data-chat-aside
     >
         @if ($activeChat)
             <div class="vp-chat-sidebar-mobile-head">
-                <button type="button" class="vp-chat-sidebar-close" @click="asideOpen = false" aria-label="Close messages">
+                <button type="button" class="vp-chat-sidebar-close" data-chat-aside-close aria-label="Close messages">
                     <svg class="vp-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
                 <p class="vp-chat-sidebar-title vp-chat-sidebar-title--mobile">Messages</p>
             </div>
+            <p class="vp-chat-sidebar-title vp-chat-sidebar-title--desktop-only">Messages</p>
+        @else
+            <p class="vp-chat-sidebar-title">Messages</p>
         @endif
-        <p @class(['vp-chat-sidebar-title', 'vp-chat-sidebar-title--desktop' => $activeChat])>Messages</p>
 
         <form method="GET" action="{{ route('vendor.chat.index') }}" class="vp-chat-search">
             @if ($activeChat)
@@ -61,7 +60,7 @@
                 <a
                     href="{{ route('vendor.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
                     @class(['vp-chat-thread', 'is-active' => $isActive])
-                    @click="asideOpen = false"
+                    data-chat-aside-thread
                 >
                     @if ($customer?->profileImageUrl())
                         <img src="{{ $customer->profileImageUrl() }}" alt="" class="vp-chat-avatar">
@@ -88,7 +87,7 @@
         @if ($activeChat && $activeChat->customer)
             <div class="vp-chat-main-head">
                 <div class="vp-chat-main-user">
-                    <button type="button" class="vp-chat-back" @click="asideOpen = true" aria-label="Open messages">
+                    <button type="button" class="vp-chat-back" data-chat-aside-open aria-label="Open messages">
                         <svg class="vp-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/>
                         </svg>
