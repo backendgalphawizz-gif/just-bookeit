@@ -125,7 +125,7 @@
                 <textarea name="body"
                     rows="1"
                     class="jbw-chat-input"
-                    placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+                    placeholder="Type a message..."
                     data-chat-input>{{ old('body') }}</textarea>
 
                 <button type="submit" class="jbw-chat-send">
