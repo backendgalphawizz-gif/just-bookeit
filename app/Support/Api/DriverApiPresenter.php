@@ -169,6 +169,14 @@ class DriverApiPresenter
             return 'NEW';
         }
 
+        if (
+            OrderDispatchSupport::isDispatchStatus($order->status)
+            && $order->driver_id !== null
+            && $order->driver_delivery_status === null
+        ) {
+            return 'ASSIGNED';
+        }
+
         return match ($order->driver_delivery_status) {
             Order::DRIVER_STATUS_ACCEPTED => 'ACCEPTED',
             Order::DRIVER_STATUS_PICKED_UP => 'PICKUP',
@@ -217,7 +225,7 @@ class DriverApiPresenter
         }
 
         return (int) $order->driver_id === (int) $viewer->id
-            && in_array($order->driver_delivery_status, [null, Order::DRIVER_STATUS_ACCEPTED], true);
+            && $order->driver_delivery_status === null;
     }
 
     public static function canReject(Order $order, ?Driver $viewer): bool
@@ -233,6 +241,7 @@ class DriverApiPresenter
         return $order->driver_id === $viewer->id
             && OrderDispatchSupport::isDispatchStatus($order->status)
             && in_array($order->driver_delivery_status, [
+                null,
                 Order::DRIVER_STATUS_ACCEPTED,
                 Order::DRIVER_STATUS_RESCHEDULED,
             ], true);

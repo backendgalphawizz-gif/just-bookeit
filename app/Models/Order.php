@@ -152,14 +152,16 @@ class Order extends Model
                 OrderDispatchSupport::prepareForTransit($order);
             }
 
-            if (
-                $order->isDirty('driver_id')
-                && $order->driver_id !== null
-                && OrderDispatchSupport::isDispatchStatus($order->status)
-                && blank($order->driver_delivery_status)
-            ) {
-                $order->driver_delivery_status = self::DRIVER_STATUS_ACCEPTED;
-                $order->driver_assigned_at = $order->driver_assigned_at ?? now();
+            if ($order->isDirty('driver_id') && ! $order->isDirty('driver_delivery_status')) {
+                $order->driver_delivery_status = null;
+                $order->driver_assigned_at = null;
+                $order->driver_pickup_at = null;
+                $order->driver_scheduled_for = null;
+                $order->driver_rescheduled_at = null;
+
+                if ($order->driver_id !== null) {
+                    $order->driver_rejection_reason = null;
+                }
             }
         });
 

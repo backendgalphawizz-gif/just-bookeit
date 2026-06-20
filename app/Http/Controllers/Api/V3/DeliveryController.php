@@ -126,6 +126,15 @@ class DeliveryController extends DriverApiController
 
         $this->assertOwnsDelivery($delivery, $driver);
 
+        if ($delivery->driver_delivery_status === null) {
+            $delivery->update([
+                'driver_id' => null,
+                'driver_rejection_reason' => trim($data['reason']),
+            ]);
+
+            return $this->success(null, 'Delivery rejected.');
+        }
+
         if (! in_array($delivery->driver_delivery_status, [
             Order::DRIVER_STATUS_ACCEPTED,
             Order::DRIVER_STATUS_RESCHEDULED,
