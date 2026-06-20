@@ -1,4 +1,4 @@
-<div class="jb-dispute-chat">
+<div class="jb-dispute-chat" style="margin-bottom:15px">
     <div class="jb-dispute-chat__head">
         <div>
             <h3 class="jb-dispute-chat__title">Chat with customer</h3>
@@ -117,7 +117,7 @@
                 data-jb-confirm-label="Close dispute"
             >
                 @csrf
-                <x-admin.button variant="secondary" type="submit" size="sm">Close dispute</x-admin.button>
+                <x-admin.button variant="secondary" type="submit" size="sm" style="margin: 10px;">Close dispute</x-admin.button>
             </form>
         @endif
     @endif

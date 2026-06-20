@@ -128,7 +128,7 @@
                         <a href="{{ route('web.bookings.overview', $item) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg">Book now</a>
                     @endif
                 @else
-                    <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
+                    <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
                 @endauth
           <p class="textalignment"> <svg xmlns="http://www.w3.org/2000/svg"
          width="16"

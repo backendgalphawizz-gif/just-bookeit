@@ -85,7 +85,7 @@
         </section>
     </div>
 
-    <section class="jb-card mt-6">
+    <section class="jb-card mt-6 " style="margin-bottom: 20px;">
         <div class="jb-card-header">
             <p class="jb-card-header-title">Recent activity</p>
         </div>

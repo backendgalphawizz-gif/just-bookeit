@@ -152,7 +152,7 @@
                     name="body"
                     rows="1"
                     class="vp-chat-input"
-                    placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+                    placeholder="Type a message..."
                     data-chat-input
                 >{{ old('body') }}</textarea>
                 <button type="submit" class="vp-chat-send" aria-label="Send message">

@@ -17,7 +17,7 @@
         <div>
             <h2 class="jbw-section-title" style="font-family:var(--font-serif); margin-bottom:0rem !important; margin-top:1.5rem; font-size:1.25rem; margin-bottom:1rem;">{{ $vendor->brand_name }}</h2>
             <p class="jbw-page-subtitle" style="margin-top: 0rem;">
-                ★ {{ number_format($vendor->rating, 1) }}
+                <font style="color:#f5a623;">★</font> {{ number_format($vendor->rating, 1) }}
                 @if($vendor->city) · {{ $vendor->city }} @endif
                 <!-- @if($vendor->mobile) · {{ $vendor->mobile }} @endif -->
             </p>

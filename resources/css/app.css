@@ -870,6 +870,7 @@
         @apply mx-auto mb-6 h-12 w-auto max-w-[10rem] object-contain;
     }
 
+
     .jb-login-form-header {
         @apply mb-6 text-center;
     }

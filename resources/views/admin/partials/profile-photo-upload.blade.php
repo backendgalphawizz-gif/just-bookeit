@@ -5,7 +5,7 @@
     $initials = $initials ?? '?';
 @endphp
 
-<div
+<div style="margin-bottom: 10px;"
     class="jb-profile-photo-panel sm:col-span-2"
     x-data="{
         current: @js($currentUrl),

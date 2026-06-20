@@ -81,7 +81,7 @@
                 @hasSection('back_href')
                     @php
                         $backHref = trim($__env->yieldContent('back_href'));
-                        $backLabel = trim($__env->yieldContent('back_label')) ?: '← Back to list';
+                        $backLabel = trim($__env->yieldContent('back_label')) ?: 'Back';
                     @endphp
                     <x-admin.button variant="secondary" size="sm" :href="$backHref" class="shrink-0">{{ $backLabel }}</x-admin.button>
                 @endif
