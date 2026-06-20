@@ -262,7 +262,7 @@
 
             {{-- Manage status --}}
             @if (auth('admin')->user()->hasPermission('orders', 'edit'))
-                <div class="jb-booking-card jb-booking-manage">
+                <div class="jb-booking-card jb-booking-manage" style="margin-bottom: 15px;">
                     <h3 class="jb-booking-card-title">Update status</h3>
                     <form method="POST" action="{{ route('admin.orders.manage', $order) }}" class="jb-booking-manage-form">
                         @csrf
@@ -301,7 +301,7 @@
 
                 @php $quickActions = $order->quickStatusActions(); @endphp
                 @if (count($quickActions) > 0)
-                    <div class="jb-booking-card">
+                    <div class="jb-booking-card" style="margin-bottom: 15px;">
                         <h3 class="jb-booking-card-title">Quick actions</h3>
                         <div class="jb-booking-quick-actions">
                             @foreach ($quickActions as $action)

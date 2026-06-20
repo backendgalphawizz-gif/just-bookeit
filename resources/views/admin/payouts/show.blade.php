@@ -88,7 +88,7 @@
 
         <aside class="jb-booking-sidebar">
             @if ($isPaid)
-                <div class="jb-payout-paid-card">
+                <div class="jb-payout-paid-card" style="margin-bottom: 15px;">
                     <div class="jb-payout-paid-icon" aria-hidden="true">
                         <svg class="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -104,7 +104,7 @@
                     @endif
                 </div>
             @elseif ($canRecordPayment)
-                <div class="jb-payout-record-card">
+                <div class="jb-payout-record-card" style="margin-bottom: 15px;">
                     <div class="jb-payout-record-head">
                         <p class="jb-payout-record-title">Record payment</p>
                         <p class="jb-payout-record-sub">Confirm once the transfer to the vendor is complete.</p>
@@ -121,7 +121,7 @@
                     </form>
                 </div>
             @else
-                <div class="jb-booking-card">
+                <div class="jb-booking-card" style="margin-bottom: 15px;">
                     <h3 class="jb-booking-card-title">Status</h3>
                     <p class="text-sm text-slate-600">This payout is {{ str_replace('_', ' ', $payout->status) }}. No further action is available.</p>
                 </div>
