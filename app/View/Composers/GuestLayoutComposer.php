@@ -14,7 +14,7 @@ class GuestLayoutComposer
         $view->with([
             'loginBranding' => [
                 'name' => PlatformSetting::get('platform_name', 'Just Book IT'),
-                'logo_url' => $logoUrl ?: asset('images/just-book-it-logo.png'),
+                'logo_url' => $logoUrl ?: asset('images/just-book-it-logo.png'),               
             ],
         ]);
     }
