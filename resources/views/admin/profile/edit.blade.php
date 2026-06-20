@@ -2,7 +2,7 @@
 @section('title', 'My Profile')
 @section('page_title', 'My Profile')
 @section('back_href', route('admin.dashboard'))
-@section('back_label', '← Back to dashboard')
+@section('back_label', 'Back')
 @section('page_subtitle', 'Update your account details and photo')
 
 @section('content')

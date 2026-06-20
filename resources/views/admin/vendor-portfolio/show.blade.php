@@ -17,8 +17,8 @@
         $filtersActive = request()->filled('audience') || request()->filled('from') || request()->filled('to');
     @endphp
 
-    <div class="jb-detail-grid mb-6">
-        <div class="jb-detail-card lg:col-span-3">
+    <div class=" mb-6 jb-card">
+        <div class="jb-detail-card lg:col-span-2">
             <h2>Vendor details</h2>
             <x-admin.actor-profile-header
                 :image-url="$vendor->profileImageUrl()"
@@ -113,10 +113,10 @@
                         @endif
 
                         <section id="audience-{{ $audienceKey }}">
-                            <div class="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-3">
+                            <div class="mb-4 mt-3 flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 pb-3">
                                 <div>
                                     <h2 class="text-base font-bold text-slate-900">{{ $group['label'] }}</h2>
-                                    <p class="mt-0.5 text-sm text-slate-500">{{ $group['images']->count() }} {{ Str::plural('photo', $group['images']->count()) }}</p>
+                                    <p class="mt-0.5 mn text-sm text-slate-500">{{ $group['images']->count() }} {{ Str::plural('photo', $group['images']->count()) }}</p>
                                 </div>
                             </div>
 

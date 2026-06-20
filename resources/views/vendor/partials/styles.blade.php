@@ -204,7 +204,8 @@ img { max-width: 100%; display: block; }
 .vp-grid-2, .vp-stat-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .vp-grid-4, .vp-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.35rem; }
 /* Filters (admin-style) */
-.vp-filters {
+
+vp-filters {
     margin-bottom: 1.35rem; border-radius: var(--vp-radius-lg); border: 1px solid var(--vp-border);
     background: var(--vp-surface); padding: 1.1rem 1.25rem; box-shadow: var(--vp-shadow);
 }
@@ -484,6 +485,12 @@ img { max-width: 100%; display: block; }
 .vp-schedule-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--vp-orange-soft); color: var(--vp-orange); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 /* Chat */
+
+
+/* ajay chat */
+
+
+/* ajay chat */
 .vp-page-head--compact { margin-bottom: 0.75rem; }
 .vp-page--chat .vp-page-head--compact {
     margin-bottom: 0.35rem;
@@ -604,7 +611,7 @@ img { max-width: 100%; display: block; }
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 100%;
+    height: 90%;
     align-self: stretch;
 }
 .vp-chat-main-head {
@@ -775,15 +782,110 @@ img { max-width: 100%; display: block; }
     color: var(--vp-muted);
     font-size: .875rem;
 }
+
+@media (max-width: 899px) {
+    /* 1. Force both components to remain visible */
+    .vp-chat-layout .vp-chat-sidebar--mobile-hide,
+    .vp-chat-layout .vp-chat-main--mobile-hide {
+        display: flex !important;
+    }
+
+    /* 2. Main Layout Container: Enforce screen boundaries */
+    .vp-page--chat .vp-chat-layout,
+    .vp-chat-layout {
+        display: flex !important;
+        flex-direction: column !important; /* Stack: Sidebar on top, Main Chat on bottom */
+        
+        /* Dynamic viewport heights to ensure the app wrapper fits perfectly */
+        height: calc(100vh - 7.5rem) !important;
+        max-height: calc(100vh - 7.5rem) !important;
+        
+        overflow: hidden !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 3. Sidebar (TOP PANEL) - Balanced to 30% view height */
+    .vp-chat-sidebar {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: 40% !important; /* Proper proportional allocation */
+        min-height: 150px !important; /* Safe zone so it doesn't squish on small phones */
+        flex-shrink: 0 !important;
+        overflow: hidden !important;
+    }
+
+    /* Clean scrolling engine for thread items */
+    .vp-chat-threads {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* 4. Chat Workspace (BOTTOM PANEL) - Balanced to 70% view height */
+    .vp-chat-main {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: 40% !important; /* Dominates the lower viewport space */
+        flex-grow: 1 !important;
+        min-height: 0 !important; /* Crucial: Allows child message box to shrink and scroll */
+        overflow: visible !important;
+    }
+
+    /* 5. Message List Bubble Box - Scroll handler fix */
+    .vp-chat-messages {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 1 0% !important; /* Snaps safely between header and input box */
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow-y: auto !important; /* Restores missing bubble scroll tracking */
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* Reset vertical behavior alignment rules */
+    .vp-chat-messages-track {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important; 
+        min-height: 100% !important;
+        padding: 1rem !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Pushes chat bubble history naturally from bottom up */
+    .vp-chat-messages-track > *:first-child {
+        margin-top: auto !important;
+    }
+
+    /* 6. Layout Spacing Fixes */
+    .vp-chat-row {
+        max-width: 85% !important;
+    }
+
+    /* Input compose element protection barrier */
+    .vp-chat-compose {
+        margin: 0.5rem 0.75rem 0.75rem !important;
+        flex-shrink: 0 !important; /* Stops the input bar from flatlining when keyboard goes active */
+    }
+
+    .vp-chat-back {
+        display: none !important;
+    }
+}
 @media (max-width: 1023px) {
     .vp-chat-layout {
         grid-template-columns: 1fr;
     }
     .vp-chat-sidebar,
     .vp-chat-main { min-height: 0; }
-    .vp-chat-sidebar--mobile-hide { display: none; }
-    .vp-chat-main--mobile-hide { display: none; }
-    .vp-chat-back { display: inline-block; }
+    /* .vp-chat-sidebar--mobile-hide { display: none; }
+    .vp-chat-main--mobile-hide { display: none; } */
+    .vp-chat-back { display: none; }
+    
 }
 
 /* Vendor chat page: fit shell, no outer scroll */
@@ -3737,4 +3839,20 @@ border-bottom: 0px !important;
             height: 8rem;
         }
     }
+
+    @media (max-width: 768px) {
+    .vp-grid-4,
+    .vp-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .vp-grid-4,
+    .vp-stat-grid {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
+  

@@ -39,7 +39,7 @@
 @endphp
 <div class="{{ $class ?? '' }} @if(($type ?? '') === 'textarea' || ($full ?? false)) sm:col-span-2 @endif">
     @if (!empty($label))
-        <label for="{{ $name }}" class="jb-label">{{ $label }}@if (!empty($required))<span class="text-rose-600"> *</span>@endif</label>
+        <label for="{{ $name }}" class="jb-label" >{{ $label }}@if (!empty($required))<span class="text-rose-600"> *</span>@endif</label>
     @endif
     @if ($inputType === 'select')
         <select id="{{ $name }}" name="{{ $name }}" class="jb-select" {{ !empty($required) ? 'required' : '' }}>
@@ -57,7 +57,7 @@
             autocomplete="off"
         >{{ $value ?? '' }}</textarea>
     @else
-        <input
+        <input style="margin-bottom: 10px;"
             type="{{ $inputType }}"
             id="{{ $name }}"
             name="{{ $name }}"
