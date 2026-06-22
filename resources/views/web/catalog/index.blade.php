@@ -98,24 +98,30 @@
         <div class="jbw-catalog-results">
             @if ($isServicesBrowse)
                 <div class="jbw-subcategory-strip" style="margin-bottom:1rem">
-                    <a
-                        href="{{ route($browseRoute, $filterParams(['service' => null])) }}"
-                        @class(['jbw-subcategory-chip', 'is-active' => ! request('service')])
+                <a
+                    href="{{ route($browseRoute, $filterParams(['service' => null])) }}"
+                    @class(['jbw-subcategory-chip', 'is-active'=> ! request('service')])
                     >
-                        <span class="jbw-subcategory-chip-label">All services</span>
-                    </a>
-                    @foreach ($serviceCategories as $service)
-                        <a
-                            href="{{ route($browseRoute, $filterParams(['service' => $service->id])) }}"
-                            @class(['jbw-subcategory-chip', 'is-active' => (int) request('service') === $service->id])
-                        >
-                            @if ($service->imageUrl())
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTV8glNVAPS72lgLVMirzwbqIcdaB8PporLMw&s" alt="" class="jbw-subcategory-chip-img">
+                    <span class="jbw-subcategory-chip-label">All services</span>
+                </a>
+                @foreach ($serviceCategories as $service)
+                <a
+                    href="{{ route($browseRoute, $filterParams(['service' => $service->id])) }}"
+                    @class(['jbw-subcategory-chip', 'is-active'=> (int) request('service') === $service->id])
+                    >
+                    <!-- @if ($service->imageUrl())
                                 <img src="{{ $service->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
-                            @endif
-                            <span class="jbw-subcategory-chip-label">{{ $service->name }}</span>
-                        </a>
-                    @endforeach
-                </div>
+                            @endif -->
+                    @if ($service->imageUrl())
+                    <img src="{{ $service->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
+                    @else
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTV8glNVAPS72lgLVMirzwbqIcdaB8PporLMw&s" alt="" class="jbw-subcategory-chip-img">
+                    @endif
+                    <span class="jbw-subcategory-chip-label">{{ $service->name }}</span>
+                </a>
+                @endforeach
+            </div>
             @elseif ($subcategories->isNotEmpty() && request('category'))
                 <div class="jbw-subcategory-strip">
                     <a
@@ -194,7 +200,7 @@
             </div>
 
             @if ($items->hasPages())
-                <div style="margin-top:2rem">{{ $items->links() }}</div>
+                <div style="margin-top:1rem">{{ $items->links() }}</div>
             @endif
         </div>
     </div>

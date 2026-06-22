@@ -3144,6 +3144,66 @@ border-radius: 8px !important;
 .pagination li a:hover { background: var(--c-bg); }
 .pagination li.active span { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
 
+  .jb-pagination {
+        justify-content: space-between;
+        align-items: center;
+        gap: calc(var(--spacing) * 4);
+        border-top-style: var(--tw-border-style);
+        border-top-width: 1px;
+        border-color: var(--color-slate-100);
+        background-color: #f8fafc80;
+        flex-wrap: wrap;
+        display: flex
+    }
+
+    @supports (color:color-mix(in lab, red, red)) {
+        .jb-pagination {
+            background-color: color-mix(in oklab, var(--color-slate-50) 50%, transparent)
+        }
+    }
+
+    .jb-pagination {
+        padding-inline: calc(var(--spacing) * 5);
+        padding-block: calc(var(--spacing) * 4)
+    }
+    .gap-1 {
+    gap: calc(var(--spacing) * 1);
+}
+
+.jb-btn-secondary {
+    border-style: var(--tw-border-style);
+
+
+
+     padding: 5px 10px 5px 10px;
+      border-radius: 10px;
+      text-decoration: none;
+border: 1px solid oklch(0.8 0.01 259.97);
+
+
+    background-color: var(--color-white);
+    color: oklch(0.71 0.02 258.45);
+    font-size: .75rem;
+
+}
+
+
+    .jb-btn-primary {
+        border-radius: 10px;
+    padding: 5px 10px 5px 10px;
+    color: #fff;
+    text-decoration: none;
+    font-size: .75rem;
+    border: 1px solid var(--c-primary);
+        background-color: var(--c-primary);
+
+color-mix(in srgb, var(--jb-primary, #be123c) 25%, transparent);
+    }
+
+
+
+
+
 /* ─── Designer profile hero ──────────────────────────────────────── */
 .jbw-designer-detail-avatar {
     width: 5rem; height: 5rem;
