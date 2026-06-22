@@ -3276,7 +3276,7 @@ background: #AE2A0B;
 /* contactform */
 /* Contact Form */
 .contact-form-card{
-    padding-top: 0px !important;
+    padding-top: 25px !important;
     background:#fff;
     padding:50px;
     margin-top:0px;
