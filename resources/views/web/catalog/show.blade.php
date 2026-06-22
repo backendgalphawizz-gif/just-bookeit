@@ -181,7 +181,7 @@
     </div>
      </div>
 
-    <div class="reviews-grid">
+    <div class="reviews-grid jbw-container">
 
         <div class="review-card">
             <div class="review-top">
