@@ -62,12 +62,12 @@
                 @if (! $isServicesBrowse)
                     <div class="jbw-field" style="margin-top:1rem">
                         <label class="jbw-label">Shop for</label>
-                        <div class="jbw-subcategory-strip" style="gap:0rem; margin-bottom:0rem; padding-bottom:0rem;">
+                        <div class="jbw-subcategory-strip" style="gap:0.200rem; margin-bottom:0rem; padding-bottom:0rem;">
                             @foreach ($mainCategories as $cat)
                                 <a
                                     href="{{ route($browseRoute, $filterParams(['category' => $cat->id, 'subcategory' => null])) }}"
                                     @class(['jbw-subcategory-chip', 'is-active' => (int) request('category') === $cat->id])
-                                    style="border:none !important; gap:0rem; min-width:4.5rem"
+                                    style="gap:0rem; min-width:4.0rem"
                                 >
                                     @if ($cat->imageUrl())
                                         <img src="{{ $cat->imageUrl() }}" alt="" class="jbw-subcategory-chip-img">
