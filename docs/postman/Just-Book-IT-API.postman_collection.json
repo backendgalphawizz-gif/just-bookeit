@@ -3225,13 +3225,7 @@
 											"key": "gallery_images",
 											"type": "file",
 											"src": [],
-											"description": "Extra product images (add multiple rows with same key)"
-										},
-										{
-											"key": "videos",
-											"type": "file",
-											"src": [],
-											"description": "Product videos (mp4/mov/avi/mkv/webm/3gp/mpeg/mpg/m4v/wmv/flv/ogv). Add multiple rows with same key. Max 5, 100MB each."
+											"description": "Gallery media — images (jpeg/jpg/png/webp) and/or videos (mp4/mov/avi/mkv/webm/etc). Add multiple rows with same key. Max 15 files."
 										},
 										{
 											"key": "variants",
@@ -3261,7 +3255,7 @@
 									]
 								},
 								"url": "{{base_url}}/v2/products",
-								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`. Send multiple `gallery_images` and optional `videos` (all common video formats). Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images` — first file = variants[0], second file = variants[1], etc."
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`. Send multiple `gallery_images` for both images and videos (same key). Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images` — first file = variants[0], second file = variants[1], etc."
 							}
 						},
 						{
@@ -3400,13 +3394,7 @@
 											"key": "gallery_images",
 											"type": "file",
 											"src": [],
-											"description": "Optional — append gallery images"
-										},
-										{
-											"key": "videos",
-											"type": "file",
-											"src": [],
-											"description": "Optional — append product videos (all common formats)"
+											"description": "Optional — append gallery images and/or videos (same key)"
 										},
 										{
 											"key": "variants",

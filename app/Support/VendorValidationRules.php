@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Support\SubcategoryCatalog;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 class VendorValidationRules
@@ -41,9 +42,8 @@ class VendorValidationRules
             'account_no' => 'account number',
             'shop_name' => 'shop/business name',
             'portfolio_image' => 'portfolio image',
-            'videos' => 'product videos',
-            'gallery_videos' => 'product videos',
-            'product_videos' => 'product videos',
+            'gallery_images' => 'gallery media',
+            'images' => 'gallery media',
             'reason' => 'rejection reason',
         ]);
     }
@@ -159,11 +159,8 @@ class VendorValidationRules
         return [
             'image' => 1,
             'product_image' => 1,
-            'gallery_images' => 10,
-            'images' => 10,
-            'videos' => 5,
-            'gallery_videos' => 5,
-            'product_videos' => 5,
+            'gallery_images' => 15,
+            'images' => 15,
             'variant_images' => 50,
         ];
     }
@@ -180,9 +177,30 @@ class VendorValidationRules
         return ['file', 'mimes:'.implode(',', self::VIDEO_MIMES), 'max:'.self::MAX_VIDEO_KB];
     }
 
-    public static function isVideoUploadKey(string $key): bool
+    /** Gallery fields that accept both images and videos. */
+    public static function isGalleryMediaKey(string $key): bool
     {
-        return in_array($key, ['videos', 'gallery_videos', 'product_videos'], true);
+        return in_array($key, ['gallery_images', 'images'], true);
+    }
+
+    /** @return list<string> */
+    public static function productGalleryMediaMimes(): array
+    {
+        return array_merge(['jpeg', 'jpg', 'png', 'webp'], self::VIDEO_MIMES);
+    }
+
+    /** @return list<string> */
+    public static function productGalleryMediaRules(UploadedFile $file): array
+    {
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+        $mime = strtolower((string) $file->getMimeType());
+        $isVideo = str_starts_with($mime, 'video/') || in_array($ext, self::VIDEO_MIMES, true);
+
+        if ($isVideo) {
+            return self::productVideoUploadRules();
+        }
+
+        return self::productUploadRules();
     }
 
     public static function portfolioUpload(): array

@@ -124,7 +124,6 @@ class ProductController extends VendorApiController
         ]);
 
         $this->storeGalleryImages($request, $product, $primaryImage);
-        $this->storeGalleryVideos($request, $product);
         $this->syncVariants($request, $product, $data['variants'] ?? []);
         $this->syncDamageDeductions($product, $data['damage_deductions'] ?? []);
 
@@ -210,7 +209,6 @@ class ProductController extends VendorApiController
         $product->save();
 
         $this->storeGalleryImages($request, $product);
-        $this->storeGalleryVideos($request, $product);
 
         if (array_key_exists('variants', $data)) {
             $this->syncVariants($request, $product, $data['variants'] ?? [], true);
@@ -342,7 +340,7 @@ class ProductController extends VendorApiController
 
     protected function normalizeProductFileInputs(Request $request): void
     {
-        foreach (['gallery_images', 'images', 'videos', 'gallery_videos', 'product_videos', 'variant_images'] as $key) {
+        foreach (['gallery_images', 'images', 'variant_images'] as $key) {
             $this->normalizeFileField($request, $key);
         }
 
@@ -388,10 +386,7 @@ class ProductController extends VendorApiController
             }
 
             $files = $this->uploadedFiles($request, $key);
-            $isVideoKey = VendorValidationRules::isVideoUploadKey($key);
-            $fileRules = $isVideoKey
-                ? VendorValidationRules::productVideoUploadRules()
-                : VendorValidationRules::productUploadRules();
+            $isGallery = VendorValidationRules::isGalleryMediaKey($key);
 
             if (count($files) > $maxCount) {
                 throw ValidationException::withMessages([
@@ -406,17 +401,22 @@ class ProductController extends VendorApiController
                     ]);
                 }
 
-                // Images field must stay images; videos field stays videos.
-                if ($isVideoKey && $this->looksLikeImageMime($file)) {
-                    throw ValidationException::withMessages([
-                        $key => ['Only video files are allowed in this field.'],
-                    ]);
-                }
+                if ($isGallery) {
+                    if (! $this->looksLikeImageMime($file) && ! $this->looksLikeVideoMime($file)) {
+                        throw ValidationException::withMessages([
+                            $key => ['Gallery files must be images (jpeg, jpg, png, webp) or videos (mp4, mov, avi, mkv, webm, etc.).'],
+                        ]);
+                    }
 
-                if (! $isVideoKey && $this->looksLikeVideoMime($file)) {
-                    throw ValidationException::withMessages([
-                        $key => ['Only image files are allowed in this field. Use videos / gallery_videos for video files.'],
-                    ]);
+                    $fileRules = VendorValidationRules::productGalleryMediaRules($file);
+                } else {
+                    if ($this->looksLikeVideoMime($file)) {
+                        throw ValidationException::withMessages([
+                            $key => ['Only image files are allowed here. Upload videos via gallery_images.'],
+                        ]);
+                    }
+
+                    $fileRules = VendorValidationRules::productUploadRules();
                 }
 
                 validator(
@@ -553,42 +553,16 @@ class ProductController extends VendorApiController
                 continue;
             }
 
-            if ($this->looksLikeVideoMime($file)) {
-                continue;
-            }
+            $isVideo = $this->looksLikeVideoMime($file);
 
             $sortOrder++;
             PortfolioItemImage::query()->create([
                 'portfolio_item_id' => $product->id,
-                'image_path' => StoresUploadedFiles::store($file, 'portfolio/images'),
-                'media_type' => PortfolioItemImage::TYPE_IMAGE,
-                'sort_order' => $sortOrder,
-            ]);
-        }
-    }
-
-    protected function storeGalleryVideos(Request $request, PortfolioItem $product): void
-    {
-        $files = [];
-
-        foreach (['videos', 'gallery_videos', 'product_videos'] as $key) {
-            if ($request->hasFile($key)) {
-                $files = array_merge($files, $this->uploadedFiles($request, $key));
-            }
-        }
-
-        if ($files === []) {
-            return;
-        }
-
-        $sortOrder = (int) ($product->images()->max('sort_order') ?? 0);
-
-        foreach ($files as $file) {
-            $sortOrder++;
-            PortfolioItemImage::query()->create([
-                'portfolio_item_id' => $product->id,
-                'image_path' => StoresUploadedFiles::store($file, 'portfolio/videos'),
-                'media_type' => PortfolioItemImage::TYPE_VIDEO,
+                'image_path' => StoresUploadedFiles::store(
+                    $file,
+                    $isVideo ? 'portfolio/videos' : 'portfolio/images'
+                ),
+                'media_type' => $isVideo ? PortfolioItemImage::TYPE_VIDEO : PortfolioItemImage::TYPE_IMAGE,
                 'sort_order' => $sortOrder,
             ]);
         }
