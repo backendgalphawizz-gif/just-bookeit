@@ -79,7 +79,25 @@
                                             —
                                         @endif
                                     </td>
-                                    <td>{{ $subOrder->itemDisplayName() }}</td>
+                                    <td>
+                                        @if ($subOrder->orderItems->isNotEmpty())
+                                            <ul style="margin:0;padding-left:1rem;list-style:disc">
+                                                @foreach ($subOrder->orderItems as $lineItem)
+                                                    <li style="margin:0.15rem 0">
+                                                        {{ $lineItem->title() }}
+                                                        <span style="color:var(--jb-muted,#64748b)">
+                                                            · qty {{ (int) $lineItem->quantity }}
+                                                            @if ($lineItem->variantLabel()) · {{ $lineItem->variantLabel() }}@endif
+                                                            · ₹{{ number_format((float) $lineItem->line_amount, 0) }}
+                                                        </span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            {{ $subOrder->itemDisplayName() }}
+                                            <span style="color:var(--jb-muted,#64748b)"> · qty {{ (int) ($subOrder->quantity ?? 1) }}</span>
+                                        @endif
+                                    </td>
                                     <td>₹{{ number_format($subOrder->amount, 2) }}</td>
                                     <td>₹{{ number_format($subOrder->delivery_fee, 2) }}</td>
                                     <td>@include('admin.components.status-badge', ['status' => $subOrder->payment_status, 'label' => ucfirst($subOrder->payment_status)])</td>

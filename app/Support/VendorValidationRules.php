@@ -185,6 +185,12 @@ class VendorValidationRules
         return in_array($key, ['videos', 'gallery_videos', 'product_videos'], true);
     }
 
+    /** gallery_images / images accept both images and videos. */
+    public static function isMixedMediaUploadKey(string $key): bool
+    {
+        return in_array($key, ['gallery_images', 'images'], true);
+    }
+
     public static function portfolioUpload(): array
     {
         return [

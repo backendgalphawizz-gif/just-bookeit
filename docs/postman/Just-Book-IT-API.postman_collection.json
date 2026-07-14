@@ -3320,7 +3320,7 @@
 									]
 								},
 								"url": "{{base_url}}/v2/products",
-								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`. Send multiple `gallery_images` and optional `videos` (all common video formats). Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images` — first file = variants[0], second file = variants[1], etc."
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image` (or at least one image in `gallery_images`). Send multiple `gallery_images` with both images and videos in the same field. Optional separate `videos` / `gallery_videos` keys still work. Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images`."
 							}
 						},
 						{

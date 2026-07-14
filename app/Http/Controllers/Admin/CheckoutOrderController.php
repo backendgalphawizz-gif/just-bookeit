@@ -46,7 +46,7 @@ class CheckoutOrderController extends AdminController
             'subOrders.vendor',
             'subOrders.category',
             'subOrders.driver',
-            'subOrders.orderItems',
+            'subOrders.orderItems.portfolioItem',
             'subOrders.refund.histories',
             'refunds.histories',
         ]);

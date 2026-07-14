@@ -37,36 +37,84 @@
             {{-- Product --}}
             <div class="jb-booking-card jb-booking-product">
                 <h3 class="jb-booking-card-title">Product detail</h3>
-                <div class="jb-booking-product-row">
-                    <div class="jb-booking-product-media">
-                        @if ($order->itemImageUrl())
-                            <img src="{{ $order->itemImageUrl() }}" alt="" class="jb-booking-product-img panel-lightbox-trigger">
-                        @else
-                            <div class="jb-booking-product-placeholder">
-                                <svg class="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                </svg>
+                @if ($order->orderItems->isNotEmpty())
+                    <div class="jb-booking-line-items">
+                        @foreach ($order->orderItems as $lineItem)
+                            @php
+                                $lineImage = $lineItem->displayImageUrl()
+                                    ?: $lineItem->portfolioItem?->displayImageUrl();
+                                $variantLabel = $lineItem->variantLabel();
+                            @endphp
+                            <div class="jb-booking-product-row" @style(['margin-top: 0.85rem' => ! $loop->first, 'padding-top: 0.85rem' => ! $loop->first, 'border-top: 1px solid var(--jb-border, #e2e8f0)' => ! $loop->first])>
+                                <div class="jb-booking-product-media">
+                                    @if ($lineImage)
+                                        <img src="{{ $lineImage }}" alt="" class="jb-booking-product-img panel-lightbox-trigger">
+                                    @else
+                                        <div class="jb-booking-product-placeholder">
+                                            <svg class="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                            </svg>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="jb-booking-product-info">
+                                    <p class="jb-booking-product-name">{{ $lineItem->title() }}</p>
+                                    <p class="jb-booking-product-meta">
+                                        @if ($lineItem->categoryName()){{ $lineItem->categoryName() }}@endif
+                                        @if ($variantLabel){{ $lineItem->categoryName() ? ' · ' : '' }}{{ $variantLabel }}@endif
+                                        @if ($lineItem->status){{ ($lineItem->categoryName() || $variantLabel) ? ' · ' : '' }}{{ $lineItem->statusLabel() }}@endif
+                                    </p>
+                                    <p class="jb-booking-product-price">₹{{ number_format((float) $lineItem->line_amount, 0) }}</p>
+                                    <p class="jb-booking-product-qty">Qty — {{ (int) $lineItem->quantity }}</p>
+                                </div>
                             </div>
-                        @endif
+                        @endforeach
                     </div>
-                    <div class="jb-booking-product-info">
-                        <p class="jb-booking-product-name">{{ $order->itemDisplayName() }}</p>
-                        <p class="jb-booking-product-meta">
-                            @if ($order->color){{ $order->color }}@endif
-                            @if ($order->size) | Size: {{ $order->size }}@endif
+                    @if ($order->isRental() && ($order->rental_start_date || $order->rental_end_date))
+                        <p class="jb-booking-product-meta" style="margin-top:0.85rem">
+                            Rental period:
+                            {{ $order->rental_start_date?->format('M d') ?? '—' }}
+                            – {{ $order->rental_end_date?->format('M d, Y') ?? '—' }}
+                            @if ($order->rentalDurationDays()) ({{ $order->rentalDurationDays() }} days) @endif
                         </p>
-                        @if ($order->isRental() && ($order->rental_start_date || $order->rental_end_date))
+                    @endif
+                    @if ($order->orderItems->count() > 1)
+                        <p class="jb-booking-product-meta" style="margin-top:0.5rem">
+                            {{ $order->orderItems->count() }} items · total qty {{ (int) ($order->quantity ?? $order->orderItems->sum('quantity')) }}
+                        </p>
+                    @endif
+                @else
+                    <div class="jb-booking-product-row">
+                        <div class="jb-booking-product-media">
+                            @if ($order->itemImageUrl())
+                                <img src="{{ $order->itemImageUrl() }}" alt="" class="jb-booking-product-img panel-lightbox-trigger">
+                            @else
+                                <div class="jb-booking-product-placeholder">
+                                    <svg class="size-10 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                    </svg>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="jb-booking-product-info">
+                            <p class="jb-booking-product-name">{{ $order->itemDisplayName() }}</p>
                             <p class="jb-booking-product-meta">
-                                Rental period:
-                                {{ $order->rental_start_date?->format('M d') ?? '—' }}
-                                – {{ $order->rental_end_date?->format('M d, Y') ?? '—' }}
-                                @if ($order->rentalDurationDays()) ({{ $order->rentalDurationDays() }} days) @endif
+                                @if ($order->color){{ $order->color }}@endif
+                                @if ($order->size) | Size: {{ $order->size }}@endif
                             </p>
-                        @endif
-                        <p class="jb-booking-product-price">₹{{ number_format($order->amount, 0) }}</p>
-                        <p class="jb-booking-product-qty">Qty — {{ $order->quantity ?? 1 }}</p>
+                            @if ($order->isRental() && ($order->rental_start_date || $order->rental_end_date))
+                                <p class="jb-booking-product-meta">
+                                    Rental period:
+                                    {{ $order->rental_start_date?->format('M d') ?? '—' }}
+                                    – {{ $order->rental_end_date?->format('M d, Y') ?? '—' }}
+                                    @if ($order->rentalDurationDays()) ({{ $order->rentalDurationDays() }} days) @endif
+                                </p>
+                            @endif
+                            <p class="jb-booking-product-price">₹{{ number_format($order->amount, 0) }}</p>
+                            <p class="jb-booking-product-qty">Qty — {{ $order->quantity ?? 1 }}</p>
+                        </div>
                     </div>
-                </div>
+                @endif
             </div>
 
             @if ($order->isRental())

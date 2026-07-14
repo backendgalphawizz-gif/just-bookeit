@@ -389,9 +389,6 @@ class ProductController extends VendorApiController
 
             $files = $this->uploadedFiles($request, $key);
             $isVideoKey = VendorValidationRules::isVideoUploadKey($key);
-            $fileRules = $isVideoKey
-                ? VendorValidationRules::productVideoUploadRules()
-                : VendorValidationRules::productUploadRules();
 
             if (count($files) > $maxCount) {
                 throw ValidationException::withMessages([
@@ -406,18 +403,34 @@ class ProductController extends VendorApiController
                     ]);
                 }
 
-                // Images field must stay images; videos field stays videos.
-                if ($isVideoKey && $this->looksLikeImageMime($file)) {
+                $isMixedGallery = VendorValidationRules::isMixedMediaUploadKey($key);
+                $isVideo = $this->looksLikeVideoMime($file);
+                $isImage = $this->looksLikeImageMime($file);
+
+                // Dedicated video keys: videos only.
+                if ($isVideoKey && $isImage) {
                     throw ValidationException::withMessages([
                         $key => ['Only video files are allowed in this field.'],
                     ]);
                 }
 
-                if (! $isVideoKey && $this->looksLikeVideoMime($file)) {
+                // Primary image keys: images only.
+                if (! $isVideoKey && ! $isMixedGallery && $isVideo) {
                     throw ValidationException::withMessages([
-                        $key => ['Only image files are allowed in this field. Use videos / gallery_videos for video files.'],
+                        $key => ['Only image files are allowed in this field.'],
                     ]);
                 }
+
+                // gallery_images / images: images and videos allowed.
+                if ($isMixedGallery && ! $isVideo && ! $isImage) {
+                    throw ValidationException::withMessages([
+                        $key => ['Only image or video files are allowed in gallery_images.'],
+                    ]);
+                }
+
+                $fileRules = ($isVideoKey || ($isMixedGallery && $isVideo))
+                    ? VendorValidationRules::productVideoUploadRules()
+                    : VendorValidationRules::productUploadRules();
 
                 validator(
                     ["{$key}.{$index}" => $file],
@@ -499,31 +512,36 @@ class ProductController extends VendorApiController
         }
 
         foreach (['gallery_images', 'images'] as $key) {
-            if ($request->hasFile($key)) {
-                return;
+            foreach ($this->uploadedFiles($request, $key) as $file) {
+                if ($this->looksLikeImageMime($file) && ! $this->looksLikeVideoMime($file)) {
+                    return;
+                }
             }
         }
 
         throw ValidationException::withMessages([
-            'image' => ['A product image is required.'],
+            'image' => ['A product image is required. gallery_images may include videos, but at least one image is still required.'],
         ]);
     }
 
     protected function resolvePrimaryImage(Request $request): UploadedFile
     {
-        if ($request->hasFile('image')) {
-            return $request->file('image');
-        }
+        foreach (['image', 'product_image'] as $key) {
+            if ($request->hasFile($key)) {
+                $file = $request->file($key);
+                $file = is_array($file) ? ($file[0] ?? null) : $file;
 
-        if ($request->hasFile('product_image')) {
-            return $request->file('product_image');
+                if ($file instanceof UploadedFile) {
+                    return $file;
+                }
+            }
         }
 
         foreach (['gallery_images', 'images'] as $key) {
-            if ($request->hasFile($key)) {
-                $files = $request->file($key);
-
-                return is_array($files) ? $files[0] : $files;
+            foreach ($this->uploadedFiles($request, $key) as $file) {
+                if ($this->looksLikeImageMime($file) && ! $this->looksLikeVideoMime($file)) {
+                    return $file;
+                }
             }
         }
 
@@ -553,15 +571,15 @@ class ProductController extends VendorApiController
                 continue;
             }
 
-            if ($this->looksLikeVideoMime($file)) {
-                continue;
-            }
-
+            $isVideo = $this->looksLikeVideoMime($file);
             $sortOrder++;
             PortfolioItemImage::query()->create([
                 'portfolio_item_id' => $product->id,
-                'image_path' => StoresUploadedFiles::store($file, 'portfolio/images'),
-                'media_type' => PortfolioItemImage::TYPE_IMAGE,
+                'image_path' => StoresUploadedFiles::store(
+                    $file,
+                    $isVideo ? 'portfolio/videos' : 'portfolio/images'
+                ),
+                'media_type' => $isVideo ? PortfolioItemImage::TYPE_VIDEO : PortfolioItemImage::TYPE_IMAGE,
                 'sort_order' => $sortOrder,
             ]);
         }

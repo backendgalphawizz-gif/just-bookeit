@@ -139,7 +139,7 @@ class OrderController extends AdminController
     {
         abort_unless($order->isPaymentConfirmed(), 404);
 
-        $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute', 'checkoutOrder', 'orderItems']);
+        $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute', 'checkoutOrder', 'orderItems.portfolioItem']);
 
         return view('admin.orders.show', [
             'order' => $order,
