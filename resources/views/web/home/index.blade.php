@@ -33,10 +33,16 @@ $categoryFallbacks = [
 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=900&q=85&fit=crop',
 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=900&q=85&fit=crop',
 ];
+$genderModalFallbacks = [
+    'women' => 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=400&q=80',
+    'men' => 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80',
+    'kids' => 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=400&q=80',
+];
+$genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($category->slug ?? $category->name));
 @endphp
 
 {{-- ── Hero ──────────────────────────────────────────────────────── --}}
-<section class="jbw-hero borderbanner" data-hero-carousel style="margin-bottom: 20px;">
+<section class="jbw-hero" data-hero-carousel>
     <div class="jbw-hero-slides" aria-hidden="true">
         @foreach ($heroSlides as $index => $slide)
             <div class="jbw-hero-slide{{ $index === 0 ? ' is-active' : '' }}">
@@ -58,7 +64,7 @@ $categoryFallbacks = [
                     <h1 class="jbw-hero-title">{!! nl2br(e($slide['title'])) !!}</h1>
                     <p class="jbw-hero-text">{{ $slide['subtitle'] }}</p>
                     <div class="jbw-hero-actions">
-                        <a href="{{ $slide['redirect_url'] }}" class="jbw-btn jbw-btn--primary jbw-btn--lg lookbutton">BOOK YOUR LOOK</a>
+                        <a href="{{ $slide['redirect_url'] }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Explore collection</a>
                     </div>
                 </div>
             </div>
@@ -88,14 +94,56 @@ $categoryFallbacks = [
     @endif
 </section>
 
-
-
-<!-- our services  -->
+{{-- ── Trust strip ───────────────────────────────────────────────── --}}
+<section class="jbw-trust-strip">
+    <div class="jbw-container">
+        <div class="jbw-trust-grid">
+            <div class="jbw-trust-item">
+                <span class="jbw-trust-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+                <div>
+                    <p class="jbw-trust-label">Verified boutiques</p>
+                    <p class="jbw-trust-sub">Curated designer partners</p>
+                </div>
+            </div>
+            <div class="jbw-trust-item">
+                <span class="jbw-trust-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </span>
+                <div>
+                    <p class="jbw-trust-label">Doorstep delivery</p>
+                    <p class="jbw-trust-sub">Per-vendor at checkout</p>
+                </div>
+            </div>
+            <div class="jbw-trust-item">
+                <span class="jbw-trust-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                </span>
+                <div>
+                    <p class="jbw-trust-label">Designer rentals</p>
+                    <p class="jbw-trust-sub">Outfits &amp; jewellery</p>
+                </div>
+            </div>
+            <div class="jbw-trust-item">
+                <span class="jbw-trust-icon" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </span>
+                <div>
+                    <p class="jbw-trust-label">4.8★ rated</p>
+                    <p class="jbw-trust-sub">Loved by customers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 <section class="jbw-section-band">
     <div class="jbw-container">
         <div class="jbw-section-head designers-header">
-            <h2 class="jbw-section-title">Our services</h2>
-
+            <div>
+                <span class="jbw-eyebrow">What we offer</span>
+                <h2 class="jbw-section-title">Our services</h2>
+            </div>
             <div class="designer-nav">
                 <button class="designer-arrow prev" onclick="slideServices(-1)">&#10094;</button>
                 <button class="designer-arrow next" onclick="slideServices(1)">&#10095;</button>
@@ -145,117 +193,32 @@ $categoryFallbacks = [
         <button class="jbw-modal-close" onclick="closeGenderModal()">&times;</button>
 
         <div class="jbw-modal-options-grid">
-            <!-- Women Selection Column -->
-            <div class="jbw-modal-option" onclick="selectGender('women')">
-                <div class="jbw-modal-circle-thumb">
-                    <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=400&q=80" alt="Women Selection">
+            @foreach (['women' => 'Women', 'men' => 'Men', 'kids' => 'Kids'] as $genderKey => $genderLabel)
+                @php
+                    $genderCategory = $genderModalCategories->get($genderKey);
+                    $genderImage = $genderCategory?->imageUrl() ?: ($genderModalFallbacks[$genderKey] ?? null);
+                @endphp
+                <div class="jbw-modal-option" onclick="selectGender('{{ $genderKey }}')">
+                    <div class="jbw-modal-circle-thumb">
+                        @if ($genderImage)
+                            <img src="{{ $genderImage }}" alt="{{ $genderLabel }}">
+                        @endif
+                    </div>
+                    <h3>{{ strtoupper($genderLabel) }}</h3>
                 </div>
-                <h3>WOMEN</h3>
-            </div>
-
-            <!-- Men Selection Column -->
-            <div class="jbw-modal-option" onclick="selectGender('men')">
-                <div class="jbw-modal-circle-thumb">
-                    <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=400&q=80" alt="Men Selection">
-                </div>
-                <h3>Men</h3>
-            </div>
-
-            <!-- Kids Selection Column -->
-            <div class="jbw-modal-option" onclick="selectGender('kids')">
-                <div class="jbw-modal-circle-thumb">
-                    <img src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=400&q=80" alt="Kids Selection">
-                </div>
-                <h3>KIDS</h3>
-            </div>
+            @endforeach
         </div>
     </div>
 </div>
-
-
-
-
-
-{{-- ── Our services ──────────────────────────────────────────────── --}}
-<!-- old -->
-<!-- <section class="jbw-section-band">
-    <div class="jbw-container"> -->
-        <!-- old -->
-        <!-- <div class="jbw-section-head alignmentheading ma"> -->
-        <!-- <span class="jbw-eyebrow">Our services</span> -->
-        <!-- <h2 class="jbw-section-title ">Our services</h2> -->
-        <!-- <h2 class="jbw-section-title">Choose how you want to look fabulous</h2> -->
-        <!-- <p class="jbw-section-sub">From complete designer consultations to rental dresses for a single evening - we have you covered.</p> -->
-        <!-- </div> -->
-              <!-- old -->
-        <!-- <div class="jbw-section-head designers-header">
-            <h2 class="jbw-section-title">Our services</h2>
-
-
-            <div class="designer-nav">
-                <button class="designer-arrow prev" onclick="slideServices(-1)">
-                    &#10094;
-                </button>
-
-                <button class="designer-arrow next" onclick="slideServices(1)">
-                    &#10095;
-                </button>
-            </div>
-
-        </div> -->
-             <!-- old -->
-        {{-- Legacy grid layout kept for reference
-        <div class="jbw-grid-3">
-            @forelse ($services as $index => $service)
-            ...
-            @endforelse
-        </div>
-        --}}
-             <!-- old -->
-        <!-- <div class="service-slider-wrapper">
-
-
-
-    <div class="service-slider" id="serviceSlider">
-        @forelse ($services as $index => $service)
-            <a class="service-card textalign"
-               href="{{ route('web.services.index', ['service' => $service->id]) }}">
-
-                <div class="jbw-tile">
-                    <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}"
-                         alt="{{ $service->name }}">
-                </div>
-
-                <p class="jbw-step-title textalign">
-                    {{ $service->name }}
-                </p>
-            </a>
-        @empty
-            @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
-                <a href="{{ route('web.services.index') }}" class="service-card textalign">
-                    <div class="jbw-tile">
-                        <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
-                    </div>
-
-                    <p class="jbw-step-title textalign">
-                        {{ $svc[0] }}
-                    </p>
-                </a>
-            @endforeach
-        @endforelse
-    </div>
-        </div>
-    </div>
-</section> -->
-     <!-- old -->
 
 {{-- ── Shop by category ──────────────────────────────────────────── --}}
 <section class="jbw-section-band">
     <div class="jbw-container">
         <div class="jbw-section-head designers-header">
-            <h2 class="jbw-section-title">Shop by Category</h2>
-
-
+            <div>
+                <span class="jbw-eyebrow">Collections</span>
+                <h2 class="jbw-section-title">Shop by category</h2>
+            </div>
             <div class="designer-nav">
                 <button class="designer-arrow prev" onclick="slideCategories(-1)">
                     &#10094;
@@ -297,11 +260,13 @@ $categoryFallbacks = [
 
 {{-- ── Featured designers ───────────────────────────────────────── --}}
 @if ($featuredDesigners->isNotEmpty())
-<section class="jbw-section-band ">
+<section class="jbw-section-band">
     <div class="jbw-container">
         <div class="jbw-section-head designers-header">
-            <h2 class="jbw-section-title">Featured Designers</h2>
-
+            <div>
+                <!-- <span class="jbw-eyebrow">Curated talent</span> -->
+                <h2 class="jbw-section-title">Featured designers</h2>
+            </div>
             @if($featuredDesigners->count() > 0)
             <div class="designer-nav">
                 <button class="designer-arrow prev" onclick="slideDesigners(-1)">
@@ -343,46 +308,25 @@ $categoryFallbacks = [
 </section>
 @endif
 
-
-{{-- ── Banner Section ──────────────────────────────────────────────── --}}
-<section class="jbw-section-band p-0" style="padding-top: 15px; padding-bottom:0px;">
+{{-- ── Promo CTA ─────────────────────────────────────────────────── --}}
+<section class="jbw-section-band jbw-section-band--compact">
     <div class="jbw-container">
-        <img src="../../../../assets/frontend/bannerjustbook.png" />
-    </div>
-</section>
-{{-- ── Stats strip ──────────────────────────────────────────────── --}}
-<!-- <section class="jbw-stats-strip">
-    <div class="jbw-container">
-        <div class="jbw-stats-grid">
-            <div class="jbw-stat">
-                <span class="jbw-stat-num">500+</span>
-                <span class="jbw-stat-lbl">Designer outfits</span>
+        <div class="jbw-promo-band">
+            <div>
+                <h3>Ready for your next occasion?</h3>
+                <p>Browse designer rentals, add to cart from multiple boutiques, and checkout once — we handle the rest.</p>
             </div>
-            <div class="jbw-stat-div" aria-hidden="true"></div>
-            <div class="jbw-stat">
-                <span class="jbw-stat-num">50+</span>
-                <span class="jbw-stat-lbl">Verified boutiques</span>
-            </div>
-            <div class="jbw-stat-div" aria-hidden="true"></div>
-            <div class="jbw-stat">
-                <span class="jbw-stat-num">20+</span>
-                <span class="jbw-stat-lbl">Cities across India</span>
-            </div>
-            <div class="jbw-stat-div" aria-hidden="true"></div>
-            <div class="jbw-stat">
-                <span class="jbw-stat-num">4.8&#9733;</span>
-                <span class="jbw-stat-lbl">Customer rating</span>
-            </div>
+            <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Shop now</a>
         </div>
     </div>
-</section> -->
+</section>
 
 {{-- ── How it works ─────────────────────────────────────────────── --}}
-<section class="jbw-section-band jbw-section-band--warm" id="how-it-works" style="margin-top: 2rem; background:none">
+<section class="jbw-section-band jbw-section-band--warm" id="how-it-works">
     <div class="jbw-container">
         <div class="jbw-section-head">
-            <!-- <span class="jbw-eyebrow">How it works</span> -->
-            <h2 class="jbw-section-title" style="text-align: start;">How it works</h2>
+            <span class="jbw-eyebrow">Simple process</span>
+            <h2 class="jbw-section-title">How it works</h2>
         </div>
         <div class="jbw-steps">
             <div class="jbw-step">
@@ -410,9 +354,6 @@ $categoryFallbacks = [
         </div>
     </div>
 </section>
-
-
-{{-- Legacy duplicate sections removed (were HTML comments but Blade still compiled them) --}}
 
 @push('scripts')
 <script>

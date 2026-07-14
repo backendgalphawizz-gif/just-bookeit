@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Admin;
 use App\Models\AdminCity;
+use App\Models\CheckoutOrder;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Order;
@@ -96,6 +97,28 @@ class AdminCityScope
         return $query->where(function (Builder $q) use ($cities) {
             $q->whereIn('city', $cities)
                 ->orWhereHas('vendor', fn (Builder $vendorQuery) => $vendorQuery->whereIn('city', $cities));
+        });
+    }
+
+    /** @param Builder<CheckoutOrder> $query */
+    public static function scopeCheckoutOrders(Builder $query, ?Admin $admin = null): Builder
+    {
+        if (self::isUnrestricted($admin)) {
+            return $query;
+        }
+
+        $cities = self::cities($admin);
+
+        if ($cities === []) {
+            return $query->whereRaw('0 = 1');
+        }
+
+        return $query->where(function (Builder $q) use ($cities) {
+            $q->whereIn('city', $cities)
+                ->orWhereHas('subOrders', fn (Builder $subQuery) => $subQuery->where(function (Builder $inner) use ($cities) {
+                    $inner->whereIn('city', $cities)
+                        ->orWhereHas('vendor', fn (Builder $vendorQuery) => $vendorQuery->whereIn('city', $cities));
+                }));
         });
     }
 

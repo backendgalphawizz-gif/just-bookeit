@@ -6,13 +6,16 @@ use App\Models\Banner;
 use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\ChatMessage;
+use App\Models\CheckoutOrder;
 use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Models\CustomerMeasurement;
 use App\Models\NotificationLog;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderReview;
+use App\Models\Refund;
 use App\Models\PortfolioItem;
 use App\Models\PortfolioItemVariant;
 use App\Models\SupportTicket;
@@ -134,7 +137,7 @@ class CustomerApiPresenter
 
     public static function cartItem(CartItem $cartItem): array
     {
-        $cartItem->loadMissing(['portfolioItem.vendor', 'portfolioItem.category', 'portfolioItem.subcategory.parent', 'vendor']);
+        $cartItem->loadMissing(['portfolioItem.vendor', 'portfolioItem.category', 'portfolioItem.subcategory.parent', 'portfolioItem.variants', 'variant', 'vendor']);
         $item = $cartItem->portfolioItem;
 
         return [
@@ -142,9 +145,11 @@ class CustomerApiPresenter
             'quantity' => $cartItem->quantity,
             'vendor_id' => $cartItem->vendor_id,
             'portfolio_item_id' => $cartItem->portfolio_item_id,
+            'portfolio_item_variant_id' => $cartItem->portfolio_item_variant_id,
+            'variant' => $cartItem->variant ? self::catalogVariant($cartItem->variant) : null,
             'product' => $item ? self::catalogItem($item) : null,
             'vendor' => $cartItem->vendor ? self::designerSummary($cartItem->vendor) : null,
-            'line_total' => $item ? round((float) $item->rentalPriceAmount() * $cartItem->quantity, 2) : 0,
+            'line_total' => round($cartItem->unitDailyRate() * $cartItem->quantity, 2),
             'added_at' => $cartItem->created_at?->toIso8601String(),
         ];
     }
@@ -516,10 +521,13 @@ class CustomerApiPresenter
 
     public static function bookingDetail(Order $order): array
     {
-        $order->loadMissing(['category', 'dispute', 'review']);
+        $order->loadMissing(['category', 'dispute', 'review', 'orderItems', 'refund.histories']);
 
         return [
             ...self::bookingSummary($order),
+            'is_sub_order' => $order->checkout_order_id !== null,
+            'checkout_order_id' => $order->checkout_order_id,
+            'sub_order_number' => $order->sub_order_number ?? $order->order_number,
             'billing_address' => $order->billing_address,
             'delivery_address' => $order->delivery_address,
             'pickup_address' => $order->pickup_address,
@@ -528,7 +536,12 @@ class CustomerApiPresenter
             'reference_image_urls' => $order->referenceImageUrls(),
             'rental_start_date' => $order->rental_start_date?->format('Y-m-d'),
             'rental_end_date' => $order->rental_end_date?->format('Y-m-d'),
-            'measurements' => BookingMeasurementSupport::orderMeasurements($order),
+            'measurements' => $order->checkout_order_id
+                ? null
+                : BookingMeasurementSupport::orderMeasurements($order),
+            'line_items' => $order->orderItems->isNotEmpty()
+                ? $order->orderItems->map(fn (OrderItem $item) => self::orderLineItem($item))->all()
+                : null,
             'payment_summary' => BookingPricingService::fromOrder($order),
             'tracking_steps' => $order->trackBookingSteps(),
             'delivery_otp' => $order->ensureDeliveryOtp(),
@@ -543,6 +556,115 @@ class CustomerApiPresenter
             'dispute_subject_options' => \App\Models\Dispute::subjectOptionsForCategory($order->category),
             'can_review' => $order->status === 'delivered' && ! $order->review,
             'review' => $order->review ? self::orderReview($order->review) : null,
+            'refund' => $order->refund ? self::refund($order->refund) : null,
+        ];
+    }
+
+    public static function checkoutOrderSummary(CheckoutOrder $checkout): array
+    {
+        $checkout->loadMissing(['subOrders.vendor']);
+
+        return [
+            'id' => $checkout->id,
+            'type' => 'checkout_order',
+            'order_number' => $checkout->order_number,
+            'booking_id' => $checkout->order_number,
+            'status' => $checkout->status,
+            'payment_status' => $checkout->payment_status,
+            'amount' => (float) $checkout->amount,
+            'delivery_fee' => (float) $checkout->delivery_fee,
+            'tax_amount' => (float) $checkout->tax_amount,
+            'grand_total' => (float) $checkout->grand_total,
+            'amount_refunded' => (float) $checkout->amount_refunded,
+            'vendor_count' => $checkout->subOrders->count(),
+            'sub_orders' => $checkout->subOrders->map(fn (Order $sub) => self::subOrderSummary($sub))->all(),
+            'booked_at' => $checkout->created_at?->format('d M Y, g:i A'),
+            'address' => $checkout->delivery_address,
+            'city' => $checkout->city,
+            'can_cancel' => $checkout->payment_status === 'success'
+                && $checkout->subOrders->every(fn (Order $sub) => in_array($sub->status, ['new', 'pending_acceptance'], true)),
+        ];
+    }
+
+    public static function checkoutOrderDetail(CheckoutOrder $checkout): array
+    {
+        $checkout->loadMissing(['subOrders.vendor', 'subOrders.category', 'subOrders.driver', 'subOrders.orderItems', 'subOrders.review', 'subOrders.refund.histories', 'refunds.histories']);
+
+        return [
+            ...self::checkoutOrderSummary($checkout),
+            'billing_address' => $checkout->billing_address,
+            'delivery_address' => $checkout->delivery_address,
+            'rental_start_date' => $checkout->rental_start_date?->format('Y-m-d'),
+            'rental_end_date' => $checkout->rental_end_date?->format('Y-m-d'),
+            'customer_notes' => $checkout->customer_notes,
+            'measurements' => BookingMeasurementSupport::checkoutMeasurements($checkout),
+            'payment_method' => $checkout->payment_method,
+            'paid_at' => $checkout->paid_at?->toIso8601String(),
+            'sub_orders' => $checkout->subOrders->map(fn (Order $sub) => self::subOrderDetail($sub))->all(),
+            'refunds' => $checkout->refunds->map(fn (Refund $refund) => self::refund($refund))->all(),
+        ];
+    }
+
+    public static function subOrderSummary(Order $subOrder): array
+    {
+        $subOrder->loadMissing(['vendor', 'category']);
+
+        return [
+            'id' => $subOrder->id,
+            'sub_order_number' => $subOrder->sub_order_number ?? $subOrder->order_number,
+            'status' => $subOrder->status,
+            'status_label' => $subOrder->statusLabel(),
+            'payment_status' => $subOrder->payment_status,
+            'item_title' => $subOrder->itemDisplayName(),
+            'item_image_url' => $subOrder->itemImageUrl(),
+            'amount' => (float) $subOrder->amount,
+            'delivery_fee' => (float) $subOrder->delivery_fee,
+            'total_amount' => $subOrder->grandTotal(),
+            'designer' => $subOrder->vendor ? self::designerSummary($subOrder->vendor) : null,
+            'can_cancel' => in_array($subOrder->status, ['new', 'pending_acceptance'], true),
+        ];
+    }
+
+    public static function subOrderDetail(Order $subOrder): array
+    {
+        return self::bookingDetail($subOrder);
+    }
+
+    /** @return array<string, mixed> */
+    public static function orderLineItem(OrderItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'portfolio_item_id' => $item->portfolio_item_id,
+            'title' => $item->title(),
+            'image_url' => $item->item_snapshot['image_url'] ?? null,
+            'quantity' => $item->quantity,
+            'unit_price' => (float) $item->unit_price,
+            'line_amount' => (float) $item->line_amount,
+        ];
+    }
+
+    public static function refund(Refund $refund): array
+    {
+        $refund->loadMissing('histories');
+
+        return [
+            'id' => $refund->id,
+            'order_id' => $refund->order_id,
+            'checkout_order_id' => $refund->checkout_order_id,
+            'amount' => (float) $refund->amount,
+            'reason' => $refund->reason,
+            'status' => $refund->status,
+            'source' => $refund->source,
+            'auto_processed' => (bool) $refund->auto_processed,
+            'processed_at' => $refund->processed_at?->toIso8601String(),
+            'histories' => $refund->histories->map(fn ($history) => [
+                'id' => $history->id,
+                'status' => $history->status,
+                'note' => $history->note,
+                'meta' => $history->meta,
+                'created_at' => $history->created_at?->toIso8601String(),
+            ])->all(),
         ];
     }
 

@@ -1,3 +1,7 @@
+@php
+    $footerLoggedIn = auth('customer')->check();
+    $footerRegistered = $footerLoggedIn && ! ($webCustomer->is_guest ?? true);
+@endphp
 <footer class="jbw-footer">
     <div class="jbw-container jbw-footer-grid">
         <div>
@@ -12,13 +16,13 @@
                 <li><a href="{{ route('web.home') }}#how-it-works">How It Works</a></li>
                 <li><a href="{{ route('web.catalog.index') }}">Browse Categories</a></li>
                 <li><a href="{{ route('web.faq') }}">FAQs</a></li>
-                @auth('customer')
-                    @unless ($webCustomer->is_guest)
+                @if ($footerLoggedIn)
+                    @if ($footerRegistered)
                         <li><a href="{{ route('web.bookings.index') }}">My Bookings</a></li>
-                    @endunless
+                    @endif
                 @else
                     <li><a href="{{ route('web.login') }}">Sign in</a></li>
-                @endauth
+                @endif
                 <li><a href="{{ route('web.contact') }}">Contact Us</a></li>
             </ul>
         </div>

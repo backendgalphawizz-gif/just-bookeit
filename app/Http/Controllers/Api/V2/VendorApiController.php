@@ -24,6 +24,7 @@ abstract class VendorApiController extends ApiController
     protected function assertOwnsOrder(Order $order, Vendor $vendor): void
     {
         abort_unless($order->vendor_id === $vendor->id, 403);
+        abort_unless($order->isPaymentConfirmed(), 404);
     }
 
     protected function assertOwnsProduct(PortfolioItem $product, Vendor $vendor): void

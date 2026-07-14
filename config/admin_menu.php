@@ -11,6 +11,7 @@ return [
             ['label' => 'Drivers', 'route' => 'admin.drivers.index', 'route_is' => 'admin.drivers.*', 'permission' => 'drivers', 'badge' => 'pending_drivers', 'icon' => 'wallet'],
             ['label' => 'Categories', 'route' => 'admin.categories.index', 'route_is' => 'admin.categories.*', 'permission' => 'categories', 'badge' => null, 'icon' => 'grid'],
             ['label' => 'Orders', 'route' => 'admin.orders.index', 'route_is' => 'admin.orders.*', 'permission' => 'orders', 'badge' => 'new_orders', 'icon' => 'cart'],
+            ['label' => 'Checkout orders', 'route' => 'admin.checkout-orders.index', 'route_is' => 'admin.checkout-orders.*', 'permission' => 'orders', 'badge' => null, 'icon' => 'cart'],
             ['label' => 'Disputes', 'route' => 'admin.disputes.index', 'route_is' => 'admin.disputes.*', 'permission' => 'disputes', 'badge' => 'open_disputes', 'icon' => 'alert'],
         ],
         'Finance' => [

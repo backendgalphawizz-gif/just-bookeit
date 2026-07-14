@@ -2077,6 +2077,19 @@ border-radius: 8px !important;
 .jbw-gallery-main img { width: 100%; display: block; aspect-ratio: 1/; object-fit: cover; }
 .jbw-product-detail-title { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; margin: 0 0 0.625rem; }
 
+.jbw-variant-picker { margin: 1rem 0 1.25rem; }
+.jbw-variant-label { margin: 0 0 0.625rem; font-size: 0.8125rem; font-weight: 700; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.jbw-variant-optional { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.jbw-variant-chip--base.is-selected { border-color: var(--c-primary, #1a1a1a); background: rgba(0,0,0,0.02); }
+.jbw-variant-options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.jbw-variant-chip { display: inline-flex; align-items: center; border: 1.5px solid var(--c-border, #e5e2dc); border-radius: 12px; padding: 0.625rem 0.875rem; cursor: pointer; background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
+.jbw-variant-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.jbw-variant-chip.is-selected { border-color: var(--c-primary, #1a1a1a); box-shadow: 0 0 0 1px var(--c-primary, #1a1a1a); }
+.jbw-variant-chip-text { display: flex; flex-direction: column; gap: 0.125rem; font-size: 0.875rem; line-height: 1.3; }
+.jbw-variant-chip-text strong { font-weight: 700; color: var(--c-text, #1a1a1a); }
+.jbw-variant-chip-text span { font-size: 0.8125rem; color: var(--c-muted); }
+.jbw-overview-variant { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--c-muted); font-weight: 600; }
+
 .jbw-gallery-wrap{
     display:flex;
     gap:1rem;

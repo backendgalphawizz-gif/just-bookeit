@@ -26,9 +26,15 @@ class WebBookingService
             $data['rental_end_date'] ?? null,
         );
 
+        $variant = null;
+        if (! empty($data['portfolio_item_variant_id'])) {
+            $variant = $item->findVariant((int) $data['portfolio_item_variant_id']);
+        }
+
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'shipment_required' => (bool) ($data['shipment_required'] ?? true),
             'rental_days' => $rentalDays,
+            'daily_rate' => $item->dailyRateFor($variant),
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
@@ -50,8 +56,9 @@ class WebBookingService
             'order_type' => 'rental',
             'item_title' => $item->title,
             'item_description' => $item->description,
-            'item_image_path' => $item->image_url,
-            'size' => $data['size'] ?? null,
+            'item_image_path' => $variant?->image_path ?: $item->image_url,
+            'size' => $variant?->size ?? ($data['size'] ?? null),
+            'color' => $variant?->color ?? null,
             'quantity' => 1,
             'rental_start_date' => $data['rental_start_date'] ?? null,
             'rental_end_date' => $data['rental_end_date'] ?? null,

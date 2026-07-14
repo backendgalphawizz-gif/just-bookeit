@@ -15,7 +15,7 @@
     $fallbackImg = $fashionFallbacks[$item->id % count($fashionFallbacks)];
 @endphp
 
-<div class="jbw-container">
+<div class="jbw-container jbw-page-shell">
     <nav class="jbw-breadcrumb" aria-label="Breadcrumb">
         <a href="{{ route('web.catalog.index') }}" class="jbw-breadcrumb-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
@@ -66,7 +66,9 @@
         <div class="jbw-detail-info">
             <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
             <h1 class="jbw-product-detail-title">{{ $item->title }}</h1>
-            <p class="jbw-detail-price">{{ $item->rentalPriceLabel() }}</p>
+            <p class="jbw-detail-price" id="jbw-detail-price">{{ $item->rentalPriceLabel() }}</p>
+
+            @include('web.catalog.partials.variant-picker', ['item' => $item, 'baseImageUrl' => $galleryUrls[0] ?? null])
 
             @if($item->description)
                 <p class="jbw-detail-desc">{{ $item->description }}</p>
@@ -94,7 +96,7 @@
                 </a>
             @endif
 
-            <div class="jbw-detail-actions">
+            <div class="jbw-detail-actions" id="jbw-detail-actions">
 
                 @auth('customer')
                     @unless ($webCustomer->is_guest)
@@ -123,9 +125,15 @@
                 @endauth
            @auth('customer')
                     @if ($webCustomer->is_guest)
-                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheightjbw-btn jbw-btn--primary jbw-btn--lg">Create account to book</a>
+                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheightjbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Create account to book</a>
                     @else
-                        <a href="{{ route('web.bookings.overview', $item) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg">Book now</a>
+                        <form method="POST" action="{{ route('web.cart.store') }}" id="jbw-add-to-cart-form" style="display:inline">
+                            @csrf
+                            <input type="hidden" name="portfolio_item_id" value="{{ $item->id }}">
+                            <input type="hidden" name="redirect" value="{{ route('web.catalog.show', $item) }}">
+                            <button type="submit" class="buttonheight jbw-btn jbw-btn--outline jbw-btn--lg" id="jbw-add-to-cart-btn">Add to cart</button>
+                        </form>
+                        <a href="{{ route('web.bookings.overview', $item) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Book now</a>
                     @endif
                 @else
                     <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
@@ -227,3 +235,66 @@
 </section>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    const picker = document.getElementById('jbw-variant-picker');
+    if (!picker) return;
+
+    const priceEl = document.getElementById('jbw-detail-price');
+    const galleryMain = document.getElementById('jbw-gallery-main');
+    const cartForm = document.getElementById('jbw-add-to-cart-form');
+    const cartBtn = document.getElementById('jbw-add-to-cart-btn');
+    const bookLink = document.getElementById('jbw-book-now-link');
+    const bookBase = @json(route('web.bookings.overview', $item));
+    const inputs = picker.querySelectorAll('.jbw-variant-input');
+
+    const applyVariant = (input) => {
+        if (!input) return;
+
+        picker.querySelectorAll('.jbw-variant-chip').forEach((chip) => chip.classList.remove('is-selected'));
+        input.closest('.jbw-variant-chip')?.classList.add('is-selected');
+
+        if (priceEl && input.dataset.label) {
+            priceEl.textContent = input.dataset.label;
+        }
+
+        if (galleryMain && input.dataset.image) {
+            galleryMain.src = input.dataset.image;
+        } else if (galleryMain && picker.dataset.baseImage) {
+            galleryMain.src = picker.dataset.baseImage;
+        }
+
+        if (cartForm) {
+            const hidden = cartForm.querySelector('input[name="portfolio_item_variant_id"]');
+            if (input.value) {
+                let field = hidden;
+                if (!field) {
+                    field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = 'portfolio_item_variant_id';
+                    cartForm.appendChild(field);
+                }
+                field.value = input.value;
+            } else if (hidden) {
+                hidden.remove();
+            }
+        }
+
+        if (bookLink) {
+            bookLink.href = input.value
+                ? bookBase + '?variant=' + encodeURIComponent(input.value)
+                : bookBase;
+        }
+    };
+
+    inputs.forEach((input) => {
+        input.addEventListener('change', () => applyVariant(input));
+    });
+
+    const checked = picker.querySelector('.jbw-variant-input:checked');
+    if (checked) applyVariant(checked);
+})();
+</script>
+@endpush

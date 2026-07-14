@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Category;
+use App\Models\CheckoutOrder;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Order;
@@ -15,6 +16,7 @@ use App\Services\Vendor\VendorWalletService;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -28,21 +30,73 @@ class OrderController extends AdminController
     {
         $this->validateListDateRange($request);
 
-        $orders = AdminCityScope::scopeOrders(
-            $this->applyDateRange(Order::query(), $request)
+        $standaloneQuery = AdminCityScope::scopeOrders(
+            $this->applyDateRange(Order::query()->whereNull('checkout_order_id'), $request)
         )
-            ->with(['customer', 'vendor', 'category'])
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = '%'.$request->string('search').'%';
-                $q->where('order_number', 'like', $term);
-            })
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
-            ->when($request->filled('payment_status'), fn ($q) => $q->where('payment_status', $request->string('payment_status')))
-            ->when($request->filled('vendor_id'), fn ($q) => $q->where('vendor_id', $request->integer('vendor_id')))
-            ->when($request->filled('category_id'), fn ($q) => $q->where('category_id', $request->integer('category_id')))
-            ->latestIdFirst()
-            ->paginate(15)
-            ->withQueryString();
+            ->with(['customer', 'vendor', 'category']);
+
+        $checkoutQuery = AdminCityScope::scopeCheckoutOrders(
+            $this->applyDateRange(CheckoutOrder::query(), $request)
+        )
+            ->with(['customer', 'subOrders.vendor'])
+            ->withCount('subOrders');
+
+        if ($request->filled('search')) {
+            $term = '%'.$request->string('search').'%';
+            $standaloneQuery->where('order_number', 'like', $term);
+            $checkoutQuery->where('order_number', 'like', $term);
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->string('status')->toString();
+            $standaloneQuery->where('status', $status);
+            $checkoutQuery->where('status', $status);
+        }
+
+        if ($request->filled('payment_status')) {
+            $paymentStatus = $request->string('payment_status')->toString();
+            $standaloneQuery->where('payment_status', $paymentStatus);
+            $checkoutQuery->where('payment_status', $paymentStatus);
+        } else {
+            $standaloneQuery->paymentConfirmed();
+            $checkoutQuery->paymentConfirmed();
+        }
+
+        if ($request->filled('vendor_id')) {
+            $vendorId = $request->integer('vendor_id');
+            $standaloneQuery->where('vendor_id', $vendorId);
+            $checkoutQuery->whereHas('subOrders', fn ($q) => $q->where('vendor_id', $vendorId));
+        }
+
+        if ($request->filled('category_id')) {
+            $categoryId = $request->integer('category_id');
+            $standaloneQuery->where('category_id', $categoryId);
+            $checkoutQuery->whereHas('subOrders', fn ($q) => $q->where('category_id', $categoryId));
+        }
+
+        $entries = $standaloneQuery->get()->map(fn (Order $order) => [
+            'kind' => 'standalone',
+            'sort_at' => $order->created_at,
+            'order' => $order,
+            'checkout' => null,
+        ])->concat(
+            $checkoutQuery->get()->map(fn (CheckoutOrder $checkout) => [
+                'kind' => 'checkout',
+                'sort_at' => $checkout->created_at,
+                'order' => null,
+                'checkout' => $checkout,
+            ])
+        )->sortByDesc(fn (array $row) => $row['sort_at']?->timestamp ?? 0)->values();
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 15;
+        $orders = new LengthAwarePaginator(
+            $entries->slice(($page - 1) * $perPage, $perPage)->values(),
+            $entries->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $vendors = AdminCityScope::scopeVendors(Vendor::query())->active()->orderBy('brand_name')->get();
         $categories = Category::query()
@@ -83,7 +137,9 @@ class OrderController extends AdminController
 
     public function show(Order $order): View
     {
-        $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute']);
+        abort_unless($order->isPaymentConfirmed(), 404);
+
+        $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute', 'checkoutOrder', 'orderItems']);
 
         return view('admin.orders.show', [
             'order' => $order,

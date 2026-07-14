@@ -15,6 +15,14 @@
     <div class="jb-booking-header">
         <div>
             <p class="jb-booking-id">#{{ $order->order_number }}</p>
+            @if ($order->checkoutOrder)
+                <p style="margin:0.35rem 0 0;font-size:0.8125rem">
+                    Part of checkout
+                    <a href="{{ route('admin.checkout-orders.show', $order->checkoutOrder) }}" style="font-weight:700;color:var(--jb-primary,#4f46e5)">
+                        #{{ $order->checkoutOrder->order_number }}
+                    </a>
+                </p>
+            @endif
             <div class="jb-booking-header-badges">
                 <span class="jb-order-type-badge jb-order-type-badge--{{ $order->order_type }}">{{ $order->orderTypeLabel() }}</span>
                 @include('admin.components.status-badge', ['status' => $order->status])

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Models\CheckoutOrder;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderReview;
@@ -39,15 +40,26 @@ class BookingController extends ApiController
         $orders = CustomerBookingTab::applyToQuery(
             Order::query()
                 ->with(['vendor', 'category', 'customer', 'dispute', 'review'])
-                ->where('customer_id', $customer->id),
+                ->where('customer_id', $customer->id)
+                ->whereNull('checkout_order_id'),
             $request->input('tab')
         )
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 10));
 
-        return $this->success(
-            CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingDetail($order))
-        );
+        $checkoutOrders = CheckoutOrder::query()
+            ->where('customer_id', $customer->id)
+            ->with(['subOrders.vendor', 'subOrders.category'])
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn (CheckoutOrder $checkout) => CustomerApiPresenter::checkoutOrderSummary($checkout))
+            ->all();
+
+        return $this->success([
+            ...CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingDetail($order)),
+            'checkout_orders' => $checkoutOrders,
+        ]);
     }
 
     public function show(Request $request, Order $booking): JsonResponse

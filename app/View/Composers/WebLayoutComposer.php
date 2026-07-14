@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Models\Banner;
+use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\PlatformSetting;
@@ -37,6 +38,14 @@ class WebLayoutComposer
                 $customer->id,
                 8
             )->getCollection();
+        }
+
+        $webCartCount = 0;
+
+        if ($customer instanceof Customer && ! $customer->is_guest) {
+            $webCartCount = (int) CartItem::query()
+                ->where('customer_id', $customer->id)
+                ->sum('quantity');
         }
 
         $view->with([
@@ -75,6 +84,7 @@ class WebLayoutComposer
             'webLocationAddresses' => $addresses,
             'webNotificationUnread' => $webNotificationUnread,
             'webNotifications' => $webNotifications,
+            'webCartCount' => $webCartCount,
         ]);
     }
 }

@@ -18,9 +18,10 @@
             : (request('search') || request('designer') || request('city') || request('category') || request('subcategory'));
     @endphp
 
-<div class="jbw-container">
+<div class="jbw-container jbw-page-shell">
     <div class="jbw-page-head">
-        <h1 class="jbw-page-title">{{ $isServicesBrowse ? 'Our Services' : 'Shop by Category' }}</h1>
+        <span class="jbw-eyebrow">{{ $isServicesBrowse ? 'Services' : 'Shop' }}</span>
+        <h1 class="jbw-page-title">{{ $isServicesBrowse ? 'Our services' : 'Shop by category' }}</h1>
         <p class="jbw-page-subtitle" style="margin-top:0.35rem;color:var(--c-muted);font-size:0.9375rem">
             @if ($isServicesBrowse)
                 Fashion designer bookings, rental dresses, and rental jewellery from top vendors.

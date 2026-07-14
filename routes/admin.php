@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CheckoutOrderController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DisputeController;
@@ -59,6 +60,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
 
             Route::resource('categories', CategoryController::class)->except(['show']);
             Route::resource('orders', OrderController::class);
+            Route::resource('checkout-orders', CheckoutOrderController::class)->only(['index', 'show']);
             Route::resource('refunds', RefundController::class);
             Route::resource('disputes', DisputeController::class);
             Route::get('banners/{banner}/preview', [BannerController::class, 'preview'])->name('banners.preview');

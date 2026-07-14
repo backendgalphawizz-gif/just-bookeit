@@ -34,9 +34,18 @@ class CodeGenerator
 
         return self::uniqueCode(
             $prefix, 5,
-            fn () => (int) (Order::query()->max('id') ?? 0),
+            fn () => max(
+                (int) (Order::query()->max('id') ?? 0),
+                (int) (\App\Models\CheckoutOrder::query()->max('id') ?? 0)
+            ),
             fn ($code) => Order::query()->where('order_number', $code)->exists()
+                || \App\Models\CheckoutOrder::query()->where('order_number', $code)->exists()
         );
+    }
+
+    public static function subOrderNumber(string $parentNumber, int $sequence): string
+    {
+        return $parentNumber.'-V'.$sequence;
     }
 
     public static function payoutCode(): string

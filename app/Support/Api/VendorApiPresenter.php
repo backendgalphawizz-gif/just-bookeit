@@ -414,17 +414,40 @@ class VendorApiPresenter
 
     public static function productSummary(PortfolioItem $item): array
     {
-        $item->loadMissing(['category', 'subcategory.parent', 'subcategory.serviceCategory', 'vendor', 'variants', 'damageDeductions']);
+        $item->loadMissing(['category', 'subcategory.parent', 'subcategory.serviceCategory', 'vendor', 'images', 'variants', 'damageDeductions']);
         $isFashionDesigner = $item->category?->slug === 'fashion-designer';
         $mainCategory = $item->subcategory?->parent;
+
+        $absoluteUrl = static function (?string $path): ?string {
+            if (! $path) {
+                return null;
+            }
+
+            return str_starts_with($path, 'http://') || str_starts_with($path, 'https://')
+                ? $path
+                : url($path);
+        };
 
         return [
             'id' => $item->id,
             'title' => $item->title,
             'description' => $item->description,
-            'image_url' => $item->displayImageUrl() ? url($item->displayImageUrl()) : null,
+            'image_url' => $absoluteUrl($item->displayImageUrl()),
             'gallery_image_urls' => collect($item->galleryImageUrls())
-                ->map(fn ($path) => str_starts_with($path, 'http') ? $path : url($path))
+                ->map(fn ($path) => $absoluteUrl($path))
+                ->values()
+                ->all(),
+            'video_urls' => collect($item->galleryVideoUrls())
+                ->map(fn ($path) => $absoluteUrl($path))
+                ->values()
+                ->all(),
+            'gallery_videos' => $item->images
+                ->filter(fn ($media) => $media->isVideo())
+                ->map(fn ($media) => [
+                    'id' => $media->id,
+                    'url' => $absoluteUrl($media->mediaUrl()),
+                    'media_type' => 'video',
+                ])
                 ->values()
                 ->all(),
             'price_per_day' => (float) ($item->price_per_day ?? $item->rentalPriceAmount()),
@@ -452,8 +475,10 @@ class VendorApiPresenter
             'subcategory' => $item->subcategory ? CustomerApiPresenter::category($item->subcategory) : null,
             'category_type' => $item->category?->slug,
             'status' => $item->status,
+            'approval_status' => $item->status,
             'is_listing_active' => (bool) ($item->is_listing_active ?? true),
             'is_available' => $item->isCatalogAvailable(),
+            'availability_status' => $item->isCatalogAvailable() ? 'available' : 'unavailable',
             'rejection_reason' => $item->rejection_reason,
             'updated_at' => $item->updated_at?->format('M d, Y'),
         ];

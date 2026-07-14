@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "just-book-it-api-collection",
 		"name": "Just Book IT — Mobile API",
-		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Booking → Payment\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`. Location dropdowns at `/v2/locations/*` (countries, states, cities).\n\n**v3 flow:** OTP login → Dashboard → Deliveries (accept/pickup/deliver) → Payments → Profile\n**v3 IDs:** v3_delivery_id\n\n**v3 highlights:** Dashboard stats + new deliveries. Delivery tabs: new | accepted | out_for_delivery | completed | cancelled. Complete delivery with customer OTP. Wallet + withdraw.",
+		"description": "Customer (v1), Vendor (v2), and Driver (v3) APIs.\n\n**Base URL:** {{base_url}}\n\n**v1 flow:** OTP login → Home → Catalog → Cart → Checkout → Payment (or single-item Booking → Payment)\n**v2 flow:** Config → OTP login → Home → Bookings / Products / Portfolio Gallery / Chats / Profile\n\n**Products** = items the vendor wants to sell or rent (admin approval). **Portfolio** = vendor's previous work photos (no approval).\n\n**OTP:** data.otp in Send OTP response.\n**v1 IDs:** v1_booking_id, v1_checkout_order_id, v1_cart_item_id, v1_chat_id, v1_product_id, v1_designer_id\n**v2 IDs:** v2_booking_id, v2_product_id, v2_chat_id\n\n**v1 highlights:** Designer profile with reviews & full address. Catalog double-filter by audience + service. Booking cancel requires reason. Delivered bookings can be reviewed. Location dropdowns at `/v1/locations/*`. Notifications at `/v1/notifications` with read/unread. Home returns `notifications.unread_count`.\n\n**v2 highlights:** Notifications at `/v2/notifications` with read/unread. Home returns `notifications.unread_count`. Location dropdowns at `/v2/locations/*` (countries, states, cities).\n\n**v3 flow:** OTP login → Dashboard → Deliveries (accept/pickup/deliver) → Payments → Profile\n**v3 IDs:** v3_delivery_id\n\n**v3 highlights:** Dashboard stats + new deliveries. Delivery tabs: new | accepted | out_for_delivery | completed | cancelled. Complete delivery with customer OTP. Wallet + withdraw.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -720,7 +720,7 @@
 								"method": "GET",
 								"header": [{"key": "Accept", "value": "application/json"}],
 								"url": "{{base_url}}/v1/cart",
-								"description": "Returns cart summary and items. Cart supports products from one vendor only."
+								"description": "Returns cart summary (per-vendor subtotals and delivery fees) and line items. Multi-vendor cart is supported."
 							}
 						},
 						{
@@ -731,7 +731,7 @@
 								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
 								"body": {"mode": "raw", "raw": "{\n  \"portfolio_item_id\": {{v1_portfolio_item_id}},\n  \"quantity\": 1\n}"},
 								"url": "{{base_url}}/v1/cart",
-								"description": "Add product to cart. Returns 422 if the product is already in the cart or if cart already has items from another vendor."
+								"description": "Add product to cart. Returns 422 if the product is already in the cart. Multiple vendors allowed in one cart."
 							}
 						},
 						{
@@ -742,6 +742,73 @@
 								"header": [{"key": "Accept", "value": "application/json"}],
 								"url": "{{base_url}}/v1/cart/items/{{v1_cart_item_id}}",
 								"description": "Remove one item from cart by cart item id."
+							}
+						}
+					]
+				},
+				{
+					"name": "Checkout (multi-vendor)",
+					"description": "Cart → checkout preview → create parent checkout_order → pay once → sub-orders per vendor (JB######-V1, V2…). Measurements stored once on parent. Partial refund auto on vendor reject.",
+					"item": [
+						{
+							"name": "Checkout Preview",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"rental_start_date\": \"2026-07-01\",\n  \"rental_end_date\": \"2026-07-03\",\n  \"vendor_shipments\": [\n    { \"vendor_id\": 1, \"shipment_required\": true },\n    { \"vendor_id\": 2, \"shipment_required\": false }\n  ]\n}"
+								},
+								"url": "{{base_url}}/v1/checkout/preview",
+								"description": "Price rollup from cart with per-vendor delivery fee via vendor_shipments."
+							}
+						},
+						{
+							"name": "Create Checkout",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+											"const json = pm.response.json();",
+											"const checkout = json.data?.checkout_order;",
+											"if (checkout?.id) { pm.environment.set('v1_checkout_order_id', String(checkout.id)); }"
+										]
+									}
+								}
+							],
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"delivery_address\": \"12 MG Road, Koramangala, Bengaluru\",\n  \"city\": \"Bengaluru\",\n  \"pincode\": \"560034\",\n  \"rental_start_date\": \"2026-07-01\",\n  \"rental_end_date\": \"2026-07-03\",\n  \"customer_notes\": \"Need fitting before event\",\n  \"measurement_type\": \"women\",\n  \"measure_height_cm\": 165,\n  \"measure_chest_cm\": 88,\n  \"measure_waist_cm\": 70,\n  \"vendor_shipments\": [\n    { \"vendor_id\": 1, \"shipment_required\": true }\n  ]\n}"
+								},
+								"url": "{{base_url}}/v1/checkout",
+								"description": "Creates checkout_orders parent + sub-orders per vendor. Clears cart. Measurements saved once on parent."
+							}
+						},
+						{
+							"name": "List Checkout Orders",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v1/checkout-orders?page=1"
+							}
+						},
+						{
+							"name": "Checkout Order Detail",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v1/checkout-orders/{{v1_checkout_order_id}}",
+								"description": "Parent order with nested sub_orders, measurements, refunds and refund_histories."
 							}
 						}
 					]
@@ -1280,6 +1347,27 @@
 								},
 								"url": "{{base_url}}/v1/payment/bookings/{{v1_booking_id}}/pay",
 								"description": "Requires `enable_cod` in admin platform settings."
+							}
+						},
+						{
+							"name": "Checkout Payment Summary",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "GET",
+								"header": [{"key": "Accept", "value": "application/json"}],
+								"url": "{{base_url}}/v1/payment/checkout-orders/{{v1_checkout_order_id}}",
+								"description": "Payment summary for multi-vendor checkout parent order."
+							}
+						},
+						{
+							"name": "Pay Checkout (UPI)",
+							"request": {
+								"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{v1_token}}", "type": "string"}]},
+								"method": "POST",
+								"header": [{"key": "Accept", "value": "application/json"}, {"key": "Content-Type", "value": "application/json"}],
+								"body": {"mode": "raw", "raw": "{\n  \"payment_method\": \"upi\"\n}"},
+								"url": "{{base_url}}/v1/payment/checkout-orders/{{v1_checkout_order_id}}/pay",
+								"description": "Single payment marks all sub-orders paid and moves them to pending_acceptance."
 							}
 						}
 					]
@@ -3049,7 +3137,7 @@
 									}
 								],
 								"url": "{{base_url}}/v2/products/{{v2_product_id}}",
-								"description": "Product detail with gallery, variants, damage_deductions, `is_available`, `reviews`, and `review_summary`."
+								"description": "Product detail with gallery images, `video_urls` / `gallery_videos`, variants, damage_deductions, `is_available`, `is_listing_active`, `availability_status`, `reviews`, and `review_summary`."
 							}
 						},
 						{
@@ -3140,6 +3228,12 @@
 											"description": "Extra product images (add multiple rows with same key)"
 										},
 										{
+											"key": "videos",
+											"type": "file",
+											"src": [],
+											"description": "Product videos (mp4/mov/avi/mkv/webm/3gp/mpeg/mpg/m4v/wmv/flv/ogv). Add multiple rows with same key. Max 5, 100MB each."
+										},
+										{
 											"key": "variants",
 											"value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200},{\"size\":\"L\",\"color\":\"Blue\",\"price\":1100}]",
 											"type": "text",
@@ -3167,7 +3261,7 @@
 									]
 								},
 								"url": "{{base_url}}/v2/products",
-								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`. Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images` — first file = variants[0], second file = variants[1], etc. Alternative: `variants[0][image]` file fields, or base64 `image` inside each variant object."
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image`. Send multiple `gallery_images` and optional `videos` (all common video formats). Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images` — first file = variants[0], second file = variants[1], etc."
 							}
 						},
 						{
@@ -3309,6 +3403,12 @@
 											"description": "Optional — append gallery images"
 										},
 										{
+											"key": "videos",
+											"type": "file",
+											"src": [],
+											"description": "Optional — append product videos (all common formats)"
+										},
+										{
 											"key": "variants",
 											"value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]",
 											"type": "text",
@@ -3353,6 +3453,86 @@
 									}
 								],
 								"url": "{{base_url}}/v2/products/{{v2_product_id}}"
+							}
+						},
+						{
+							"name": "Mark Product Available",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}/available",
+								"description": "Mark an approved product as available for customers. No body required. Sets `is_listing_active=true`."
+							}
+						},
+						{
+							"name": "Mark Product Unavailable",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}/unavailable",
+								"description": "Mark an approved product as unavailable. No body required. Sets `is_listing_active=false`."
+							}
+						},
+						{
+							"name": "Set Product Availability",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"is_available\": true\n}"
+								},
+								"url": "{{base_url}}/v2/products/{{v2_product_id}}/availability",
+								"description": "Set product availability with boolean body `is_available` (true/false). Only approved products can be toggled."
 							}
 						}
 					]

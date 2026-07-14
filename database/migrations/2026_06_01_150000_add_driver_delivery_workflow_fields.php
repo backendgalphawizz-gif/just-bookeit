@@ -11,13 +11,13 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             $table->string('payment_method', 30)->nullable()->after('payment_status');
-            $table->text('driver_rejection_reason')->nullable()->after('driver_earning');
-            $table->date('driver_scheduled_for')->nullable()->after('driver_rejection_reason');
-            $table->timestamp('driver_rescheduled_at')->nullable()->after('driver_scheduled_for');
-            $table->timestamp('cod_collected_at')->nullable()->after('driver_rescheduled_at');
+            $table->text('driver_rejection_reason')->nullable();
+            $table->date('driver_scheduled_for')->nullable();
+            $table->timestamp('driver_rescheduled_at')->nullable();
+            $table->timestamp('cod_collected_at')->nullable();
         });
 
-        if (Schema::getConnection()->getDriverName() === 'mysql') {
+        if (Schema::getConnection()->getDriverName() === 'mysql' && Schema::hasColumn('orders', 'driver_delivery_status')) {
             DB::statement("ALTER TABLE orders MODIFY driver_delivery_status ENUM(
                 'accepted',
                 'picked_up',
@@ -51,7 +51,7 @@ return new class extends Migration
             ]);
         });
 
-        if (Schema::getConnection()->getDriverName() === 'mysql') {
+        if (Schema::getConnection()->getDriverName() === 'mysql' && Schema::hasColumn('orders', 'driver_delivery_status')) {
             DB::statement("ALTER TABLE orders MODIFY driver_delivery_status ENUM(
                 'accepted',
                 'picked_up',

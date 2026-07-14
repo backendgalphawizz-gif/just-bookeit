@@ -11,7 +11,7 @@ class VendorDashboardService
 {
     public function stats(Vendor $vendor): array
     {
-        $base = Order::query()->where('vendor_id', $vendor->id);
+        $base = Order::query()->where('vendor_id', $vendor->id)->paymentConfirmed();
         $today = now()->startOfDay();
         $ytdStart = now()->startOfYear();
         $monthStart = now()->startOfMonth();
@@ -35,6 +35,7 @@ class VendorDashboardService
 
         return Order::query()
             ->where('vendor_id', $vendor->id)
+            ->paymentConfirmed()
             ->whereIn('status', ['accepted', 'in_progress', 'delivered'])
             ->where(function ($q) use ($date) {
                 $q->whereDate('rental_start_date', $date)
@@ -52,6 +53,7 @@ class VendorDashboardService
     {
         return Order::query()
             ->where('vendor_id', $vendor->id)
+            ->paymentConfirmed()
             ->with(['customer', 'category', 'driver'])
             ->latest('created_at')
             ->limit($limit)

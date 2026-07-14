@@ -10,6 +10,14 @@ class VendorValidationRules
     /** Max image upload size in kilobytes (20 MB). */
     public const MAX_IMAGE_KB = 20480;
 
+    /** Max video upload size in kilobytes (100 MB). */
+    public const MAX_VIDEO_KB = 102400;
+
+    /** @var list<string> */
+    public const VIDEO_MIMES = [
+        'mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'mpg', 'm4v', 'wmv', 'flv', 'ogv', 'ts', 'm2ts',
+    ];
+
     public const SERVICE_TYPES = [
         'Fashion Designer',
         'Rental Dresses',
@@ -33,6 +41,9 @@ class VendorValidationRules
             'account_no' => 'account number',
             'shop_name' => 'shop/business name',
             'portfolio_image' => 'portfolio image',
+            'videos' => 'product videos',
+            'gallery_videos' => 'product videos',
+            'product_videos' => 'product videos',
             'reason' => 'rejection reason',
         ]);
     }
@@ -150,6 +161,9 @@ class VendorValidationRules
             'product_image' => 1,
             'gallery_images' => 10,
             'images' => 10,
+            'videos' => 5,
+            'gallery_videos' => 5,
+            'product_videos' => 5,
             'variant_images' => 50,
         ];
     }
@@ -158,6 +172,17 @@ class VendorValidationRules
     public static function productUploadRules(): array
     {
         return ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB];
+    }
+
+    /** @return list<string> */
+    public static function productVideoUploadRules(): array
+    {
+        return ['file', 'mimes:'.implode(',', self::VIDEO_MIMES), 'max:'.self::MAX_VIDEO_KB];
+    }
+
+    public static function isVideoUploadKey(string $key): bool
+    {
+        return in_array($key, ['videos', 'gallery_videos', 'product_videos'], true);
     }
 
     public static function portfolioUpload(): array

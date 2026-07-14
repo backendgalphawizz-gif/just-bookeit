@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PortfolioItem extends Model
@@ -56,9 +57,69 @@ class PortfolioItem extends Model
         return $this->hasMany(PortfolioItemImage::class)->orderBy('sort_order');
     }
 
+    public function galleryImages(): HasMany
+    {
+        return $this->images()->where(function ($query) {
+            $query->where('media_type', PortfolioItemImage::TYPE_IMAGE)
+                ->orWhereNull('media_type');
+        });
+    }
+
+    public function galleryVideos(): HasMany
+    {
+        return $this->images()->where('media_type', PortfolioItemImage::TYPE_VIDEO);
+    }
+
     public function variants(): HasMany
     {
         return $this->hasMany(PortfolioItemVariant::class)->orderBy('sort_order');
+    }
+
+    public function availableVariants(): Collection
+    {
+        $this->loadMissing('variants');
+
+        return $this->variants->filter(function (PortfolioItemVariant $variant) {
+            return filled($variant->size) || filled($variant->color) || (float) $variant->price > 0;
+        })->values();
+    }
+
+    public function hasVariants(): bool
+    {
+        return $this->availableVariants()->isNotEmpty();
+    }
+
+    public function findVariant(?int $variantId): ?PortfolioItemVariant
+    {
+        if (! $variantId) {
+            return null;
+        }
+
+        $this->loadMissing('variants');
+
+        return $this->variants->firstWhere('id', $variantId);
+    }
+
+    public function dailyRateFor(?PortfolioItemVariant $variant = null): float
+    {
+        if ($variant && (float) $variant->price > 0) {
+            return (float) $variant->price;
+        }
+
+        if ($this->price_per_day !== null && (float) $this->price_per_day > 0) {
+            return (float) $this->price_per_day;
+        }
+
+        if ($variant && (float) $variant->price >= 0) {
+            return (float) $variant->price;
+        }
+
+        return (float) $this->rentalPriceAmount();
+    }
+
+    public function rentalPriceLabelFor(?PortfolioItemVariant $variant = null): string
+    {
+        return '₹'.number_format((int) round($this->dailyRateFor($variant)), 0).' / day';
     }
 
     public function damageDeductions(): HasMany
@@ -69,6 +130,8 @@ class PortfolioItem extends Model
     /** @return list<string> */
     public function galleryImageUrls(): array
     {
+        $this->loadMissing('images');
+
         $urls = [];
 
         if ($primary = $this->displayImageUrl()) {
@@ -76,12 +139,29 @@ class PortfolioItem extends Model
         }
 
         foreach ($this->images as $image) {
+            if ($image->isVideo()) {
+                continue;
+            }
+
             if ($url = $image->imageUrl()) {
                 $urls[] = $url;
             }
         }
 
         return array_values(array_unique($urls));
+    }
+
+    /** @return list<string> */
+    public function galleryVideoUrls(): array
+    {
+        $this->loadMissing('images');
+
+        return $this->images
+            ->filter(fn (PortfolioItemImage $media) => $media->isVideo())
+            ->map(fn (PortfolioItemImage $media) => $media->mediaUrl())
+            ->filter()
+            ->values()
+            ->all();
     }
 
     public function displayImageUrl(): ?string

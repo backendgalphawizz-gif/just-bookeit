@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\CheckoutOrder;
 use App\Models\CustomerMeasurement;
 use App\Models\Order;
 
@@ -89,6 +90,26 @@ class BookingMeasurementSupport
         }
 
         return $input;
+    }
+
+    /** @return array<string, mixed> */
+    public static function checkoutMeasurements(CheckoutOrder $checkout): array
+    {
+        $extra = $checkout->measure_extra ?? [];
+        $fields = [];
+
+        foreach (CustomerMeasurement::EXTRA_FIELDS as $field) {
+            $fields[$field] = isset($extra[$field]) ? (string) $extra[$field] : null;
+        }
+
+        return [
+            'measurement_type' => $checkout->measurement_type,
+            'height_cm' => $checkout->measure_height_cm,
+            'chest_cm' => $checkout->measure_chest_cm,
+            'waist_cm' => $checkout->measure_waist_cm,
+            ...$fields,
+            'extra_measurements' => $extra,
+        ];
     }
 
     /** @return array<string, mixed> */

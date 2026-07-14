@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class Banner extends Model
 {
@@ -71,12 +71,6 @@ class Banner extends Model
 
     protected function imageUrl(): Attribute
     {
-        return Attribute::get(function (): ?string {
-            if (! $this->image_path || ! Storage::disk('public')->exists($this->image_path)) {
-                return null;
-            }
-
-            return '/storage/'.ltrim(str_replace('\\', '/', $this->image_path), '/');
-        });
+        return Attribute::get(fn (): ?string => StoresUploadedFiles::url($this->image_path));
     }
 }
