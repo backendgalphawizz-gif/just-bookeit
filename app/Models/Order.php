@@ -349,10 +349,32 @@ class Order extends Model
         return (int) ($this->rental_start_date->diffInDays($this->rental_end_date) + 1);
     }
 
+    /**
+     * Rental clock starts only after the outfit is delivered to the customer.
+     */
+    public function hasRentalPeriodStarted(): bool
+    {
+        if (! $this->isRental()) {
+            return false;
+        }
+
+        return in_array($this->status, [
+            'delivered',
+            're_intransit',
+            'returned',
+            'rework',
+            're_delivered',
+        ], true);
+    }
+
     public function rentalDaysElapsed(): ?int
     {
         if (! $this->rental_start_date) {
             return null;
+        }
+
+        if (! $this->hasRentalPeriodStarted()) {
+            return 0;
         }
 
         $start = $this->rental_start_date->copy()->startOfDay();
@@ -374,6 +396,10 @@ class Order extends Model
             return null;
         }
 
+        if (! $this->hasRentalPeriodStarted()) {
+            return $this->rentalDurationDays();
+        }
+
         $end = $this->rental_end_date->copy()->startOfDay();
         $today = now()->startOfDay();
 
@@ -390,6 +416,10 @@ class Order extends Model
 
     public function rentalProgressPercent(): ?int
     {
+        if (! $this->hasRentalPeriodStarted()) {
+            return 0;
+        }
+
         $duration = $this->rentalDurationDays();
         $elapsed = $this->rentalDaysElapsed();
 
@@ -412,6 +442,11 @@ class Order extends Model
 
         if (! $this->rental_start_date || ! $this->rental_end_date) {
             return 'unscheduled';
+        }
+
+        // Do not start the rental period until the outfit is delivered.
+        if (! $this->hasRentalPeriodStarted()) {
+            return 'awaiting_delivery';
         }
 
         $today = now()->startOfDay();
@@ -437,6 +472,7 @@ class Order extends Model
     public function rentalPhaseLabel(): string
     {
         return match ($this->rentalTrackingPhase()) {
+            'awaiting_delivery' => 'Rental starts after delivery',
             'upcoming' => $this->rental_start_date
                 ? 'Starts '.$this->rental_start_date->diffForHumans(now()->startOfDay(), true).' from now'
                 : 'Rental upcoming',
@@ -463,6 +499,7 @@ class Order extends Model
             'progress_percent' => $this->rentalProgressPercent(),
             'phase' => $this->rentalTrackingPhase(),
             'phase_label' => $this->rentalPhaseLabel(),
+            'started' => $this->hasRentalPeriodStarted(),
             'start_date' => $this->rental_start_date?->format('M d, Y'),
             'end_date' => $this->rental_end_date?->format('M d, Y'),
             'return_due_date' => ($this->return_due_date ?? $this->rental_end_date)?->format('M d, Y'),
@@ -478,6 +515,7 @@ class Order extends Model
         }
 
         $cancelled = in_array($this->status, ['cancelled', 'refunded'], true);
+        $started = $this->hasRentalPeriodStarted();
         $today = now()->startOfDay();
         $start = $this->rental_start_date?->copy()->startOfDay();
         $end = $this->rental_end_date?->copy()->startOfDay();
@@ -494,7 +532,7 @@ class Order extends Model
 
         $deliveryState = match (true) {
             $cancelled => 'cancelled',
-            $this->status === 'delivered' => 'done',
+            $started => 'done',
             $this->status === 'in_progress' => 'current',
             $this->status === 'accepted' => 'upcoming',
             default => 'upcoming',
@@ -502,7 +540,7 @@ class Order extends Model
         $deliveryTime = match ($deliveryState) {
             'done' => 'Delivered to customer',
             'current' => 'Out for delivery',
-            default => null,
+            default => 'Rental period starts after delivery',
         };
         $steps[] = $this->rentalTrackStep('Outfit delivered', $deliveryTime, $deliveryState);
 
@@ -512,8 +550,16 @@ class Order extends Model
             return $steps;
         }
 
-        $startState = $cancelled ? 'cancelled' : ($today->lt($start) ? 'upcoming' : 'done');
-        $steps[] = $this->rentalTrackStep('Rental starts', $start->format('M d, Y'), $startState);
+        $startState = $cancelled
+            ? 'cancelled'
+            : (! $started ? 'upcoming' : ($today->lt($start) ? 'upcoming' : 'done'));
+        $startDetail = ! $started ? 'Starts when outfit is delivered' : null;
+        $steps[] = $this->rentalTrackStep(
+            'Rental starts',
+            $started ? $start->format('M d, Y') : 'After delivery',
+            $startState,
+            $startDetail
+        );
 
         $periodState = 'upcoming';
         $periodTime = null;
@@ -521,6 +567,9 @@ class Order extends Model
 
         if ($cancelled) {
             $periodState = 'cancelled';
+        } elseif (! $started) {
+            $periodState = 'upcoming';
+            $periodTime = 'Waiting for delivery';
         } elseif ($today->gte($start) && $today->lte($end)) {
             $periodState = 'current';
             $elapsed = $this->rentalDaysElapsed();
@@ -538,6 +587,9 @@ class Order extends Model
         if ($returnDue) {
             if ($cancelled) {
                 $returnState = 'cancelled';
+            } elseif (! $started) {
+                $returnState = 'upcoming';
+                $returnTime = 'After rental ends';
             } elseif ($today->gt($returnDue)) {
                 $returnState = 'current';
                 $overdueDays = (int) $returnDue->diffInDays($today);

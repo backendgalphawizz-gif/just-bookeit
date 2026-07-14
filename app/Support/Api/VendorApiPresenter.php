@@ -403,6 +403,9 @@ class VendorApiPresenter
             'duration_days' => $order->rentalDurationDays(),
             'return_due_date' => $returnDue?->format('Y-m-d'),
             'return_due_date_label' => $returnDue?->format('jS M'),
+            'started' => $order->hasRentalPeriodStarted(),
+            'phase' => $order->rentalTrackingPhase(),
+            'phase_label' => $order->rentalPhaseLabel(),
         ];
     }
 

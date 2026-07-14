@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\AppPushNotificationService;
+use App\Services\Booking\RentalPeriodService;
 use App\Services\Checkout\CheckoutRollupService;
 use App\Services\Refund\RefundRequestService;
 
@@ -37,6 +38,12 @@ class OrderObserver
         if ($order->wasChanged('status') && $order->status === 'cancelled') {
             if ($order->checkout_order_id === null) {
                 app(RefundRequestService::class)->ensureForCancelledPaidOrder($order->fresh());
+            }
+        }
+
+        if ($order->wasChanged('status') && $order->status === 'delivered') {
+            if ($order->isRental()) {
+                app(RentalPeriodService::class)->activateOnDelivery($order->fresh());
             }
         }
 
