@@ -482,19 +482,32 @@ class VendorApiPresenter
                 : url($path);
         };
 
+        // Images + videos in one array (sorted) so mobile can render a single gallery.
+        $galleryMediaUrls = collect();
+        if ($primary = $item->displayImageUrl()) {
+            $galleryMediaUrls->push($absoluteUrl($primary));
+        }
+        foreach ($item->images->sortBy('sort_order') as $media) {
+            $url = $absoluteUrl($media->mediaUrl());
+            if ($url) {
+                $galleryMediaUrls->push($url);
+            }
+        }
+        $galleryMediaUrls = $galleryMediaUrls->filter()->unique()->values()->all();
+
+        $videoUrls = collect($item->galleryVideoUrls())
+            ->map(fn ($path) => $absoluteUrl($path))
+            ->filter()
+            ->values()
+            ->all();
+
         return [
             'id' => $item->id,
             'title' => $item->title,
             'description' => $item->description,
             'image_url' => $absoluteUrl($item->displayImageUrl()),
-            'gallery_image_urls' => collect($item->galleryImageUrls())
-                ->map(fn ($path) => $absoluteUrl($path))
-                ->values()
-                ->all(),
-            'video_urls' => collect($item->galleryVideoUrls())
-                ->map(fn ($path) => $absoluteUrl($path))
-                ->values()
-                ->all(),
+            'gallery_image_urls' => $galleryMediaUrls,
+            'video_urls' => $videoUrls,
             'gallery_videos' => $item->images
                 ->filter(fn ($media) => $media->isVideo())
                 ->map(fn ($media) => [

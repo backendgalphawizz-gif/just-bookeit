@@ -3196,7 +3196,7 @@
 									}
 								],
 								"url": "{{base_url}}/v2/products/{{v2_product_id}}",
-								"description": "Product detail with gallery images, `video_urls` / `gallery_videos`, variants, damage_deductions, `is_available`, `is_listing_active`, `availability_status`, `reviews`, and `review_summary`."
+								"description": "Product detail with `gallery_image_urls` (images + videos in one array), plus optional `video_urls` / `gallery_videos`, variants, damage_deductions, `is_available`, `is_listing_active`, `availability_status`, `reviews`, and `review_summary`."
 							}
 						},
 						{
