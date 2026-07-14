@@ -120,7 +120,7 @@
                     @if ($activeFilters->isNotEmpty())
                         Showing filtered results
                     @else
-                        All bookings across vendors and categories
+                        Standalone bookings and multi-vendor checkout orders (one row per checkout)
                     @endif
                 </p>
             </div>
@@ -143,42 +143,83 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($orders as $order)
-                        <tr>
-                            @include('admin.partials.table-index-cell', ['paginator' => $orders])
-                            <td class="jb-col-id">
-                                <span class="jb-orders-id">{{ $order->order_number }}</span>
-                            </td>
-                            <td class="jb-col-name">
-                                <span class="jb-orders-name">{{ $order->customer->name }}</span>
-                            </td>
-                            <td class="jb-col-name">
-                                <span class="jb-orders-name">{{ $order->vendor?->brand_name ?? '—' }}</span>
-                            </td>
-                            <td>
-                                <span class="jb-orders-category">{{ $order->category->name }}</span>
-                            </td>
-                            <td>
-                                <span class="jb-orders-type">{{ $order->order_type === 'rental' ? 'Rental' : 'Sale' }}</span>
-                            </td>
-                            <td class="jb-col-amount">
-                                <span class="jb-orders-amount">₹{{ number_format($order->amount, 2) }}</span>
-                            </td>
-                            <td class="jb-col-status">
-                                @include('admin.components.status-badge', ['status' => $order->payment_status, 'label' => ucfirst($order->payment_status)])
-                            </td>
-                            <td class="jb-col-status">
-                                @include('admin.components.status-badge', ['status' => $order->status])
-                            </td>
-                            <td class="jb-col-date">
-                                <span class="jb-orders-date">{{ $order->created_at->format('M d, Y') }}</span>
-                            </td>
-                            <td class="jb-table-actions-col">
-                                <div class="jb-actions">
-                                    <x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" />
-                                </div>
-                            </td>
-                        </tr>
+                    @forelse ($orders as $entry)
+                        @if ($entry['kind'] === 'checkout')
+                            @php $checkout = $entry['checkout']; @endphp
+                            <tr>
+                                @include('admin.partials.table-index-cell', ['paginator' => $orders])
+                                <td class="jb-col-id">
+                                    <span class="jb-orders-id">{{ $checkout->order_number }}</span>
+                                    <span class="jb-order-type-badge jb-order-type-badge--rental" style="display:block;margin-top:0.25rem;font-size:0.65rem">Multi-vendor</span>
+                                </td>
+                                <td class="jb-col-name">
+                                    <span class="jb-orders-name">{{ $checkout->customer->name }}</span>
+                                </td>
+                                <td class="jb-col-name">
+                                    <span class="jb-orders-name">{{ $checkout->sub_orders_count }} vendor{{ $checkout->sub_orders_count === 1 ? '' : 's' }}</span>
+                                </td>
+                                <td>
+                                    <span class="jb-orders-category">Multiple</span>
+                                </td>
+                                <td>
+                                    <span class="jb-orders-type">Checkout</span>
+                                </td>
+                                <td class="jb-col-amount">
+                                    <span class="jb-orders-amount">₹{{ number_format($checkout->grand_total, 2) }}</span>
+                                </td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $checkout->payment_status, 'label' => ucfirst(str_replace('_', ' ', $checkout->payment_status))])
+                                </td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $checkout->status, 'label' => $checkout->statusLabel()])
+                                </td>
+                                <td class="jb-col-date">
+                                    <span class="jb-orders-date">{{ $checkout->created_at->format('M d, Y') }}</span>
+                                </td>
+                                <td class="jb-table-actions-col">
+                                    <div class="jb-actions">
+                                        <x-admin.action-btn variant="view" :href="route('admin.checkout-orders.show', $checkout)" />
+                                    </div>
+                                </td>
+                            </tr>
+                        @else
+                            @php $order = $entry['order']; @endphp
+                            <tr>
+                                @include('admin.partials.table-index-cell', ['paginator' => $orders])
+                                <td class="jb-col-id">
+                                    <span class="jb-orders-id">{{ $order->order_number }}</span>
+                                </td>
+                                <td class="jb-col-name">
+                                    <span class="jb-orders-name">{{ $order->customer->name }}</span>
+                                </td>
+                                <td class="jb-col-name">
+                                    <span class="jb-orders-name">{{ $order->vendor?->brand_name ?? '—' }}</span>
+                                </td>
+                                <td>
+                                    <span class="jb-orders-category">{{ $order->category->name }}</span>
+                                </td>
+                                <td>
+                                    <span class="jb-orders-type">{{ $order->order_type === 'rental' ? 'Rental' : 'Sale' }}</span>
+                                </td>
+                                <td class="jb-col-amount">
+                                    <span class="jb-orders-amount">₹{{ number_format($order->amount, 2) }}</span>
+                                </td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $order->payment_status, 'label' => ucfirst($order->payment_status)])
+                                </td>
+                                <td class="jb-col-status">
+                                    @include('admin.components.status-badge', ['status' => $order->status])
+                                </td>
+                                <td class="jb-col-date">
+                                    <span class="jb-orders-date">{{ $order->created_at->format('M d, Y') }}</span>
+                                </td>
+                                <td class="jb-table-actions-col">
+                                    <div class="jb-actions">
+                                        <x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" />
+                                    </div>
+                                </td>
+                            </tr>
+                        @endif
                     @empty
                         <tr>
                             <td colspan="11" class="jb-table-empty">No orders match your filters.</td>

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\ChatController;
+use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\DesignerController;
 use App\Http\Controllers\Api\V1\DisputeController;
@@ -86,9 +87,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('cart', [CartController::class, 'store'])->name('cart.store');
         Route::delete('cart/items/{cartItem}', [CartController::class, 'destroy'])->name('cart.destroy');
 
+        Route::post('checkout/preview', [CheckoutController::class, 'preview'])->name('checkout.preview');
+        Route::post('checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+        Route::get('checkout-orders', [CheckoutController::class, 'index'])->name('checkout-orders.index');
+        Route::get('checkout-orders/{checkoutOrder}', [CheckoutController::class, 'show'])->name('checkout-orders.show');
+
         Route::get('payment/methods', [PaymentController::class, 'methods'])->name('payment.methods');
         Route::get('payment/bookings/{booking}', [PaymentController::class, 'summary'])->name('payment.summary');
         Route::post('payment/bookings/{booking}/pay', [PaymentController::class, 'pay'])->name('payment.pay');
+        Route::get('payment/checkout-orders/{checkoutOrder}', [PaymentController::class, 'checkoutSummary'])->name('payment.checkout.summary');
+        Route::post('payment/checkout-orders/{checkoutOrder}/pay', [PaymentController::class, 'payCheckout'])->name('payment.checkout.pay');
 
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');

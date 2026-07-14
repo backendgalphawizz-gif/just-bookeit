@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\BookingController;
+use App\Http\Controllers\Web\CartController;
 use App\Http\Controllers\Web\CatalogController;
 use App\Http\Controllers\Web\ChatController;
+use App\Http\Controllers\Web\CheckoutController;
+use App\Http\Controllers\Web\CheckoutPaymentController;
 use App\Http\Controllers\Web\ContactController;
 use App\Http\Controllers\Web\DisputeController;
 use App\Http\Controllers\Web\FaqController;
@@ -45,6 +48,7 @@ Route::middleware('customer.auth')->group(function () {
 
 Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::get('/bookings', [BookingController::class, 'index'])->name('web.bookings.index');
+    Route::get('/bookings/checkout/{checkoutOrder}', [BookingController::class, 'showCheckout'])->name('web.bookings.checkout.show');
     Route::get('/bookings/{order}', [BookingController::class, 'show'])->name('web.bookings.show');
     Route::post('/bookings/{order}/cancel', [BookingController::class, 'cancel'])->name('web.bookings.cancel');
     Route::post('/bookings/{order}/dispute', [DisputeController::class, 'store'])->name('web.bookings.dispute.store');
@@ -53,7 +57,19 @@ Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::get('/bookings/{order}/payment', [PaymentController::class, 'show'])->name('web.bookings.payment');
     Route::post('/bookings/{order}/payment', [PaymentController::class, 'pay'])->name('web.bookings.payment.pay');
     Route::get('/book/{item}', [BookingController::class, 'overview'])->name('web.bookings.overview');
+    Route::post('/book/{item}/preview', [BookingController::class, 'preview'])->name('web.bookings.preview');
     Route::post('/book/{item}', [BookingController::class, 'store'])->name('web.bookings.store');
+
+    Route::get('/cart', [CartController::class, 'index'])->name('web.cart.index');
+    Route::post('/cart', [CartController::class, 'store'])->name('web.cart.store');
+    Route::delete('/cart/items/{cartItem}', [CartController::class, 'destroy'])->name('web.cart.destroy');
+
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('web.checkout.show');
+    Route::post('/checkout/preview', [CheckoutController::class, 'preview'])->name('web.checkout.preview');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('web.checkout.store');
+    Route::get('/checkout-orders/{checkoutOrder}', [CheckoutController::class, 'showOrder'])->name('web.checkout.show-order');
+    Route::get('/checkout-orders/{checkoutOrder}/payment', [CheckoutPaymentController::class, 'show'])->name('web.checkout.payment');
+    Route::post('/checkout-orders/{checkoutOrder}/payment', [CheckoutPaymentController::class, 'pay'])->name('web.checkout.payment.pay');
 
     Route::get('/chat', [ChatController::class, 'index'])->name('web.chat.index');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('web.chat.poll');

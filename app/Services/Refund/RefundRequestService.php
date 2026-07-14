@@ -10,6 +10,10 @@ class RefundRequestService
 {
     public function ensureForCancelledPaidOrder(Order $order): ?Refund
     {
+        if ($order->checkout_order_id !== null) {
+            return null;
+        }
+
         if ($order->status !== 'cancelled' || $order->payment_status !== 'success') {
             return null;
         }

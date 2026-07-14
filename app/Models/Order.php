@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\OrderDispatchSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -52,7 +53,9 @@ class Order extends Model
     public const DRIVER_STATUS_RESCHEDULED = 'rescheduled';
 
     protected $fillable = [
+        'checkout_order_id',
         'order_number',
+        'sub_order_number',
         'customer_id',
         'vendor_id',
         'driver_id',
@@ -191,6 +194,16 @@ class Order extends Model
         return $otp;
     }
 
+    public function checkoutOrder(): BelongsTo
+    {
+        return $this->belongsTo(CheckoutOrder::class);
+    }
+
+    public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
@@ -209,6 +222,16 @@ class Order extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function scopePaymentConfirmed(Builder $query): Builder
+    {
+        return $query->where('payment_status', 'success');
+    }
+
+    public function isPaymentConfirmed(): bool
+    {
+        return $this->payment_status === 'success';
     }
 
     public function portfolioItem(): BelongsTo

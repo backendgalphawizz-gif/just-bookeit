@@ -11,6 +11,7 @@ class CartItem extends Model
         'customer_id',
         'vendor_id',
         'portfolio_item_id',
+        'portfolio_item_variant_id',
         'quantity',
     ];
 
@@ -34,5 +35,17 @@ class CartItem extends Model
     public function portfolioItem(): BelongsTo
     {
         return $this->belongsTo(PortfolioItem::class);
+    }
+
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(PortfolioItemVariant::class, 'portfolio_item_variant_id');
+    }
+
+    public function unitDailyRate(): float
+    {
+        $this->loadMissing(['portfolioItem.variants', 'variant']);
+
+        return $this->portfolioItem?->dailyRateFor($this->variant) ?? 0;
     }
 }

@@ -95,7 +95,7 @@ class DashboardService
             'open_refunds' => (clone $refundQuery)->whereIn('status', Refund::OPEN_STATUSES)->count(),
             'open_disputes' => (clone $disputeQuery)->whereIn('status', Dispute::OPEN_STATUSES)->count(),
             'orders_in_progress' => (clone $orderQuery)->whereIn('status', Order::IN_PROGRESS_STATUSES)->count(),
-            'new_orders' => (clone $orderQuery)->where('status', 'new')->count(),
+            'new_orders' => (clone $orderQuery)->whereNull('checkout_order_id')->where('status', 'new')->count(),
             'open_payouts' => (clone $payoutQuery)->whereIn('status', VendorPayout::OPEN_STATUSES)->count(),
             'pending_portfolio' => (clone $portfolioQuery)->where('status', PortfolioItem::PENDING_STATUS)->count(),
         ];

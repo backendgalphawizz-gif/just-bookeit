@@ -5,7 +5,7 @@
 </head>
 <body @class(['jbw-body', 'jbw-body--chat' => request()->routeIs('web.chat.*')])>
     @include('web.partials.header')
-    <main class="jbw-main bannercss jbw-container" style="overflow-x:hidden">
+    <main class="jbw-main">
         @yield('content')
     </main>
     @include('web.partials.footer')

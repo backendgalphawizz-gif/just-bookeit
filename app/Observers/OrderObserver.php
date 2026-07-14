@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\AppPushNotificationService;
+use App\Services\Checkout\CheckoutRollupService;
 use App\Services\Refund\RefundRequestService;
 
 class OrderObserver
@@ -34,7 +35,17 @@ class OrderObserver
         }
 
         if ($order->wasChanged('status') && $order->status === 'cancelled') {
-            app(RefundRequestService::class)->ensureForCancelledPaidOrder($order->fresh());
+            if ($order->checkout_order_id === null) {
+                app(RefundRequestService::class)->ensureForCancelledPaidOrder($order->fresh());
+            }
+        }
+
+        if ($order->checkout_order_id !== null && $order->wasChanged('status')) {
+            $checkout = $order->checkoutOrder;
+
+            if ($checkout) {
+                app(CheckoutRollupService::class)->sync($checkout->fresh());
+            }
         }
     }
 }

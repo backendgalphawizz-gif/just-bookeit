@@ -30,7 +30,7 @@ class CatalogController extends WebController
     {
         abort_unless($item->isCatalogAvailable(), 404);
 
-        $item->load(['vendor', 'category', 'subcategory.parent', 'images']);
+        $item->load(['vendor', 'category', 'subcategory.parent', 'images', 'variants']);
 
         $related = PortfolioItem::query()
             ->where('vendor_id', $item->vendor_id)

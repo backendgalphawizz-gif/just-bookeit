@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Models\Order;
+use App\Services\Checkout\CheckoutRollupService;
+use App\Services\Checkout\PartialRefundService;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\Api\VendorBookingStatus;
 use App\Support\AppliesListDateFilter;
@@ -23,6 +25,7 @@ class BookingController extends VendorApiController
 
         $query = Order::query()
             ->where('vendor_id', $vendor->id)
+            ->paymentConfirmed()
             ->with(['customer', 'category', 'driver'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
@@ -101,8 +104,24 @@ class BookingController extends VendorApiController
             'cancellation_reason' => trim($data['reason']),
         ]);
 
+        $refund = null;
+
+        if ($booking->checkout_order_id !== null) {
+            $refund = app(PartialRefundService::class)->forRejectedSubOrder(
+                $booking->fresh(),
+                trim($data['reason']),
+            );
+            app(CheckoutRollupService::class)->sync($booking->checkoutOrder()->firstOrFail());
+        }
+
         return $this->success([
             'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
+            'partial_refund' => $refund ? [
+                'id' => $refund->id,
+                'amount' => (float) $refund->amount,
+                'status' => $refund->status,
+                'auto_processed' => (bool) $refund->auto_processed,
+            ] : null,
         ], 'Booking rejected.');
     }
 

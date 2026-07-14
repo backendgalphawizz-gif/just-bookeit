@@ -11,17 +11,33 @@ class Refund extends Model
 
     protected $fillable = [
         'order_id',
+        'checkout_order_id',
         'customer_id',
         'amount',
         'reason',
         'status',
+        'source',
+        'auto_processed',
+        'processed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
+            'auto_processed' => 'boolean',
+            'processed_at' => 'datetime',
         ];
+    }
+
+    public function checkoutOrder(): BelongsTo
+    {
+        return $this->belongsTo(CheckoutOrder::class);
+    }
+
+    public function histories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(RefundHistory::class);
     }
 
     public function order(): BelongsTo
