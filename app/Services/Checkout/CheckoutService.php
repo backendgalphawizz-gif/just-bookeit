@@ -160,6 +160,7 @@ class CheckoutService
                         'quantity' => $line['quantity'],
                         'unit_price' => $line['unit_price'],
                         'line_amount' => $line['line_amount'],
+                        'status' => OrderItem::STATUS_PENDING,
                         'item_snapshot' => [
                             'title' => $portfolioItem->title,
                             'image_url' => $variant?->image_path ?: $portfolioItem->image_url,

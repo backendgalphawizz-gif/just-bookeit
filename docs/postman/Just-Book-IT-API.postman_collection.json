@@ -2846,7 +2846,9 @@
 											"pm.test('Has payment summary', () => {",
 											"    pm.expect(json.data?.payment_summary).to.have.property('subtotal');",
 											"    pm.expect(json.data?.payment_summary).to.have.property('platform_fee');",
-											"});"
+											"});",
+											"const items = json.data?.order_items || json.data?.line_items || [];",
+											"if (items[0]?.id) { pm.environment.set('v2_order_item_id', String(items[0].id)); }"
 										]
 									}
 								}
@@ -2870,7 +2872,7 @@
 									}
 								],
 								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}",
-								"description": "Full booking detail at `data.*` — includes `booking_date` (with time), `booked_at`, `customer`, `product`, `shipping_address`, `measurements`, `payment_summary`, `rented_period`, `rental_tracking`, `delivery_otp`, `damage`, `driver`, and `customer_review` when delivered."
+								"description": "Full booking detail at `data.*` — includes `order_items` / `line_items` (per-line status, `can_accept` / `can_reject`, size/color), `checkout`, `items_count`, `pending_items_count`, plus `customer`, `product`, `payment_summary`, tracking fields, etc. Saves first line item id to `v2_order_item_id`."
 							}
 						},
 						{
@@ -2893,7 +2895,8 @@
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/accept"
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/accept",
+								"description": "Accept entire vendor sub-order (all pending `order_items`). Response includes `order_items` / `line_items` with per-item status."
 							}
 						},
 						{
@@ -2925,7 +2928,63 @@
 									"raw": "{\n  \"reason\": \"Item is unavailable for the requested rental dates.\"\n}"
 								},
 								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/reject",
-								"description": "Reject a new/pending booking. `reason` is required (5–500 characters). Saved as cancellation_reason on the order."
+								"description": "Reject entire vendor sub-order. `reason` is required (5–500 characters). Cancels all items and may create a partial refund for checkout orders."
+							}
+						},
+						{
+							"name": "Accept Booking Item",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/items/{{v2_order_item_id}}/accept",
+								"description": "Accept a single line item (`order_items[].id` from booking detail). Booking stays `pending_acceptance` until all remaining items are accepted or rejected."
+							}
+						},
+						{
+							"name": "Reject Booking Item",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{v2_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reason\": \"Size/color variant not available.\"\n}"
+								},
+								"url": "{{base_url}}/v2/bookings/{{v2_booking_id}}/items/{{v2_order_item_id}}/reject",
+								"description": "Reject a single line item. `reason` required. Recalculates sub-order totals and may issue a line-item partial refund. If all items are rejected, booking becomes cancelled."
 							}
 						},
 						{

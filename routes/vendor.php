@@ -44,6 +44,8 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::post('bookings/{booking}/accept', [BookingController::class, 'accept'])->name('bookings.accept');
         Route::post('bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
+        Route::post('bookings/{booking}/items/{item}/accept', [BookingController::class, 'acceptItem'])->name('bookings.items.accept');
+        Route::post('bookings/{booking}/items/{item}/reject', [BookingController::class, 'rejectItem'])->name('bookings.items.reject');
         Route::post('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
 
         Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');

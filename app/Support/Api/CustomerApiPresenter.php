@@ -637,10 +637,18 @@ class CustomerApiPresenter
             'id' => $item->id,
             'portfolio_item_id' => $item->portfolio_item_id,
             'title' => $item->title(),
-            'image_url' => $item->item_snapshot['image_url'] ?? null,
-            'quantity' => $item->quantity,
+            'image_url' => $item->displayImageUrl(),
+            'category' => $item->categoryName(),
+            'size' => $item->size(),
+            'color' => $item->color(),
+            'variant_id' => $item->variantId(),
+            'variant_label' => $item->variantLabel(),
+            'quantity' => (int) $item->quantity,
             'unit_price' => (float) $item->unit_price,
             'line_amount' => (float) $item->line_amount,
+            'status' => $item->status,
+            'status_label' => $item->statusLabel(),
+            'cancellation_reason' => $item->cancellation_reason,
         ];
     }
 

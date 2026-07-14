@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Models\Order;
-use App\Services\Checkout\CheckoutRollupService;
-use App\Services\Checkout\PartialRefundService;
+use App\Models\OrderItem;
+use App\Services\Checkout\VendorBookingItemService;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\Api\VendorBookingStatus;
 use App\Support\AppliesListDateFilter;
@@ -13,10 +13,15 @@ use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class BookingController extends VendorApiController
 {
     use AppliesListDateFilter;
+
+    public function __construct(
+        protected VendorBookingItemService $items
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -26,13 +31,16 @@ class BookingController extends VendorApiController
         $query = Order::query()
             ->where('vendor_id', $vendor->id)
             ->paymentConfirmed()
-            ->with(['customer', 'category', 'driver'])
+            ->with(['customer', 'category', 'driver', 'orderItems', 'checkoutOrder'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->where(function ($q) use ($term) {
                     $q->where('order_number', 'like', $term)
                         ->orWhere('item_title', 'like', $term)
-                        ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', $term));
+                        ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', $term))
+                        ->orWhereHas('orderItems', function ($items) use ($term) {
+                            $items->where('item_snapshot->title', 'like', $term);
+                        });
                 });
             })
             ->when($request->filled('tab'), function ($q) use ($request) {
@@ -67,7 +75,16 @@ class BookingController extends VendorApiController
 
         return $this->success(
             VendorApiPresenter::bookingDetail(
-                $booking->load(['customer.measurements', 'vendor', 'category', 'driver', 'review.customer'])
+                $booking->load([
+                    'customer.measurements',
+                    'vendor',
+                    'category',
+                    'driver',
+                    'review.customer',
+                    'orderItems',
+                    'checkoutOrder',
+                    'refunds',
+                ])
             )
         );
     }
@@ -77,14 +94,14 @@ class BookingController extends VendorApiController
         $vendor = $this->vendor($request);
         $this->assertOwnsOrder($booking, $vendor);
 
-        if (! in_array($booking->status, ['new', 'pending_acceptance'], true)) {
-            return $this->error('This booking cannot be accepted.', 422);
+        try {
+            $updated = $this->items->acceptAll($booking);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
         }
 
-        $booking->update(['status' => 'accepted']);
-
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
+            'booking' => VendorApiPresenter::bookingDetail($updated),
         ], 'Booking accepted.');
     }
 
@@ -93,29 +110,18 @@ class BookingController extends VendorApiController
         $vendor = $this->vendor($request);
         $this->assertOwnsOrder($booking, $vendor);
 
-        if (! in_array($booking->status, ['new', 'pending_acceptance'], true)) {
-            return $this->error('This booking cannot be rejected.', 422);
-        }
-
         $data = $this->validateVendor($request, VendorValidationRules::bookingReject());
 
-        $booking->update([
-            'status' => 'cancelled',
-            'cancellation_reason' => trim($data['reason']),
-        ]);
-
-        $refund = null;
-
-        if ($booking->checkout_order_id !== null) {
-            $refund = app(PartialRefundService::class)->forRejectedSubOrder(
-                $booking->fresh(),
-                trim($data['reason']),
-            );
-            app(CheckoutRollupService::class)->sync($booking->checkoutOrder()->firstOrFail());
+        try {
+            $result = $this->items->rejectAll($booking, trim($data['reason']));
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
         }
 
+        $refund = $result['refund'];
+
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
+            'booking' => VendorApiPresenter::bookingDetail($result['booking']),
             'partial_refund' => $refund ? [
                 'id' => $refund->id,
                 'amount' => (float) $refund->amount,
@@ -123,6 +129,50 @@ class BookingController extends VendorApiController
                 'auto_processed' => (bool) $refund->auto_processed,
             ] : null,
         ], 'Booking rejected.');
+    }
+
+    public function acceptItem(Request $request, Order $booking, OrderItem $item): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+        $this->assertOwnsOrder($booking, $vendor);
+
+        try {
+            $updated = $this->items->acceptItem($booking, $item);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        return $this->success([
+            'booking' => VendorApiPresenter::bookingDetail($updated),
+            'item' => VendorApiPresenter::orderLineItem($item->fresh()),
+        ], 'Item accepted.');
+    }
+
+    public function rejectItem(Request $request, Order $booking, OrderItem $item): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+        $this->assertOwnsOrder($booking, $vendor);
+
+        $data = $this->validateVendor($request, VendorValidationRules::bookingReject());
+
+        try {
+            $result = $this->items->rejectItem($booking, $item, trim($data['reason']));
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        $refund = $result['refund'];
+
+        return $this->success([
+            'booking' => VendorApiPresenter::bookingDetail($result['booking']),
+            'item' => VendorApiPresenter::orderLineItem($item->fresh()),
+            'partial_refund' => $refund ? [
+                'id' => $refund->id,
+                'amount' => (float) $refund->amount,
+                'status' => $refund->status,
+                'auto_processed' => (bool) $refund->auto_processed,
+            ] : null,
+        ], 'Item rejected.');
     }
 
     public function updateStatus(Request $request, Order $booking): JsonResponse
@@ -156,7 +206,13 @@ class BookingController extends VendorApiController
         $booking->save();
 
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
+            'booking' => VendorApiPresenter::bookingDetail($booking->fresh([
+                'customer',
+                'category',
+                'driver',
+                'orderItems',
+                'checkoutOrder',
+            ])),
         ], 'Booking status updated.');
     }
 
@@ -177,7 +233,13 @@ class BookingController extends VendorApiController
         ]);
 
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($booking->fresh(['customer', 'category', 'driver'])),
+            'booking' => VendorApiPresenter::bookingDetail($booking->fresh([
+                'customer',
+                'category',
+                'driver',
+                'orderItems',
+                'checkoutOrder',
+            ])),
         ], 'Damage deduction updated.');
     }
 }

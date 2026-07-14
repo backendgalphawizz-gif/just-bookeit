@@ -48,9 +48,9 @@
                 <div class="vp-booking-line-items">
                     @foreach ($booking->orderItems as $lineItem)
                         @php
-                            $snapshot = $lineItem->item_snapshot ?? [];
-                            $lineImage = \App\Support\StoresUploadedFiles::url($snapshot['image_path'] ?? null)
+                            $lineImage = $lineItem->displayImageUrl()
                                 ?: $lineItem->portfolioItem?->displayImageUrl();
+                            $variantLabel = $lineItem->variantLabel();
                         @endphp
                         <div class="vp-booking-product-row">
                             <div class="vp-booking-product-media">
@@ -62,7 +62,30 @@
                             </div>
                             <div class="vp-booking-product-info">
                                 <p class="vp-booking-product-name">{{ $lineItem->title() }}</p>
-                                <p class="vp-booking-product-meta">Qty {{ $lineItem->quantity }} · ₹{{ number_format($lineItem->line_amount, 0) }}</p>
+                                <p class="vp-booking-product-meta">
+                                    Qty {{ $lineItem->quantity }} · ₹{{ number_format($lineItem->line_amount, 0) }}
+                                    @if ($variantLabel) · {{ $variantLabel }}@endif
+                                    · {{ $lineItem->statusLabel() }}
+                                </p>
+                                @if ($lineItem->canAccept() || $lineItem->canReject())
+                                    <div class="vp-booking-line-actions" style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;">
+                                        @if ($lineItem->canAccept())
+                                            <form method="POST" action="{{ route('vendor.bookings.items.accept', [$booking, $lineItem]) }}">
+                                                @csrf
+                                                <button type="submit" class="vp-btn vp-btn--sm vp-btn--primary">Accept item</button>
+                                            </form>
+                                        @endif
+                                        @if ($lineItem->canReject())
+                                            <form method="POST" action="{{ route('vendor.bookings.items.reject', [$booking, $lineItem]) }}"
+                                                  data-vp-confirm="Reject this item? A partial refund may be issued."
+                                                  onsubmit="var r=prompt('Reason for rejecting this item (required):'); if(!r||r.trim().length<5){event.preventDefault();alert('Please enter a reason (at least 5 characters).');return false;} this.querySelector('[name=reason]').value=r.trim();">
+                                                @csrf
+                                                <input type="hidden" name="reason" value="">
+                                                <button type="submit" class="vp-btn vp-btn--sm vp-btn--outline">Reject item</button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach

@@ -158,13 +158,18 @@ class VendorApiPresenter
 
     public static function bookingSummary(Order $order): array
     {
-        $order->loadMissing(['customer', 'category']);
+        $order->loadMissing(['customer', 'category', 'orderItems', 'checkoutOrder']);
         $rentedPeriod = self::bookingRentedPeriod($order);
+        $items = $order->orderItems;
+        $itemsCount = $items->isNotEmpty() ? $items->count() : 1;
+        $pendingItems = $items->where('status', \App\Models\OrderItem::STATUS_PENDING)->count();
 
         return [
             'id' => $order->id,
             'order_number' => $order->order_number,
             'booking_id' => $order->order_number,
+            'checkout_order_id' => $order->checkout_order_id,
+            'checkout_order_number' => $order->checkoutOrder?->order_number,
             'product_name' => $order->itemDisplayName(),
             'item_title' => $order->itemDisplayName(),
             'product_image_url' => $order->itemImageUrl(),
@@ -185,6 +190,8 @@ class VendorApiPresenter
             'size' => $order->size,
             'color' => $order->color,
             'quantity' => (int) ($order->quantity ?? 1),
+            'items_count' => $itemsCount,
+            'pending_items_count' => $pendingItems,
             'rental_start_date' => $rentedPeriod['start_date'] ?? null,
             'rental_end_date' => $rentedPeriod['end_date'] ?? null,
             'rental_start_date_label' => $rentedPeriod['start_date_label'] ?? null,
@@ -194,14 +201,26 @@ class VendorApiPresenter
             'rental_period' => $rentedPeriod['label'] ?? null,
             'cancellation_reason' => $order->cancellation_reason,
             'reject_reason' => $order->cancellation_reason,
-            'can_accept' => in_array($order->status, ['new', 'pending_acceptance'], true),
-            'can_reject' => in_array($order->status, ['new', 'pending_acceptance'], true),
+            'can_accept' => in_array($order->status, ['new', 'pending_acceptance'], true) || $pendingItems > 0,
+            'can_reject' => in_array($order->status, ['new', 'pending_acceptance'], true) || $pendingItems > 0,
+            'line_items' => $items->isNotEmpty()
+                ? $items->map(fn ($item) => self::orderLineItem($item))->values()->all()
+                : [],
         ];
     }
 
     public static function bookingDetail(Order $order): array
     {
-        $order->loadMissing(['customer', 'category', 'driver', 'vendor', 'review.customer']);
+        $order->loadMissing([
+            'customer',
+            'category',
+            'driver',
+            'vendor',
+            'review.customer',
+            'orderItems',
+            'checkoutOrder',
+            'refunds',
+        ]);
 
         return [
             ...self::bookingSummary($order),
@@ -240,10 +259,45 @@ class VendorApiPresenter
             ] : null,
             'customer_review' => self::bookingCustomerReview($order),
             'review' => self::bookingCustomerReview($order),
+            'order_items' => $order->orderItems->map(fn ($item) => self::orderLineItem($item))->values()->all(),
+            'checkout' => $order->checkoutOrder ? [
+                'id' => $order->checkoutOrder->id,
+                'order_number' => $order->checkoutOrder->order_number,
+                'status' => $order->checkoutOrder->status,
+                'payment_status' => $order->checkoutOrder->payment_status,
+                'grand_total' => (float) $order->checkoutOrder->grand_total,
+            ] : null,
             'allowed_next_statuses' => collect(OrderDispatchSupport::allowedNextStatuses($order))
                 ->map(fn (string $status) => VendorBookingStatus::toApi($status))
                 ->values()
                 ->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function orderLineItem(\App\Models\OrderItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'portfolio_item_id' => $item->portfolio_item_id,
+            'title' => $item->title(),
+            'image_url' => $item->displayImageUrl(),
+            'category' => $item->categoryName(),
+            'size' => $item->size(),
+            'color' => $item->color(),
+            'variant_id' => $item->variantId(),
+            'variant_label' => $item->variantLabel(),
+            'quantity' => (int) $item->quantity,
+            'unit_price' => (float) $item->unit_price,
+            'unit_price_label' => '₹'.number_format((float) $item->unit_price, 0).'/day',
+            'line_amount' => (float) $item->line_amount,
+            'line_amount_label' => '₹'.number_format((float) $item->line_amount, 0),
+            'status' => $item->status,
+            'status_label' => $item->statusLabel(),
+            'cancellation_reason' => $item->cancellation_reason,
+            'can_accept' => $item->canAccept(),
+            'can_reject' => $item->canReject(),
+            'responded_at' => $item->responded_at?->toIso8601String(),
         ];
     }
 

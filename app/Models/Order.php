@@ -246,7 +246,12 @@ class Order extends Model
 
     public function refund(): HasOne
     {
-        return $this->hasOne(Refund::class);
+        return $this->hasOne(Refund::class)->latestOfMany();
+    }
+
+    public function refunds(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Refund::class);
     }
 
     public function dispute(): HasOne

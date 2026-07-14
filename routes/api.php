@@ -162,6 +162,8 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::get('bookings/{booking}', [VendorBookingController::class, 'show'])->name('bookings.show');
         Route::post('bookings/{booking}/accept', [VendorBookingController::class, 'accept'])->name('bookings.accept');
         Route::post('bookings/{booking}/reject', [VendorBookingController::class, 'reject'])->name('bookings.reject');
+        Route::post('bookings/{booking}/items/{item}/accept', [VendorBookingController::class, 'acceptItem'])->name('bookings.items.accept');
+        Route::post('bookings/{booking}/items/{item}/reject', [VendorBookingController::class, 'rejectItem'])->name('bookings.items.reject');
         Route::post('bookings/{booking}/status', [VendorBookingController::class, 'updateStatus'])->name('bookings.status');
         Route::post('bookings/{booking}/damage', [VendorBookingController::class, 'updateDamage'])->name('bookings.damage');
 

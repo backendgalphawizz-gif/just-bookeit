@@ -3,14 +3,22 @@
 namespace App\Http\Controllers\Vendor;
 
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Services\Checkout\VendorBookingItemService;
 use App\Support\AppliesListDateFilter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class BookingController extends VendorController
 {
     use AppliesListDateFilter;
+
+    public function __construct(
+        protected VendorBookingItemService $items
+    ) {}
+
 
     public function index(Request $request): View
     {
@@ -160,26 +168,61 @@ class BookingController extends VendorController
     {
         abort_unless($booking->vendor_id === $this->vendor()->id, 403);
 
-        if (! in_array($booking->status, ['new', 'pending_acceptance'], true)) {
-            return back()->with('error', 'This booking cannot be accepted.');
+        try {
+            $this->items->acceptAll($booking);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
-
-        $booking->update(['status' => 'accepted']);
 
         return back()->with('success', 'Booking accepted.');
     }
 
-    public function reject(Order $booking): RedirectResponse
+    public function reject(Request $request, Order $booking): RedirectResponse
     {
         abort_unless($booking->vendor_id === $this->vendor()->id, 403);
 
-        if (! in_array($booking->status, ['new', 'pending_acceptance'], true)) {
-            return back()->with('error', 'This booking cannot be rejected.');
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'min:5', 'max:500'],
+        ]);
+        $reason = trim($data['reason'] ?? 'Rejected by vendor');
+
+        try {
+            $this->items->rejectAll($booking, $reason);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
         }
 
-        $booking->update(['status' => 'cancelled']);
-
         return back()->with('success', 'Booking rejected.');
+    }
+
+    public function acceptItem(Order $booking, OrderItem $item): RedirectResponse
+    {
+        abort_unless($booking->vendor_id === $this->vendor()->id, 403);
+
+        try {
+            $this->items->acceptItem($booking, $item);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return back()->with('success', 'Item accepted.');
+    }
+
+    public function rejectItem(Request $request, Order $booking, OrderItem $item): RedirectResponse
+    {
+        abort_unless($booking->vendor_id === $this->vendor()->id, 403);
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:500'],
+        ]);
+
+        try {
+            $this->items->rejectItem($booking, $item, trim($data['reason']));
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return back()->with('success', 'Item rejected.');
     }
 
     public function updateStatus(Request $request, Order $booking): RedirectResponse
