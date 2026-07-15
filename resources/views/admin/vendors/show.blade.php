@@ -73,7 +73,7 @@
         <div class="jb-wallet-card jb-wallet-card--digital">
             <p class="jb-wallet-card-label">Digital Wallet</p>
             <p class="jb-wallet-card-value">₹{{ number_format($vendor->digital_wallet_balance, 0) }}</p>
-            <p class="jb-wallet-card-note">Payments on 15-day hold</p>
+            <p class="jb-wallet-card-note">Payments on {{ \App\Services\Vendor\VendorWalletService::holdDays() }}-day hold</p>
         </div>
         <div class="jb-wallet-card jb-wallet-card--actual">
             <p class="jb-wallet-card-label">Actual Wallet</p>

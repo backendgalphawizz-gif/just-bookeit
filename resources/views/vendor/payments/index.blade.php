@@ -14,7 +14,7 @@
     <div class="vp-wallet-card vp-wallet-card--digital">
         <div class="vp-wallet-card-label">Digital Wallet</div>
         <div class="vp-wallet-card-value">₹{{ number_format($vendor->digital_wallet_balance, 0) }}</div>
-        <p class="vp-wallet-card-note">Customer payments are held here for 15 days before release.</p>
+        <p class="vp-wallet-card-note">Customer payments are held here for {{ \App\Services\Vendor\VendorWalletService::holdDays() }} days before release.</p>
     </div>
     <div class="vp-wallet-card vp-wallet-card--actual">
         <div class="vp-wallet-card-label">Actual Wallet</div>

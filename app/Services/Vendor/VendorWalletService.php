@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class VendorWalletService
 {
+    public static function holdDays(): int
+    {
+        return max(0, (int) config('wallet.hold_days', 15));
+    }
+
+    /** @deprecated Use holdDays() — kept for older call sites. */
     public const HOLD_DAYS = 15;
 
     public function creditFromPayment(Order $order): void
@@ -44,7 +50,7 @@ class VendorWalletService
 
             $order->update([
                 'paid_at' => $paidAt,
-                'wallet_release_at' => $paidAt->copy()->addDays(self::HOLD_DAYS),
+                'wallet_release_at' => $paidAt->copy()->addDays(self::holdDays()),
                 'vendor_net_amount' => $netAmount,
                 'vendor_wallet_held_amount' => $netAmount,
                 'wallet_hold_status' => 'held',
