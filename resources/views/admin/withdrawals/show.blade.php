@@ -98,11 +98,17 @@
                         @csrf
                         <div>
                             <label class="jb-label" for="approve_note">Admin note</label>
-                            <textarea id="approve_note" name="admin_note" class="jb-input" rows="3" required minlength="5" maxlength="500" placeholder="e.g. Transferred to bank account">{{ old('admin_note') }}</textarea>
+                            <textarea id="approve_note" name="admin_note" class="jb-input @error('admin_note') jb-input--error @enderror" rows="3" required minlength="5" maxlength="1000" placeholder="e.g. Transferred to bank account">{{ old('admin_note') }}</textarea>
+                            @error('admin_note')
+                                <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div>
                             <label class="jb-label" for="payment_reference">Payment / UTR reference (optional)</label>
-                            <input id="payment_reference" type="text" name="payment_reference" value="{{ old('payment_reference') }}" class="jb-input" maxlength="100">
+                            <input id="payment_reference" type="text" name="payment_reference" value="{{ old('payment_reference') }}" class="jb-input @error('payment_reference') jb-input--error @enderror" maxlength="100">
+                            @error('payment_reference')
+                                <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
+                            @enderror
                         </div>
                         <x-admin.button variant="primary" type="submit" class="w-full">Approve &amp; pay</x-admin.button>
                     </form>
@@ -114,7 +120,10 @@
                         @csrf
                         <div>
                             <label class="jb-label" for="reject_note">Rejection note</label>
-                            <textarea id="reject_note" name="admin_note" class="jb-input" rows="3" required minlength="5" maxlength="500" placeholder="Reason for rejection"></textarea>
+                            <textarea id="reject_note" name="admin_note" class="jb-input @error('admin_note') jb-input--error @enderror" rows="3" required minlength="5" maxlength="1000" placeholder="Reason for rejection">{{ old('admin_note') }}</textarea>
+                            @error('admin_note')
+                                <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
+                            @enderror
                         </div>
                         <x-admin.button variant="danger" type="submit" class="w-full">Reject request</x-admin.button>
                     </form>

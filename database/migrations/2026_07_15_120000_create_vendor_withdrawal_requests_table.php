@@ -15,8 +15,8 @@ return new class extends Migration
             $table->foreignId('vendor_id')->constrained()->cascadeOnDelete();
             $table->decimal('amount', 12, 2);
             $table->string('status', 30)->default('pending');
-            $table->string('vendor_note')->nullable();
-            $table->string('admin_note')->nullable();
+            $table->text('vendor_note')->nullable();
+            $table->text('admin_note')->nullable();
             $table->string('payment_reference')->nullable();
             $table->foreignId('reviewed_by_admin_id')->nullable()->constrained('admins')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
