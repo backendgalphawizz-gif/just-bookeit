@@ -92,9 +92,14 @@ class PaymentController extends VendorController
                 $data['vendor_note'] ?? null,
             );
         } catch (InvalidArgumentException $exception) {
-            return back()->withInput()->with('error', $exception->getMessage());
+            return redirect()
+                ->route('vendor.payments.index', ['tab' => 'withdrawals'])
+                ->withInput()
+                ->with('error', $exception->getMessage());
         }
 
-        return back()->with('success', 'Withdrawal request '.$withdrawal->request_code.' submitted for admin review.');
+        return redirect()
+            ->route('vendor.payments.index', ['tab' => 'withdrawals'])
+            ->with('success', 'Withdrawal request '.$withdrawal->request_code.' submitted for admin review.');
     }
 }
