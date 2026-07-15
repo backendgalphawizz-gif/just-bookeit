@@ -61,6 +61,7 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 
         Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::post('payments/withdraw', [PaymentController::class, 'requestWithdrawal'])->name('payments.withdraw');
 
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');

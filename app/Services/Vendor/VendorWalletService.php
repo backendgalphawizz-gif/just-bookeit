@@ -7,6 +7,8 @@ use App\Models\PlatformSetting;
 use App\Models\Refund;
 use App\Models\Vendor;
 use App\Models\VendorWalletTransaction;
+use App\Models\VendorWithdrawalRequest;
+use App\Support\CodeGenerator;
 use Illuminate\Support\Facades\DB;
 
 class VendorWalletService
@@ -224,6 +226,116 @@ class VendorWalletService
         return max(0, round($gross - $commission, 2));
     }
 
+    public function availableForWithdrawal(Vendor $vendor): float
+    {
+        $pending = (float) VendorWithdrawalRequest::query()
+            ->where('vendor_id', $vendor->id)
+            ->where('status', VendorWithdrawalRequest::STATUS_PENDING)
+            ->sum('amount');
+
+        return max(0, round((float) $vendor->wallet_balance - $pending, 2));
+    }
+
+    public function requestWithdrawal(Vendor $vendor, float $amount, ?string $vendorNote = null): VendorWithdrawalRequest
+    {
+        $amount = round($amount, 2);
+
+        if ($amount < 1) {
+            throw new \InvalidArgumentException('Minimum withdrawal amount is ₹1.');
+        }
+
+        return DB::transaction(function () use ($vendor, $amount, $vendorNote) {
+            $vendor = Vendor::query()->lockForUpdate()->findOrFail($vendor->id);
+            $available = $this->availableForWithdrawal($vendor);
+
+            if ($amount > $available) {
+                throw new \InvalidArgumentException(
+                    'Insufficient withdrawable balance. Available: ₹'.number_format($available, 2)
+                );
+            }
+
+            return VendorWithdrawalRequest::query()->create([
+                'request_code' => CodeGenerator::withdrawalRequestCode(),
+                'vendor_id' => $vendor->id,
+                'amount' => $amount,
+                'status' => VendorWithdrawalRequest::STATUS_PENDING,
+                'vendor_note' => filled($vendorNote) ? trim($vendorNote) : null,
+            ]);
+        });
+    }
+
+    public function approveWithdrawal(
+        VendorWithdrawalRequest $request,
+        int $adminId,
+        string $adminNote,
+        ?string $paymentReference = null,
+    ): VendorWithdrawalRequest {
+        return DB::transaction(function () use ($request, $adminId, $adminNote, $paymentReference) {
+            $request = VendorWithdrawalRequest::query()->lockForUpdate()->findOrFail($request->id);
+
+            if (! $request->isPending()) {
+                throw new \InvalidArgumentException('This withdrawal request has already been reviewed.');
+            }
+
+            $vendor = Vendor::query()->lockForUpdate()->findOrFail($request->vendor_id);
+            $amount = (float) $request->amount;
+
+            if ($amount > (float) $vendor->wallet_balance) {
+                throw new \InvalidArgumentException('Vendor actual wallet balance is insufficient to approve this withdrawal.');
+            }
+
+            $vendor->decrement('wallet_balance', $amount);
+            $vendor->refresh();
+
+            $this->recordTransaction(
+                vendor: $vendor,
+                order: null,
+                type: VendorWalletTransaction::TYPE_WITHDRAWAL_DEBIT,
+                wallet: VendorWalletTransaction::WALLET_ACTUAL,
+                direction: 'debit',
+                amount: $amount,
+                balanceAfter: (float) $vendor->wallet_balance,
+                description: 'Withdrawal approved — '.$request->request_code,
+                refund: null,
+                withdrawalRequest: $request,
+            );
+
+            $request->update([
+                'status' => VendorWithdrawalRequest::STATUS_APPROVED,
+                'admin_note' => trim($adminNote),
+                'payment_reference' => filled($paymentReference) ? trim($paymentReference) : null,
+                'reviewed_by_admin_id' => $adminId,
+                'reviewed_at' => now(),
+                'paid_at' => now(),
+            ]);
+
+            return $request->fresh(['vendor', 'reviewedByAdmin']);
+        });
+    }
+
+    public function rejectWithdrawal(
+        VendorWithdrawalRequest $request,
+        int $adminId,
+        string $adminNote,
+    ): VendorWithdrawalRequest {
+        return DB::transaction(function () use ($request, $adminId, $adminNote) {
+            $request = VendorWithdrawalRequest::query()->lockForUpdate()->findOrFail($request->id);
+
+            if (! $request->isPending()) {
+                throw new \InvalidArgumentException('This withdrawal request has already been reviewed.');
+            }
+
+            $request->update([
+                'status' => VendorWithdrawalRequest::STATUS_REJECTED,
+                'admin_note' => trim($adminNote),
+                'reviewed_by_admin_id' => $adminId,
+                'reviewed_at' => now(),
+            ]);
+
+            return $request->fresh(['vendor', 'reviewedByAdmin']);
+        });
+    }
+
     protected function releaseOrderHold(Order $order): bool
     {
         return (bool) DB::transaction(function () use ($order): bool {
@@ -360,7 +472,7 @@ class VendorWalletService
 
     protected function recordTransaction(
         Vendor $vendor,
-        Order $order,
+        ?Order $order,
         string $type,
         string $wallet,
         string $direction,
@@ -368,11 +480,13 @@ class VendorWalletService
         float $balanceAfter,
         string $description,
         ?Refund $refund = null,
+        ?VendorWithdrawalRequest $withdrawalRequest = null,
     ): VendorWalletTransaction {
         return VendorWalletTransaction::query()->create([
             'vendor_id' => $vendor->id,
-            'order_id' => $order->id,
+            'order_id' => $order?->id,
             'refund_id' => $refund?->id,
+            'withdrawal_request_id' => $withdrawalRequest?->id,
             'type' => $type,
             'wallet' => $wallet,
             'direction' => $direction,

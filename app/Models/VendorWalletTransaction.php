@@ -15,6 +15,8 @@ class VendorWalletTransaction extends Model
 
     public const TYPE_REFUND_REVERSAL = 'refund_reversal';
 
+    public const TYPE_WITHDRAWAL_DEBIT = 'withdrawal_debit';
+
     public const WALLET_DIGITAL = 'digital';
 
     public const WALLET_ACTUAL = 'actual';
@@ -23,6 +25,7 @@ class VendorWalletTransaction extends Model
         'vendor_id',
         'order_id',
         'refund_id',
+        'withdrawal_request_id',
         'type',
         'wallet',
         'direction',
@@ -54,6 +57,11 @@ class VendorWalletTransaction extends Model
         return $this->belongsTo(Refund::class);
     }
 
+    public function withdrawalRequest(): BelongsTo
+    {
+        return $this->belongsTo(VendorWithdrawalRequest::class, 'withdrawal_request_id');
+    }
+
     public function typeLabel(): string
     {
         return match ($this->type) {
@@ -61,6 +69,7 @@ class VendorWalletTransaction extends Model
             self::TYPE_HOLD_RELEASE => 'Released to wallet',
             self::TYPE_REFUND_DEBIT => 'Refund deduction',
             self::TYPE_REFUND_REVERSAL => 'Refund reversed',
+            self::TYPE_WITHDRAWAL_DEBIT => 'Withdrawal paid',
             default => ucfirst(str_replace('_', ' ', $this->type)),
         };
     }

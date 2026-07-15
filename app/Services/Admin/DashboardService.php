@@ -12,6 +12,7 @@ use App\Models\PortfolioItem;
 use App\Models\Refund;
 use App\Models\Vendor;
 use App\Models\VendorPayout;
+use App\Models\VendorWithdrawalRequest;
 use App\Support\AdminCityScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -97,6 +98,9 @@ class DashboardService
             'orders_in_progress' => (clone $orderQuery)->whereIn('status', Order::IN_PROGRESS_STATUSES)->count(),
             'new_orders' => (clone $orderQuery)->whereNull('checkout_order_id')->where('status', 'new')->count(),
             'open_payouts' => (clone $payoutQuery)->whereIn('status', VendorPayout::OPEN_STATUSES)->count(),
+            'open_withdrawals' => VendorWithdrawalRequest::query()
+                ->whereIn('status', VendorWithdrawalRequest::OPEN_STATUSES)
+                ->count(),
             'pending_portfolio' => (clone $portfolioQuery)->where('status', PortfolioItem::PENDING_STATUS)->count(),
         ];
     }

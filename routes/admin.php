@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PayoutController;
+use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\VendorPortfolioController;
 use App\Http\Controllers\Admin\RefundController;
@@ -73,6 +74,11 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::get('payouts', [PayoutController::class, 'index'])->name('payouts.index');
             Route::get('payouts/{payout}', [PayoutController::class, 'show'])->name('payouts.show');
             Route::post('payouts/{payout}/mark-paid', [PayoutController::class, 'markPaid'])->name('payouts.mark-paid');
+
+            Route::get('withdrawals', [WithdrawalController::class, 'index'])->name('withdrawals.index');
+            Route::get('withdrawals/{withdrawal}', [WithdrawalController::class, 'show'])->name('withdrawals.show');
+            Route::post('withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('withdrawals.approve');
+            Route::post('withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('withdrawals.reject');
 
             Route::get('vendor-portfolio', [VendorPortfolioController::class, 'index'])->name('vendor-portfolio.index');
             Route::get('vendor-portfolio/{vendor}', [VendorPortfolioController::class, 'show'])->name('vendor-portfolio.show');

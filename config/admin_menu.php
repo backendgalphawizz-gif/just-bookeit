@@ -18,6 +18,7 @@ return [
             ['label' => 'Payments', 'route' => 'admin.payments.index', 'route_is' => 'admin.payments.*', 'permission' => 'payments', 'badge' => null, 'icon' => 'card'],
             ['label' => 'Refunds', 'route' => 'admin.refunds.index', 'route_is' => 'admin.refunds.*', 'permission' => 'refunds', 'badge' => 'open_refunds', 'icon' => 'refund'],
             ['label' => 'Payouts', 'route' => 'admin.payouts.index', 'route_is' => 'admin.payouts.*', 'permission' => 'payouts', 'badge' => 'open_payouts', 'icon' => 'wallet'],
+            ['label' => 'Withdrawals', 'route' => 'admin.withdrawals.index', 'route_is' => 'admin.withdrawals.*', 'permission' => 'payouts', 'badge' => 'open_withdrawals', 'icon' => 'wallet'],
         ],
         'Content' => [
             ['label' => 'Products', 'route' => 'admin.portfolio.index', 'route_is' => 'admin.portfolio.*', 'permission' => 'portfolio', 'badge' => 'pending_portfolio', 'icon' => 'grid'],

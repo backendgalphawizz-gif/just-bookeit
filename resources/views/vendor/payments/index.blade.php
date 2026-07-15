@@ -19,9 +19,92 @@
     <div class="vp-wallet-card vp-wallet-card--actual">
         <div class="vp-wallet-card-label">Actual Wallet</div>
         <div class="vp-wallet-card-value">₹{{ number_format($vendor->wallet_balance, 0) }}</div>
-        <p class="vp-wallet-card-note">Available for withdrawal after the hold period ends.</p>
+        <p class="vp-wallet-card-note">
+            Available to request: ₹{{ number_format($availableForWithdrawal, 0) }}
+            @if ($availableForWithdrawal < $vendor->wallet_balance)
+                (pending requests reserved)
+            @endif
+        </p>
     </div>
 </div>
+
+<div class="vp-card" style="margin-top:1rem;padding:1.15rem 1.25rem;">
+    <div style="display:flex;flex-wrap:wrap;gap:1.25rem;align-items:flex-start;justify-content:space-between;">
+        <div style="flex:1;min-width:220px;">
+            <h2 style="margin:0 0 .35rem;font-size:1.05rem;font-weight:700;">Request withdrawal</h2>
+            <p style="margin:0;color:var(--vp-muted);font-size:.875rem;line-height:1.5;">
+                Submit a request from your actual wallet. Admin will approve or reject with a note.
+            </p>
+        </div>
+        <form method="POST" action="{{ route('vendor.payments.withdraw') }}" style="flex:1;min-width:260px;display:grid;gap:.75rem;">
+            @csrf
+            <div>
+                <label class="vp-label" for="withdraw_amount">Amount (₹)</label>
+                <input id="withdraw_amount" type="number" name="amount" class="vp-input" min="1" step="0.01"
+                       max="{{ max(1, $availableForWithdrawal) }}"
+                       value="{{ old('amount') }}"
+                       placeholder="Max ₹{{ number_format($availableForWithdrawal, 0) }}"
+                       @disabled($availableForWithdrawal < 1)
+                       required>
+            </div>
+            <div>
+                <label class="vp-label" for="vendor_note">Note (optional)</label>
+                <textarea id="vendor_note" name="vendor_note" class="vp-input" rows="2" maxlength="500" placeholder="Bank / account reminder">{{ old('vendor_note') }}</textarea>
+            </div>
+            <button type="submit" class="vp-btn vp-btn--primary" @disabled($availableForWithdrawal < 1)>
+                Submit withdrawal request
+            </button>
+        </form>
+    </div>
+</div>
+
+@if ($withdrawals->isNotEmpty())
+    <div class="vp-card" style="margin-top:1rem;">
+        <div class="vp-card-head">
+            <h3>My withdrawal requests</h3>
+        </div>
+        <div class="vp-table-wrap">
+            <table class="vp-table">
+                <thead>
+                    <tr>
+                        <th>Request</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Note</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($withdrawals as $withdrawal)
+                        <tr>
+                            <td><strong>{{ $withdrawal->request_code }}</strong></td>
+                            <td>₹{{ number_format($withdrawal->amount, 0) }}</td>
+                            <td>
+                                @if ($withdrawal->status === 'approved')
+                                    <span class="vp-badge vp-badge--done">{{ $withdrawal->statusLabel() }}</span>
+                                @elseif ($withdrawal->status === 'rejected')
+                                    <span class="vp-badge vp-badge--cancelled">{{ $withdrawal->statusLabel() }}</span>
+                                @else
+                                    <span class="vp-badge vp-badge--pending">{{ $withdrawal->statusLabel() }}</span>
+                                @endif
+                            </td>
+                            <td style="max-width:220px;font-size:.82rem;color:var(--vp-muted);">
+                                @if ($withdrawal->admin_note)
+                                    Admin: {{ $withdrawal->admin_note }}
+                                @elseif ($withdrawal->vendor_note)
+                                    {{ $withdrawal->vendor_note }}
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td>{{ $withdrawal->created_at?->format('M d, Y') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
 
 @push('filter_actions')
     <x-vendor.export-dropdown module="payments" :params="['search', 'from', 'to']" />

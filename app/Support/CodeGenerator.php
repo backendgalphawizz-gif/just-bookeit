@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Vendor;
 use App\Models\Driver;
 use App\Models\VendorPayout;
+use App\Models\VendorWithdrawalRequest;
 
 class CodeGenerator
 {
@@ -54,6 +55,15 @@ class CodeGenerator
             'PAY', 5,
             fn () => (int) (VendorPayout::query()->max('id') ?? 0),
             fn ($code) => VendorPayout::query()->where('payout_code', $code)->exists()
+        );
+    }
+
+    public static function withdrawalRequestCode(): string
+    {
+        return self::uniqueCode(
+            'WDR', 5,
+            fn () => (int) (VendorWithdrawalRequest::query()->max('id') ?? 0),
+            fn ($code) => VendorWithdrawalRequest::query()->where('request_code', $code)->exists()
         );
     }
 

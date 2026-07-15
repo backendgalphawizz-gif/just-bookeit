@@ -140,6 +140,11 @@ class Vendor extends Authenticatable
         return $this->hasMany(VendorWalletTransaction::class);
     }
 
+    public function withdrawalRequests(): HasMany
+    {
+        return $this->hasMany(VendorWithdrawalRequest::class);
+    }
+
     public function conversations(): HasMany
     {
         return $this->hasMany(Conversation::class);
