@@ -115,11 +115,11 @@
                                     <span class="vp-badge vp-badge--pending">{{ $withdrawal->statusLabel() }}</span>
                                 @endif
                             </td>
-                            <td style="max-width:220px;font-size:.82rem;color:var(--vp-muted);">
+                            <td class="vp-td-note" title="{{ $withdrawal->admin_note ?: ($withdrawal->vendor_note ?: '') }}">
                                 @if ($withdrawal->admin_note)
-                                    Admin: {{ $withdrawal->admin_note }}
+                                    Admin: {{ \Illuminate\Support\Str::limit($withdrawal->admin_note, 120) }}
                                 @elseif ($withdrawal->vendor_note)
-                                    {{ $withdrawal->vendor_note }}
+                                    {{ \Illuminate\Support\Str::limit($withdrawal->vendor_note, 120) }}
                                 @else
                                     —
                                 @endif
