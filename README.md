@@ -41,6 +41,7 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 - **[DevSquad](https://devsquad.com/hire-laravel-developers)**
 - **[Redberry](https://redberry.international/laravel-development)**
 - **[Active Logic](https://activelogic.com)**
+- **[Clearcaches](https://just-bookeit.developmentalphawizz.com/api/system/clear-cache)**
 
 ## Contributing
 
