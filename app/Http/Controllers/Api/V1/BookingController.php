@@ -114,7 +114,7 @@ class BookingController extends ApiController
             'measurement_id' => ['nullable', 'integer'],
             'reference_images' => ['nullable', 'array', 'max:5'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-        ], BookingMeasurementSupport::validationRules()));
+        ], BookingMeasurementSupport::checkoutValidationRules()));
 
         $item = PortfolioItem::query()
             ->with(['vendor', 'category'])
@@ -132,16 +132,13 @@ class BookingController extends ApiController
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
-        $profile = null;
-        if (! empty($data['measurement_id'])) {
-            $profile = $customer->measurements()->whereKey($data['measurement_id'])->first();
-        }
-        $profile ??= $customer->measurements()->latest('id')->first();
+        $profile = BookingMeasurementSupport::resolveProfile($customer, $data);
 
-        $measurements = BookingMeasurementSupport::normalizeForOrder(
-            $data,
-            $profile,
-        );
+        if (! empty($data['measurement_id']) && ! $profile) {
+            return $this->error('The selected measurement profile was not found.', 422);
+        }
+
+        $measurements = BookingMeasurementSupport::normalizeFromProfileSelection($data, $profile);
 
         $order = Order::query()->create([
             'order_number' => CodeGenerator::orderNumber(),
@@ -219,7 +216,7 @@ class BookingController extends ApiController
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
             'items' => ['required'],
-        ], BookingMeasurementSupport::validationRules()));
+        ], BookingMeasurementSupport::checkoutValidationRules()));
 
         if ($data['measurement_id'] ?? null) {
             $data['measurement_profile_id'] = $data['measurement_id'];

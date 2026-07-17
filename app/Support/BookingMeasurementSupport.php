@@ -25,6 +25,78 @@ class BookingMeasurementSupport
     }
 
     /**
+     * Checkout / place-order: only profile reference + optional type override.
+     * Full measurement values are loaded from the saved profile.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function checkoutValidationRules(): array
+    {
+        return [
+            'measurement_id' => ['nullable', 'integer'],
+            'measurement_profile_id' => ['nullable', 'integer'],
+            'measurement_type' => ['nullable', 'in:women,men,kid'],
+        ];
+    }
+
+    public static function resolveProfile(Customer $customer, array $data): ?CustomerMeasurement
+    {
+        $id = $data['measurement_profile_id'] ?? $data['measurement_id'] ?? null;
+
+        if ($id) {
+            $profile = $customer->measurements()->whereKey((int) $id)->first();
+            if ($profile) {
+                return $profile;
+            }
+        }
+
+        return $customer->measurements()->latest('id')->first();
+    }
+
+    /**
+     * Load measurements from a saved profile; request may only override measurement_type.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{
+     *     measure_height_cm: int|null,
+     *     measure_chest_cm: int|null,
+     *     measure_waist_cm: int|null,
+     *     measure_extra: array<string, string>|null,
+     *     measurement_type: string|null
+     * }
+     */
+    public static function normalizeFromProfileSelection(array $data, ?CustomerMeasurement $profile = null): array
+    {
+        if (! $profile) {
+            return [
+                'measure_height_cm' => null,
+                'measure_chest_cm' => null,
+                'measure_waist_cm' => null,
+                'measure_extra' => null,
+                'measurement_type' => $data['measurement_type'] ?? null,
+            ];
+        }
+
+        $input = self::profileToInput($profile);
+
+        if (! empty($data['measurement_type'])) {
+            $input['measurement_type'] = $data['measurement_type'];
+        }
+
+        $normalized = CustomerMeasurement::normalizeApiPayload($input);
+
+        return [
+            'measure_height_cm' => isset($normalized['height_cm']) ? (int) $normalized['height_cm'] : null,
+            'measure_chest_cm' => isset($normalized['chest_cm']) ? (int) $normalized['chest_cm'] : null,
+            'measure_waist_cm' => isset($normalized['waist_cm']) ? (int) $normalized['waist_cm'] : null,
+            'measure_extra' => $normalized['extra_measurements'] ?? null,
+            'measurement_type' => $data['measurement_type']
+                ?? $profile->measurement_type
+                ?? null,
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array{
      *     measure_height_cm: int|null,

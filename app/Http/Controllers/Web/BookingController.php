@@ -193,7 +193,8 @@ class BookingController extends WebController
             'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
             'measurement_profile_id' => ['nullable', 'integer'],
-        ], BookingMeasurementSupport::validationRules()));
+            'measurement_id' => ['nullable', 'integer'],
+        ], BookingMeasurementSupport::checkoutValidationRules()));
 
         if ($request->filled('portfolio_item_variant_id')) {
             $variant = $item->findVariant((int) $data['portfolio_item_variant_id']);
@@ -213,11 +214,10 @@ class BookingController extends WebController
             $data['pincode'] = $address->pincode;
         }
 
-        $measurement = null;
-        if ($request->filled('measurement_profile_id')) {
-            $measurement = $customer->measurements()->whereKey($request->integer('measurement_profile_id'))->first();
+        $measurement = BookingMeasurementSupport::resolveProfile($customer, $data);
+        if ($request->filled('measurement_profile_id') || $request->filled('measurement_id')) {
+            abort_unless($measurement, 422, 'The selected measurement profile was not found.');
         }
-        $measurement ??= $customer->measurements()->latest('id')->first();
         if ($measurement) {
             $data['_measurement_profile'] = $measurement;
         }

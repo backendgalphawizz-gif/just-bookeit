@@ -68,16 +68,13 @@ class CheckoutService
         }
 
         $profileId = $data['measurement_profile_id'] ?? $data['measurement_id'] ?? null;
-        $profile = null;
-        if ($profileId) {
-            $profile = $customer->measurements()->whereKey($profileId)->first();
-        }
-        $profile ??= $customer->measurements()->latest('id')->first();
+        $profile = BookingMeasurementSupport::resolveProfile($customer, $data);
 
-        $measurements = BookingMeasurementSupport::normalizeForOrder(
-            $data,
-            $profile,
-        );
+        if ($profileId && ! $profile) {
+            throw new InvalidArgumentException('The selected measurement profile was not found.');
+        }
+
+        $measurements = BookingMeasurementSupport::normalizeFromProfileSelection($data, $profile);
 
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
         $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null, $request);

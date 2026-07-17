@@ -50,7 +50,7 @@ class CheckoutController extends ApiController
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
-        ], array_diff_key(BookingMeasurementSupport::validationRules(), array_flip(['portfolio_item_id']))));
+        ], BookingMeasurementSupport::checkoutValidationRules()));
 
         try {
             return $this->success($this->checkout->preview($customer, $data));
@@ -78,7 +78,7 @@ class CheckoutController extends ApiController
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
-        ], BookingMeasurementSupport::validationRules()));
+        ], BookingMeasurementSupport::checkoutValidationRules()));
 
         if ($data['measurement_id'] ?? null) {
             $data['measurement_profile_id'] = $data['measurement_id'];

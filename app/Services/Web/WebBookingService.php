@@ -41,7 +41,7 @@ class WebBookingService
         $profile = $data['_measurement_profile'] ?? null;
         unset($data['_measurement_profile']);
 
-        $measurements = BookingMeasurementSupport::normalizeForOrder(
+        $measurements = BookingMeasurementSupport::normalizeFromProfileSelection(
             $data,
             $profile instanceof CustomerMeasurement ? $profile : null,
         );

@@ -113,10 +113,11 @@ class CheckoutController extends WebController
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
             'measurement_profile_id' => ['nullable', 'integer'],
+            'measurement_id' => ['nullable', 'integer'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
-        ], BookingMeasurementSupport::validationRules()));
+        ], BookingMeasurementSupport::checkoutValidationRules()));
 
         if ($request->filled('address_id')) {
             $address = $customer->addresses()->find($request->integer('address_id'));
@@ -125,6 +126,10 @@ class CheckoutController extends WebController
             $data['delivery_address'] = $address->fullAddress();
             $data['city'] = $address->city;
             $data['pincode'] = $address->pincode;
+        }
+
+        if ($data['measurement_id'] ?? null) {
+            $data['measurement_profile_id'] = $data['measurement_id'];
         }
 
         $data['vendor_shipments'] = $this->normalizeVendorShipments($data['vendor_shipments'] ?? []);
