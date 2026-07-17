@@ -111,7 +111,7 @@ class BookingController extends ApiController
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'shipment_required' => ['nullable', 'boolean'],
-            'measurement_id' => ['nullable', 'integer'],
+            'measurement_id' => ['nullable', 'string'],
             'reference_images' => ['nullable', 'array', 'max:5'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
