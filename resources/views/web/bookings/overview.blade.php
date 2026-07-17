@@ -58,9 +58,14 @@
                 </div>
             @endif
 
-            <div class="jbw-overview-card" >
-                <p class="jbw-overview-label">Rental Period</p>
-                <div class="jbw-measure-form-grids" style="grid-template-columns:1fr 1fr;">
+            <div class="jbw-overview-card">
+                <div class="jbw-overview-card-head">
+                    <p class="jbw-overview-label">Rental Period</p>
+                    <span class="jbw-overview-hint" id="booking-rental-hint">
+                        {{ ($pricing['rental_days'] ?? 1) }} {{ Str::plural('day', $pricing['rental_days'] ?? 1) }}
+                    </span>
+                </div>
+                <div class="jbw-booking-grid-2">
                     <div class="jbw-field">
                         <label class="jbw-label" for="rental_start_date">Start date</label>
                         <input type="date" id="rental_start_date" name="rental_start_date" class="jbw-input" value="{{ old('rental_start_date') }}" min="{{ now()->format('Y-m-d') }}" required>
@@ -94,7 +99,7 @@
                     <textarea id="delivery_address" name="delivery_address" class="jbw-textarea" rows="3" placeholder="House no, street, area, landmark" required>{{ old('delivery_address', $defaultAddress?->fullAddress()) }}</textarea>
                     @error('delivery_address')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 </div>
-                <div class="jbw-measure-form-grid" style="grid-template-columns:1fr 1fr;margin-top:1rem">
+                <div class="jbw-booking-grid-2" style="margin-top:1rem">
                     <div class="jbw-field">
                         <label class="jbw-label" for="city">City</label>
                         <input type="text" id="city" name="city" class="jbw-input" value="{{ old('city', $defaultAddress?->city ?? auth('customer')->user()->city) }}">
@@ -104,14 +109,33 @@
                         <input type="text" id="pincode" name="pincode" class="jbw-input" value="{{ old('pincode', $defaultAddress?->pincode) }}" maxlength="10">
                     </div>
                 </div>
-                <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.addresses') }}" style="color:var(--c-primary);font-weight:700">Manage saved addresses</a></p>
+                <p class="jbw-overview-foot-link"><a href="{{ route('web.profile.addresses') }}">Manage saved addresses</a></p>
             </div>
 
             @if ($measurement)
-                <div class="jbw-overview-card">
-                    <p class="jbw-overview-label">Measurements on file</p>
+                @php
+                    $fieldMap = \App\Support\WebMeasurementForm::labelToField();
+                    $filledCount = 0;
+                    foreach ($measurementSections as $fields) {
+                        foreach ($fields as $label) {
+                            $k = $fieldMap[$label] ?? null;
+                            if ($k && ($measurementValues[$k] ?? null) !== null && ($measurementValues[$k] ?? '') !== '') {
+                                $filledCount++;
+                            }
+                        }
+                    }
+                @endphp
+                <div class="jbw-overview-card jbw-measure-block" data-expanded="false">
+                    <div class="jbw-measure-head">
+                        <span class="jbw-overview-label" style="margin:0">Measurements on file</span>
+                        <span class="jbw-measure-head-summary">
+                            <span class="jbw-measure-pill" data-measure-type-label>{{ ucfirst($measurement->measurement_type ?? '—') }}</span>
+                            <span class="jbw-measure-count" data-measure-count>{{ $filledCount }} value{{ $filledCount === 1 ? '' : 's' }}</span>
+                        </span>
+                    </div>
+
                     @if (($measurementProfiles ?? collect())->count() > 1)
-                        <div class="jbw-field" style="margin-bottom:0.75rem">
+                        <div class="jbw-field jbw-measure-profile-select">
                             <label class="jbw-label" for="measurement_profile_id">Select measurement profile</label>
                             <select id="measurement_profile_id" name="measurement_profile_id" class="jbw-select" data-measure-profile-select>
                                 @foreach ($measurementProfiles as $profile)
@@ -121,26 +145,34 @@
                                 @endforeach
                             </select>
                         </div>
-                        <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:var(--c-muted)" data-measure-type-label>Type: {{ ucfirst($measurement->measurement_type ?? '—') }}</p>
-                    @elseif ($measurement->measurement_type)
-                        <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:var(--c-muted)">Type: {{ ucfirst($measurement->measurement_type) }}</p>
                     @endif
-                    @php $fieldMap = \App\Support\WebMeasurementForm::labelToField(); @endphp
-                    @foreach ($measurementSections as $title => $fields)
-                        <div style="margin-bottom:1rem">
-                            <p style="margin:0 0 0.5rem;font-size:0.75rem;font-weight:700;color:var(--c-muted);text-transform:uppercase;letter-spacing:0.04em">{{ $title }}</p>
-                            <div class="jbw-measures" style="grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))">
-                                @foreach ($fields as $label)
-                                    @php $key = $fieldMap[$label]; @endphp
-                                    <div class="jbw-measure">
-                                        <span class="jbw-measure-label">{{ $label }}</span>
-                                        <span class="jbw-measure-value" data-measure-key="{{ $key }}">{{ $measurementValues[$key] ?? '—' }}</span>
-                                    </div>
-                                @endforeach
+
+                    <div class="jbw-measure-body" data-measure-body>
+                        @foreach ($measurementSections as $title => $fields)
+                            <div class="jbw-measure-section">
+                                <p class="jbw-measure-section-title">{{ $title }}</p>
+                                <div class="jbw-measures" style="grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))">
+                                    @foreach ($fields as $label)
+                                        @php $key = $fieldMap[$label]; @endphp
+                                        <div class="jbw-measure">
+                                            <span class="jbw-measure-label">{{ $label }}</span>
+                                            <span class="jbw-measure-value" data-measure-key="{{ $key }}">{{ $measurementValues[$key] ?? '—' }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
-                    <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create', ['redirect' => request()->fullUrl()]) }}" data-save-draft style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
+                        @endforeach
+                    </div>
+
+                    <div class="jbw-measure-actions-row">
+                        <button type="button" class="jbw-measure-toggle-btn" data-measure-toggle aria-expanded="false">
+                            <span data-measure-toggle-label>View all measurement details</span>
+                            <span class="jbw-measure-chevron" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </span>
+                        </button>
+                        <a href="{{ route('web.profile.measurements.create', ['redirect' => request()->fullUrl()]) }}" data-save-draft class="jbw-measure-update-link">Update measurements</a>
+                    </div>
                 </div>
             @else
                 <div class="jbw-overview-card">
@@ -214,6 +246,8 @@
 
                 const days = pricing.rental_days || 1;
                 document.getElementById('booking-rental-label').textContent = `Rental (${days} ${dayLabel(days)})`;
+                const hint = document.getElementById('booking-rental-hint');
+                if (hint) hint.textContent = `${days} ${dayLabel(days)}`;
                 document.getElementById('booking-line-subtotal').textContent = formatInr(pricing.subtotal);
                 document.getElementById('booking-line-delivery').textContent = formatInr(pricing.shipping_fee);
                 document.getElementById('booking-line-tax').textContent = formatInr(pricing.tax_amount);
@@ -318,8 +352,37 @@
         if (typeLabel) typeLabel.textContent = 'Type: ' + profile.type;
     }
 
+    function refreshCount() {
+        var count = 0;
+        document.querySelectorAll('[data-measure-key]').forEach(function (span) {
+            var v = (span.textContent || '').trim();
+            if (v && v !== '—') count++;
+        });
+        var el = document.querySelector('[data-measure-count]');
+        if (el) el.textContent = count + ' value' + (count === 1 ? '' : 's');
+    }
+
     select.addEventListener('change', function () {
         applyProfile(select.value);
+        refreshCount();
+    });
+})();
+
+(function () {
+    var block = document.querySelector('.jbw-measure-block');
+    if (!block) return;
+    var toggle = block.querySelector('[data-measure-toggle]');
+    if (!toggle) return;
+    var labelEl = toggle.querySelector('[data-measure-toggle-label]');
+
+    toggle.addEventListener('click', function () {
+        var expanded = block.getAttribute('data-expanded') === 'true';
+        var next = !expanded;
+        block.setAttribute('data-expanded', next ? 'true' : 'false');
+        toggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+        if (labelEl) {
+            labelEl.textContent = next ? 'Hide measurement details' : 'View all measurement details';
+        }
     });
 })();
 </script>

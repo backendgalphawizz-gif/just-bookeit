@@ -103,16 +103,22 @@
 
             <section class="jbw-overview-card">
                 <p class="jbw-overview-label">Delivery fee per vendor</p>
+                <p class="jbw-overview-help">Toggle delivery for each designer. The delivery fee is only added when enabled.</p>
+                @php
+                    $baseDeliveryFee = \App\Services\Booking\BookingPricingService::shippingFee(true);
+                @endphp
                 @foreach ($preview['vendors'] ?? [] as $index => $vendorGroup)
-                    <div class="checkout-vendor-row" data-vendor-id="{{ $vendorGroup['vendor_id'] }}">
+                    @php $enabled = (bool) old("vendor_shipments.$index.shipment_required", $vendorGroup['shipment_required'] ?? true); @endphp
+                    <div class="checkout-vendor-row" data-vendor-id="{{ $vendorGroup['vendor_id'] }}" data-delivery-fee="{{ (float) $baseDeliveryFee }}">
                         <div>
                             <input type="hidden" name="vendor_shipments[{{ $index }}][vendor_id]" value="{{ $vendorGroup['vendor_id'] }}">
                             <strong>{{ $vendorGroup['vendor_name'] }}</strong>
-                            <p class="checkout-vendor-delivery-hint">₹{{ number_format($vendorGroup['delivery_fee'], 0) }} delivery when enabled</p>
+                            <p class="checkout-vendor-delivery-hint">₹{{ number_format($baseDeliveryFee, 0) }} delivery when enabled</p>
                         </div>
-                        <label class="checkout-shipment-label">
-                            <input type="checkbox" class="checkout-shipment-toggle" name="vendor_shipments[{{ $index }}][shipment_required]" value="1" @checked(old("vendor_shipments.$index.shipment_required", $vendorGroup['shipment_required'] ?? true))>
-                            Delivery
+                        <label class="jbw-toggle-switch">
+                            <input type="checkbox" class="checkout-shipment-toggle" name="vendor_shipments[{{ $index }}][shipment_required]" value="1" @checked($enabled)>
+                            <span class="jbw-toggle-track"><span class="jbw-toggle-thumb"></span></span>
+                            <span class="jbw-toggle-label" data-toggle-on="Delivery on" data-toggle-off="No delivery">{{ $enabled ? 'Delivery on' : 'No delivery' }}</span>
                         </label>
                     </div>
                 @endforeach
@@ -194,16 +200,42 @@
 
     const formatInr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
 
+    const parseInr = (str) => Number(String(str || '').replace(/[^0-9.-]/g, '')) || 0;
+
     const collectShipments = () => Array.from(form.querySelectorAll('.checkout-vendor-row')).map((row) => {
         const vendorId = row.dataset.vendorId;
         const checked = row.querySelector('.checkout-shipment-toggle')?.checked;
         return { vendor_id: vendorId, shipment_required: checked ? 1 : 0 };
     });
 
+    const applyLocalShipmentState = () => {
+        let grand = 0;
+        form.querySelectorAll('.checkout-vendor-row').forEach((row) => {
+            const checked = row.querySelector('.checkout-shipment-toggle')?.checked;
+            const fee = Number(row.dataset.deliveryFee || 0);
+            const block = document.querySelector(`.checkout-summary-vendor[data-vendor-id="${row.dataset.vendorId}"]`);
+            const label = row.querySelector('.jbw-toggle-label');
+            if (label) {
+                label.textContent = checked ? label.dataset.toggleOn : label.dataset.toggleOff;
+            }
+            if (!block) return;
+            const deliveryEl = block.querySelector('.js-line-delivery');
+            const subtotal = parseInr(block.querySelector('.js-line-subtotal')?.textContent);
+            const tax = parseInr(block.querySelector('.js-line-tax')?.textContent);
+            const delivery = checked ? fee : 0;
+            if (deliveryEl) deliveryEl.textContent = formatInr(delivery);
+            grand += subtotal + tax + delivery;
+        });
+        const total = document.getElementById('checkout-grand-total');
+        if (total) total.textContent = formatInr(grand);
+    };
+
     const updateSummary = (data) => {
         const vendors = data.vendors || [];
         vendors.forEach((group) => {
             const block = document.querySelector(`.checkout-summary-vendor[data-vendor-id="${group.vendor_id}"]`);
+            const row = document.querySelector(`.checkout-vendor-row[data-vendor-id="${group.vendor_id}"]`);
+            if (row && group.delivery_fee) row.dataset.deliveryFee = group.delivery_fee;
             if (!block) return;
             block.querySelector('.js-line-subtotal').textContent = formatInr(group.subtotal);
             block.querySelector('.js-line-delivery').textContent = formatInr(group.delivery_fee);
@@ -261,7 +293,12 @@
 
     startInput?.addEventListener('change', () => { syncEndMin(); refreshPreview(); });
     endInput?.addEventListener('change', refreshPreview);
-    form.querySelectorAll('.checkout-shipment-toggle').forEach((el) => el.addEventListener('change', refreshPreview));
+    form.querySelectorAll('.checkout-shipment-toggle').forEach((el) => el.addEventListener('change', () => {
+        applyLocalShipmentState();
+        refreshPreview();
+    }));
+
+    applyLocalShipmentState();
 
     // After draft restore (returning from measurements), re-sync date mins + totals.
     form.addEventListener('jbw:draft-restored', () => {

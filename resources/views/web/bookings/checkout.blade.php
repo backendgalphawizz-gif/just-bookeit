@@ -22,34 +22,44 @@
     };
 @endphp
 
-<div class="jbw-card jbw-order-detail">
-    <header class="jbw-order-detail-header">
-        <a href="{{ route('web.bookings.index') }}" class="jbw-breadcrumb-link jbw-order-detail-back">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+<div class="jbw-order-detail">
+    <div class="jbw-order-hero jbw-order-hero--{{ $paymentClass }}">
+        <a href="{{ route('web.bookings.index') }}" class="jbw-order-hero-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             Back to bookings
         </a>
-        <div class="jbw-order-detail-head-row">
-            <div>
-                <h1 class="jbw-order-detail-id">Order #{{ $checkoutOrder->order_number }}</h1>
-                <p class="jbw-order-detail-meta">
-                    Placed {{ $checkoutOrder->created_at->format('M d, Y · h:i A') }}
-                    · {{ $itemCount }} item{{ $itemCount === 1 ? '' : 's' }}
-                    · {{ $checkoutOrder->subOrders->count() }} vendor{{ $checkoutOrder->subOrders->count() === 1 ? '' : 's' }}
+        <div class="jbw-order-hero-row">
+            <div class="jbw-order-hero-main">
+                <span class="jbw-order-hero-tag">Order</span>
+                <h1 class="jbw-order-hero-id">#{{ $checkoutOrder->order_number }}</h1>
+                <p class="jbw-order-hero-meta">
+                    <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Placed {{ $checkoutOrder->created_at->format('M d, Y') }} · {{ $checkoutOrder->created_at->format('h:i A') }}</span>
+                    <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg> {{ $itemCount }} item{{ $itemCount === 1 ? '' : 's' }} from {{ $checkoutOrder->subOrders->count() }} designer{{ $checkoutOrder->subOrders->count() === 1 ? '' : 's' }}</span>
                 </p>
             </div>
-            <div class="jbw-order-detail-badges">
-                <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $checkoutOrder->statusLabel() }}</span>
-                <span class="jbw-booking-pay-badge jbw-booking-pay-badge--{{ $paymentClass }}">
+            <div class="jbw-order-hero-badges">
+                <span class="jbw-order-hero-badge jbw-order-hero-badge--status jbw-order-hero-badge--{{ $statusClass }}">{{ $checkoutOrder->statusLabel() }}</span>
+                <span class="jbw-order-hero-badge jbw-order-hero-badge--pay jbw-order-hero-badge--pay-{{ $paymentClass }}">
+                    @if ($paymentClass === 'paid')
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    @elseif ($paymentClass === 'pending')
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    @else
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    @endif
                     Payment {{ ucfirst(str_replace('_', ' ', $checkoutOrder->payment_status)) }}
                 </span>
             </div>
         </div>
-    </header>
+    </div>
 
     @if ($checkoutOrder->payment_status === 'pending')
         <div class="jbw-order-pay-banner">
-            <p>Complete payment to confirm this order.</p>
-            <a href="{{ route('web.checkout.payment', $checkoutOrder) }}" class="jbw-btn jbw-btn--primary jbw-btn--sm">Pay now</a>
+            <div class="jbw-order-pay-banner-msg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <p><strong>Payment pending.</strong> Complete payment to confirm this order.</p>
+            </div>
+            <a href="{{ route('web.checkout.payment', $checkoutOrder) }}" class="jbw-btn jbw-btn--primary jbw-btn--sm">Pay ₹{{ number_format($checkoutOrder->grand_total, 0) }} now</a>
         </div>
     @endif
 
@@ -58,17 +68,27 @@
             <section class="jbw-order-info-grid">
                 @if ($checkoutOrder->rental_start_date && $checkoutOrder->rental_end_date)
                     <div class="jbw-order-info-tile">
-                        <span class="jbw-order-info-label">Rental period</span>
-                        <strong>{{ $checkoutOrder->rental_start_date->format('d M') }} – {{ $checkoutOrder->rental_end_date->format('d M, Y') }}</strong>
-                        <span class="jbw-order-info-sub">{{ $checkoutOrder->rental_start_date->diffInDays($checkoutOrder->rental_end_date) + 1 }} day{{ ($checkoutOrder->rental_start_date->diffInDays($checkoutOrder->rental_end_date) + 1) === 1 ? '' : 's' }}</span>
+                        <span class="jbw-order-info-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        </span>
+                        <div class="jbw-order-info-body">
+                            <span class="jbw-order-info-label">Rental period</span>
+                            <strong>{{ $checkoutOrder->rental_start_date->format('d M') }} – {{ $checkoutOrder->rental_end_date->format('d M, Y') }}</strong>
+                            <span class="jbw-order-info-sub">{{ $checkoutOrder->rental_start_date->diffInDays($checkoutOrder->rental_end_date) + 1 }} day{{ ($checkoutOrder->rental_start_date->diffInDays($checkoutOrder->rental_end_date) + 1) === 1 ? '' : 's' }}</span>
+                        </div>
                     </div>
                 @endif
                 <div class="jbw-order-info-tile jbw-order-info-tile--wide">
-                    <span class="jbw-order-info-label">Delivery address</span>
-                    <strong>{{ $checkoutOrder->delivery_address }}</strong>
-                    @if ($checkoutOrder->city)
-                        <span class="jbw-order-info-sub">{{ $checkoutOrder->city }}@if($checkoutOrder->pincode) · {{ $checkoutOrder->pincode }}@endif</span>
-                    @endif
+                    <span class="jbw-order-info-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    </span>
+                    <div class="jbw-order-info-body">
+                        <span class="jbw-order-info-label">Delivery address</span>
+                        <strong>{{ $checkoutOrder->delivery_address }}</strong>
+                        @if ($checkoutOrder->city)
+                            <span class="jbw-order-info-sub">{{ $checkoutOrder->city }}@if($checkoutOrder->pincode) · {{ $checkoutOrder->pincode }}@endif</span>
+                        @endif
+                    </div>
                 </div>
             </section>
 
@@ -160,7 +180,7 @@
         </div>
 
         <aside class="jbw-order-detail-aside">
-            <div class="jbw-overview-card jbw-overview-card--accent">
+            <div class="jbw-overview-card jbw-overview-card--accent jbw-order-summary-card">
                 <p class="jbw-overview-label">Payment summary</p>
                 <div class="jbw-payment-lines">
                     <div><span>Subtotal</span><span>₹{{ number_format($checkoutOrder->amount, 0) }}</span></div>
@@ -168,11 +188,17 @@
                     <div><span>GST</span><span>₹{{ number_format($checkoutOrder->tax_amount, 0) }}</span></div>
                 </div>
                 <div class="jbw-payment-total">
-                    <span>Total paid</span>
+                    <span>{{ $checkoutOrder->payment_status === 'success' ? 'Total paid' : 'Total payable' }}</span>
                     <strong>₹{{ number_format($checkoutOrder->grand_total, 0) }}</strong>
                 </div>
                 @if ((float) $checkoutOrder->amount_refunded > 0)
                     <p class="jbw-order-refund-note">Refunded: ₹{{ number_format($checkoutOrder->amount_refunded, 0) }}</p>
+                @endif
+                @if ($checkoutOrder->payment_status === 'success')
+                    <div class="jbw-order-paid-check" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Payment received</span>
+                    </div>
                 @endif
             </div>
         </aside>

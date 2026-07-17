@@ -35,6 +35,11 @@ body {
     padding-bottom: 0;
 }
 
+/* overflow-x: clip breaks sticky and cuts the profile sidebar */
+.jbw-main--profile {
+    overflow: visible;
+}
+
 /* Header */
 .jbw-header {
     background: rgb(255 255 255 / 0.96);
@@ -647,6 +652,68 @@ body {
     font-weight: 600;
 }
 
+/* Toggle switch (used for per-vendor delivery selection) */
+.jbw-toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+.jbw-toggle-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+.jbw-toggle-track {
+    position: relative;
+    display: inline-block;
+    width: 2.5rem;
+    height: 1.375rem;
+    background: #d4d4d0;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+.jbw-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.125rem;
+    height: 1.125rem;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+    transition: transform 0.22s ease;
+}
+.jbw-toggle-switch input:checked + .jbw-toggle-track {
+    background: var(--c-primary);
+}
+.jbw-toggle-switch input:checked + .jbw-toggle-track .jbw-toggle-thumb {
+    transform: translateX(1.125rem);
+}
+.jbw-toggle-switch input:focus-visible + .jbw-toggle-track {
+    outline: 2px solid color-mix(in srgb, var(--c-primary) 40%, transparent);
+    outline-offset: 2px;
+}
+.jbw-toggle-label {
+    color: var(--c-muted);
+    letter-spacing: 0.01em;
+}
+.jbw-toggle-switch input:checked ~ .jbw-toggle-label {
+    color: var(--c-primary);
+}
+
+.jbw-overview-help {
+    margin: -0.5rem 0 1rem;
+    font-size: 0.8125rem;
+    color: var(--c-muted);
+}
+
 .checkout-summary-vendor {
     margin-bottom: 0.85rem;
     padding-bottom: 0.85rem;
@@ -730,131 +797,329 @@ body {
 
 .jbw-payment-sidebar { position: sticky; top: 5.5rem; }
 
-/* Order detail page */
-.jbw-order-detail { padding: 0; overflow: hidden; }
-
-.jbw-order-detail-header {
-    padding: 1.25rem 1.5rem 1rem;
-    border-bottom: 1px solid var(--c-border);
-    background: #fff;
+/* ═════════════════════════════════════════════════════════════════
+   ORDER DETAIL PAGE — flat layout, no nested cards
+   ═════════════════════════════════════════════════════════════════ */
+.jbw-order-detail {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border: 0;
 }
 
-.jbw-order-detail-back {
+/* Hero band at the top */
+.jbw-order-hero {
+    position: relative;
+    padding: 1.5rem 1.75rem 1.5rem;
+    border-radius: 20px;
+    color: #fff;
+    background: linear-gradient(135deg, #1a2f38 0%, #243b47 55%, #2a4451 100%);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 20px 40px rgb(26 47 56 / 0.18);
+}
+.jbw-order-hero::before {
+    content: '';
+    position: absolute;
+    inset: auto -20% -60% auto;
+    width: 22rem;
+    height: 22rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,93,58,0.35), transparent 65%);
+    pointer-events: none;
+}
+.jbw-order-hero--paid::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+.jbw-order-hero--pending::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, #f59e0b, var(--c-primary));
+}
+
+.jbw-order-hero-back {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    margin-bottom: 0.85rem;
-    font-size: 0.875rem;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem 0.4rem 0.65rem;
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    transition: background 0.2s ease;
+    backdrop-filter: blur(6px);
 }
+.jbw-order-hero-back:hover { background: rgb(255 255 255 / 0.22); }
 
-.jbw-order-detail-head-row {
+.jbw-order-hero-row {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 1.25rem;
+    margin-top: 1.15rem;
+}
+.jbw-order-hero-main { min-width: 0; }
+
+.jbw-order-hero-tag {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.75);
 }
 
-.jbw-order-detail-id {
-    margin: 0;
+.jbw-order-hero-id {
+    margin: 0.3rem 0 0;
     font-family: var(--font-serif);
-    font-size: 1.375rem;
+    font-size: clamp(1.75rem, 3.4vw, 2.25rem);
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: #fff;
 }
 
-.jbw-order-detail-meta {
-    margin: 0.35rem 0 0;
+.jbw-order-hero-meta {
+    margin: 0.85rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
     font-size: 0.8125rem;
-    color: var(--c-muted);
+    color: rgb(255 255 255 / 0.75);
 }
+.jbw-order-hero-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    line-height: 1.35;
+}
+.jbw-order-hero-meta svg { opacity: 0.75; flex-shrink: 0; }
 
-.jbw-order-detail-badges {
+.jbw-order-hero-badges {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
 }
+.jbw-order-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+    backdrop-filter: blur(6px);
+}
+.jbw-order-hero-badge--new { background: #dbeafe; color: #1e3a8a; }
+.jbw-order-hero-badge--in_progress { background: #fed7aa; color: #9a3412; }
+.jbw-order-hero-badge--delivered { background: #d1fae5; color: #065f46; }
+.jbw-order-hero-badge--cancelled { background: #fee2e2; color: #991b1b; }
+.jbw-order-hero-badge--default { background: rgb(255 255 255 / 0.18); color: #fff; }
+.jbw-order-hero-badge--pay-paid { background: #10b981; color: #fff; }
+.jbw-order-hero-badge--pay-pending { background: #f59e0b; color: #fff; }
+.jbw-order-hero-badge--pay-failed { background: #ef4444; color: #fff; }
 
+/* Pay-now banner (only when pending) */
 .jbw-order-pay-banner {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    margin: 1rem 1.5rem 0;
-    padding: 0.85rem 1rem;
-    border-radius: 12px;
-    border: 1px solid rgb(232 93 58 / 0.25);
-    background: var(--c-primary-soft, rgba(232,93,58,0.06));
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    border: 1px solid rgb(232 93 58 / 0.28);
+    background: linear-gradient(180deg, #fff6f1 0%, #fffaf7 100%);
+    box-shadow: 0 8px 24px rgb(232 93 58 / 0.1);
 }
+.jbw-order-pay-banner-msg {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--c-primary-dk, #c2410c);
+}
+.jbw-order-pay-banner p { margin: 0; font-size: 0.875rem; color: inherit; }
+.jbw-order-pay-banner strong { font-weight: 800; }
 
-.jbw-order-pay-banner p { margin: 0; font-size: 0.875rem; font-weight: 600; }
-
+/* Main + aside layout */
 .jbw-order-detail-layout {
     display: grid;
-    gap: 1.25rem;
-    padding: 1.25rem 1.5rem 1.5rem;
+    gap: 1.5rem;
     align-items: start;
 }
-
 @media (min-width: 960px) {
     .jbw-order-detail-layout {
-        grid-template-columns: 1fr 300px;
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+}
+.jbw-order-detail-main { min-width: 0; display: grid; gap: 1.5rem; }
+.jbw-order-detail-aside { display: grid; gap: 1rem; align-self: start; }
+@media (min-width: 960px) {
+    .jbw-order-detail-aside {
+        position: sticky;
+        top: 5.75rem;
     }
 }
 
-.jbw-order-detail-aside { position: sticky; top: 1rem; }
-
+/* Info tiles */
 .jbw-order-info-grid {
     display: grid;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    gap: 0.85rem;
+    margin: 0;
 }
-
 @media (min-width: 640px) {
-    .jbw-order-info-grid {
-        grid-template-columns: minmax(0, 220px) 1fr;
-    }
+    .jbw-order-info-grid { grid-template-columns: minmax(0, 260px) 1fr; }
 }
 
 .jbw-order-info-tile {
-    padding: 1rem 1.1rem;
+    padding: 1.1rem 1.2rem;
     border: 1px solid var(--c-border);
-    border-radius: 14px;
+    border-radius: 16px;
     background: #fff;
     display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    align-items: flex-start;
+    gap: 0.85rem;
+    min-width: 0;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-
-.jbw-order-info-tile--wide { min-width: 0; }
-
+.jbw-order-info-tile:hover {
+    border-color: color-mix(in srgb, var(--c-primary) 30%, var(--c-border));
+    box-shadow: 0 8px 24px rgb(232 93 58 / 0.08);
+    transform: translateY(-1px);
+}
+.jbw-order-info-tile--wide { min-width: 0; flex: 1; }
+.jbw-order-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 12px;
+    background: var(--c-primary-soft, #fef3ee);
+    color: var(--c-primary);
+    flex-shrink: 0;
+}
+.jbw-order-info-body { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; flex: 1; }
 .jbw-order-info-label {
     font-size: 0.6875rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: var(--c-muted);
 }
-
 .jbw-order-info-tile strong {
     font-size: 0.9375rem;
     line-height: 1.45;
     font-weight: 700;
+    color: var(--c-text);
+    overflow-wrap: anywhere;
 }
+.jbw-order-info-sub { font-size: 0.8125rem; color: var(--c-muted); }
 
-.jbw-order-info-sub {
-    font-size: 0.8125rem;
-    color: var(--c-muted);
-}
-
+/* Section titles with line divider */
 .jbw-order-section-title {
     margin: 0 0 0.85rem;
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     color: var(--c-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+.jbw-order-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--c-border);
+}
+
+/* Notes / refund sections */
+.jbw-order-notes {
+    padding: 1.1rem 1.2rem;
+    border: 1px solid var(--c-border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+}
+
+/* Sidebar summary card */
+.jbw-order-summary-card {
+    padding: 1.4rem 1.5rem;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid var(--c-border);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.03), 0 12px 32px rgb(15 23 42 / 0.06);
+}
+.jbw-order-summary-card .jbw-overview-label {
+    margin: 0 0 1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--c-border);
+}
+.jbw-order-summary-card .jbw-payment-lines {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px dashed var(--c-border);
+}
+.jbw-order-summary-card .jbw-payment-lines > div {
+    font-size: 0.875rem;
+    padding: 0.2rem 0;
+}
+.jbw-order-summary-card .jbw-payment-total { margin: 0; }
+.jbw-order-summary-card .jbw-payment-total strong {
+    font-size: 1.5rem;
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+}
+.jbw-order-paid-check {
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    background: #d1fae5;
+    color: #065f46;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+.jbw-order-refund-note {
+    margin-top: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .jbw-order-hero { padding: 1.25rem 1.15rem; border-radius: 16px; }
+    .jbw-order-hero-row { flex-direction: column; align-items: flex-start; gap: 0.85rem; margin-top: 0.9rem; }
+    .jbw-order-pay-banner { padding: 0.85rem 1rem; }
 }
 
 .jbw-order-vendor-card {
@@ -863,9 +1128,12 @@ body {
     background: #fff;
     overflow: hidden;
     margin-bottom: 1rem;
-    box-shadow: var(--shadow-card, 0 1px 3px rgb(0 0 0 / 0.04));
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.03), 0 8px 24px rgb(15 23 42 / 0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-
+.jbw-order-vendor-card:hover {
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 14px 32px rgb(15 23 42 / 0.06);
+}
 .jbw-order-vendor-card:last-child { margin-bottom: 0; }
 
 .jbw-order-vendor-card-head {
@@ -873,9 +1141,9 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 1rem 1.15rem;
+    padding: 1.05rem 1.25rem;
     border-bottom: 1px solid var(--c-border);
-    background: linear-gradient(180deg, #faf9f7 0%, #fff 100%);
+    background: linear-gradient(180deg, #fbfaf7 0%, #fff 100%);
 }
 
 .jbw-order-vendor-identity {
