@@ -12,8 +12,10 @@ use App\Services\Booking\BookingPricingService;
 use App\Services\Customer\CartService;
 use App\Services\Vendor\VendorWalletService;
 use App\Support\BookingMeasurementSupport;
+use App\Support\CheckoutItemPayloadSupport;
 use App\Support\CodeGenerator;
 use App\Support\OrderDispatchSupport;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -34,13 +36,9 @@ class CheckoutService
             throw new InvalidArgumentException('Your cart is empty.');
         }
 
-        $rentalDays = BookingPricingService::rentalDays(
-            $data['rental_start_date'] ?? null,
-            $data['rental_end_date'] ?? null,
-        );
-
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
-        $groups = $this->buildVendorGroups($cartItems, $rentalDays, $vendorShipments);
+        $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null);
+        $groups = $this->buildVendorGroups($cartItems, $data, $vendorShipments, $lineOverrides);
 
         $amount = round($groups->sum('subtotal'), 2);
         $deliveryFee = round($groups->sum('delivery_fee'), 2);
@@ -61,7 +59,7 @@ class CheckoutService
         ];
     }
 
-    public function createFromCart(Customer $customer, array $data): CheckoutOrder
+    public function createFromCart(Customer $customer, array $data, ?Request $request = null): CheckoutOrder
     {
         $cartItems = $this->cart->itemsFor($customer);
 
@@ -69,18 +67,21 @@ class CheckoutService
             throw new InvalidArgumentException('Your cart is empty.');
         }
 
+        $profileId = $data['measurement_profile_id'] ?? $data['measurement_id'] ?? null;
+        $profile = null;
+        if ($profileId) {
+            $profile = $customer->measurements()->whereKey($profileId)->first();
+        }
+        $profile ??= $customer->measurements()->latest('id')->first();
+
         $measurements = BookingMeasurementSupport::normalizeForOrder(
             $data,
-            $customer->measurements()->latest('id')->first(),
-        );
-
-        $rentalDays = BookingPricingService::rentalDays(
-            $data['rental_start_date'] ?? null,
-            $data['rental_end_date'] ?? null,
+            $profile,
         );
 
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
-        $groups = $this->buildVendorGroups($cartItems, $rentalDays, $vendorShipments);
+        $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null, $request);
+        $groups = $this->buildVendorGroups($cartItems, $data, $vendorShipments, $lineOverrides);
 
         return DB::transaction(function () use ($customer, $data, $cartItems, $measurements, $groups) {
             $parentNumber = CodeGenerator::orderNumber();
@@ -113,6 +114,8 @@ class CheckoutService
             foreach ($groups as $group) {
                 $subNumber = CodeGenerator::subOrderNumber($parentNumber, $sequence);
                 $firstItem = $group['items'][0]['portfolio_item'];
+                $lineStarts = $group['items']->pluck('rental_start_date')->filter()->values();
+                $lineEnds = $group['items']->pluck('rental_end_date')->filter()->values();
 
                 $subOrder = Order::query()->create([
                     'checkout_order_id' => $checkout->id,
@@ -130,8 +133,8 @@ class CheckoutService
                     'item_description' => $firstItem->description,
                     'item_image_path' => $firstItem->image_url,
                     'quantity' => $group['items']->sum('quantity'),
-                    'rental_start_date' => $data['rental_start_date'] ?? null,
-                    'rental_end_date' => $data['rental_end_date'] ?? null,
+                    'rental_start_date' => $lineStarts->min() ?? ($data['rental_start_date'] ?? null),
+                    'rental_end_date' => $lineEnds->max() ?? ($data['rental_end_date'] ?? null),
                     'delivery_address' => $data['delivery_address'],
                     'billing_address' => $data['billing_address'] ?? $data['delivery_address'],
                     'city' => $data['city'] ?? $customer->city,
@@ -152,6 +155,7 @@ class CheckoutService
                     /** @var PortfolioItem $portfolioItem */
                     $portfolioItem = $line['portfolio_item'];
                     $variant = $line['variant'] ?? null;
+                    $override = $line['override'] ?? [];
 
                     OrderItem::query()->create([
                         'order_id' => $subOrder->id,
@@ -161,14 +165,14 @@ class CheckoutService
                         'unit_price' => $line['unit_price'],
                         'line_amount' => $line['line_amount'],
                         'status' => OrderItem::STATUS_PENDING,
-                        'item_snapshot' => [
+                        'item_snapshot' => array_merge([
                             'title' => $portfolioItem->title,
                             'image_url' => $variant?->image_path ?: $portfolioItem->image_url,
                             'category' => $portfolioItem->category?->name,
-                            'size' => $variant?->size,
-                            'color' => $variant?->color,
-                            'variant_id' => $variant?->id,
-                        ],
+                            'size' => $variant?->size ?? ($override['size'] ?? null),
+                            'color' => $variant?->color ?? ($override['color'] ?? null),
+                            'variant_id' => $variant?->id ?? ($override['portfolio_item_variant_id'] ?? null),
+                        ], CheckoutItemPayloadSupport::itemSnapshotExtras($override, $data)),
                     ]);
                 }
 
@@ -243,15 +247,21 @@ class CheckoutService
     }
 
     /**
+     * @param  array<string, mixed>  $checkoutData
      * @param  array<int, bool>  $vendorShipments
+     * @param  array<string, array<string, mixed>>  $lineOverrides
      */
-    protected function buildVendorGroups(Collection $cartItems, int $rentalDays, array $vendorShipments): Collection
-    {
+    protected function buildVendorGroups(
+        Collection $cartItems,
+        array $checkoutData,
+        array $vendorShipments,
+        array $lineOverrides = []
+    ): Collection {
         return $cartItems
             ->groupBy('vendor_id')
-            ->map(function (Collection $items, $vendorId) use ($rentalDays, $vendorShipments) {
+            ->map(function (Collection $items, $vendorId) use ($checkoutData, $vendorShipments, $lineOverrides) {
                 $vendor = $items->first()?->vendor;
-                $lines = $items->map(function (CartItem $cartItem) use ($rentalDays) {
+                $lines = $items->map(function (CartItem $cartItem) use ($checkoutData, $lineOverrides) {
                     $portfolioItem = $cartItem->portfolioItem;
                     $cartItem->loadMissing('variant');
 
@@ -259,8 +269,11 @@ class CheckoutService
                         throw new InvalidArgumentException('A product in your cart is no longer available.');
                     }
 
+                    $override = CheckoutItemPayloadSupport::resolveOverride($lineOverrides, $cartItem);
+                    $rental = CheckoutItemPayloadSupport::rentalWindow($override, $checkoutData);
+
                     $pricing = BookingPricingService::forPortfolioItem($portfolioItem, [
-                        'rental_days' => $rentalDays,
+                        'rental_days' => $rental['days'],
                         'shipment_required' => false,
                         'daily_rate' => $portfolioItem->dailyRateFor($cartItem->variant),
                     ]);
@@ -274,6 +287,9 @@ class CheckoutService
                         'quantity' => $cartItem->quantity,
                         'unit_price' => (float) $pricing['daily_rate'],
                         'line_amount' => $lineSubtotal,
+                        'override' => $override,
+                        'rental_start_date' => $rental['start'],
+                        'rental_end_date' => $rental['end'],
                     ];
                 });
 

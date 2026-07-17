@@ -18,7 +18,7 @@
         <p class="jbw-page-subtitle">One payment · {{ $summary['vendor_count'] }} vendor{{ $summary['vendor_count'] === 1 ? '' : 's' }} · {{ $summary['items_count'] }} item{{ $summary['items_count'] === 1 ? '' : 's' }}</p>
     </div>
 
-    <form method="POST" action="{{ route('web.checkout.store') }}" class="jbw-booking-layout" id="checkout-form" data-preview-url="{{ route('web.checkout.preview') }}">
+    <form method="POST" action="{{ route('web.checkout.store') }}" class="jbw-booking-layout" id="checkout-form" data-preview-url="{{ route('web.checkout.preview') }}" data-draft-key="checkout-draft" @if (old()) data-has-old="1" @endif>
         @csrf
 
         <div class="jbw-booking-main">
@@ -121,14 +121,29 @@
             @if ($measurement)
                 <section class="jbw-overview-card">
                     <p class="jbw-overview-label">Measurements</p>
-                    <p style="margin:0;font-size:0.875rem;color:var(--c-muted)">Using your saved profile measurements for this checkout.</p>
-                    <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create') }}" style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
+                    @if (($measurementProfiles ?? collect())->count() > 1)
+                        <div class="jbw-field" style="margin-bottom:0.5rem">
+                            <label class="jbw-label" for="measurement_profile_id">Select measurement profile</label>
+                            <select id="measurement_profile_id" name="measurement_profile_id" class="jbw-select">
+                                @foreach ($measurementProfiles as $profile)
+                                    <option value="{{ $profile->id }}" @selected($measurement->id === $profile->id)>
+                                        {{ $profile->name ?: 'Profile #'.$profile->id }}@if ($profile->measurement_type) — {{ ucfirst($profile->measurement_type) }}@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <p style="margin:0;font-size:0.875rem;color:var(--c-muted)">This profile's measurements will be used for this checkout.</p>
+                    @else
+                        <input type="hidden" name="measurement_profile_id" value="{{ $measurement->id }}">
+                        <p style="margin:0;font-size:0.875rem;color:var(--c-muted)">Using your saved profile measurements for this checkout.</p>
+                    @endif
+                    <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create', ['redirect' => request()->fullUrl()]) }}" data-save-draft style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
                 </section>
             @else
                 <section class="jbw-overview-card">
                     <p class="jbw-overview-label">Measurements</p>
                     <p style="margin:0 0 0.75rem;color:var(--c-muted);font-size:0.875rem">Add measurements for a better fit.</p>
-                    <a href="{{ route('web.profile.measurements.create') }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">Add measurements</a>
+                    <a href="{{ route('web.profile.measurements.create', ['redirect' => request()->fullUrl()]) }}" data-save-draft class="jbw-btn jbw-btn--outline jbw-btn--sm">Add measurements</a>
                 </section>
             @endif
 
@@ -227,9 +242,32 @@
         }, 300);
     };
 
-    form.querySelector('#rental_start_date')?.addEventListener('change', refreshPreview);
-    form.querySelector('#rental_end_date')?.addEventListener('change', refreshPreview);
+    const startInput = form.querySelector('#rental_start_date');
+    const endInput = form.querySelector('#rental_end_date');
+
+    const syncEndMin = () => {
+        if (!startInput || !endInput) return;
+        const start = startInput.value;
+        if (start) {
+            endInput.min = start;
+            // Clear an end date that is now before the start date.
+            if (endInput.value && endInput.value < start) {
+                endInput.value = '';
+            }
+        }
+    };
+
+    syncEndMin();
+
+    startInput?.addEventListener('change', () => { syncEndMin(); refreshPreview(); });
+    endInput?.addEventListener('change', refreshPreview);
     form.querySelectorAll('.checkout-shipment-toggle').forEach((el) => el.addEventListener('change', refreshPreview));
+
+    // After draft restore (returning from measurements), re-sync date mins + totals.
+    form.addEventListener('jbw:draft-restored', () => {
+        syncEndMin();
+        refreshPreview();
+    });
 })();
 </script>
 @endpush

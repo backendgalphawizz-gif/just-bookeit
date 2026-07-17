@@ -34,7 +34,12 @@ class CheckoutController extends WebController
 
         $addresses = $customer->addresses()->orderByDesc('is_default')->orderByDesc('id')->get();
         $defaultAddress = $customer->defaultAddress();
-        $measurement = $customer->measurements()->latest('id')->first();
+        $measurementProfiles = $customer->measurements()->latest('id')->get();
+
+        $selectedProfileId = (int) old('measurement_profile_id', $request->query('measurement_profile_id', 0));
+        $measurement = $measurementProfiles->firstWhere('id', $selectedProfileId)
+            ?? $measurementProfiles->first();
+
         $summary = $this->cart->summary($customer);
 
         $vendorShipments = $this->vendorShipmentsFromRequest($request, $summary['vendors'] ?? []);
@@ -55,6 +60,7 @@ class CheckoutController extends WebController
             'addresses' => $addresses,
             'defaultAddress' => $defaultAddress,
             'measurement' => $measurement,
+            'measurementProfiles' => $measurementProfiles,
             'summary' => $summary,
             'preview' => $preview,
             'cartItems' => $this->cart->itemsFor($customer),
@@ -106,6 +112,7 @@ class CheckoutController extends WebController
             'rental_end_date' => ['required', 'date', 'after_or_equal:rental_start_date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
+            'measurement_profile_id' => ['nullable', 'integer'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
@@ -123,7 +130,7 @@ class CheckoutController extends WebController
         $data['vendor_shipments'] = $this->normalizeVendorShipments($data['vendor_shipments'] ?? []);
 
         try {
-            $checkout = $this->checkout->createFromCart($customer, $data);
+            $checkout = $this->checkout->createFromCart($customer, $data, $request);
         } catch (InvalidArgumentException $exception) {
             return back()->withInput()->with('error', $exception->getMessage());
         }

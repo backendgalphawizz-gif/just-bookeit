@@ -231,7 +231,27 @@
                     @endif
                 </div>
 
-               
+                @if ($order->vendor)
+                    <div class="jbw-overview-card">
+                        <p class="jbw-overview-label">Contact designer</p>
+                        <p class="jbw-booking-detail-help-meta">Chat or video call with {{ $order->vendor->brand_name }} about this order.</p>
+                        <div class="jbw-detail-actions" style="margin-top:0.75rem">
+                            <a href="{{ route('web.chat.start', $order->vendor) }}" class="buttonheight jbw-btn jbw-btn--outline">
+                                <img src="/assets/frontend/chat-1 1.png" alt=""/> Chat
+                            </a>
+                            <a href="{{ route('web.chat.start', $order->vendor) }}" class="buttonheight jbw-btn jbw-btn--outline">
+                                <img src="/assets/frontend/Container.png" alt=""/> Video Call
+                            </a>
+                        </div>
+                        <p class="textalignment" style="margin-top:0.5rem">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Video calling is limited to 1 minute per session
+                        </p>
+                    </div>
+                @endif
             </div>
         </aside>
         <div class="jbw-overview-card">

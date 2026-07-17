@@ -10,6 +10,7 @@ use App\Models\OrderReview;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Services\Booking\BookingPricingService;
+use App\Services\Checkout\CheckoutService;
 use App\Services\Customer\CartService;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\OrderDispatchSupport;
@@ -23,7 +24,8 @@ use Illuminate\Http\Request;
 class BookingController extends ApiController
 {
     public function __construct(
-        protected CartService $cart
+        protected CartService $cart,
+        protected CheckoutService $checkout
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -94,6 +96,10 @@ class BookingController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
+        if ($request->filled('items')) {
+            return $this->storeMultiItemCheckout($request, $customer);
+        }
+
         $data = $request->validate(array_merge([
             'portfolio_item_id' => ['required', 'integer', 'exists:portfolio_items,id'],
             'size' => ['nullable', 'string', 'max:10'],
@@ -105,6 +111,7 @@ class BookingController extends ApiController
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'shipment_required' => ['nullable', 'boolean'],
+            'measurement_id' => ['nullable', 'integer'],
             'reference_images' => ['nullable', 'array', 'max:5'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ], BookingMeasurementSupport::validationRules()));
@@ -125,9 +132,15 @@ class BookingController extends ApiController
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
+        $profile = null;
+        if (! empty($data['measurement_id'])) {
+            $profile = $customer->measurements()->whereKey($data['measurement_id'])->first();
+        }
+        $profile ??= $customer->measurements()->latest('id')->first();
+
         $measurements = BookingMeasurementSupport::normalizeForOrder(
             $data,
-            $customer->measurements()->latest('id')->first(),
+            $profile,
         );
 
         $order = Order::query()->create([
@@ -187,6 +200,45 @@ class BookingController extends ApiController
             'booking' => CustomerApiPresenter::bookingDetail($order),
             'payment_summary' => BookingPricingService::fromOrder($order),
         ], 'Booking created. Proceed to payment.', 201);
+    }
+
+    protected function storeMultiItemCheckout(Request $request, Customer $customer): JsonResponse
+    {
+        $data = $request->validate(array_merge([
+            'delivery_address' => ['required', 'string', 'max:500'],
+            'billing_address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'pincode' => ['nullable', 'string', 'max:10'],
+            'rental_start_date' => ['nullable', 'date'],
+            'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+            'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'measurement_id' => ['nullable', 'integer'],
+            'measurement_profile_id' => ['nullable', 'integer'],
+            'shipment_required' => ['nullable', 'boolean'],
+            'vendor_shipments' => ['nullable', 'array'],
+            'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
+            'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
+            'items' => ['required'],
+        ], BookingMeasurementSupport::validationRules()));
+
+        if ($data['measurement_id'] ?? null) {
+            $data['measurement_profile_id'] = $data['measurement_id'];
+        }
+
+        if ($this->cart->itemsFor($customer)->isEmpty()) {
+            return $this->error('Your cart is empty. Add items before checkout.', 422);
+        }
+
+        try {
+            $checkout = $this->checkout->createFromCart($customer, $data, $request);
+
+            return $this->success([
+                'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout),
+                'booking_type' => 'multi_vendor_checkout',
+            ], 'Checkout created. Proceed to payment.', 201);
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
     }
 
     public function cancel(Request $request, Order $booking): JsonResponse

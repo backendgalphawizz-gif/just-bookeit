@@ -21,26 +21,6 @@
                 @if($vendor->city) · {{ $vendor->city }} @endif
                 <!-- @if($vendor->mobile) · {{ $vendor->mobile }} @endif -->
             </p>
-            <div class="jbw-detail-actions" style="margin-top:0.75rem">
-                @auth('customer')
-                    @unless ($webCustomer->is_guest)
-                        <a href="{{ route('web.chat.start', $vendor) }}" class="jbw-product-price jbw-btn jbw-btn--outline jbw-btn--sm">
-                            <img src="../../../../assets/frontend/chat11.png"/>
-                            Chat
-                        </a>
-                    @else
-                        <a href="{{ route('web.register', ['redirect' => route('web.chat.start', $vendor)]) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                            <img src="../../../../assets/frontend/chat11.png"/>
-                            Chat
-                        </a>
-                    @endunless
-                @else
-                    <a href="{{ route('web.login', ['redirect' => route('web.chat.start', $vendor)]) }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">
-                        <img src="../../../../assets/frontend/chat11.png"/>
-                        Chat
-                    </a>
-                @endauth
-            </div>
         </div>
     </div>
 

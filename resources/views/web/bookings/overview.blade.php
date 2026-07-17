@@ -22,7 +22,7 @@
         <p class="jbw-page-subtitle" style="margin-top: 0rem;">Review your selection and submit your rental request</p>
     </div>
 
-    <form method="POST" action="{{ route('web.bookings.store', $item) }}" class="jbw-booking-layout" id="booking-overview-form" data-preview-url="{{ route('web.bookings.preview', $item) }}">
+    <form method="POST" action="{{ route('web.bookings.store', $item) }}" class="jbw-booking-layout" id="booking-overview-form" data-preview-url="{{ route('web.bookings.preview', $item) }}" data-draft-key="booking-draft-{{ $item->id }}" @if (old()) data-has-old="1" @endif>
         @csrf
 
         <div class="jbw-booking-main">
@@ -110,7 +110,19 @@
             @if ($measurement)
                 <div class="jbw-overview-card">
                     <p class="jbw-overview-label">Measurements on file</p>
-                    @if ($measurement->measurement_type)
+                    @if (($measurementProfiles ?? collect())->count() > 1)
+                        <div class="jbw-field" style="margin-bottom:0.75rem">
+                            <label class="jbw-label" for="measurement_profile_id">Select measurement profile</label>
+                            <select id="measurement_profile_id" name="measurement_profile_id" class="jbw-select" data-measure-profile-select>
+                                @foreach ($measurementProfiles as $profile)
+                                    <option value="{{ $profile->id }}" @selected($measurement->id === $profile->id)>
+                                        {{ $profile->name ?: 'Profile #'.$profile->id }}@if ($profile->measurement_type) — {{ ucfirst($profile->measurement_type) }}@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:var(--c-muted)" data-measure-type-label>Type: {{ ucfirst($measurement->measurement_type ?? '—') }}</p>
+                    @elseif ($measurement->measurement_type)
                         <p style="margin:0 0 0.75rem;font-size:0.8125rem;color:var(--c-muted)">Type: {{ ucfirst($measurement->measurement_type) }}</p>
                     @endif
                     @php $fieldMap = \App\Support\WebMeasurementForm::labelToField(); @endphp
@@ -122,19 +134,19 @@
                                     @php $key = $fieldMap[$label]; @endphp
                                     <div class="jbw-measure">
                                         <span class="jbw-measure-label">{{ $label }}</span>
-                                        <span class="jbw-measure-value">{{ $measurementValues[$key] ?? '—' }}</span>
+                                        <span class="jbw-measure-value" data-measure-key="{{ $key }}">{{ $measurementValues[$key] ?? '—' }}</span>
                                     </div>
                                 @endforeach
                             </div>
                         </div>
                     @endforeach
-                    <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create') }}" style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
+                    <p style="margin:0.75rem 0 0;font-size:0.8125rem"><a href="{{ route('web.profile.measurements.create', ['redirect' => request()->fullUrl()]) }}" data-save-draft style="color:var(--c-primary);font-weight:700">Update measurements</a></p>
                 </div>
             @else
                 <div class="jbw-overview-card">
                     <p class="jbw-overview-label">Measurements</p>
                     <p style="margin:0 0 0.75rem;color:var(--c-muted);font-size:0.875rem">Add measurements for a better fit before booking.</p>
-                    <a href="{{ route('web.profile.measurements.create') }}" class="jbw-btn jbw-btn--outline jbw-btn--sm">Add measurements</a>
+                    <a href="{{ route('web.profile.measurements.create', ['redirect' => request()->fullUrl()]) }}" data-save-draft class="jbw-btn jbw-btn--outline jbw-btn--sm">Add measurements</a>
                 </div>
             @endif
 
@@ -210,10 +222,31 @@
         }, 300);
     };
 
-    form.querySelector('#rental_start_date')?.addEventListener('change', refreshPreview);
-    form.querySelector('#rental_end_date')?.addEventListener('change', refreshPreview);
-    form.querySelector('#rental_start_date')?.addEventListener('input', refreshPreview);
-    form.querySelector('#rental_end_date')?.addEventListener('input', refreshPreview);
+    const startInput = form.querySelector('#rental_start_date');
+    const endInput = form.querySelector('#rental_end_date');
+
+    const syncEndMin = () => {
+        if (!startInput || !endInput) return;
+        const start = startInput.value;
+        if (start) {
+            endInput.min = start;
+            if (endInput.value && endInput.value < start) {
+                endInput.value = '';
+            }
+        }
+    };
+
+    syncEndMin();
+
+    startInput?.addEventListener('change', () => { syncEndMin(); refreshPreview(); });
+    endInput?.addEventListener('change', refreshPreview);
+    startInput?.addEventListener('input', () => { syncEndMin(); refreshPreview(); });
+    endInput?.addEventListener('input', refreshPreview);
+
+    form.addEventListener('jbw:draft-restored', () => {
+        syncEndMin();
+        refreshPreview();
+    });
 
     form.querySelectorAll('input[name="portfolio_item_variant_id"]').forEach((input) => {
         input.addEventListener('change', () => {
@@ -249,6 +282,44 @@
 
             refreshPreview();
         });
+    });
+})();
+</script>
+@endpush
+
+@push('scripts')
+@php
+    $profileMeasurements = [];
+    foreach (($measurementProfiles ?? collect()) as $p) {
+        $profileMeasurements[$p->id] = [
+            'type' => $p->measurement_type ? ucfirst($p->measurement_type) : '—',
+            'values' => \App\Support\WebMeasurementForm::valuesFromProfile($p),
+        ];
+    }
+@endphp
+<script>
+(function () {
+    var select = document.querySelector('[data-measure-profile-select]');
+    if (!select) return;
+
+    var profiles = @json($profileMeasurements);
+
+    function applyProfile(id) {
+        var profile = profiles[id];
+        if (!profile) return;
+
+        document.querySelectorAll('[data-measure-key]').forEach(function (span) {
+            var key = span.getAttribute('data-measure-key');
+            var val = profile.values && profile.values[key];
+            span.textContent = (val === null || val === undefined || val === '') ? '—' : val;
+        });
+
+        var typeLabel = document.querySelector('[data-measure-type-label]');
+        if (typeLabel) typeLabel.textContent = 'Type: ' + profile.type;
+    }
+
+    select.addEventListener('change', function () {
+        applyProfile(select.value);
     });
 })();
 </script>

@@ -72,13 +72,20 @@ class CheckoutController extends ApiController
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'measurement_id' => ['nullable', 'integer'],
+            'measurement_profile_id' => ['nullable', 'integer'],
+            'items' => ['nullable'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
         ], BookingMeasurementSupport::validationRules()));
 
+        if ($data['measurement_id'] ?? null) {
+            $data['measurement_profile_id'] = $data['measurement_id'];
+        }
+
         try {
-            $checkout = $this->checkout->createFromCart($customer, $data);
+            $checkout = $this->checkout->createFromCart($customer, $data, $request);
 
             return $this->success([
                 'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout),

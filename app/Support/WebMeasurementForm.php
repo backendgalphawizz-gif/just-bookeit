@@ -4,7 +4,12 @@ namespace App\Support;
 
 class WebMeasurementForm
 {
-    /** @return array<string, list<string>> */
+    /**
+     * Full union of every measurement field, grouped by section.
+     * Used wherever a stored profile is displayed (booking/checkout views).
+     *
+     * @return array<string, list<string>>
+     */
     public static function sections(): array
     {
         return [
@@ -13,6 +18,42 @@ class WebMeasurementForm
             'Lower Body' => ['Hip', 'Seat', 'Bottom length', 'Leg loose', 'Thigh', 'Knees'],
             'Full Lengths' => ['Top length', 'Half length', 'Slit'],
         ];
+    }
+
+    /**
+     * Sections/fields relevant to each measurement type.
+     *
+     * @return array<string, array<string, list<string>>>
+     */
+    public static function sectionsByType(): array
+    {
+        return [
+            'women' => [
+                'Upper Body' => ['Blouse length', 'Shoulder', 'Arm hole', 'Chest', 'Waist', 'Dot point'],
+                'Sleeves & Neck' => ['Sleeve length', 'Sleeve loose', 'Front neck', 'Back neck'],
+                'Lower Body' => ['Hip', 'Seat', 'Bottom length', 'Leg loose', 'Thigh', 'Knees'],
+                'Full Lengths' => ['Top length', 'Half length', 'Slit'],
+            ],
+            'men' => [
+                'Upper Body' => ['Shoulder', 'Chest', 'Waist', 'Arm hole'],
+                'Sleeves & Neck' => ['Sleeve length', 'Sleeve loose', 'Front neck'],
+                'Lower Body' => ['Hip', 'Seat', 'Bottom length', 'Leg loose', 'Thigh', 'Knees'],
+                'Full Lengths' => ['Top length'],
+            ],
+            'kid' => [
+                'Upper Body' => ['Shoulder', 'Chest', 'Waist'],
+                'Sleeves & Neck' => ['Sleeve length'],
+                'Lower Body' => ['Hip', 'Bottom length', 'Thigh'],
+                'Full Lengths' => ['Top length'],
+            ],
+        ];
+    }
+
+    public static function sectionsForType(?string $type): array
+    {
+        $map = self::sectionsByType();
+
+        return $map[$type] ?? $map['women'];
     }
 
     /** @return array<string, string> */

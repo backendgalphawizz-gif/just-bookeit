@@ -99,31 +99,6 @@
             <div class="jbw-detail-actions" id="jbw-detail-actions">
 
                 @auth('customer')
-                    @unless ($webCustomer->is_guest)
-                        @if ($item->vendor)
-                            <a href="{{ route('web.chat.start', $item->vendor) }}" class="buttonheight jbw-btn jbw-btn--outline">
-                               <img src="../../../../assets/frontend/chat-1 1.png"/> Chat
-                            </a>
-                             <a href="{{ route('web.chat.start', $item->vendor) }}" class="buttonheight jbw-btn jbw-btn--outline">
-                                <img src="../../../../assets/frontend/Container.png"/>   Video Call
-                            </a>
-                        @endif
-                    @else
-                        @if ($item->vendor)
-                            <a href="{{ route('web.register', ['redirect' => route('web.chat.start', $item->vendor)]) }}" class="buttonheight jbw-btn jbw-btn--outline">
-                                 <img src="../../../../assets/frontend/chat-1 1.png"/> Chat
-                            </a>
-                        @endif
-                    @endunless
-                @else
-                    @if ($item->vendor)
-                        <a href="{{ route('web.login', ['redirect' => route('web.chat.start', $item->vendor)]) }}" class="buttonheight jbw-btn jbw-btn--outline">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                            Chat
-                        </a>
-                    @endif
-                @endauth
-           @auth('customer')
                     @if ($webCustomer->is_guest)
                         <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheightjbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Create account to book</a>
                     @else
@@ -138,19 +113,6 @@
                 @else
                     <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
                 @endauth
-          <p class="textalignment"> <svg xmlns="http://www.w3.org/2000/svg"
-         width="16"
-         height="16"
-         viewBox="0 0 24 24"
-         fill="none"
-         stroke="currentColor"
-         stroke-width="2"
-         stroke-linecap="round"
-         stroke-linejoin="round"
-         style="vertical-align:middle;margin-right:6px;">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 16 14"></polyline>
-    </svg> Video calling is limited to 1 minute per session</p>
             </div>
         </div>
     </div>

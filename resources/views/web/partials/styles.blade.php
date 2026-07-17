@@ -2270,19 +2270,89 @@ border-radius: 8px !important;
 }
 .jbw-booking-tab.is-active { color: var(--c-primary); border-bottom-color: var(--c-primary); }
 
+.jbw-booking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.jbw-booking-list-empty {
+    text-align: center;
+    color: var(--c-muted);
+    padding: 2rem 0;
+    margin: 0;
+}
+
+.jbw-booking-list-pagination {
+    margin-top: 0.5rem;
+}
+
 .jbw-booking-row {
     display: grid;
     grid-template-columns: 5.5rem 1fr auto;
     gap: 1.25rem;
-    align-items: center;
-    padding: 1.25rem 0;
-    border-bottom: 1px solid var(--c-border);
+    align-items: start;
+    padding: 1.15rem 1.25rem;
+    border: 1px solid var(--c-border);
+    border-radius: 1rem;
+    background: #fff;
 }
+
 .jbw-booking-row img {
-    width: 5.5rem; height: 5.5rem;
+    width: 5.5rem;
+    height: 5.5rem;
     border-radius: 12px;
     object-fit: cover;
     background: #f0ede8;
+}
+
+.jbw-booking-row-body {
+    min-width: 0;
+}
+
+.jbw-booking-row-title {
+    font-weight: 700;
+    margin: 0;
+    font-size: 0.9875rem;
+    line-height: 1.35;
+    color: var(--c-ink, #111);
+}
+
+.jbw-booking-row-meta-inline {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--c-muted);
+}
+
+.jbw-booking-row-meta {
+    font-size: 0.8125rem;
+    color: var(--c-muted);
+    margin: 0.3rem 0 0;
+    line-height: 1.4;
+}
+
+.jbw-booking-row-price {
+    font-weight: 800;
+    color: var(--c-primary);
+    margin: 0.45rem 0 0;
+    font-size: 1rem;
+}
+
+.jbw-booking-row-id {
+    margin: 0.35rem 0 0;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    color: #475569;
+    letter-spacing: 0.01em;
+}
+
+.jbw-booking-row-aside {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.65rem;
 }
 
 .viewdetails {
@@ -3663,15 +3733,18 @@ background: #AE2A0B;
     .jbw-booking-row {
         grid-template-columns: 4rem 1fr;
         grid-template-rows: auto auto;
+        padding: 1rem;
+        gap: 0.85rem;
     }
     .jbw-booking-row img { width: 4rem; height: 4rem; }
-    .jbw-booking-row > div:last-child {
+    .jbw-booking-row-aside {
         grid-column: 1 / -1;
         text-align: left;
-        display: flex;
+        flex-direction: row;
         align-items: center;
-        gap: 1rem;
+        justify-content: space-between;
         flex-wrap: wrap;
+        gap: 0.75rem;
     }
 }
 

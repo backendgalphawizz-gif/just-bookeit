@@ -18,12 +18,23 @@
         <a href="{{ route('web.bookings.index', ['tab' => 'rental_jewellery']) }}" @class(['jbw-booking-tab', 'is-active' => request('tab') === 'rental_jewellery'])>Rental jewellery</a>
     </div>
 
-    <div class="jbw-card">
+    <div class="jbw-booking-list">
         @forelse ($orders as $entry)
             @if ($entry['kind'] === 'checkout')
                 @php
                     $checkout = $entry['checkout'];
-                    $firstSub = $checkout->subOrders->first();
+                    $subOrders = $checkout->subOrders;
+                    $firstSub = $subOrders->first();
+                    $vendorCount = $subOrders->count();
+                    $itemCount = $subOrders->sum(function ($sub) {
+                        $lines = $sub->orderItems;
+                        if ($lines && $lines->isNotEmpty()) {
+                            return (int) $lines->sum('quantity');
+                        }
+
+                        return max(1, (int) ($sub->quantity ?? 1));
+                    });
+                    $isMultiVendor = $vendorCount > 1;
                     $statusClass = match ($checkout->status) {
                         'new', 'pending_acceptance' => 'new',
                         'processing', 'partially_delivered' => 'in_progress',
@@ -31,33 +42,48 @@
                         'cancelled', 'refunded', 'partially_cancelled' => 'cancelled',
                         default => 'default',
                     };
-                    $vendorNames = $checkout->subOrders->map(fn ($s) => $s->vendor?->brand_name)->filter()->unique()->take(2)->implode(', ');
+                    $vendorNames = $subOrders->map(fn ($s) => $s->vendor?->brand_name)->filter()->unique()->values();
+                    $title = $isMultiVendor
+                        ? 'Multi-vendor order'
+                        : ($firstSub?->itemDisplayName() ?? 'Order');
+                    $imageUrl = $firstSub?->itemImageUrl();
                 @endphp
-                <div class="jbw-booking-row" style="border-bottom: none; padding:0rem;">
-                    @if ($firstSub?->itemImageUrl())
-                        <img src="{{ $firstSub->itemImageUrl() }}" alt="">
+                <article class="jbw-booking-row">
+                    @if ($imageUrl)
+                        <img src="{{ $imageUrl }}" alt="{{ $title }}" loading="lazy">
                     @else
-                        <div style="width:5rem;height:5rem;border-radius:0.75rem;background:#f1f5f9"></div>
+                        <img src="{{ $fallbackImg }}" alt="" loading="lazy">
                     @endif
-                    <div>
-                        <p style="font-weight:700;margin:0">
-                            Multi-vendor order
-                            <span style="font-size:0.75rem;font-weight:600;color:var(--jbw-muted)">({{ $checkout->sub_orders_count }} items)</span>
+                    <div class="jbw-booking-row-body">
+                        <p class="jbw-booking-row-title">
+                            {{ $title }}
+                            @if ($isMultiVendor || $itemCount > 1)
+                                <span class="jbw-booking-row-meta-inline">
+                                    ({{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}{{ $isMultiVendor ? ' · '.$vendorCount.' vendors' : '' }})
+                                </span>
+                            @endif
                         </p>
-                        <p style="font-size:0.8125rem;color:var(--jbw-muted);margin:0.25rem 0">
-                            {{ $vendorNames }}
+                        <p class="jbw-booking-row-meta">
+                            @if ($isMultiVendor)
+                                {{ $vendorNames->take(2)->implode(', ') }}{{ $vendorNames->count() > 2 ? ' +'.($vendorNames->count() - 2).' more' : '' }}
+                            @else
+                                {{ $firstSub?->vendor?->brand_name ?? 'Designer' }}
+                                @if ($firstSub?->category)
+                                    · {{ $firstSub->category->name }}
+                                @endif
+                            @endif
                             @if ($checkout->rental_start_date)
                                 · {{ $checkout->rental_start_date->format('d M') }} – {{ $checkout->rental_end_date?->format('d M, Y') }}
                             @endif
                         </p>
-                        <p style="font-weight:800;color:var(--jbw-primary);margin:0">₹{{ number_format($checkout->grand_total, 0) }}</p>
+                        <p class="jbw-booking-row-price">₹{{ number_format($checkout->grand_total, 0) }}</p>
+                        <p class="jbw-booking-row-id">Order #{{ $checkout->order_number }}</p>
                     </div>
-                    <div style="text-align:right">
+                    <div class="jbw-booking-row-aside">
                         <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $checkout->statusLabel() }}</span>
-                        <p style="font-size:0.75rem;color:var(--jbw-muted);margin:0.5rem 0 0">#{{ $checkout->order_number }}</p>
                         <a href="{{ route('web.bookings.checkout.show', $checkout) }}" class="viewdetails">View Details</a>
                     </div>
-                </div>
+                </article>
             @else
                 @php
                     $order = $entry['order'];
@@ -69,15 +95,15 @@
                         default => 'default',
                     };
                 @endphp
-                <div class="jbw-booking-row" style="border-bottom: none; padding:0rem;">
+                <article class="jbw-booking-row">
                     @if ($order->itemImageUrl())
-                        <img src="{{ $order->itemImageUrl() }}" alt="">
+                        <img src="{{ $order->itemImageUrl() }}" alt="{{ $order->itemDisplayName() }}" loading="lazy">
                     @else
-                        <div style="width:5rem;height:5rem;border-radius:0.75rem;background:#f1f5f9"></div>
+                        <img src="{{ $fallbackImg }}" alt="" loading="lazy">
                     @endif
-                    <div>
-                        <p style="font-weight:700;margin:0">{{ $order->itemDisplayName() }}</p>
-                        <p style="font-size:0.8125rem;color:var(--jbw-muted);margin:0.25rem 0">
+                    <div class="jbw-booking-row-body">
+                        <p class="jbw-booking-row-title">{{ $order->itemDisplayName() }}</p>
+                        <p class="jbw-booking-row-meta">
                             {{ $order->vendor?->brand_name ?? 'Designer' }}
                             @if ($order->category)
                                 · {{ $order->category->name }}
@@ -86,21 +112,21 @@
                                 · {{ $order->rental_start_date->format('d M') }} – {{ $order->rental_end_date?->format('d M, Y') }}
                             @endif
                         </p>
-                        <p style="font-weight:800;color:var(--jbw-primary);margin:0">₹{{ number_format($order->grandTotal(), 0) }}</p>
+                        <p class="jbw-booking-row-price">₹{{ number_format($order->grandTotal(), 0) }}</p>
+                        <p class="jbw-booking-row-id">Order #{{ $order->order_number }}</p>
                     </div>
-                    <div style="text-align:right">
+                    <div class="jbw-booking-row-aside">
                         <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $order->statusLabel() }}</span>
-                        <p style="font-size:0.75rem;color:var(--jbw-muted);margin:0.5rem 0 0">#{{ $order->order_number }}</p>
                         <a href="{{ route('web.bookings.show', $order) }}" class="viewdetails">View Details</a>
                     </div>
-                </div>
+                </article>
             @endif
         @empty
-            <p style="text-align:center;color:var(--jbw-muted);padding:2rem 0">No bookings yet. <a href="{{ route('web.catalog.index') }}">Browse outfits</a></p>
+            <p class="jbw-booking-list-empty">No bookings yet. <a href="{{ route('web.catalog.index') }}">Browse outfits</a></p>
         @endforelse
 
         @if ($orders->hasPages())
-            <div style="margin-top:1rem">{{ $orders->links() }}</div>
+            <div class="jbw-booking-list-pagination">{{ $orders->links() }}</div>
         @endif
     </div>
 </div>

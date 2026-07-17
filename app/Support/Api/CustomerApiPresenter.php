@@ -295,18 +295,52 @@ class CustomerApiPresenter
 
     public static function catalogItem(PortfolioItem $item): array
     {
-        $item->loadMissing(['vendor', 'category', 'subcategory.parent', 'subcategory.serviceCategory', 'variants']);
+        $item->loadMissing(['vendor', 'category', 'subcategory.parent', 'subcategory.serviceCategory', 'variants', 'images']);
 
         $mainCategory = $item->subcategory?->parent;
         $variants = $item->variants
             ->map(fn (PortfolioItemVariant $variant) => self::catalogVariant($variant))
             ->values();
 
+        $absoluteUrl = static function (?string $path): ?string {
+            if (! $path) {
+                return null;
+            }
+
+            return str_starts_with($path, 'http://') || str_starts_with($path, 'https://')
+                ? $path
+                : url($path);
+        };
+
+        $galleryMediaUrls = collect($item->galleryMediaUrls())
+            ->map(fn ($path) => $absoluteUrl($path))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $videoUrls = collect($item->galleryVideoUrls())
+            ->map(fn ($path) => $absoluteUrl($path))
+            ->filter()
+            ->values()
+            ->all();
+
         return [
             'id' => $item->id,
             'title' => $item->title,
             'description' => $item->description,
             'image_url' => $item->displayImageUrl() ? url($item->displayImageUrl()) : null,
+            'gallery_image_urls' => $galleryMediaUrls,
+            'video_urls' => $videoUrls,
+            'gallery_videos' => $item->images
+                ->filter(fn ($media) => $media->isVideo())
+                ->map(fn ($media) => [
+                    'id' => $media->id,
+                    'url' => $absoluteUrl($media->mediaUrl()),
+                    'media_type' => 'video',
+                ])
+                ->values()
+                ->all(),
             'price' => $item->rentalPriceAmount(),
             'price_label' => $item->rentalPriceLabel(),
             'rating' => (float) ($item->vendor?->rating ?? 0),

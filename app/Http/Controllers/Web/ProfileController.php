@@ -59,7 +59,7 @@ class ProfileController extends WebController
         ]);
     }
 
-    public function createMeasurement(): View
+    public function createMeasurement(Request $request): View
     {
         $customer = Auth::guard('customer')->user();
         $profile = $customer->measurements()->latest('id')->first();
@@ -69,6 +69,7 @@ class ProfileController extends WebController
             'profile' => $profile,
             'sections' => WebMeasurementForm::sections(),
             'values' => WebMeasurementForm::valuesFromProfile($profile),
+            'redirectTo' => $this->safeRedirectTarget($request->query('redirect')),
         ]);
     }
 
@@ -100,9 +101,36 @@ class ProfileController extends WebController
             $customer->measurements()->create($payload);
         }
 
+        $redirectTo = $this->safeRedirectTarget($request->input('redirect'));
+
         return redirect()
-            ->route('web.profile.measurements')
+            ->to($redirectTo ?? route('web.profile.measurements'))
             ->with('success', 'Measurements saved successfully.');
+    }
+
+    /**
+     * Only allow redirecting back to a same-host URL to avoid open-redirects.
+     */
+    private function safeRedirectTarget(?string $url): ?string
+    {
+        if (! is_string($url) || trim($url) === '') {
+            return null;
+        }
+
+        $url = trim($url);
+
+        // Relative path within the app (e.g. "/bookings/12/overview").
+        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+            return url($url);
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if ($host !== null && $host === request()->getHost()) {
+            return $url;
+        }
+
+        return null;
     }
 
     public function addresses(): View

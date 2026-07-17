@@ -39,7 +39,12 @@ class BookingController extends WebController
         }
 
         $checkoutQuery = CheckoutOrder::query()
-            ->with(['subOrders.vendor', 'subOrders.category'])
+            ->with([
+                'subOrders.vendor',
+                'subOrders.category',
+                'subOrders.orderItems',
+                'subOrders.portfolioItem',
+            ])
             ->withCount('subOrders')
             ->where('customer_id', $customer->id);
 
@@ -117,7 +122,10 @@ class BookingController extends WebController
 
         $addresses = $customer->addresses()->orderByDesc('is_default')->orderByDesc('id')->get();
         $defaultAddress = $customer->defaultAddress();
-        $measurement = $customer->measurements()->latest('id')->first();
+        $measurementProfiles = $customer->measurements()->latest('id')->get();
+        $selectedProfileId = (int) old('measurement_profile_id', request()->query('measurement_profile_id', 0));
+        $measurement = $measurementProfiles->firstWhere('id', $selectedProfileId)
+            ?? $measurementProfiles->first();
 
         $rentalDays = BookingPricingService::rentalDays(
             old('rental_start_date'),
@@ -132,7 +140,7 @@ class BookingController extends WebController
         $measurementValues = WebMeasurementForm::valuesFromProfile($measurement);
         $measurementSections = WebMeasurementForm::sections();
 
-        return view('web.bookings.overview', compact('item', 'addresses', 'defaultAddress', 'measurement', 'pricing', 'rentalDays', 'measurementValues', 'measurementSections', 'selectedVariant', 'selectedVariantId'));
+        return view('web.bookings.overview', compact('item', 'addresses', 'defaultAddress', 'measurement', 'measurementProfiles', 'pricing', 'rentalDays', 'measurementValues', 'measurementSections', 'selectedVariant', 'selectedVariantId'));
     }
 
     public function preview(Request $request, PortfolioItem $item): \Illuminate\Http\JsonResponse
@@ -184,6 +192,7 @@ class BookingController extends WebController
             'size' => ['nullable', 'string', 'max:10'],
             'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
+            'measurement_profile_id' => ['nullable', 'integer'],
         ], BookingMeasurementSupport::validationRules()));
 
         if ($request->filled('portfolio_item_variant_id')) {
@@ -204,7 +213,11 @@ class BookingController extends WebController
             $data['pincode'] = $address->pincode;
         }
 
-        $measurement = $customer->measurements()->latest('id')->first();
+        $measurement = null;
+        if ($request->filled('measurement_profile_id')) {
+            $measurement = $customer->measurements()->whereKey($request->integer('measurement_profile_id'))->first();
+        }
+        $measurement ??= $customer->measurements()->latest('id')->first();
         if ($measurement) {
             $data['_measurement_profile'] = $measurement;
         }

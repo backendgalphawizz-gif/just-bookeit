@@ -128,6 +128,26 @@ class PortfolioItem extends Model
     }
 
     /** @return list<string> */
+    public function galleryMediaUrls(): array
+    {
+        $this->loadMissing('images');
+
+        $urls = [];
+
+        if ($primary = $this->displayImageUrl()) {
+            $urls[] = $primary;
+        }
+
+        foreach ($this->images->sortBy('sort_order') as $media) {
+            if ($url = $media->mediaUrl()) {
+                $urls[] = $url;
+            }
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    /** @return list<string> */
     public function galleryImageUrls(): array
     {
         $this->loadMissing('images');
