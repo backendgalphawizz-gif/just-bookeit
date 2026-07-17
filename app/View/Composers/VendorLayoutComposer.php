@@ -4,8 +4,8 @@ namespace App\View\Composers;
 
 use App\Models\PlatformSetting;
 use App\Services\NotificationInboxService;
+use App\Support\VendorValidationRules;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 
 class VendorLayoutComposer
@@ -13,9 +13,21 @@ class VendorLayoutComposer
     public function compose(View $view): void
     {
         $vendor = Auth::guard('vendor')->user()?->fresh();
-        $menu = collect(config('vendor_menu', []))->map(function (array $item) {
+        $allowedProductSlugs = $vendor
+            ? VendorValidationRules::serviceTypeSlugs($vendor->selectedServiceTypes())
+            : [];
+
+        $menu = collect(config('vendor_menu', []))->map(function (array $item) use ($allowedProductSlugs) {
             if (isset($item['children'])) {
-                $item['children'] = collect($item['children'])->map(function (array $child) {
+                $children = collect($item['children']);
+
+                if ($item['label'] === 'Products' && $allowedProductSlugs !== []) {
+                    $children = $children->filter(
+                        fn (array $child) => in_array($child['params']['type'] ?? null, $allowedProductSlugs, true)
+                    )->values();
+                }
+
+                $item['children'] = $children->map(function (array $child) {
                     $child['active'] = request('type') === ($child['params']['type'] ?? null)
                         && request()->routeIs('vendor.products.*');
 

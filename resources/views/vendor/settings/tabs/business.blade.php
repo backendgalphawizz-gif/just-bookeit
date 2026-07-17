@@ -1,6 +1,6 @@
 <h2 class="vp-settings-panel-title">Business Details</h2>
 
-@php $selectedServices = old('service_types', $vendor->selectedServiceTypes()); @endphp
+@php $selectedServices = old('service_types', \App\Support\VendorValidationRules::normalizeServiceTypes($vendor->selectedServiceTypes())); @endphp
 
 <form method="POST" action="{{ route('vendor.settings.update') }}">
     @csrf

@@ -94,7 +94,7 @@ class PlatformDataSeeder extends Seeder
                     'mobile' => '9'.fake()->numerify('#########'),
                     'email' => "customer{$i}@example.com",
                     'city' => fake()->randomElement($cities),
-                    'status' => fake()->randomElement(['active', 'active', 'active', 'suspended']),
+                    'status' => fake()->randomElement(['active', 'active', 'active', 'inactive']),
                     'is_verified' => fake()->boolean(70),
                     'total_orders' => 0,
                     'registered_at' => now()->subDays(rand(1, 180)),
@@ -105,7 +105,7 @@ class PlatformDataSeeder extends Seeder
         $vendorStatuses = array_merge(
             array_fill(0, 5, 'pending'),
             array_fill(0, 10, 'active'),
-            ['suspended', 'rejected']
+            ['inactive', 'rejected']
         );
 
         $vendors = collect();

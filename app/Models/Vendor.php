@@ -25,6 +25,7 @@ class Vendor extends Authenticatable
         'business_email',
         'city',
         'gst_number',
+        'aadhar_number',
         'address',
         'country',
         'state',

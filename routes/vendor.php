@@ -32,6 +32,8 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::post('register', [LoginController::class, 'register'])->name('register.submit');
     });
 
+    Route::get('register/success', [LoginController::class, 'showRegisterSuccess'])->name('register.success');
+
     Route::middleware('vendor.auth')->group(function () {
         Route::get('list-export/{module}', ListExportController::class)
             ->where('module', 'bookings|products|payments|wallet|chat')

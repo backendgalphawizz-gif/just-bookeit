@@ -30,7 +30,7 @@ class ProductController extends VendorController
     {
         $this->validateListDateRange($request);
         $vendor = $this->vendor();
-        $type = $request->string('type', 'fashion-designer')->toString();
+        $type = $this->resolveAllowedProductType($request->string('type')->toString());
         $category = Category::query()->where('slug', $type)->first();
 
         $items = PortfolioItem::query()
@@ -55,7 +55,7 @@ class ProductController extends VendorController
 
     public function create(Request $request): View
     {
-        $type = $request->string('type', 'fashion-designer')->toString();
+        $type = $this->resolveAllowedProductType($request->string('type')->toString());
         $category = Category::query()->where('slug', $type)->firstOrFail();
 
         return view('vendor.products.form', $this->formViewData(
@@ -68,7 +68,7 @@ class ProductController extends VendorController
     public function store(Request $request): RedirectResponse
     {
         $vendor = $this->vendor();
-        $type = $request->string('type', 'fashion-designer')->toString();
+        $type = $this->resolveAllowedProductType($request->string('type')->toString());
         $category = Category::query()->where('slug', $type)->firstOrFail();
 
         $this->normalizeProductFormInput($request);
@@ -225,5 +225,20 @@ class ProductController extends VendorController
             'gallery_images.*' => $fileRule,
             'variants.*.image' => ['nullable', ...$fileRule],
         ];
+    }
+
+    protected function resolveAllowedProductType(string $type): string
+    {
+        $allowed = VendorValidationRules::serviceTypeSlugs($this->vendor()->selectedServiceTypes());
+
+        if ($allowed === []) {
+            $allowed = array_keys($this->typeMap);
+        }
+
+        if ($type === '' || ! in_array($type, $allowed, true)) {
+            return $allowed[0];
+        }
+
+        return $type;
     }
 }

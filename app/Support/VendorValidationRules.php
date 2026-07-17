@@ -24,12 +24,85 @@ class VendorValidationRules
         'Rental Jewelry',
     ];
 
+    /**
+     * Maps stored service type labels (including legacy aliases) to product type slugs.
+     *
+     * @var array<string, string>
+     */
+    public const SERVICE_TYPE_SLUGS = [
+        'Fashion Designer' => 'fashion-designer',
+        'Rental Dresses' => 'rented-dress',
+        'Rental Jewelry' => 'rented-jewellery',
+        'Rented Dresses' => 'rented-dress',
+        'Rented Jewelry' => 'rented-jewellery',
+        'Rented Dress' => 'rented-dress',
+        'Rented Jewellery' => 'rented-jewellery',
+        'Rental Jewellery' => 'rented-jewellery',
+    ];
+
+    /** @return list<string> */
+    public static function serviceTypeSlugs(array $serviceTypes): array
+    {
+        $slugs = [];
+
+        foreach ($serviceTypes as $type) {
+            $key = trim((string) $type);
+            if ($key === '') {
+                continue;
+            }
+
+            $slug = self::SERVICE_TYPE_SLUGS[$key] ?? null;
+            if ($slug && ! in_array($slug, $slugs, true)) {
+                $slugs[] = $slug;
+            }
+        }
+
+        return $slugs;
+    }
+
+    /**
+     * Normalize stored labels (including legacy aliases) to canonical SERVICE_TYPES values.
+     *
+     * @return list<string>
+     */
+    public static function normalizeServiceTypes(array $serviceTypes): array
+    {
+        $slugToLabel = [
+            'fashion-designer' => 'Fashion Designer',
+            'rented-dress' => 'Rental Dresses',
+            'rented-jewellery' => 'Rental Jewelry',
+        ];
+
+        $normalized = [];
+
+        foreach (self::serviceTypeSlugs($serviceTypes) as $slug) {
+            $label = $slugToLabel[$slug] ?? null;
+            if ($label && ! in_array($label, $normalized, true)) {
+                $normalized[] = $label;
+            }
+        }
+
+        return $normalized;
+    }
+
     public static function messages(): array
     {
+        $maxMb = UploadLimits::formatMegabytes(self::MAX_IMAGE_KB * 1024);
+
         return array_merge(AdminValidationRules::messages(), [
             'reason.required' => 'A rejection reason is required.',
             'reason.min' => 'Rejection reason must be at least 5 characters.',
             'reason.max' => 'Rejection reason cannot exceed 500 characters.',
+            'aadhar_front.required' => 'Please upload the Aadhaar front image.',
+            'aadhar_back.required' => 'Please upload the Aadhaar back image.',
+            'aadhar_front.uploaded' => 'Aadhaar front could not be uploaded. Use a JPEG/PNG under '.$maxMb.' MB (phone photos are often too large — compress or resize first).',
+            'aadhar_back.uploaded' => 'Aadhaar back could not be uploaded. Use a JPEG/PNG under '.$maxMb.' MB (phone photos are often too large — compress or resize first).',
+            'aadhar_front.max' => 'Aadhaar front is too large. Maximum size is '.$maxMb.' MB.',
+            'aadhar_back.max' => 'Aadhaar back is too large. Maximum size is '.$maxMb.' MB.',
+            'aadhar_front.image' => 'Aadhaar front must be a JPEG, PNG, or WebP image.',
+            'aadhar_back.image' => 'Aadhaar back must be a JPEG, PNG, or WebP image.',
+            'aadhar_front.mimes' => 'Aadhaar front must be a JPEG, PNG, or WebP image.',
+            'aadhar_back.mimes' => 'Aadhaar back must be a JPEG, PNG, or WebP image.',
         ]);
     }
 
@@ -40,12 +113,20 @@ class VendorValidationRules
             'gst_no' => 'GSTIN',
             'account_no' => 'account number',
             'shop_name' => 'shop/business name',
+            'aadhar_front' => 'aadhaar front',
+            'aadhar_back' => 'aadhaar back',
             'portfolio_image' => 'portfolio image',
             'videos' => 'product videos',
             'gallery_videos' => 'product videos',
             'product_videos' => 'product videos',
             'reason' => 'rejection reason',
         ]);
+    }
+
+    /** Effective per-file max in bytes (app limit capped by PHP upload_max_filesize). */
+    public static function effectiveMaxImageBytes(): int
+    {
+        return min(self::MAX_IMAGE_KB * 1024, UploadLimits::uploadMaxFilesizeBytes());
     }
 
     public static function mobile(bool $required = true, ?int $ignoreVendorId = null): array
@@ -74,7 +155,7 @@ class VendorValidationRules
     {
         return [
             'shop_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
-            'service_types' => ['nullable', 'array', 'min:1'],
+            'service_types' => ['required', 'array', 'min:1'],
             'service_types.*' => ['string', 'max:100', Rule::in(self::SERVICE_TYPES)],
             'business_mobile' => ['nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE],
             'business_mail' => AdminValidationRules::emailRules(false),
@@ -111,14 +192,35 @@ class VendorValidationRules
 
     public static function register(): array
     {
+        $image = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB];
+
         return [
-            'shop_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'owner_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
+            'mobile' => ['required', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE, 'unique:vendors,mobile'],
             'email' => AdminValidationRules::emailRules(true, ['unique:vendors,email']),
+            'aadhar_front' => ['required', ...$image],
+            'aadhar_back' => ['required', ...$image],
+            'cover_image' => ['nullable', ...$image],
+            'profile_image' => ['nullable', ...$image],
+            'shop_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'service_types' => ['required', 'array', 'min:1'],
+            'service_types.*' => ['string', 'max:100', Rule::in(self::SERVICE_TYPES)],
+            'business_mobile' => ['nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE],
+            'business_mail' => AdminValidationRules::emailRules(false),
+            'aadhar_number' => ['nullable', 'string', 'size:12', 'regex:/^[2-9][0-9]{11}$/'],
+            'gst_no' => ['nullable', 'string', 'size:15', 'regex:'.AdminValidationRules::REGEX_GST],
+            'address' => ['nullable', 'string', 'max:500', 'regex:'.AdminValidationRules::REGEX_TEXT],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
-            'service_types' => ['required', 'string', 'max:500', 'regex:'.AdminValidationRules::REGEX_TEXT],
-            'aadhar_front' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-            'aadhar_back' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'state' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
+            'country' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
+            'pincode' => ['nullable', 'string', 'max:10', 'regex:/^[1-9][0-9]{5}$/'],
+            'shop_logo' => ['nullable', ...$image],
+            'pan_card' => ['nullable', ...$image],
+            'account_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
+            'account_no' => ['required', 'string', 'max:20', 'regex:'.AdminValidationRules::REGEX_ACCOUNT_NUMBER],
+            'bank_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'ifsc_code' => ['required', 'string', 'size:11', 'regex:'.AdminValidationRules::REGEX_IFSC],
+            'account_type' => ['required', 'in:savings,current'],
         ];
     }
 

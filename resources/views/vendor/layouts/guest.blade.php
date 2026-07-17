@@ -9,7 +9,7 @@
     @include('vendor.partials.styles')
     @include('partials.panel-lightbox-assets')
 </head>
-<body class="vp-body">
+<body class="vp-body vp-body--guest">
     <div class="vp-guest-wrap">
         @yield('content')
     </div>
