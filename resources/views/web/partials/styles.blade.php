@@ -1751,6 +1751,23 @@ border-radius: 8px !important;
     display: block;
 }
 
+/* When the slider has only a few items, center them and disable scroll behavior on
+   wider viewports so they don't sit against the left edge with empty space to the right. */
+@media (min-width: 720px) {
+    .service-slider.slider-is-few,
+    .category-slider.slider-is-few {
+        justify-content: center;
+        overflow-x: visible;
+        flex-wrap: wrap;
+        row-gap: 1.5rem;
+    }
+    .service-slider.slider-is-few .service-card,
+    .category-slider.slider-is-few .category-card {
+        width: clamp(220px, 22vw, 260px);
+        flex: 0 0 auto;
+    }
+}
+
 .service-card .jbw-step-title,
 .category-card .jbw-step-title {
     font-size: 1rem;

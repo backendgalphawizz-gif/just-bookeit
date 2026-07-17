@@ -137,6 +137,10 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
         </div>
     </div>
 </section>
+@php
+    $servicesCount = $services->count();
+    $servicesFewClass = $servicesCount > 0 && $servicesCount <= 4 ? ' slider-is-few' : '';
+@endphp
 <section class="jbw-section-band">
     <div class="jbw-container">
         <div class="jbw-section-head designers-header">
@@ -144,17 +148,19 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
                 <span class="jbw-eyebrow">What we offer</span>
                 <h2 class="jbw-section-title">Our services</h2>
             </div>
+            @if ($servicesCount === 0 || $servicesCount > 4)
             <div class="designer-nav">
-                <button class="designer-arrow prev" onclick="slideServices(-1)">&#10094;</button>
-                <button class="designer-arrow next" onclick="slideServices(1)">&#10095;</button>
+                <button class="designer-arrow prev" onclick="slideServices(-1)" aria-label="Previous">&#10094;</button>
+                <button class="designer-arrow next" onclick="slideServices(1)" aria-label="Next">&#10095;</button>
             </div>
+            @endif
         </div>
 
         <div class="service-slider-wrapper">
-            <div class="service-slider" id="serviceSlider">
+            <div class="service-slider{{ $servicesFewClass }}" id="serviceSlider">
                 @forelse ($services as $index => $service)
-                    <!-- CHANGED: Turned from <a> into a button/div to prevent instant redirect -->
                     <div class="service-card textalign"
+                         role="button" tabindex="0"
                          style="cursor: pointer;"
                          onclick="openGenderModal('{{ route('web.services.index', ['service' => $service->id]) }}')">
 
@@ -170,6 +176,7 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
                 @empty
                     @foreach ([['Fashion Designer Booking','Work with a personal stylist'],['Rental Dresses Booking','Hundreds of styles to choose from'],['Rental Jewellery Booking','Complete the look']] as $i => $svc)
                         <div class="service-card textalign"
+                             role="button" tabindex="0"
                              style="cursor: pointer;"
                              onclick="openGenderModal('{{ route('web.services.index') }}')">
                             <div class="jbw-tile">
@@ -212,6 +219,10 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
 </div>
 
 {{-- ── Shop by category ──────────────────────────────────────────── --}}
+@php
+    $categoriesCount = $shopCategories->count();
+    $categoriesFewClass = $categoriesCount > 0 && $categoriesCount <= 4 ? ' slider-is-few' : '';
+@endphp
 <section class="jbw-section-band">
     <div class="jbw-container">
         <div class="jbw-section-head designers-header">
@@ -219,19 +230,21 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
                 <span class="jbw-eyebrow">Collections</span>
                 <h2 class="jbw-section-title">Shop by category</h2>
             </div>
+            @if ($categoriesCount === 0 || $categoriesCount > 4)
             <div class="designer-nav">
-                <button class="designer-arrow prev" onclick="slideCategories(-1)">
+                <button class="designer-arrow prev" onclick="slideCategories(-1)" aria-label="Previous">
                     &#10094;
                 </button>
 
-                <button class="designer-arrow next" onclick="slideCategories(1)">
+                <button class="designer-arrow next" onclick="slideCategories(1)" aria-label="Next">
                     &#10095;
                 </button>
             </div>
+            @endif
 
         </div>
         <div class="category-slider-wrapper">
-            <div class="category-slider" id="categorySlider">
+            <div class="category-slider{{ $categoriesFewClass }}" id="categorySlider">
                 @forelse ($shopCategories as $i => $shopCategory)
                     <a href="{{ route('web.catalog.index', ['category' => $shopCategory->id]) }}" class="category-card textalign">
                         <div class="jbw-tile jbw-tile--category">
