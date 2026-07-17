@@ -452,6 +452,114 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
 
         restartTimer();
     })();
+
+    /* ── Featured designers: auto-scrolling marquee with pause on hover & drag/swipe ── */
+    (function () {
+        const marquee = document.querySelector('[data-designer-marquee]');
+        if (!marquee) return;
+        const track = marquee.querySelector('.jbw-designer-marquee-track');
+        if (!track) return;
+
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        const SPEED = 0.55;
+        const RESUME_DELAY = 1400;
+        let paused = false;
+        let resumeTimer = null;
+        let rafId = null;
+        let lastTs = 0;
+
+        const halfWidth = () => track.scrollWidth / 2;
+
+        const wrap = () => {
+            const half = halfWidth();
+            if (half <= 0) return;
+            if (marquee.scrollLeft >= half) marquee.scrollLeft -= half;
+            else if (marquee.scrollLeft < 0) marquee.scrollLeft += half;
+        };
+
+        const step = (ts) => {
+            const dt = lastTs ? (ts - lastTs) : 16;
+            lastTs = ts;
+            if (!paused && !prefersReducedMotion) {
+                marquee.scrollLeft += SPEED * (dt / 16);
+                wrap();
+            }
+            rafId = requestAnimationFrame(step);
+        };
+
+        const scheduleResume = () => {
+            if (resumeTimer) clearTimeout(resumeTimer);
+            resumeTimer = setTimeout(() => { paused = false; }, RESUME_DELAY);
+        };
+
+        marquee.addEventListener('mouseenter', () => { paused = true; if (resumeTimer) clearTimeout(resumeTimer); });
+        marquee.addEventListener('mouseleave', () => { paused = false; });
+        marquee.addEventListener('focusin', () => { paused = true; });
+        marquee.addEventListener('focusout', () => { paused = false; });
+
+        marquee.addEventListener('wheel', () => { paused = true; scheduleResume(); }, { passive: true });
+        marquee.addEventListener('touchstart', () => { paused = true; }, { passive: true });
+        marquee.addEventListener('touchend', () => { scheduleResume(); }, { passive: true });
+        marquee.addEventListener('touchcancel', () => { scheduleResume(); }, { passive: true });
+
+        marquee.addEventListener('scroll', () => { wrap(); }, { passive: true });
+
+        // Desktop drag-to-scroll
+        let isDown = false;
+        let dragMoved = false;
+        let startX = 0;
+        let scrollStart = 0;
+
+        marquee.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            isDown = true;
+            dragMoved = false;
+            startX = e.clientX;
+            scrollStart = marquee.scrollLeft;
+            paused = true;
+            marquee.classList.add('is-dragging');
+            try { marquee.setPointerCapture(e.pointerId); } catch (_) {}
+        });
+
+        marquee.addEventListener('pointermove', (e) => {
+            if (!isDown) return;
+            const dx = e.clientX - startX;
+            if (Math.abs(dx) > 3) dragMoved = true;
+            marquee.scrollLeft = scrollStart - dx;
+        });
+
+        const endDrag = (e) => {
+            if (!isDown) return;
+            isDown = false;
+            marquee.classList.remove('is-dragging');
+            try { if (e) marquee.releasePointerCapture(e.pointerId); } catch (_) {}
+            scheduleResume();
+        };
+
+        marquee.addEventListener('pointerup', endDrag);
+        marquee.addEventListener('pointercancel', endDrag);
+        marquee.addEventListener('pointerleave', endDrag);
+
+        // Prevent the click from firing after a drag, so we don't accidentally navigate.
+        marquee.addEventListener('click', (e) => {
+            if (dragMoved) {
+                e.preventDefault();
+                e.stopPropagation();
+                dragMoved = false;
+            }
+        }, true);
+
+        // Seed: start slightly offset so first tile isn't cut by the fade mask.
+        requestAnimationFrame(() => {
+            marquee.scrollLeft = 0;
+            rafId = requestAnimationFrame(step);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (rafId) cancelAnimationFrame(rafId);
+        });
+    })();
 </script>
 <script>
     let currentServiceUrl = '';
