@@ -1,1 +1,1 @@
-<th class="jb-col-sn">No.</th>
+<th class="jb-col-sn">No</th>

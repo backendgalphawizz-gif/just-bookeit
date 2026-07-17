@@ -1,21 +1,33 @@
 @extends('web.layouts.app')
 
-@section('title', 'My Measurements')
+@section('title', ($editing ?? false) ? 'Edit measurement profile' : 'Add measurement profile')
 
 @section('content')
 <div class="jbw-container jbw-measure-page">
-    @php $redirectTo = $redirectTo ?? null; @endphp
+    @php
+        $redirectTo = $redirectTo ?? null;
+        $editing = $editing ?? false;
+        $defaultName = $defaultName ?? 'Profile 1';
+    @endphp
     <div class="jbw-measure-topbar">
         <a href="{{ $redirectTo ?: route('web.profile.measurements') }}" class="jbw-measure-back">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             {{ $redirectTo ? 'Back' : 'My Measurements' }}
         </a>
-        <a href="{{ $redirectTo ?: route('web.catalog.index') }}" class="jbw-measure-skip">Skip for now</a>
+        @unless ($editing)
+            <a href="{{ $redirectTo ?: route('web.catalog.index') }}" class="jbw-measure-skip">Skip for now</a>
+        @endunless
     </div>
 
     <div class="jbw-measure-card">
-        <form method="POST" action="{{ route('web.profile.measurements.store') }}">
+        <form
+            method="POST"
+            action="{{ $editing ? route('web.profile.measurements.update', $profile) : route('web.profile.measurements.store') }}"
+        >
             @csrf
+            @if ($editing)
+                @method('PUT')
+            @endif
             @if ($redirectTo)
                 <input type="hidden" name="redirect" value="{{ $redirectTo }}">
             @endif
@@ -25,7 +37,7 @@
                 <div class="jbw-measure-form-grid">
                     <div class="jbw-field">
                         <label class="jbw-label" for="name">Profile name</label>
-                        <input type="text" id="name" name="name" class="jbw-input" value="{{ old('name', $profile?->name ?? 'Default profile') }}">
+                        <input type="text" id="name" name="name" class="jbw-input" value="{{ old('name', $profile?->name ?? $defaultName) }}" placeholder="e.g. My size, Husband, Kids">
                     </div>
                     <div class="jbw-field">
                         <label class="jbw-label" for="measurement_type">Type</label>
@@ -87,7 +99,9 @@
             @endforeach
 
             <div class="jbw-measure-actions">
-                <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--cta">SAVE & CONTINUE</button>
+                <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--cta">
+                    {{ $editing ? 'SAVE PROFILE' : 'SAVE & CONTINUE' }}
+                </button>
             </div>
         </form>
     </div>
@@ -106,7 +120,6 @@
     }
 
     function applyType(type) {
-        // Fields: show/hide and enable/disable so hidden values are not submitted.
         document.querySelectorAll('[data-measure-field]').forEach(function (field) {
             var visible = appliesTo(field, type);
             field.style.display = visible ? '' : 'none';
@@ -115,7 +128,6 @@
             });
         });
 
-        // Sections: hide when none of their fields apply to this type.
         document.querySelectorAll('[data-measure-section]').forEach(function (section) {
             section.style.display = appliesTo(section, type) ? '' : 'none';
         });

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\CheckoutOrder;
+use App\Models\Customer;
 use App\Models\CustomerMeasurement;
 use App\Models\Order;
 

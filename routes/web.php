@@ -85,6 +85,9 @@ Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::get('/profile/measurements', [ProfileController::class, 'measurements'])->name('web.profile.measurements');
     Route::get('/profile/measurements/create', [ProfileController::class, 'createMeasurement'])->name('web.profile.measurements.create');
     Route::post('/profile/measurements', [ProfileController::class, 'storeMeasurement'])->name('web.profile.measurements.store');
+    Route::get('/profile/measurements/{measurement}/edit', [ProfileController::class, 'editMeasurement'])->name('web.profile.measurements.edit');
+    Route::put('/profile/measurements/{measurement}', [ProfileController::class, 'updateMeasurement'])->name('web.profile.measurements.update');
+    Route::delete('/profile/measurements/{measurement}', [ProfileController::class, 'destroyMeasurement'])->name('web.profile.measurements.destroy');
     Route::get('/profile/addresses', [ProfileController::class, 'addresses'])->name('web.profile.addresses');
     Route::post('/profile/addresses', [ProfileController::class, 'storeAddress'])->name('web.profile.addresses.store');
     Route::delete('/profile/addresses/{address}', [ProfileController::class, 'destroyAddress'])->name('web.profile.addresses.destroy');

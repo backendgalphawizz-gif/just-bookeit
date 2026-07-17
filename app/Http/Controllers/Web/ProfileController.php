@@ -62,13 +62,31 @@ class ProfileController extends WebController
     public function createMeasurement(Request $request): View
     {
         $customer = Auth::guard('customer')->user();
-        $profile = $customer->measurements()->latest('id')->first();
+        $count = $customer->measurements()->count();
 
         return view('web.profile.measurements.form', [
             'customer' => $customer,
-            'profile' => $profile,
+            'profile' => null,
+            'editing' => false,
             'sections' => WebMeasurementForm::sections(),
-            'values' => WebMeasurementForm::valuesFromProfile($profile),
+            'values' => [],
+            'defaultName' => 'Profile '.($count + 1),
+            'redirectTo' => $this->safeRedirectTarget($request->query('redirect')),
+        ]);
+    }
+
+    public function editMeasurement(Request $request, CustomerMeasurement $measurement): View
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($measurement->customer_id === $customer->id, 403);
+
+        return view('web.profile.measurements.form', [
+            'customer' => $customer,
+            'profile' => $measurement,
+            'editing' => true,
+            'sections' => WebMeasurementForm::sections(),
+            'values' => WebMeasurementForm::valuesFromProfile($measurement),
+            'defaultName' => $measurement->name,
             'redirectTo' => $this->safeRedirectTarget($request->query('redirect')),
         ]);
     }
@@ -76,36 +94,72 @@ class ProfileController extends WebController
     public function storeMeasurement(Request $request): RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
+        $data = $this->validateMeasurementInput($request);
 
-        $data = $request->validate([
+        $customer->measurements()->create(
+            CustomerMeasurement::normalizeApiPayload(
+                WebMeasurementForm::toApiPayload(
+                    $data,
+                    $data['name'] ?? 'Profile 1',
+                    $data['measurement_type'] ?? 'women'
+                )
+            )
+        );
+
+        $redirectTo = $this->safeRedirectTarget($request->input('redirect'));
+
+        return redirect()
+            ->to($redirectTo ?? route('web.profile.measurements'))
+            ->with('success', 'Measurement profile added successfully.');
+    }
+
+    public function updateMeasurement(Request $request, CustomerMeasurement $measurement): RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($measurement->customer_id === $customer->id, 403);
+
+        $data = $this->validateMeasurementInput($request);
+
+        $measurement->update(
+            CustomerMeasurement::normalizeApiPayload(
+                WebMeasurementForm::toApiPayload(
+                    $data,
+                    $data['name'] ?? $measurement->name,
+                    $data['measurement_type'] ?? $measurement->measurement_type ?? 'women'
+                ),
+                $measurement
+            )
+        );
+
+        $redirectTo = $this->safeRedirectTarget($request->input('redirect'));
+
+        return redirect()
+            ->to($redirectTo ?? route('web.profile.measurements'))
+            ->with('success', 'Measurement profile updated successfully.');
+    }
+
+    public function destroyMeasurement(CustomerMeasurement $measurement): RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($measurement->customer_id === $customer->id, 403);
+
+        $measurement->delete();
+
+        return redirect()
+            ->route('web.profile.measurements')
+            ->with('success', 'Measurement profile removed.');
+    }
+
+    /** @return array<string, mixed> */
+    private function validateMeasurementInput(Request $request): array
+    {
+        return $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
             'measurement_type' => ['nullable', 'in:women,men,kid'],
             ...collect(WebMeasurementForm::labelToField())
                 ->mapWithKeys(fn (string $field) => [$field => ['nullable', 'string', 'max:50']])
                 ->all(),
         ]);
-
-        $payload = CustomerMeasurement::normalizeApiPayload(
-            WebMeasurementForm::toApiPayload(
-                $data,
-                $data['name'] ?? 'Default profile',
-                $data['measurement_type'] ?? 'women'
-            )
-        );
-
-        $profile = $customer->measurements()->latest('id')->first();
-
-        if ($profile) {
-            $profile->update($payload);
-        } else {
-            $customer->measurements()->create($payload);
-        }
-
-        $redirectTo = $this->safeRedirectTarget($request->input('redirect'));
-
-        return redirect()
-            ->to($redirectTo ?? route('web.profile.measurements'))
-            ->with('success', 'Measurements saved successfully.');
     }
 
     /**

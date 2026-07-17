@@ -2784,6 +2784,30 @@ border-radius: 8px !important;
 .jbw-add-card:hover { border-color: var(--c-primary); }
 .jbw-add-card strong { display: block; color: var(--c-text); margin-top: 0.5rem; }
 
+.jbw-measure-list { display: flex; flex-direction: column; gap: 1rem; }
+.jbw-measure-profile-card { margin-bottom: 0; }
+.jbw-measure-profile-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.jbw-measure-profile-name { font-weight: 800; margin: 0; font-size: 1rem; }
+.jbw-measure-profile-meta { font-size: 0.8125rem; color: var(--c-muted); margin: 0.25rem 0 0; }
+.jbw-measure-profile-actions { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+.jbw-measure-profile-link {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+.jbw-measure-profile-link--danger { color: #c0392b; }
+
 /* ─── Vendor page ────────────────────────────────────────────────── */
 .jbw-vendor-hero {
     position: relative; border-radius: 20px; overflow: hidden;
