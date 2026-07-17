@@ -109,6 +109,76 @@ class OrderItem extends Model
         return filled($name) ? (string) $name : null;
     }
 
+    public function rentalStartDate(): ?string
+    {
+        $value = $this->item_snapshot['rental_start_date'] ?? null;
+
+        return filled($value) ? (string) $value : null;
+    }
+
+    public function rentalEndDate(): ?string
+    {
+        $value = $this->item_snapshot['rental_end_date'] ?? null;
+
+        return filled($value) ? (string) $value : null;
+    }
+
+    public function rentalDurationDays(): ?int
+    {
+        $start = $this->rentalStartDate();
+        $end = $this->rentalEndDate();
+
+        if (! $start || ! $end) {
+            return null;
+        }
+
+        try {
+            $days = \Carbon\Carbon::parse($start)->startOfDay()->diffInDays(\Carbon\Carbon::parse($end)->startOfDay()) + 1;
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return max(1, (int) $days);
+    }
+
+    public function customerNotes(): ?string
+    {
+        $value = $this->item_snapshot['customer_notes'] ?? null;
+
+        return filled($value) ? (string) $value : null;
+    }
+
+    public function measurementProfileId(): ?int
+    {
+        $value = $this->item_snapshot['measurement_profile_id'] ?? null;
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    public function serviceType(): ?string
+    {
+        $value = $this->item_snapshot['service_type'] ?? null;
+
+        return filled($value) ? (string) $value : null;
+    }
+
+    /** @return list<string> */
+    public function referenceImagePaths(): array
+    {
+        $paths = $this->item_snapshot['reference_image_paths'] ?? [];
+
+        return is_array($paths) ? array_values(array_filter($paths, 'is_string')) : [];
+    }
+
+    /** @return list<string> */
+    public function referenceImageUrls(): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (string $path) => StoresUploadedFiles::url($path),
+            $this->referenceImagePaths()
+        )));
+    }
+
     public function statusLabel(): string
     {
         return match ($this->status) {

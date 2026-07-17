@@ -212,7 +212,7 @@ class VendorApiPresenter
     public static function bookingDetail(Order $order): array
     {
         $order->loadMissing([
-            'customer',
+            'customer.measurements',
             'category',
             'driver',
             'vendor',
@@ -222,8 +222,22 @@ class VendorApiPresenter
             'refunds',
         ]);
 
+        $orderItems = $order->orderItems;
+        $lineItems = $orderItems->map(fn ($item) => self::orderLineItem($item))->values()->all();
+        $isMultiItem = $orderItems->count() > 1;
+        $itemsPendingAcceptance = $orderItems->where('status', \App\Models\OrderItem::STATUS_PENDING)->count();
+        $itemsAccepted = $orderItems->where('status', \App\Models\OrderItem::STATUS_ACCEPTED)->count();
+        $itemsCancelled = $orderItems->where('status', \App\Models\OrderItem::STATUS_CANCELLED)->count();
+
         return [
             ...self::bookingSummary($order),
+            'is_multi_item' => $isMultiItem,
+            'line_items_count' => max(1, $orderItems->count()),
+            'items_status_breakdown' => [
+                'pending' => $itemsPendingAcceptance,
+                'accepted' => $itemsAccepted,
+                'cancelled' => $itemsCancelled,
+            ],
             'product' => self::bookingProduct($order),
             'category_detail' => $order->category ? CustomerApiPresenter::category($order->category) : null,
             'customer' => self::bookingCustomer($order),
@@ -259,7 +273,8 @@ class VendorApiPresenter
             ] : null,
             'customer_review' => self::bookingCustomerReview($order),
             'review' => self::bookingCustomerReview($order),
-            'order_items' => $order->orderItems->map(fn ($item) => self::orderLineItem($item))->values()->all(),
+            'order_items' => $lineItems,
+            'line_items' => $lineItems,
             'checkout' => $order->checkoutOrder ? [
                 'id' => $order->checkoutOrder->id,
                 'order_number' => $order->checkoutOrder->order_number,
@@ -277,6 +292,19 @@ class VendorApiPresenter
     /** @return array<string, mixed> */
     public static function orderLineItem(\App\Models\OrderItem $item): array
     {
+        $rentalStart = $item->rentalStartDate();
+        $rentalEnd = $item->rentalEndDate();
+        $rentalDays = $item->rentalDurationDays();
+
+        $startCarbon = $rentalStart ? \Carbon\Carbon::parse($rentalStart) : null;
+        $endCarbon = $rentalEnd ? \Carbon\Carbon::parse($rentalEnd) : null;
+        $rentalLabel = match (true) {
+            $startCarbon && $endCarbon => $startCarbon->format('jS M').' – '.$endCarbon->format('jS M, Y'),
+            $startCarbon !== null => 'From '.$startCarbon->format('jS M, Y'),
+            $endCarbon !== null => 'Until '.$endCarbon->format('jS M, Y'),
+            default => null,
+        };
+
         return [
             'id' => $item->id,
             'portfolio_item_id' => $item->portfolio_item_id,
@@ -298,7 +326,40 @@ class VendorApiPresenter
             'can_accept' => $item->canAccept(),
             'can_reject' => $item->canReject(),
             'responded_at' => $item->responded_at?->toIso8601String(),
+            'rental_start_date' => $rentalStart,
+            'rental_end_date' => $rentalEnd,
+            'rental_start_date_label' => $startCarbon?->format('jS M, Y'),
+            'rental_end_date_label' => $endCarbon?->format('jS M, Y'),
+            'rental_duration_days' => $rentalDays,
+            'rental_period_label' => $rentalLabel,
+            'customer_notes' => $item->customerNotes(),
+            'service_type' => $item->serviceType(),
+            'reference_image_urls' => $item->referenceImageUrls(),
+            'measurement_profile_id' => $item->measurementProfileId(),
+            'measurements' => self::orderItemMeasurements($item),
         ];
+    }
+
+    /** @return array<string, mixed>|null */
+    protected static function orderItemMeasurements(\App\Models\OrderItem $item): ?array
+    {
+        $profileId = $item->measurementProfileId();
+        if (! $profileId) {
+            return null;
+        }
+
+        $order = $item->order ?? $item->order()->first();
+        $customer = $order?->customer;
+        $profile = $customer?->measurements()->whereKey($profileId)->first();
+
+        if (! $profile) {
+            return null;
+        }
+
+        $detail = CustomerApiPresenter::measurementDetail($profile);
+        unset($detail['id']);
+
+        return $detail;
     }
 
     /** @return array<string, string|null> */
