@@ -260,49 +260,70 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
 
 {{-- ── Featured designers ───────────────────────────────────────── --}}
 @if ($featuredDesigners->isNotEmpty())
-<section class="jbw-section-band">
+@php
+    // Duplicate for a seamless infinite marquee loop.
+    // When designers are few, repeat them enough times to fill the viewport comfortably.
+    $marqueePool = $featuredDesigners;
+    if ($featuredDesigners->count() < 6) {
+        $marqueePool = collect();
+        $repeat = (int) ceil(6 / max(1, $featuredDesigners->count()));
+        for ($r = 0; $r < $repeat; $r++) {
+            $marqueePool = $marqueePool->concat($featuredDesigners);
+        }
+    }
+@endphp
+<section class="jbw-section-band jbw-designer-marquee-section">
     <div class="jbw-container">
-        <div class="jbw-section-head designers-header">
-            <div>
-                <!-- <span class="jbw-eyebrow">Curated talent</span> -->
-                <h2 class="jbw-section-title">Featured designers</h2>
-            </div>
-            @if($featuredDesigners->count() > 0)
-            <div class="designer-nav">
-                <button class="designer-arrow prev" onclick="slideDesigners(-1)">
-                    &#10094;
-                </button>
-
-                <button class="designer-arrow next" onclick="slideDesigners(1)">
-                    &#10095;
-                </button>
-            </div>
-            @endif
+        <div class="jbw-section-head">
+            <span class="jbw-eyebrow">Curated talent</span>
+            <h2 class="jbw-section-title">Featured designers</h2>
+            <p class="jbw-section-sub">Verified boutique partners crafting couture, occasion wear and everyday luxe. Hover the strip to pause.</p>
         </div>
-        <div class="designer-carousel">
-            <div class="designer-slider" id="designerSlider">
-                @foreach ($featuredDesigners as $designer)
-                <a href="{{ route('web.vendors.show', $designer) }}" class="jbw-designer">
-                    @if ($designer->profileImageUrl() || $designer->shopLogoUrl())
-                    <img src="{{ $designer->profileImageUrl() ?: $designer->shopLogoUrl() }}"
-                        alt="{{ $designer->brand_name }}"
-                        class="jbw-designer-avatar">
-                    @else
-                    <span class="jbw-designer-avatar jbw-designer-fallback">
-                        {{ strtoupper(substr($designer->brand_name ?? 'D', 0, 1)) }}
+    </div>
+
+    <div class="jbw-designer-marquee" data-designer-marquee>
+        <div class="jbw-designer-marquee-track">
+            @foreach ($marqueePool as $designer)
+                <a href="{{ route('web.vendors.show', $designer) }}" class="jbw-designer-card">
+                    <span class="jbw-designer-avatar-ring">
+                        @if ($designer->profileImageUrl() || $designer->shopLogoUrl())
+                            <img src="{{ $designer->profileImageUrl() ?: $designer->shopLogoUrl() }}"
+                                alt="{{ $designer->brand_name }}"
+                                class="jbw-designer-avatar-img"
+                                loading="lazy">
+                        @else
+                            <span class="jbw-designer-avatar-fallback">
+                                {{ strtoupper(substr($designer->brand_name ?? 'D', 0, 1)) }}
+                            </span>
+                        @endif
                     </span>
+                    <p class="jbw-designer-card-name">{{ $designer->brand_name }}</p>
+                    @if ($designer->city)
+                        <p class="jbw-designer-card-meta">{{ $designer->city }}</p>
                     @endif
-
-                    <p class="jbw-step-title textalign textlimit">
-                        {{ $designer->brand_name }}
-                    </p>
                 </a>
-                @endforeach
-            </div>
-
-
-
-
+            @endforeach
+            {{-- Duplicated set for seamless loop --}}
+            @foreach ($marqueePool as $designer)
+                <a href="{{ route('web.vendors.show', $designer) }}" class="jbw-designer-card" aria-hidden="true" tabindex="-1">
+                    <span class="jbw-designer-avatar-ring">
+                        @if ($designer->profileImageUrl() || $designer->shopLogoUrl())
+                            <img src="{{ $designer->profileImageUrl() ?: $designer->shopLogoUrl() }}"
+                                alt=""
+                                class="jbw-designer-avatar-img"
+                                loading="lazy">
+                        @else
+                            <span class="jbw-designer-avatar-fallback">
+                                {{ strtoupper(substr($designer->brand_name ?? 'D', 0, 1)) }}
+                            </span>
+                        @endif
+                    </span>
+                    <p class="jbw-designer-card-name">{{ $designer->brand_name }}</p>
+                    @if ($designer->city)
+                        <p class="jbw-designer-card-meta">{{ $designer->city }}</p>
+                    @endif
+                </a>
+            @endforeach
         </div>
     </div>
 </section>
@@ -357,12 +378,6 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
 
 @push('scripts')
 <script>
-    function slideDesigners(direction) {
-        const slider = document.getElementById('designerSlider');
-        if (!slider) return;
-        slider.scrollBy({ left: direction * 300, behavior: 'smooth' });
-    }
-
     function slideCategories(direction) {
         const slider = document.getElementById('categorySlider');
         if (!slider) return;
