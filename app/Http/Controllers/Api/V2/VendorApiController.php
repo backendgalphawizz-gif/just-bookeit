@@ -23,8 +23,43 @@ abstract class VendorApiController extends ApiController
 
     protected function assertOwnsOrder(Order $order, Vendor $vendor): void
     {
-        abort_unless($order->vendor_id === $vendor->id, 403);
-        abort_unless($order->isPaymentConfirmed(), 404);
+        abort_unless($order->vendor_id === $vendor->id, 403, 'This booking does not belong to your vendor account.');
+        abort_unless(
+            $order->isPaymentConfirmed(),
+            404,
+            'Booking not available until payment is confirmed (payment_status must be success).'
+        );
+    }
+
+    /**
+     * Resolve a vendor booking by order id, order_number, or checkout_order_id.
+     */
+    protected function resolveOwnedBooking(Request $request, string|int $booking): Order
+    {
+        $vendor = $this->vendor($request);
+        $key = trim((string) $booking);
+
+        $order = Order::query()
+            ->where('vendor_id', $vendor->id)
+            ->where(function ($query) use ($key) {
+                $query->where('order_number', $key);
+
+                if (ctype_digit($key)) {
+                    $id = (int) $key;
+                    $query->orWhere('id', $id)
+                        ->orWhere('checkout_order_id', $id);
+                }
+            })
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $order) {
+            abort(404, 'Booking not found for this vendor.');
+        }
+
+        $this->assertOwnsOrder($order, $vendor);
+
+        return $order;
     }
 
     protected function assertOwnsProduct(PortfolioItem $product, Vendor $vendor): void
