@@ -26,6 +26,7 @@ class HomeController extends VendorApiController
 
         $newBookings = Order::query()
             ->where('vendor_id', $vendor->id)
+            ->paymentConfirmed()
             ->whereIn('status', ['new', 'pending_acceptance'])
             ->with(['customer', 'category'])
             ->latest('created_at')
