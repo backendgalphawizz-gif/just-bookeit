@@ -24,44 +24,71 @@
     </nav>
 
     @php
-        $galleryUrls = $item->galleryImageUrls();
+        $galleryMedia = $item->galleryMediaItems();
+        if ($galleryMedia === []) {
+            $galleryMedia = [['type' => 'image', 'url' => $fallbackImg, 'poster' => null]];
+        }
+        $galleryUrls = array_values(array_map(fn ($m) => $m['url'], array_filter($galleryMedia, fn ($m) => $m['type'] === 'image')));
         if ($galleryUrls === []) {
             $galleryUrls = [$fallbackImg];
         }
+        $initialMedia = $galleryMedia[0];
     @endphp
 
     <div class="jbw-product-detail">
-        {{-- Gallery --}}
-        <!-- <div class="jbw-gallery-main">
-            <img id="jbw-gallery-main" src="{{ $galleryUrls[0] }}" alt="{{ $item->title }}">
-            @if (count($galleryUrls) > 1)
-                <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
-                    @foreach ($galleryUrls as $url)
-                        <button type="button" onclick="document.getElementById('jbw-gallery-main').src='{{ $url }}'" style="border:2px solid transparent;border-radius:0.5rem;padding:0;background:none;cursor:pointer">
-                            <img src="{{ $url }}" alt="" style="width:4rem;height:4rem;object-fit:cover;border-radius:0.5rem">
+        {{-- Gallery (images + videos) --}}
+        <div class="jbw-gallery-wrap" id="jbw-product-gallery" data-product-title="{{ $item->title }}">
+            @if (count($galleryMedia) > 1)
+                <div class="jbw-gallery-thumbs" role="list">
+                    @foreach ($galleryMedia as $index => $media)
+                        <button
+                            type="button"
+                            class="jbw-gallery-thumb {{ $index === 0 ? 'is-active' : '' }} {{ $media['type'] === 'video' ? 'jbw-gallery-thumb--video' : '' }}"
+                            data-gallery-type="{{ $media['type'] }}"
+                            data-gallery-url="{{ $media['url'] }}"
+                            data-gallery-poster="{{ $media['poster'] ?? ($galleryUrls[0] ?? '') }}"
+                            aria-label="{{ $media['type'] === 'video' ? 'Play video' : 'View image' }} {{ $index + 1 }}"
+                        >
+                            @if ($media['type'] === 'video')
+                                <span class="jbw-gallery-thumb-media">
+                                    @if (! empty($media['poster']) || ! empty($galleryUrls[0]))
+                                        <img src="{{ $media['poster'] ?: $galleryUrls[0] }}" alt="">
+                                    @else
+                                        <span class="jbw-gallery-thumb-fallback" aria-hidden="true"></span>
+                                    @endif
+                                    <span class="jbw-gallery-play" aria-hidden="true">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                    </span>
+                                </span>
+                            @else
+                                <img src="{{ $media['url'] }}" alt="">
+                            @endif
                         </button>
                     @endforeach
                 </div>
             @endif
-        </div> -->
-<div class="jbw-gallery-wrap">
 
-    @if (count($galleryUrls) > 1)
-        <div class="jbw-gallery-thumbs">
-            @foreach ($galleryUrls as $url)
-                <button type="button"
-                    onclick="document.getElementById('jbw-gallery-main').src='{{ $url }}'">
-                    <img src="{{ $url }}" alt="">
-                </button>
-            @endforeach
+            <div class="jbw-gallery-main">
+                <img
+                    id="jbw-gallery-main-image"
+                    class="jbw-gallery-stage {{ $initialMedia['type'] === 'image' ? '' : 'is-hidden' }}"
+                    src="{{ $initialMedia['type'] === 'image' ? $initialMedia['url'] : ($galleryUrls[0] ?? $fallbackImg) }}"
+                    alt="{{ $item->title }}"
+                >
+                <video
+                    id="jbw-gallery-main-video"
+                    class="jbw-gallery-stage {{ $initialMedia['type'] === 'video' ? '' : 'is-hidden' }}"
+                    controls
+                    playsinline
+                    preload="metadata"
+                    @if ($initialMedia['type'] === 'video')
+                        src="{{ $initialMedia['url'] }}"
+                        @if (! empty($initialMedia['poster'])) poster="{{ $initialMedia['poster'] }}" @endif
+                    @endif
+                ></video>
+            </div>
         </div>
-    @endif
 
-    <div class="jbw-gallery-main">
-        <img id="jbw-gallery-main" src="{{ $galleryUrls[0] }}" alt="{{ $item->title }}">
-    </div>
-
-</div>
         {{-- Info --}}
         <div class="jbw-detail-info">
             <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
@@ -135,79 +162,117 @@
         </section>
     @endif
     <section class="jbw-section" style="padding-top: 0rem;">
-
         <div>
             <h2 class="jbw-product-detail-title">Customer Reviews</h2>
-             </div>
-
-
-  <div class="reviews-header">
-            <div class="rating-summary">
-                ★★★★★ <span>4.8 (124 reviews)</span>
-            </div>
-
-
-        <a href="#" class="view-all">VIEW ALL</a>
-    </div>
-     </div>
-
-    <div class="reviews-grid jbw-container">
-
-        <div class="review-card">
-            <div class="review-top">
-                <div class="review-user">
-                    <img src="https://i.pravatar.cc/80?img=5" alt="">
-                    <div>
-                        <h4>Veronika</h4>
-                        <div class="stars">★★★★★</div>
-                    </div>
-                </div>
-
-                <span class="review-time">2 days ago</span>
-            </div>
-
-            <p>
-                "The quality of the velvet is exceptional. It fits perfectly
-                and looked stunning at the evening gala. Highly recommend
-                Valentino's collection for special occasions."
-            </p>
         </div>
 
-        <div class="review-card">
-            <div class="review-top">
-                <div class="review-user">
-                    <img src="https://i.pravatar.cc/80?img=12" alt="">
-                    <div>
-                        <h4>Aayush</h4>
-                        <div class="stars">★★★★★</div>
-                    </div>
+        @if ($reviewCount > 0)
+            @php
+                $filledStars = (int) round(min(5, max(0, $averageRating)));
+                $summaryStars = str_repeat('★', $filledStars).str_repeat('☆', 5 - $filledStars);
+            @endphp
+            <div class="reviews-header">
+                <div class="rating-summary">
+                    <span class="stars" aria-hidden="true">{{ $summaryStars }}</span>
+                    <span>{{ number_format($averageRating, 1) }} ({{ $reviewCount }} {{ $reviewCount === 1 ? 'review' : 'reviews' }})</span>
                 </div>
-
-                <span class="review-time">1 week ago</span>
+                @if ($item->vendor)
+                    <a href="{{ route('web.vendors.show', $item->vendor) }}" class="view-all">VIEW ALL</a>
+                @endif
             </div>
 
-            <p>
-                "Booked this for my sister's wedding. The color was even better
-                in person—a deep, rich pink that caught the light beautifully.
-                Great service!"
-            </p>
-        </div>
-
-    </div>
-</section>
+            <div class="reviews-grid">
+                @foreach ($reviews as $review)
+                    @php
+                        $rating = (int) round(min(5, max(0, (float) $review->rating)));
+                        $stars = str_repeat('★', $rating).str_repeat('☆', 5 - $rating);
+                        $name = $review->customer?->name ?: 'Customer';
+                        $avatar = $review->customer?->profileImageUrl();
+                        $initial = strtoupper(substr($name, 0, 1));
+                        $comment = trim((string) ($review->comment ?? ''));
+                    @endphp
+                    <div class="review-card">
+                        <div class="review-top">
+                            <div class="review-user">
+                                @if ($avatar)
+                                    <img src="{{ $avatar }}" alt="{{ $name }}">
+                                @else
+                                    <span class="review-avatar-fallback" aria-hidden="true">{{ $initial }}</span>
+                                @endif
+                                <div>
+                                    <h4>{{ $name }}</h4>
+                                    <div class="stars" aria-label="{{ $rating }} out of 5 stars">{{ $stars }}</div>
+                                </div>
+                            </div>
+                            <span class="review-time">{{ $review->created_at?->diffForHumans() }}</span>
+                        </div>
+                        @if ($comment !== '')
+                            <p>“{{ $comment }}”</p>
+                        @else
+                            <p class="review-card-muted">No written comment.</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="reviews-empty">
+                <p>No reviews yet for this designer.</p>
+            </div>
+        @endif
+    </section>
 </div>
 @endsection
 
 @push('scripts')
 <script>
 (function () {
+    const gallery = document.getElementById('jbw-product-gallery');
+    const mainImage = document.getElementById('jbw-gallery-main-image');
+    const mainVideo = document.getElementById('jbw-gallery-main-video');
+
+    const showGalleryMedia = (type, url, poster) => {
+        if (!mainImage || !mainVideo || !url) return;
+
+        if (type === 'video') {
+            mainImage.classList.add('is-hidden');
+            mainVideo.classList.remove('is-hidden');
+            if (poster) mainVideo.poster = poster;
+            if (mainVideo.getAttribute('src') !== url) {
+                mainVideo.src = url;
+            }
+            mainVideo.load();
+            return;
+        }
+
+        mainVideo.pause();
+        mainVideo.removeAttribute('src');
+        mainVideo.load();
+        mainVideo.classList.add('is-hidden');
+        mainImage.classList.remove('is-hidden');
+        mainImage.src = url;
+    };
+
+    window.jbwShowProductGalleryImage = (url) => showGalleryMedia('image', url, null);
+
+    if (gallery) {
+        gallery.querySelectorAll('[data-gallery-url]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                gallery.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => thumb.classList.remove('is-active'));
+                btn.classList.add('is-active');
+                showGalleryMedia(
+                    btn.dataset.galleryType || 'image',
+                    btn.dataset.galleryUrl,
+                    btn.dataset.galleryPoster || null
+                );
+            });
+        });
+    }
+
     const picker = document.getElementById('jbw-variant-picker');
     if (!picker) return;
 
     const priceEl = document.getElementById('jbw-detail-price');
-    const galleryMain = document.getElementById('jbw-gallery-main');
     const cartForm = document.getElementById('jbw-add-to-cart-form');
-    const cartBtn = document.getElementById('jbw-add-to-cart-btn');
     const bookLink = document.getElementById('jbw-book-now-link');
     const bookBase = @json(route('web.bookings.overview', $item));
     const inputs = picker.querySelectorAll('.jbw-variant-input');
@@ -222,10 +287,12 @@
             priceEl.textContent = input.dataset.label;
         }
 
-        if (galleryMain && input.dataset.image) {
-            galleryMain.src = input.dataset.image;
-        } else if (galleryMain && picker.dataset.baseImage) {
-            galleryMain.src = picker.dataset.baseImage;
+        const imageUrl = input.dataset.image || picker.dataset.baseImage || '';
+        if (imageUrl) {
+            window.jbwShowProductGalleryImage(imageUrl);
+            gallery?.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => {
+                thumb.classList.toggle('is-active', thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === imageUrl);
+            });
         }
 
         if (cartForm) {

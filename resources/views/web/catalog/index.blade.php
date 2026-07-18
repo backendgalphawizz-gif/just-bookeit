@@ -103,7 +103,7 @@
                     href="{{ route($browseRoute, $filterParams(['service' => null])) }}"
                     @class(['jbw-subcategory-chip', 'is-active'=> ! request('service')])
                     >
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTV8glNVAPS72lgLVMirzwbqIcdaB8PporLMw&s" alt="" class="jbw-subcategory-chip-img">
+                    <img src="{{ asset('images/all-services.svg') }}" alt="All services" class="jbw-subcategory-chip-img">
                     <span class="jbw-subcategory-chip-label">All services</span>
                 </a>
                 @foreach ($serviceCategories as $service)

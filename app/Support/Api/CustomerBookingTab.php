@@ -85,4 +85,40 @@ class CustomerBookingTab
 
         return $query->whereHas('category', fn (Builder $category) => $category->where('slug', $slug));
     }
+
+    public static function typeFromCategorySlug(?string $slug): ?string
+    {
+        if (! filled($slug)) {
+            return null;
+        }
+
+        $slug = strtolower(trim($slug));
+
+        foreach (self::TAB_TO_CATEGORY_SLUG as $type => $mappedSlug) {
+            if ($mappedSlug === $slug) {
+                return $type;
+            }
+        }
+
+        return str_replace('-', '_', $slug);
+    }
+
+    public static function typeLabel(?string $type): ?string
+    {
+        if (! filled($type)) {
+            return null;
+        }
+
+        return match ($type) {
+            'fashion_designer' => 'Fashion Designer',
+            'rental_dress' => 'Rental Dress',
+            'rental_jewellery' => 'Rental Jewellery',
+            default => ucwords(str_replace(['_', '-'], ' ', $type)),
+        };
+    }
+
+    public static function labelFromCategorySlug(?string $slug): ?string
+    {
+        return self::typeLabel(self::typeFromCategorySlug($slug));
+    }
 }

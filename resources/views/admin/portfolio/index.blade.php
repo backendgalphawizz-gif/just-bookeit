@@ -3,13 +3,39 @@
 @section('page_title', 'Products')
 @section('page_subtitle', 'Items vendors want to sell or rent — approve and manage')
 @section('content')
+    @php
+        $typeLabels = [
+            'fashion-designer' => 'Fashion Designer',
+            'rented-dress' => 'Rental Dress',
+            'rented-jewellery' => 'Rental Jewellery',
+        ];
+        $activeTypeLabel = $typeLabels[$type] ?? ($typeTabs->firstWhere('slug', $type)?->name ?? 'Products');
+        $filterQuery = request()->except('page', 'type');
+    @endphp
+
+    <div class="jb-tabs-row">
+        <div class="jb-tabs-list">
+            @foreach ($typeTabs as $tab)
+                @php
+                    $count = (int) ($tabCounts[$tab->id] ?? 0);
+                    $label = $typeLabels[$tab->slug] ?? $tab->name;
+                @endphp
+                <a href="{{ route('admin.portfolio.index', array_merge($filterQuery, ['type' => $tab->slug])) }}"
+                   class="jb-settings-tab {{ $type === $tab->slug ? 'jb-settings-tab--active' : '' }}">
+                    {{ $label }} ({{ $count }})
+                </a>
+            @endforeach
+        </div>
+    </div>
+
     @push('filter_actions')
-        <x-admin.export-dropdown module="portfolio" :params="['search', 'status', 'vendor_id', 'from', 'to']" />
+        <x-admin.export-dropdown module="portfolio" :params="['type', 'search', 'status', 'vendor_id', 'from', 'to']" />
         @if (auth('admin')->user()->hasPermission('portfolio', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.portfolio.create')">+ Add Product</x-admin.button>
+            <x-admin.button variant="primary" size="sm" :href="route('admin.portfolio.create', ['type' => $type])">+ Add Product</x-admin.button>
         @endif
     @endpush
     <form method="GET" class="jb-filters">
+        <input type="hidden" name="type" value="{{ $type }}">
         <div class="jb-filters-grid">
             <div class="jb-filters-field jb-filters-field--wide">
                 <label class="jb-label">Search</label>
@@ -34,11 +60,13 @@
                 </select>
             </div>
             @include('admin.partials.date-filter')
-            @include('admin.partials.filters-end', ['resetUrl' => route('admin.portfolio.index')])
+            @include('admin.partials.filters-end', ['resetUrl' => route('admin.portfolio.index', ['type' => $type])])
         </div>
     </form>
     <div class="jb-card">
-        <div class="jb-card-header"><p class="jb-card-header-title">{{ $items->total() }} products</p></div>
+        <div class="jb-card-header">
+            <p class="jb-card-header-title">{{ $items->total() }} {{ strtolower($activeTypeLabel) }} products</p>
+        </div>
         <div class="jb-table-wrap">
             <table class="jb-table jb-table--balanced">
                 <thead><tr>
@@ -88,7 +116,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="jb-table-empty">No products found.</td></tr>
+                        <tr><td colspan="8" class="jb-table-empty">No {{ strtolower($activeTypeLabel) }} products found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

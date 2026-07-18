@@ -12,10 +12,12 @@ class FirebaseCloudMessagingService
     /** @return array<string, mixed>|null */
     protected function serviceAccount(): ?array
     {
-        $path = config('firebase.service_account_path');
+        $path = $this->resolveServiceAccountPath();
 
-        if (! is_string($path) || ! is_readable($path)) {
-            Log::warning('Firebase service account file is missing or unreadable.', ['path' => $path]);
+        if (! $path || ! is_readable($path)) {
+            Log::warning('Firebase service account file is missing or unreadable.', [
+                'path' => $path ?? config('firebase.service_account_path'),
+            ]);
 
             return null;
         }
@@ -23,6 +25,38 @@ class FirebaseCloudMessagingService
         $json = json_decode((string) file_get_contents($path), true);
 
         return is_array($json) ? $json : null;
+    }
+
+    protected function resolveServiceAccountPath(): ?string
+    {
+        $path = config('firebase.service_account_path');
+
+        if (! is_string($path) || trim($path) === '') {
+            $fallback = config_path('firebase-service-account.json');
+
+            return is_readable($fallback) ? $fallback : null;
+        }
+
+        $path = trim($path);
+
+        // Absolute path (Windows drive / Unix root)
+        if (preg_match('/^(?:[A-Za-z]:[\\\\\\/]|\\\\|\\/)/', $path) === 1) {
+            return $path;
+        }
+
+        // Relative path from project root (e.g. config/firebase-service-account.json)
+        $fromBase = base_path($path);
+        if (is_readable($fromBase)) {
+            return $fromBase;
+        }
+
+        // Also try as relative to config/
+        $fromConfig = config_path(basename($path));
+        if (is_readable($fromConfig)) {
+            return $fromConfig;
+        }
+
+        return $fromBase;
     }
 
     protected function projectId(): ?string

@@ -3,6 +3,7 @@
 .env
 .env.backup
 .env.production
+/config/firebase-service-account.json
 .phpactor.json
 .phpunit.result.cache
 /.fleet

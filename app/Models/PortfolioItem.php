@@ -130,58 +130,69 @@ class PortfolioItem extends Model
     /** @return list<string> */
     public function galleryMediaUrls(): array
     {
+        return array_values(array_map(
+            fn (array $item) => $item['url'],
+            $this->galleryMediaItems()
+        ));
+    }
+
+    /**
+     * Ordered gallery entries for product pages (primary image, gallery images, then videos).
+     *
+     * @return list<array{type: string, url: string, poster: ?string}>
+     */
+    public function galleryMediaItems(): array
+    {
         $this->loadMissing('images');
 
-        $urls = [];
+        $poster = $this->displayImageUrl();
+        $items = [];
+        $seen = [];
 
-        if ($primary = $this->displayImageUrl()) {
-            $urls[] = $primary;
-        }
+        $push = function (string $type, ?string $url) use (&$items, &$seen, $poster): void {
+            if ($url === null || $url === '' || isset($seen[$type.':'.$url])) {
+                return;
+            }
+
+            $seen[$type.':'.$url] = true;
+            $items[] = [
+                'type' => $type,
+                'url' => $url,
+                'poster' => $type === 'video' ? $poster : null,
+            ];
+        };
+
+        $push('image', $poster);
 
         foreach ($this->images->sortBy('sort_order') as $media) {
-            if ($url = $media->mediaUrl()) {
-                $urls[] = $url;
-            }
+            $push($media->isVideo() ? 'video' : 'image', $media->mediaUrl());
         }
 
-        return array_values(array_unique($urls));
+        return $items;
     }
 
     /** @return list<string> */
     public function galleryImageUrls(): array
     {
-        $this->loadMissing('images');
-
-        $urls = [];
-
-        if ($primary = $this->displayImageUrl()) {
-            $urls[] = $primary;
-        }
-
-        foreach ($this->images as $image) {
-            if ($image->isVideo()) {
-                continue;
-            }
-
-            if ($url = $image->imageUrl()) {
-                $urls[] = $url;
-            }
-        }
-
-        return array_values(array_unique($urls));
+        return array_values(array_map(
+            fn (array $item) => $item['url'],
+            array_filter(
+                $this->galleryMediaItems(),
+                fn (array $item) => $item['type'] === 'image'
+            )
+        ));
     }
 
     /** @return list<string> */
     public function galleryVideoUrls(): array
     {
-        $this->loadMissing('images');
-
-        return $this->images
-            ->filter(fn (PortfolioItemImage $media) => $media->isVideo())
-            ->map(fn (PortfolioItemImage $media) => $media->mediaUrl())
-            ->filter()
-            ->values()
-            ->all();
+        return array_values(array_map(
+            fn (array $item) => $item['url'],
+            array_filter(
+                $this->galleryMediaItems(),
+                fn (array $item) => $item['type'] === 'video'
+            )
+        ));
     }
 
     public function displayImageUrl(): ?string

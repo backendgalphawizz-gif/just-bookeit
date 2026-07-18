@@ -166,6 +166,10 @@ class CheckoutService
                             'title' => $portfolioItem->title,
                             'image_url' => $variant?->image_path ?: $portfolioItem->image_url,
                             'category' => $portfolioItem->category?->name,
+                            'category_slug' => $portfolioItem->category?->slug,
+                            'service_type' => $override['service_type']
+                                ?? $portfolioItem->category?->slug
+                                ?? null,
                             'size' => $variant?->size ?? ($override['size'] ?? null),
                             'color' => $variant?->color ?? ($override['color'] ?? null),
                             'variant_id' => $variant?->id ?? ($override['portfolio_item_variant_id'] ?? null),

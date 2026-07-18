@@ -18,7 +18,16 @@ use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\VendorController;
 use Illuminate\Support\Facades\Route;
 
+// Route::get('/', function () {
+ 
+//     $json = json_decode(file_get_contents(public_path('splash.json')), true);
+ 
+//     return view('welcome', [
+//         'image' => $json['image']
+//     ]);
+// });
 Route::get('/', [HomeController::class, 'index'])->name('web.home');
+
 Route::get('/services', [CatalogController::class, 'services'])->name('web.services.index');
 Route::get('/catalog', [CatalogController::class, 'index'])->name('web.catalog.index');
 Route::get('/catalog/{item}', [CatalogController::class, 'show'])->name('web.catalog.show');

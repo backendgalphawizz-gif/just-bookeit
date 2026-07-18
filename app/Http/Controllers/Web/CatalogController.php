@@ -42,7 +42,19 @@ class CatalogController extends WebController
             ->limit(4)
             ->get();
 
-        return view('web.catalog.show', compact('item', 'related'));
+        $reviews = collect();
+        $reviewCount = 0;
+        $averageRating = 0.0;
+
+        if ($item->vendor) {
+            $reviewCount = (int) $item->vendor->reviews()->count();
+            if ($reviewCount > 0) {
+                $averageRating = round((float) $item->vendor->reviews()->avg('rating'), 1);
+                $reviews = $item->vendor->reviews()->with('customer')->latest('id')->limit(10)->get();
+            }
+        }
+
+        return view('web.catalog.show', compact('item', 'related', 'reviews', 'reviewCount', 'averageRating'));
     }
 
     protected function renderBrowse(Request $request, string $browseMode): View

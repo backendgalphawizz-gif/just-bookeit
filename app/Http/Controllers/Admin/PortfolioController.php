@@ -26,8 +26,13 @@ class PortfolioController extends AdminController
     {
         $this->validateListDateRange($request);
 
+        $typeTabs = $this->productTypeTabs();
+        $type = $this->resolveProductTypeTab($request->string('type')->toString(), $typeTabs);
+        $typeCategory = $typeTabs->firstWhere('slug', $type);
+
         $items = $this->applyDateRange(PortfolioItem::query(), $request)
             ->with(['vendor', 'category', 'subcategory.parent', 'images'])
+            ->when($typeCategory, fn ($q) => $q->where('category_id', $typeCategory->id))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('vendor_id'), fn ($q) => $q->where('vendor_id', $request->integer('vendor_id')))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -43,17 +48,31 @@ class PortfolioController extends AdminController
 
         $vendors = Vendor::query()->orderBy('brand_name')->get(['id', 'brand_name']);
 
-        return view('admin.portfolio.index', compact('items', 'vendors'));
+        $tabCounts = PortfolioItem::query()
+            ->selectRaw('category_id, COUNT(*) as aggregate')
+            ->whereIn('category_id', $typeTabs->pluck('id'))
+            ->groupBy('category_id')
+            ->pluck('aggregate', 'category_id');
+
+        return view('admin.portfolio.index', compact('items', 'vendors', 'typeTabs', 'type', 'tabCounts'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorizeAdmin('create');
 
-        return view('admin.portfolio.create', $this->formViewData(new PortfolioItem([
-            'status' => 'pending',
-            'audience' => 'women',
-        ])));
+        $typeTabs = $this->productTypeTabs();
+        $type = $this->resolveProductTypeTab($request->string('type')->toString(), $typeTabs);
+        $typeCategory = $typeTabs->firstWhere('slug', $type);
+
+        return view('admin.portfolio.create', array_merge(
+            $this->formViewData(new PortfolioItem([
+                'status' => 'pending',
+                'audience' => 'women',
+                'category_id' => $typeCategory?->id,
+            ])),
+            ['type' => $type]
+        ));
     }
 
     public function store(Request $request): RedirectResponse
@@ -91,6 +110,7 @@ class PortfolioController extends AdminController
         ]);
 
         $this->storeProductGalleryImages($request, $product, $request->file('image'));
+        $this->storeProductGalleryVideos($request, $product);
         $this->syncProductVariants($request, $product, $data['variants'] ?? []);
         $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
 
@@ -161,6 +181,7 @@ class PortfolioController extends AdminController
         $portfolio->save();
 
         $this->storeProductGalleryImages($request, $portfolio);
+        $this->storeProductGalleryVideos($request, $portfolio);
         $this->syncProductVariants($request, $portfolio, $data['variants'] ?? [], true);
         $this->syncProductDamageDeductions($portfolio, $data['damage_deductions'] ?? [], true);
 
@@ -175,10 +196,11 @@ class PortfolioController extends AdminController
 
         abort_unless($image->portfolio_item_id === $portfolio->id, 404);
 
+        $wasVideo = $image->isVideo();
         StoresUploadedFiles::delete($image->image_path);
         $image->delete();
 
-        return back()->with('success', 'Gallery image removed.');
+        return back()->with('success', $wasVideo ? 'Gallery video removed.' : 'Gallery image removed.');
     }
 
     public function approve(PortfolioItem $portfolio): RedirectResponse
@@ -234,5 +256,29 @@ class PortfolioController extends AdminController
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+    }
+
+    protected function productTypeTabs()
+    {
+        $preferredOrder = ['fashion-designer', 'rented-dress', 'rented-jewellery'];
+
+        return $this->serviceCategories()
+            ->sortBy(function (Category $category) use ($preferredOrder) {
+                $index = array_search($category->slug, $preferredOrder, true);
+
+                return $index === false ? 99 : $index;
+            })
+            ->values();
+    }
+
+    protected function resolveProductTypeTab(string $type, $tabs): string
+    {
+        $slugs = $tabs->pluck('slug')->all();
+
+        if ($type !== '' && in_array($type, $slugs, true)) {
+            return $type;
+        }
+
+        return $slugs[0] ?? 'fashion-designer';
     }
 }

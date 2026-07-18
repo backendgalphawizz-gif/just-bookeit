@@ -1179,6 +1179,22 @@
         cursor: zoom-in;
     }
 
+    .jb-product-gallery--videos {
+        grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    }
+
+    .jb-product-gallery-item--video {
+        aspect-ratio: 16 / 9;
+    }
+
+    .jb-product-gallery-item--video video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        background: #0f172a;
+    }
+
     .jb-product-facts {
         display: grid;
         gap: 0.75rem;

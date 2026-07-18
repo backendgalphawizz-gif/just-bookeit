@@ -26,7 +26,10 @@ class CheckoutRollupService
         $allSuccess = collect($statuses)->every(fn ($s) => in_array($s, self::TERMINAL_SUCCESS, true));
         $anyCancelled = collect($statuses)->contains(fn ($s) => in_array($s, self::TERMINAL_CANCEL, true));
         $anyDelivered = collect($statuses)->contains(fn ($s) => in_array($s, ['delivered', 're_delivered'], true));
-        $anyActive = collect($statuses)->contains(fn ($s) => in_array($s, ['accepted', 'in_progress', 're_intransit', 'rework', 'pending_acceptance'], true));
+        // Keep awaiting acceptance separate from in-progress so parent status
+        // still reflects individual items waiting on vendor response.
+        $anyAwaiting = collect($statuses)->contains(fn ($s) => in_array($s, ['new', 'pending_acceptance'], true));
+        $anyInProgress = collect($statuses)->contains(fn ($s) => in_array($s, ['accepted', 'in_progress', 're_intransit', 'rework'], true));
 
         if ($checkout->payment_status === 'pending') {
             $checkout->status = 'new';
@@ -34,11 +37,13 @@ class CheckoutRollupService
             $checkout->status = 'cancelled';
         } elseif ($allSuccess) {
             $checkout->status = 'completed';
-        } elseif ($anyCancelled && ($anyDelivered || $anyActive)) {
+        } elseif ($anyCancelled && ($anyDelivered || $anyInProgress || $anyAwaiting)) {
             $checkout->status = 'partially_cancelled';
         } elseif ($anyDelivered && ! $allSuccess) {
             $checkout->status = 'partially_delivered';
-        } elseif ($anyActive || $anyDelivered) {
+        } elseif ($anyAwaiting && ! $anyInProgress && ! $anyDelivered) {
+            $checkout->status = 'pending_acceptance';
+        } elseif ($anyInProgress || $anyDelivered || $anyAwaiting) {
             $checkout->status = 'processing';
         } elseif ($checkout->payment_status === 'success') {
             $checkout->status = 'pending_acceptance';

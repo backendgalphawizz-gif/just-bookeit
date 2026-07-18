@@ -32,38 +32,88 @@ trait ManagesPortfolioProducts
                 continue;
             }
 
+            $isVideo = $this->uploadedProductFileIsVideo($file);
             $sortOrder++;
             PortfolioItemImage::query()->create([
                 'portfolio_item_id' => $product->id,
-                'image_path' => StoresUploadedFiles::store($file, 'portfolio/images'),
+                'image_path' => StoresUploadedFiles::store(
+                    $file,
+                    $isVideo ? 'portfolio/videos' : 'portfolio/images'
+                ),
+                'media_type' => $isVideo ? PortfolioItemImage::TYPE_VIDEO : PortfolioItemImage::TYPE_IMAGE,
                 'sort_order' => $sortOrder,
             ]);
         }
+    }
+
+    protected function storeProductGalleryVideos(Request $request, PortfolioItem $product): void
+    {
+        $files = [];
+
+        foreach (['gallery_videos', 'videos', 'product_videos'] as $key) {
+            if ($request->hasFile($key)) {
+                $files = array_merge($files, $this->uploadedProductFiles($request, $key));
+            }
+        }
+
+        if ($files === []) {
+            return;
+        }
+
+        $sortOrder = (int) ($product->images()->max('sort_order') ?? 0);
+
+        foreach ($files as $file) {
+            $sortOrder++;
+            PortfolioItemImage::query()->create([
+                'portfolio_item_id' => $product->id,
+                'image_path' => StoresUploadedFiles::store($file, 'portfolio/videos'),
+                'media_type' => PortfolioItemImage::TYPE_VIDEO,
+                'sort_order' => $sortOrder,
+            ]);
+        }
+    }
+
+    protected function uploadedProductFileIsVideo(UploadedFile $file): bool
+    {
+        $mime = strtolower((string) $file->getMimeType());
+        $ext = strtolower((string) $file->getClientOriginalExtension());
+
+        return str_starts_with($mime, 'video/')
+            || in_array($ext, VendorValidationRules::VIDEO_MIMES, true);
     }
 
     /** @param list<array<string, mixed>> $variants */
     protected function syncProductVariants(Request $request, PortfolioItem $product, array $variants, bool $replacing = false): void
     {
         $oldVariants = $replacing
-            ? $product->variants()->orderBy('sort_order')->get()
+            ? $product->variants()->orderBy('sort_order')->get()->values()
             : collect();
 
         if ($replacing) {
-            foreach ($product->variants as $existing) {
-                StoresUploadedFiles::delete($existing->image_path);
-            }
+            // Keep files until after recreate so unchanged variants can reuse paths.
             $product->variants()->delete();
         }
 
         if ($variants === []) {
+            foreach ($oldVariants as $existing) {
+                StoresUploadedFiles::delete($existing->image_path);
+            }
+
             return;
         }
 
-        foreach ($variants as $index => $variant) {
-            $imagePath = ProductVariantUpload::storeVariantImage($request, (int) $index, $variant);
+        $keptPaths = [];
+        $sortOrder = 0;
 
-            if ($imagePath === null && ($old = $oldVariants->get($index))) {
-                $imagePath = $old->image_path;
+        foreach ($variants as $index => $variant) {
+            $sortOrder++;
+            $index = (int) $index;
+            $newImagePath = ProductVariantUpload::storeVariantImage($request, $index, $variant);
+            $old = $oldVariants->get($index);
+            $imagePath = $newImagePath ?? $old?->image_path;
+
+            if ($imagePath !== null && $imagePath !== '') {
+                $keptPaths[] = $imagePath;
             }
 
             PortfolioItemVariant::query()->create([
@@ -72,8 +122,27 @@ trait ManagesPortfolioProducts
                 'color' => (string) ($variant['color'] ?? ''),
                 'price' => (float) ($variant['price'] ?? 0),
                 'image_path' => $imagePath,
-                'sort_order' => $index + 1,
+                'sort_order' => $sortOrder,
             ]);
+
+            // Replacing an existing variant image: drop the previous file.
+            if (
+                $replacing
+                && $newImagePath !== null
+                && $old?->image_path
+                && $old->image_path !== $newImagePath
+            ) {
+                StoresUploadedFiles::delete($old->image_path);
+            }
+        }
+
+        if ($replacing) {
+            foreach ($oldVariants as $existing) {
+                $path = $existing->image_path;
+                if ($path && ! in_array($path, $keptPaths, true)) {
+                    StoresUploadedFiles::delete($path);
+                }
+            }
         }
     }
 
@@ -118,11 +187,16 @@ trait ManagesPortfolioProducts
     protected function normalizeProductFormInput(Request $request): void
     {
         if (is_array($request->input('variants'))) {
-            $variants = array_values(array_filter($request->input('variants'), function (array $variant): bool {
+            // Keep original keys so uploaded variants[N][image] files stay aligned.
+            $variants = array_filter($request->input('variants'), function ($variant): bool {
+                if (! is_array($variant)) {
+                    return false;
+                }
+
                 return trim((string) ($variant['size'] ?? '')) !== ''
                     || trim((string) ($variant['color'] ?? '')) !== ''
                     || ($variant['price'] ?? '') !== '';
-            }));
+            });
             $request->merge(['variants' => $variants]);
         }
 

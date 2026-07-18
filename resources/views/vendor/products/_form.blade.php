@@ -23,6 +23,9 @@
             subcategoryId: @js((string) ($selectedSubcategoryId ?? '')),
             subcategories: @js($subcategoryOptions),
             audienceByMain: @js($audienceByMainSlug),
+            init() {
+                this.onSubChange();
+            },
             filteredSubs() {
                 if (!this.mainCategoryId) return [];
                 return this.subcategories.filter((sub) => String(sub.parent_id) === String(this.mainCategoryId));
@@ -49,10 +52,11 @@
 
             <div class="vp-field">
                 <label class="vp-label" for="subcategory_id">Sub-category <span class="vp-required">*</span></label>
-                <select id="subcategory_id" name="subcategory_id" class="vp-select" x-model="subcategoryId" @change="onSubChange()" required>
+                <input type="hidden" name="subcategory_id" x-model="subcategoryId">
+                <select id="subcategory_id" class="vp-select" x-model="subcategoryId" @change="onSubChange()" required>
                     <option value="">Select sub-category</option>
                     <template x-for="sub in filteredSubs()" :key="sub.id">
-                        <option :value="sub.id" x-text="sub.name"></option>
+                        <option :value="String(sub.id)" x-text="sub.name" :selected="String(subcategoryId) === String(sub.id)"></option>
                     </template>
                 </select>
                 @error('subcategory_id')<p class="vp-field-error">{{ $message }}</p>@enderror

@@ -55,7 +55,11 @@ class BookingController extends ApiController
         }
 
         $checkoutQuery = CheckoutOrder::query()
-            ->with(['subOrders.vendor', 'subOrders.category', 'subOrders.orderItems'])
+            ->with([
+                'subOrders.vendor',
+                'subOrders.category',
+                'subOrders.orderItems.portfolioItem.category',
+            ])
             ->where('customer_id', $customer->id);
 
         if ($categorySlug) {
@@ -267,7 +271,7 @@ class BookingController extends ApiController
             return $this->success([
                 'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout),
                 'booking_type' => 'multi_vendor_checkout',
-            ], 'Checkout created. Proceed to payment.', 201);
+            ], 'Checkout created. Proceed to payment.', 200);
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 422);
         }

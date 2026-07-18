@@ -2,7 +2,9 @@
 
 @php
     $galleryUrls = $portfolio->galleryImageUrls();
+    $videoUrls = $portfolio->galleryVideoUrls();
     $photoCount = count($galleryUrls);
+    $videoCount = count($videoUrls);
 @endphp
 
 @section('title', $portfolio->title)
@@ -82,6 +84,21 @@
                         @foreach ($galleryUrls as $url)
                             <div class="jb-product-gallery-item">
                                 <img src="{{ $url }}" alt="{{ $portfolio->title }}" class="panel-lightbox-trigger">
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if ($videoCount > 0)
+                <div class="jb-booking-card">
+                    <div class="jb-booking-card-head">
+                        <h3 class="jb-booking-card-title">Videos ({{ $videoCount }})</h3>
+                    </div>
+                    <div class="jb-product-gallery jb-product-gallery--videos">
+                        @foreach ($videoUrls as $url)
+                            <div class="jb-product-gallery-item jb-product-gallery-item--video">
+                                <video src="{{ $url }}" controls playsinline preload="metadata"></video>
                             </div>
                         @endforeach
                     </div>

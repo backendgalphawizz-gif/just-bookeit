@@ -3,6 +3,13 @@
 
     $isCreate = ! $portfolio->exists;
     $productImageMaxMb = (int) (VendorValidationRules::MAX_IMAGE_KB / 1024);
+    $productVideoMaxMb = (int) (VendorValidationRules::MAX_VIDEO_KB / 1024);
+    $galleryImages = $portfolio->relationLoaded('images')
+        ? $portfolio->images->filter(fn ($media) => $media->isImage())->values()
+        : collect();
+    $galleryVideos = $portfolio->relationLoaded('images')
+        ? $portfolio->images->filter(fn ($media) => $media->isVideo())->values()
+        : collect();
     $selectedSubcategoryId = old('subcategory_id', $portfolio->subcategory_id);
     $selectedMainCategoryId = old('main_category_id', $portfolio->subcategory?->parent_id);
     $subcategoryOptions = $subcategories->map(fn ($sub) => [
@@ -36,6 +43,10 @@
             subcategories: @js($subcategoryOptions),
             audienceByMain: @js($audienceByMainSlug),
             audience: @js(old('audience', $portfolio->audience ?? 'women')),
+            init() {
+                this.onSubChange();
+                this.syncAudience();
+            },
             filteredSubs() {
                 if (!this.mainCategoryId) return [];
                 return this.subcategories.filter((sub) => String(sub.parent_id) === String(this.mainCategoryId));
@@ -77,10 +88,12 @@
 
             <div>
                 <label class="jb-label" for="subcategory_id">Sub-category <span class="text-rose-600">*</span></label>
-                <select id="subcategory_id" name="subcategory_id" class="jb-select" x-model="subcategoryId" @change="onSubChange()" required>
+                {{-- Hidden input submits reliably; Alpine x-for options inside <select> often drop the value on submit. --}}
+                <input type="hidden" name="subcategory_id" x-model="subcategoryId">
+                <select id="subcategory_id" class="jb-select" x-model="subcategoryId" @change="onSubChange()" required>
                     <option value="">Select sub-category</option>
                     <template x-for="sub in filteredSubs()" :key="sub.id">
-                        <option :value="sub.id" x-text="sub.name"></option>
+                        <option :value="String(sub.id)" x-text="sub.name" :selected="String(subcategoryId) === String(sub.id)"></option>
                     </template>
                 </select>
                 @error('subcategory_id')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
@@ -138,9 +151,9 @@
         <label class="jb-label">Gallery images</label>
         <p class="mb-3 text-sm text-slate-500">Additional photos customers can browse when booking (up to 10).</p>
 
-        @if ($portfolio->relationLoaded('images') && $portfolio->images->isNotEmpty())
+        @if ($galleryImages->isNotEmpty())
             <div class="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
-                @foreach ($portfolio->images as $image)
+                @foreach ($galleryImages as $image)
                     <div class="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200">
                         @if ($image->imageUrl())
                             <img src="{{ $image->imageUrl() }}" alt="" class="h-full w-full object-cover panel-lightbox-trigger">
@@ -171,6 +184,51 @@
         <p class="mt-1.5 text-xs text-slate-500">Up to 10 images — max {{ $productImageMaxMb }} MB each.</p>
         @error('gallery_images')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
         @error('gallery_images.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+    </div>
+
+    <div class="sm:col-span-2">
+        <label class="jb-label">Gallery videos</label>
+        <p class="mb-3 text-sm text-slate-500">Product videos customers can watch (same as vendor app — up to 5).</p>
+
+        @if ($galleryVideos->isNotEmpty())
+            <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                @foreach ($galleryVideos as $video)
+                    <div class="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                        @if ($video->mediaUrl())
+                            <video
+                                src="{{ $video->mediaUrl() }}"
+                                class="aspect-video w-full object-cover"
+                                controls
+                                playsinline
+                                preload="metadata"
+                            ></video>
+                        @endif
+                        @if ($portfolio->exists)
+                            <button
+                                type="button"
+                                class="absolute right-1 top-1 rounded bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 shadow-sm hover:bg-white"
+                                onclick="if (confirm('This gallery video will be permanently removed.')) document.getElementById('delete-image-{{ $video->id }}').submit()"
+                            >
+                                Remove
+                            </button>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        <input
+            type="file"
+            name="gallery_videos[]"
+            accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/x-msvideo,video/x-matroska,.mp4,.mov,.webm,.mkv,.avi,.m4v"
+            multiple
+            class="jb-input vp-input"
+            data-jb-max-mb="{{ $productVideoMaxMb }}"
+            data-jb-file-label="Gallery video"
+        >
+        <p class="mt-1.5 text-xs text-slate-500">Up to 5 videos — MP4/MOV/WEBM etc., max {{ $productVideoMaxMb }} MB each.</p>
+        @error('gallery_videos')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+        @error('gallery_videos.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>
 
     @include('admin.portfolio.partials.variants')

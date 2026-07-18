@@ -530,7 +530,9 @@ class CustomerApiPresenter
 
     public static function bookingSummary(Order $order): array
     {
-        $order->loadMissing(['vendor', 'category', 'customer']);
+        $order->loadMissing(['vendor', 'category', 'customer', 'orderItems']);
+        $bookingType = self::resolveBookingType($order);
+        $itemsBreakdown = self::orderItemsStatusBreakdown($order);
 
         return [
             'id' => $order->id,
@@ -540,6 +542,10 @@ class CustomerApiPresenter
             'status_label' => $order->statusLabel(),
             'payment_status' => $order->payment_status,
             'order_type' => $order->order_type,
+            'booking_type' => $bookingType,
+            'booking_type_label' => CustomerBookingTab::typeLabel($bookingType),
+            'service_type' => $order->category?->slug ?? $bookingType,
+            'service_type_label' => $order->category?->name ?? CustomerBookingTab::typeLabel($bookingType),
             'item_title' => $order->itemDisplayName(),
             'item_image_url' => $order->itemImageUrl(),
             'size' => $order->size,
@@ -549,6 +555,8 @@ class CustomerApiPresenter
             'designer' => $order->vendor ? self::designerSummary($order->vendor) : null,
             'address' => $order->delivery_address,
             'city' => $order->city,
+            'items_count' => max(1, $order->orderItems->count()),
+            'items_status_breakdown' => $itemsBreakdown,
             'can_cancel' => in_array($order->status, ['new', 'pending_acceptance'], true),
         ];
     }
@@ -556,10 +564,14 @@ class CustomerApiPresenter
     public static function bookingDetail(Order $order): array
     {
         $order->loadMissing(['category', 'dispute', 'review', 'orderItems', 'refund.histories']);
+        $lineItems = $order->orderItems->isNotEmpty()
+            ? $order->orderItems->map(fn (OrderItem $item) => self::orderLineItem($item))->values()->all()
+            : null;
 
         return [
             ...self::bookingSummary($order),
             'is_sub_order' => $order->checkout_order_id !== null,
+            'is_multi_item' => ($order->orderItems->count() > 1),
             'checkout_order_id' => $order->checkout_order_id,
             'sub_order_number' => $order->sub_order_number ?? $order->order_number,
             'billing_address' => $order->billing_address,
@@ -573,9 +585,8 @@ class CustomerApiPresenter
             'measurements' => $order->checkout_order_id
                 ? null
                 : BookingMeasurementSupport::orderMeasurements($order),
-            'line_items' => $order->orderItems->isNotEmpty()
-                ? $order->orderItems->map(fn (OrderItem $item) => self::orderLineItem($item))->all()
-                : null,
+            'line_items' => $lineItems,
+            'order_items' => $lineItems,
             'payment_summary' => BookingPricingService::fromOrder($order),
             'tracking_steps' => $order->trackBookingSteps(),
             'delivery_otp' => $order->ensureDeliveryOtp(),
@@ -596,7 +607,13 @@ class CustomerApiPresenter
 
     public static function checkoutOrderSummary(CheckoutOrder $checkout): array
     {
-        $checkout->loadMissing(['subOrders.vendor']);
+        $checkout->loadMissing([
+            'subOrders.vendor',
+            'subOrders.category',
+            'subOrders.orderItems.portfolioItem.category',
+        ]);
+        $bookingTypes = self::resolveCheckoutBookingTypes($checkout);
+        $itemsBreakdown = self::checkoutItemsStatusBreakdown($checkout);
 
         return [
             'id' => $checkout->id,
@@ -604,13 +621,23 @@ class CustomerApiPresenter
             'order_number' => $checkout->order_number,
             'booking_id' => $checkout->order_number,
             'status' => $checkout->status,
+            'status_label' => $checkout->statusLabel(),
             'payment_status' => $checkout->payment_status,
+            'booking_type' => $bookingTypes[0] ?? null,
+            'booking_type_label' => CustomerBookingTab::typeLabel($bookingTypes[0] ?? null),
+            'booking_types' => $bookingTypes,
+            'booking_type_labels' => array_values(array_filter(array_map(
+                fn (?string $type) => CustomerBookingTab::typeLabel($type),
+                $bookingTypes
+            ))),
             'amount' => (float) $checkout->amount,
             'delivery_fee' => (float) $checkout->delivery_fee,
             'tax_amount' => (float) $checkout->tax_amount,
             'grand_total' => (float) $checkout->grand_total,
             'amount_refunded' => (float) $checkout->amount_refunded,
             'vendor_count' => $checkout->subOrders->count(),
+            'items_count' => max(1, $checkout->subOrders->sum(fn (Order $sub) => max(1, $sub->orderItems->count()))),
+            'items_status_breakdown' => $itemsBreakdown,
             'sub_orders' => $checkout->subOrders->map(fn (Order $sub) => self::subOrderSummary($sub))->all(),
             'booked_at' => $checkout->created_at?->format('d M Y, g:i A'),
             'address' => $checkout->delivery_address,
@@ -622,7 +649,15 @@ class CustomerApiPresenter
 
     public static function checkoutOrderDetail(CheckoutOrder $checkout): array
     {
-        $checkout->loadMissing(['subOrders.vendor', 'subOrders.category', 'subOrders.driver', 'subOrders.orderItems', 'subOrders.review', 'subOrders.refund.histories', 'refunds.histories']);
+        $checkout->loadMissing([
+            'subOrders.vendor',
+            'subOrders.category',
+            'subOrders.driver',
+            'subOrders.orderItems.portfolioItem.category',
+            'subOrders.review',
+            'subOrders.refund.histories',
+            'refunds.histories',
+        ]);
 
         return [
             ...self::checkoutOrderSummary($checkout),
@@ -641,7 +676,8 @@ class CustomerApiPresenter
 
     public static function subOrderSummary(Order $subOrder): array
     {
-        $subOrder->loadMissing(['vendor', 'category']);
+        $subOrder->loadMissing(['vendor', 'category', 'orderItems']);
+        $bookingType = self::resolveBookingType($subOrder);
 
         return [
             'id' => $subOrder->id,
@@ -649,12 +685,21 @@ class CustomerApiPresenter
             'status' => $subOrder->status,
             'status_label' => $subOrder->statusLabel(),
             'payment_status' => $subOrder->payment_status,
+            'booking_type' => $bookingType,
+            'booking_type_label' => CustomerBookingTab::typeLabel($bookingType),
+            'service_type' => $subOrder->category?->slug ?? $bookingType,
+            'service_type_label' => $subOrder->category?->name ?? CustomerBookingTab::typeLabel($bookingType),
             'item_title' => $subOrder->itemDisplayName(),
             'item_image_url' => $subOrder->itemImageUrl(),
             'amount' => (float) $subOrder->amount,
             'delivery_fee' => (float) $subOrder->delivery_fee,
             'total_amount' => $subOrder->grandTotal(),
             'designer' => $subOrder->vendor ? self::designerSummary($subOrder->vendor) : null,
+            'items_count' => max(1, $subOrder->orderItems->count()),
+            'items_status_breakdown' => self::orderItemsStatusBreakdown($subOrder),
+            'line_items' => $subOrder->orderItems->isNotEmpty()
+                ? $subOrder->orderItems->map(fn (OrderItem $item) => self::orderLineItem($item))->values()->all()
+                : [],
             'can_cancel' => in_array($subOrder->status, ['new', 'pending_acceptance'], true),
         ];
     }
@@ -667,12 +712,20 @@ class CustomerApiPresenter
     /** @return array<string, mixed> */
     public static function orderLineItem(OrderItem $item): array
     {
+        $serviceTypeSlug = $item->categorySlug() ?? $item->serviceType();
+        $bookingType = CustomerBookingTab::typeFromCategorySlug($serviceTypeSlug);
+
         return [
             'id' => $item->id,
             'portfolio_item_id' => $item->portfolio_item_id,
             'title' => $item->title(),
             'image_url' => $item->displayImageUrl(),
             'category' => $item->categoryName(),
+            'category_slug' => $serviceTypeSlug,
+            'booking_type' => $bookingType,
+            'booking_type_label' => CustomerBookingTab::typeLabel($bookingType),
+            'service_type' => $serviceTypeSlug,
+            'service_type_label' => $item->categoryName() ?? CustomerBookingTab::typeLabel($bookingType),
             'size' => $item->size(),
             'color' => $item->color(),
             'variant_id' => $item->variantId(),
@@ -683,7 +736,91 @@ class CustomerApiPresenter
             'status' => $item->status,
             'status_label' => $item->statusLabel(),
             'cancellation_reason' => $item->cancellation_reason,
+            'rental_start_date' => $item->rentalStartDate(),
+            'rental_end_date' => $item->rentalEndDate(),
+            'rental_duration_days' => $item->rentalDurationDays(),
+            'customer_notes' => $item->customerNotes(),
+            'reference_image_urls' => $item->referenceImageUrls(),
         ];
+    }
+
+    protected static function resolveBookingType(Order $order): ?string
+    {
+        $slug = $order->category?->slug;
+        if ($slug) {
+            return CustomerBookingTab::typeFromCategorySlug($slug);
+        }
+
+        $order->loadMissing('orderItems');
+        foreach ($order->orderItems as $item) {
+            $type = CustomerBookingTab::typeFromCategorySlug($item->categorySlug() ?? $item->serviceType());
+            if ($type) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<string> */
+    protected static function resolveCheckoutBookingTypes(CheckoutOrder $checkout): array
+    {
+        $types = [];
+
+        foreach ($checkout->subOrders as $subOrder) {
+            $type = self::resolveBookingType($subOrder);
+            if ($type && ! in_array($type, $types, true)) {
+                $types[] = $type;
+            }
+        }
+
+        return $types;
+    }
+
+    /** @return array{pending:int,accepted:int,cancelled:int,total:int} */
+    protected static function orderItemsStatusBreakdown(Order $order): array
+    {
+        $order->loadMissing('orderItems');
+        $items = $order->orderItems;
+
+        if ($items->isEmpty()) {
+            $pending = in_array($order->status, ['new', 'pending_acceptance'], true) ? 1 : 0;
+            $cancelled = in_array($order->status, ['cancelled', 'refunded'], true) ? 1 : 0;
+            $accepted = ($pending === 0 && $cancelled === 0) ? 1 : 0;
+
+            return [
+                'pending' => $pending,
+                'accepted' => $accepted,
+                'cancelled' => $cancelled,
+                'total' => 1,
+            ];
+        }
+
+        return [
+            'pending' => $items->where('status', OrderItem::STATUS_PENDING)->count(),
+            'accepted' => $items->where('status', OrderItem::STATUS_ACCEPTED)->count(),
+            'cancelled' => $items->where('status', OrderItem::STATUS_CANCELLED)->count(),
+            'total' => $items->count(),
+        ];
+    }
+
+    /** @return array{pending:int,accepted:int,cancelled:int,total:int} */
+    protected static function checkoutItemsStatusBreakdown(CheckoutOrder $checkout): array
+    {
+        $pending = 0;
+        $accepted = 0;
+        $cancelled = 0;
+        $total = 0;
+
+        foreach ($checkout->subOrders as $subOrder) {
+            $breakdown = self::orderItemsStatusBreakdown($subOrder);
+            $pending += $breakdown['pending'];
+            $accepted += $breakdown['accepted'];
+            $cancelled += $breakdown['cancelled'];
+            $total += $breakdown['total'];
+        }
+
+        return compact('pending', 'accepted', 'cancelled', 'total');
     }
 
     public static function refund(Refund $refund): array

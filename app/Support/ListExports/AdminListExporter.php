@@ -358,18 +358,30 @@ class AdminListExporter
                 'title' => 'Products Export',
                 'basename' => 'portfolio',
                 'headers' => ['Title', 'Vendor', 'Category', 'Status', 'Submitted'],
-                'query' => fn (Request $request) => $this->applyDateRange(PortfolioItem::query(), $request)
-                    ->with(['vendor', 'category'])
-                    ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
-                    ->when($request->filled('vendor_id'), fn (Builder $q) => $q->where('vendor_id', $request->integer('vendor_id')))
-                    ->when($request->filled('search'), function (Builder $q) use ($request) {
-                        $term = '%'.$request->string('search').'%';
-                        $q->where(function (Builder $q) use ($term) {
-                            $q->where('title', 'like', $term)
-                                ->orWhereHas('vendor', fn (Builder $v) => $v->where('brand_name', 'like', $term));
-                        });
-                    })
-                    ->newestFirst(),
+                'query' => function (Request $request) {
+                    $typeSlug = $request->string('type')->toString();
+                    $typeCategoryId = $typeSlug !== ''
+                        ? Category::query()
+                            ->service()
+                            ->where('slug', $typeSlug)
+                            ->whereIn('slug', ['fashion-designer', 'rented-dress', 'rented-jewellery'])
+                            ->value('id')
+                        : null;
+
+                    return $this->applyDateRange(PortfolioItem::query(), $request)
+                        ->with(['vendor', 'category'])
+                        ->when($typeCategoryId, fn (Builder $q) => $q->where('category_id', $typeCategoryId))
+                        ->when($request->filled('status'), fn (Builder $q) => $q->where('status', $request->string('status')))
+                        ->when($request->filled('vendor_id'), fn (Builder $q) => $q->where('vendor_id', $request->integer('vendor_id')))
+                        ->when($request->filled('search'), function (Builder $q) use ($request) {
+                            $term = '%'.$request->string('search').'%';
+                            $q->where(function (Builder $q) use ($term) {
+                                $q->where('title', 'like', $term)
+                                    ->orWhereHas('vendor', fn (Builder $v) => $v->where('brand_name', 'like', $term));
+                            });
+                        })
+                        ->newestFirst();
+                },
                 'map' => fn (PortfolioItem $item) => [
                     $item->title,
                     $item->vendor?->brand_name ?? '',

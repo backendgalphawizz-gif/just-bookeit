@@ -109,6 +109,19 @@ class OrderItem extends Model
         return filled($name) ? (string) $name : null;
     }
 
+    public function categorySlug(): ?string
+    {
+        $slug = $this->item_snapshot['category_slug'] ?? $this->item_snapshot['service_type'] ?? null;
+
+        if (filled($slug)) {
+            return (string) $slug;
+        }
+
+        $this->loadMissing('portfolioItem.category');
+
+        return $this->portfolioItem?->category?->slug;
+    }
+
     public function rentalStartDate(): ?string
     {
         $value = $this->item_snapshot['rental_start_date'] ?? null;
@@ -157,7 +170,7 @@ class OrderItem extends Model
 
     public function serviceType(): ?string
     {
-        $value = $this->item_snapshot['service_type'] ?? null;
+        $value = $this->item_snapshot['service_type'] ?? $this->categorySlug();
 
         return filled($value) ? (string) $value : null;
     }
