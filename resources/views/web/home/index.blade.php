@@ -295,48 +295,34 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
     </div>
 
     <div class="jbw-designer-marquee" data-designer-marquee>
-        <div class="jbw-designer-marquee-track">
-            @foreach ($marqueePool as $designer)
-                <a href="{{ route('web.vendors.show', $designer) }}" class="jbw-designer-card">
-                    <span class="jbw-designer-avatar-ring">
-                        @if ($designer->profileImageUrl() || $designer->shopLogoUrl())
-                            <img src="{{ $designer->profileImageUrl() ?: $designer->shopLogoUrl() }}"
-                                alt="{{ $designer->brand_name }}"
-                                class="jbw-designer-avatar-img"
-                                loading="lazy">
-                        @else
-                            <span class="jbw-designer-avatar-fallback">
-                                {{ strtoupper(substr($designer->brand_name ?? 'D', 0, 1)) }}
-                            </span>
+        <div class="jbw-designer-marquee-track" data-designer-marquee-track>
+            {{-- Three copies of the pool so backward + forward manual scroll can wrap seamlessly --}}
+            @for ($copy = 0; $copy < 3; $copy++)
+                @foreach ($marqueePool as $designer)
+                    <a href="{{ route('web.vendors.show', $designer) }}"
+                        class="jbw-designer-card"
+                        data-designer-card
+                        @if ($copy > 0) aria-hidden="true" tabindex="-1" @endif>
+                        <span class="jbw-designer-avatar-ring">
+                            @if ($designer->profileImageUrl() || $designer->shopLogoUrl())
+                                <img src="{{ $designer->profileImageUrl() ?: $designer->shopLogoUrl() }}"
+                                    alt="{{ $copy === 0 ? $designer->brand_name : '' }}"
+                                    class="jbw-designer-avatar-img"
+                                    draggable="false"
+                                    loading="lazy">
+                            @else
+                                <span class="jbw-designer-avatar-fallback">
+                                    {{ strtoupper(substr($designer->brand_name ?? 'D', 0, 1)) }}
+                                </span>
+                            @endif
+                        </span>
+                        <p class="jbw-designer-card-name">{{ $designer->brand_name }}</p>
+                        @if ($designer->city)
+                            <p class="jbw-designer-card-meta">{{ $designer->city }}</p>
                         @endif
-                    </span>
-                    <p class="jbw-designer-card-name">{{ $designer->brand_name }}</p>
-                    @if ($designer->city)
-                        <p class="jbw-designer-card-meta">{{ $designer->city }}</p>
-                    @endif
-                </a>
-            @endforeach
-            {{-- Duplicated set for seamless loop --}}
-            @foreach ($marqueePool as $designer)
-                <a href="{{ route('web.vendors.show', $designer) }}" class="jbw-designer-card" aria-hidden="true" tabindex="-1">
-                    <span class="jbw-designer-avatar-ring">
-                        @if ($designer->profileImageUrl() || $designer->shopLogoUrl())
-                            <img src="{{ $designer->profileImageUrl() ?: $designer->shopLogoUrl() }}"
-                                alt=""
-                                class="jbw-designer-avatar-img"
-                                loading="lazy">
-                        @else
-                            <span class="jbw-designer-avatar-fallback">
-                                {{ strtoupper(substr($designer->brand_name ?? 'D', 0, 1)) }}
-                            </span>
-                        @endif
-                    </span>
-                    <p class="jbw-designer-card-name">{{ $designer->brand_name }}</p>
-                    @if ($designer->city)
-                        <p class="jbw-designer-card-meta">{{ $designer->city }}</p>
-                    @endif
-                </a>
-            @endforeach
+                    </a>
+                @endforeach
+            @endfor
         </div>
     </div>
 </section>
@@ -453,29 +439,44 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
         restartTimer();
     })();
 
-    /* ── Featured designers: auto-scrolling marquee with pause on hover & drag/swipe ── */
+    /* ── Featured designers: infinite auto-scrolling marquee w/ swipe + drag ── */
     (function () {
         const marquee = document.querySelector('[data-designer-marquee]');
         if (!marquee) return;
-        const track = marquee.querySelector('.jbw-designer-marquee-track');
+        const track = marquee.querySelector('[data-designer-marquee-track]');
         if (!track) return;
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        const SPEED = 0.55;
-        const RESUME_DELAY = 1400;
+        // Track holds 3 identical copies of the pool. We stay in the "middle"
+        // copy so the user has room to swipe both directions before we teleport.
+        const copyWidth = () => track.scrollWidth / 3;
+
+        const wrap = () => {
+            const w = copyWidth();
+            if (w <= 0) return;
+            // Stay parked in the middle copy: whenever we drift into copy 1 or copy 3,
+            // silently jump back into copy 2 by +/- one copy width. Because the copies
+            // are identical, the user sees no visual jump.
+            if (marquee.scrollLeft >= 2 * w) {
+                marquee.scrollLeft -= w;
+            } else if (marquee.scrollLeft < w) {
+                marquee.scrollLeft += w;
+            }
+        };
+
+        const SPEED = 0.55;              // px per 16ms tick
+        const RESUME_DELAY = 1400;       // ms — resume auto-scroll after user stops interacting
+        const DRAG_THRESHOLD = 6;        // px — how far the pointer must move before it counts as a drag
+
         let paused = false;
         let resumeTimer = null;
         let rafId = null;
         let lastTs = 0;
 
-        const halfWidth = () => track.scrollWidth / 2;
-
-        const wrap = () => {
-            const half = halfWidth();
-            if (half <= 0) return;
-            if (marquee.scrollLeft >= half) marquee.scrollLeft -= half;
-            else if (marquee.scrollLeft < 0) marquee.scrollLeft += half;
+        const scheduleResume = () => {
+            if (resumeTimer) clearTimeout(resumeTimer);
+            resumeTimer = setTimeout(() => { paused = false; }, RESUME_DELAY);
         };
 
         const step = (ts) => {
@@ -483,79 +484,112 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
             lastTs = ts;
             if (!paused && !prefersReducedMotion) {
                 marquee.scrollLeft += SPEED * (dt / 16);
-                wrap();
             }
+            wrap();
             rafId = requestAnimationFrame(step);
         };
 
-        const scheduleResume = () => {
-            if (resumeTimer) clearTimeout(resumeTimer);
-            resumeTimer = setTimeout(() => { paused = false; }, RESUME_DELAY);
-        };
-
-        marquee.addEventListener('mouseenter', () => { paused = true; if (resumeTimer) clearTimeout(resumeTimer); });
-        marquee.addEventListener('mouseleave', () => { paused = false; });
-        marquee.addEventListener('focusin', () => { paused = true; });
+        // ─ Hover / focus / wheel / touch pause ─
+        marquee.addEventListener('mouseenter', () => {
+            paused = true;
+            if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = null; }
+        });
+        marquee.addEventListener('mouseleave', () => { if (!isDown) paused = false; });
+        marquee.addEventListener('focusin',  () => { paused = true; });
         marquee.addEventListener('focusout', () => { paused = false; });
 
-        marquee.addEventListener('wheel', () => { paused = true; scheduleResume(); }, { passive: true });
+        marquee.addEventListener('wheel',      () => { paused = true; scheduleResume(); }, { passive: true });
         marquee.addEventListener('touchstart', () => { paused = true; }, { passive: true });
-        marquee.addEventListener('touchend', () => { scheduleResume(); }, { passive: true });
-        marquee.addEventListener('touchcancel', () => { scheduleResume(); }, { passive: true });
+        marquee.addEventListener('touchend',   () => { scheduleResume(); }, { passive: true });
+        marquee.addEventListener('touchcancel',() => { scheduleResume(); }, { passive: true });
 
-        marquee.addEventListener('scroll', () => { wrap(); }, { passive: true });
+        marquee.addEventListener('scroll', wrap, { passive: true });
 
-        // Desktop drag-to-scroll
+        // ─ Pointer drag-to-scroll (only engages after real movement, so taps still click) ─
         let isDown = false;
-        let dragMoved = false;
+        let dragStarted = false;
+        let justDragged = false;
         let startX = 0;
         let scrollStart = 0;
+        let activePointerId = null;
 
         marquee.addEventListener('pointerdown', (e) => {
+            // ignore right / middle mouse
             if (e.pointerType === 'mouse' && e.button !== 0) return;
             isDown = true;
-            dragMoved = false;
+            dragStarted = false;
+            justDragged = false;
             startX = e.clientX;
             scrollStart = marquee.scrollLeft;
-            paused = true;
-            marquee.classList.add('is-dragging');
-            try { marquee.setPointerCapture(e.pointerId); } catch (_) {}
+            activePointerId = e.pointerId;
         });
 
         marquee.addEventListener('pointermove', (e) => {
-            if (!isDown) return;
+            if (!isDown || e.pointerId !== activePointerId) return;
             const dx = e.clientX - startX;
-            if (Math.abs(dx) > 3) dragMoved = true;
+            if (!dragStarted) {
+                if (Math.abs(dx) < DRAG_THRESHOLD) return; // still could be a tap
+                dragStarted = true;
+                paused = true;
+                marquee.classList.add('is-dragging');
+                try { marquee.setPointerCapture(e.pointerId); } catch (_) {}
+            }
             marquee.scrollLeft = scrollStart - dx;
         });
 
         const endDrag = (e) => {
             if (!isDown) return;
+            const wasDrag = dragStarted;
             isDown = false;
+            dragStarted = false;
+            activePointerId = null;
             marquee.classList.remove('is-dragging');
-            try { if (e) marquee.releasePointerCapture(e.pointerId); } catch (_) {}
-            scheduleResume();
+            try { if (e && e.pointerId != null) marquee.releasePointerCapture(e.pointerId); } catch (_) {}
+            if (wasDrag) {
+                justDragged = true;
+                // Click event fires synchronously after pointerup — clear on next tick.
+                setTimeout(() => { justDragged = false; }, 0);
+                scheduleResume();
+            }
         };
 
         marquee.addEventListener('pointerup', endDrag);
         marquee.addEventListener('pointercancel', endDrag);
-        marquee.addEventListener('pointerleave', endDrag);
 
-        // Prevent the click from firing after a drag, so we don't accidentally navigate.
+        // Only cancel a *drag* when the pointer physically leaves the container.
+        marquee.addEventListener('pointerleave', (e) => {
+            if (dragStarted) endDrag(e);
+        });
+
+        // If the user was dragging, swallow the subsequent click so we don't
+        // accidentally navigate to a designer they were just scrubbing past.
+        // For a real tap (no movement), justDragged stays false and the link fires.
         marquee.addEventListener('click', (e) => {
-            if (dragMoved) {
+            if (justDragged) {
                 e.preventDefault();
                 e.stopPropagation();
-                dragMoved = false;
+                justDragged = false;
             }
         }, true);
 
-        // Seed: start slightly offset so first tile isn't cut by the fade mask.
-        requestAnimationFrame(() => {
-            marquee.scrollLeft = 0;
-            rafId = requestAnimationFrame(step);
-        });
+        // Prevent native image drag from hijacking the pointer-drag.
+        marquee.querySelectorAll('img').forEach((img) => { img.draggable = false; });
 
+        // Seed position in the middle copy, then start the loop.
+        const start = () => {
+            const w = copyWidth();
+            if (w > 0) marquee.scrollLeft = w; // land in the start of copy 2
+            rafId = requestAnimationFrame(step);
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', start, { once: true });
+        } else {
+            // Wait a frame so track.scrollWidth is accurate.
+            requestAnimationFrame(start);
+        }
+
+        window.addEventListener('resize', () => { wrap(); });
         window.addEventListener('beforeunload', () => {
             if (rafId) cancelAnimationFrame(rafId);
         });

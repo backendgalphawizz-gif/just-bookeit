@@ -2251,12 +2251,10 @@ border-radius: 8px !important;
     will-change: scroll-position;
 }
 
-.jbw-designer-marquee-track > * {
-    pointer-events: auto;
-}
-
-.jbw-designer-marquee.is-dragging .jbw-designer-marquee-track > * {
-    pointer-events: none;
+.jbw-designer-marquee-track img,
+.jbw-designer-marquee-track a {
+    -webkit-user-drag: none;
+    user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
