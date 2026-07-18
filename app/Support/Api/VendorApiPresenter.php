@@ -223,7 +223,9 @@ class VendorApiPresenter
         ]);
 
         $orderItems = $order->orderItems;
-        $lineItems = $orderItems->map(fn ($item) => self::orderLineItem($item))->values()->all();
+        $lineItems = $orderItems->isNotEmpty()
+            ? $orderItems->map(fn ($item) => self::orderLineItemDetail($item, $order))->values()->all()
+            : [self::syntheticLineItemDetail($order)];
         $isMultiItem = $orderItems->count() > 1;
         $itemsPendingAcceptance = $orderItems->where('status', \App\Models\OrderItem::STATUS_PENDING)->count();
         $itemsAccepted = $orderItems->where('status', \App\Models\OrderItem::STATUS_ACCEPTED)->count();
@@ -248,13 +250,16 @@ class VendorApiPresenter
             'city' => $order->city,
             'pincode' => $order->pincode,
             'customer_notes' => $order->customer_notes,
+            'custom_notes' => $order->customer_notes,
             'item_description' => $order->item_description,
             'reference_image_urls' => $order->referenceImageUrls(),
+            'reference_images' => self::referenceImagesPayload($order->referenceImageUrls()),
             'event_date' => $order->event_date?->format('Y-m-d'),
             'event_date_label' => $order->event_date?->format('jS M Y'),
             'security_deposit' => $order->security_deposit !== null ? (float) $order->security_deposit : null,
+            'advance_amount' => $order->security_deposit !== null ? (float) $order->security_deposit : null,
             'measurements' => self::orderMeasurements($order),
-            'payment_summary' => BookingPricingService::vendorPaymentSummary($order, $order->vendor),
+            'payment_summary' => self::bookingPaymentSummaryPayload($order),
             'damage' => self::bookingDamage($order),
             'tracking_steps' => $order->trackBookingSteps(),
             'rental_tracking' => $order->isRental() ? $order->rentalTrackingSummary() : null,
@@ -275,6 +280,7 @@ class VendorApiPresenter
             'review' => self::bookingCustomerReview($order),
             'order_items' => $lineItems,
             'line_items' => $lineItems,
+            'items' => $lineItems,
             'checkout' => $order->checkoutOrder ? [
                 'id' => $order->checkoutOrder->id,
                 'order_number' => $order->checkoutOrder->order_number,
@@ -333,10 +339,264 @@ class VendorApiPresenter
             'rental_duration_days' => $rentalDays,
             'rental_period_label' => $rentalLabel,
             'customer_notes' => $item->customerNotes(),
+            'custom_notes' => $item->customerNotes(),
             'service_type' => $item->serviceType(),
             'reference_image_urls' => $item->referenceImageUrls(),
             'measurement_profile_id' => $item->measurementProfileId(),
             'measurements' => self::orderItemMeasurements($item),
+        ];
+    }
+
+    /**
+     * Full item-detail payload for vendor booking detail screen.
+     *
+     * @return array<string, mixed>
+     */
+    public static function orderLineItemDetail(\App\Models\OrderItem $item, ?Order $order = null): array
+    {
+        $order ??= $item->order ?? $item->order()->with('customer')->first();
+        $order?->loadMissing('customer');
+
+        $rentalStart = $item->rentalStartDate();
+        $rentalEnd = $item->rentalEndDate();
+        $rentalDays = $item->rentalDurationDays();
+
+        $startCarbon = $rentalStart ? \Carbon\Carbon::parse($rentalStart) : null;
+        $endCarbon = $rentalEnd ? \Carbon\Carbon::parse($rentalEnd) : null;
+        $rentalLabel = match (true) {
+            $startCarbon && $endCarbon => $startCarbon->format('jS M').' – '.$endCarbon->format('jS M, Y'),
+            $startCarbon !== null => 'From '.$startCarbon->format('jS M, Y'),
+            $endCarbon !== null => 'Until '.$endCarbon->format('jS M, Y'),
+            default => null,
+        };
+
+        $notes = $item->customerNotes() ?: $order?->customer_notes;
+        $referenceUrls = $item->referenceImageUrls();
+        if ($referenceUrls === [] && $order) {
+            $referenceUrls = $order->referenceImageUrls();
+        }
+
+        $shippingAddress = $order ? self::bookingShippingAddress($order) : null;
+        $location = $shippingAddress['full_address']
+            ?? collect([$order?->city, $order?->pincode])->filter()->implode(', ')
+            ?: null;
+
+        return [
+            'id' => $item->id,
+            'portfolio_item_id' => $item->portfolio_item_id,
+            'title' => $item->title(),
+            'image_url' => $item->displayImageUrl(),
+            'category' => $item->categoryName(),
+            'size' => $item->size(),
+            'color' => $item->color(),
+            'variant_id' => $item->variantId(),
+            'variant_label' => $item->variantLabel(),
+            'quantity' => (int) $item->quantity,
+            'unit_price' => (float) $item->unit_price,
+            'unit_price_label' => '₹'.number_format((float) $item->unit_price, 0).'/day',
+            'line_amount' => (float) $item->line_amount,
+            'line_amount_label' => '₹'.number_format((float) $item->line_amount, 0),
+            'status' => $item->status,
+            'status_label' => $item->statusLabel(),
+            'cancellation_reason' => $item->cancellation_reason,
+            'can_accept' => $item->canAccept(),
+            'can_reject' => $item->canReject(),
+            'responded_at' => $item->responded_at?->toIso8601String(),
+            'rental_start_date' => $rentalStart,
+            'rental_end_date' => $rentalEnd,
+            'rental_start_date_label' => $startCarbon?->format('jS M, Y'),
+            'rental_end_date_label' => $endCarbon?->format('jS M, Y'),
+            'rental_duration_days' => $rentalDays,
+            'rental_period_label' => $rentalLabel,
+            'customer_notes' => $notes,
+            'custom_notes' => $notes,
+            'service_type' => $item->serviceType(),
+            'reference_image_urls' => $referenceUrls,
+            'reference_images' => self::referenceImagesPayload($referenceUrls),
+            'measurement_profile_id' => $item->measurementProfileId(),
+            'measurements' => self::orderItemMeasurements($item),
+            'customer' => $order ? [
+                ...self::bookingCustomer($order),
+                'location' => $location,
+                'city' => $order->city,
+                'pincode' => $order->pincode,
+                'address' => $order->delivery_address,
+                'chat_label' => $order->customer?->name
+                    ? 'Chat with '.$order->customer->name
+                    : 'Chat with customer',
+            ] : null,
+            'location' => $location,
+            'shipping_address' => $shippingAddress,
+            'payment_summary' => self::itemPaymentSummaryPayload($item, $order),
+        ];
+    }
+
+    /**
+     * Legacy bookings without order_items rows still need an item-detail card.
+     *
+     * @return array<string, mixed>
+     */
+    protected static function syntheticLineItemDetail(Order $order): array
+    {
+        $notes = $order->customer_notes;
+        $referenceUrls = $order->referenceImageUrls();
+        $shippingAddress = self::bookingShippingAddress($order);
+        $location = $shippingAddress['full_address']
+            ?? collect([$order->city, $order->pincode])->filter()->implode(', ')
+            ?: null;
+
+        return [
+            'id' => null,
+            'portfolio_item_id' => $order->portfolio_item_id,
+            'title' => $order->itemDisplayName(),
+            'image_url' => $order->itemImageUrl(),
+            'category' => $order->category?->name,
+            'size' => $order->size,
+            'color' => $order->color,
+            'variant_id' => null,
+            'variant_label' => collect([$order->size, $order->color])->filter()->implode(' · ') ?: null,
+            'quantity' => (int) ($order->quantity ?? 1),
+            'unit_price' => (float) $order->amount,
+            'unit_price_label' => '₹'.number_format((float) $order->amount, 0),
+            'line_amount' => (float) $order->amount,
+            'line_amount_label' => '₹'.number_format((float) $order->amount, 0),
+            'status' => in_array($order->status, ['new', 'pending_acceptance'], true)
+                ? \App\Models\OrderItem::STATUS_PENDING
+                : (in_array($order->status, ['cancelled', 'refunded'], true)
+                    ? \App\Models\OrderItem::STATUS_CANCELLED
+                    : \App\Models\OrderItem::STATUS_ACCEPTED),
+            'status_label' => $order->statusLabel(),
+            'cancellation_reason' => $order->cancellation_reason,
+            'can_accept' => in_array($order->status, ['new', 'pending_acceptance'], true),
+            'can_reject' => in_array($order->status, ['new', 'pending_acceptance'], true),
+            'responded_at' => null,
+            'rental_start_date' => $order->rental_start_date?->format('Y-m-d'),
+            'rental_end_date' => $order->rental_end_date?->format('Y-m-d'),
+            'rental_start_date_label' => $order->rental_start_date?->format('jS M, Y'),
+            'rental_end_date_label' => $order->rental_end_date?->format('jS M, Y'),
+            'rental_duration_days' => $order->rentalDurationDays(),
+            'rental_period_label' => self::bookingRentedPeriod($order)['label'] ?? null,
+            'customer_notes' => $notes,
+            'custom_notes' => $notes,
+            'service_type' => null,
+            'reference_image_urls' => $referenceUrls,
+            'reference_images' => self::referenceImagesPayload($referenceUrls),
+            'measurement_profile_id' => null,
+            'measurements' => self::orderMeasurements($order),
+            'customer' => [
+                ...self::bookingCustomer($order),
+                'location' => $location,
+                'city' => $order->city,
+                'pincode' => $order->pincode,
+                'address' => $order->delivery_address,
+                'chat_label' => $order->customer?->name
+                    ? 'Chat with '.$order->customer->name
+                    : 'Chat with customer',
+            ],
+            'location' => $location,
+            'shipping_address' => $shippingAddress,
+            'payment_summary' => self::bookingPaymentSummaryPayload($order),
+        ];
+    }
+
+    /**
+     * @param  list<string>  $urls
+     * @return list<array{url: string, label: string}>
+     */
+    protected static function referenceImagesPayload(array $urls): array
+    {
+        return collect($urls)
+            ->filter()
+            ->values()
+            ->map(fn (string $url, int $index) => [
+                'url' => $url,
+                'label' => 'Reference image '.($index + 1),
+            ])
+            ->all();
+    }
+
+    /** @return array<string, mixed> */
+    protected static function bookingPaymentSummaryPayload(Order $order): array
+    {
+        $summary = BookingPricingService::vendorPaymentSummary($order, $order->vendor);
+        $advance = $order->security_deposit !== null ? (float) $order->security_deposit : 0.0;
+
+        return [
+            ...$summary,
+            'advance_amount' => $advance,
+            'shipping_and_handling' => $summary['shipping_fee'],
+            'subtotal_label' => '₹'.number_format((float) $summary['subtotal'], 0),
+            'advance_amount_label' => '₹'.number_format($advance, 0),
+            'shipping_fee_label' => '₹'.number_format((float) $summary['shipping_fee'], 0),
+            'shipping_and_handling_label' => '₹'.number_format((float) $summary['shipping_fee'], 0),
+            'tax_amount_label' => '₹'.number_format((float) $summary['tax_amount'], 0),
+            'tax_label' => 'Tax (GST '.(int) $summary['tax_percent'].'%)',
+            'total_amount_label' => '₹'.number_format((float) $summary['total_amount'], 0),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected static function itemPaymentSummaryPayload(\App\Models\OrderItem $item, ?Order $order): array
+    {
+        $subtotal = round((float) $item->line_amount, 2);
+        $gstPercent = BookingPricingService::gstPercent();
+
+        if (! $order) {
+            $taxAmount = round($subtotal * ($gstPercent / 100), 2);
+
+            return [
+                'subtotal' => $subtotal,
+                'advance_amount' => 0.0,
+                'shipping_fee' => 0.0,
+                'shipping_and_handling' => 0.0,
+                'tax_percent' => $gstPercent,
+                'tax_amount' => $taxAmount,
+                'total_amount' => round($subtotal + $taxAmount, 2),
+                'currency' => (string) \App\Models\PlatformSetting::get('currency', 'INR'),
+                'subtotal_label' => '₹'.number_format($subtotal, 0),
+                'advance_amount_label' => '₹0',
+                'shipping_fee_label' => '₹0',
+                'shipping_and_handling_label' => '₹0',
+                'tax_amount_label' => '₹'.number_format($taxAmount, 0),
+                'tax_label' => 'Tax (GST '.(int) $gstPercent.'%)',
+                'total_amount_label' => '₹'.number_format($subtotal + $taxAmount, 0),
+            ];
+        }
+
+        $order->loadMissing('orderItems');
+        $active = $order->orderItems->where('status', '!=', \App\Models\OrderItem::STATUS_CANCELLED);
+        $activeSubtotal = max(0.01, (float) $active->sum(fn ($row) => (float) $row->line_amount));
+        $share = $subtotal / $activeSubtotal;
+
+        // Single-item booking: show full order fees. Multi-item: prorate shipping/advance/tax.
+        $isSingle = $active->count() <= 1;
+        $shipping = $isSingle
+            ? (float) ($order->delivery_fee ?? 0)
+            : round((float) ($order->delivery_fee ?? 0) * $share, 2);
+        $advance = $isSingle
+            ? (float) ($order->security_deposit ?? 0)
+            : round((float) ($order->security_deposit ?? 0) * $share, 2);
+        $taxAmount = $isSingle
+            ? (float) ($order->tax_amount ?? round($subtotal * ($gstPercent / 100), 2))
+            : round($subtotal * ($gstPercent / 100), 2);
+        $totalAmount = round($subtotal + $shipping + $taxAmount, 2);
+
+        return [
+            'subtotal' => $subtotal,
+            'advance_amount' => $advance,
+            'shipping_fee' => $shipping,
+            'shipping_and_handling' => $shipping,
+            'tax_percent' => $gstPercent,
+            'tax_amount' => $taxAmount,
+            'total_amount' => $totalAmount,
+            'currency' => (string) \App\Models\PlatformSetting::get('currency', 'INR'),
+            'subtotal_label' => '₹'.number_format($subtotal, 0),
+            'advance_amount_label' => '₹'.number_format($advance, 0),
+            'shipping_fee_label' => '₹'.number_format($shipping, 0),
+            'shipping_and_handling_label' => '₹'.number_format($shipping, 0),
+            'tax_amount_label' => '₹'.number_format($taxAmount, 0),
+            'tax_label' => 'Tax (GST '.(int) $gstPercent.'%)',
+            'total_amount_label' => '₹'.number_format($totalAmount, 0),
         ];
     }
 
