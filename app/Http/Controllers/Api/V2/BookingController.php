@@ -68,14 +68,13 @@ class BookingController extends VendorApiController
         );
     }
 
-    public function show(Request $request, Order $booking): JsonResponse
+    public function show(Request $request, string $booking): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
         return $this->success(
             VendorApiPresenter::bookingDetail(
-                $booking->load([
+                $order->load([
                     'customer.measurements',
                     'vendor',
                     'category',
@@ -89,13 +88,12 @@ class BookingController extends VendorApiController
         );
     }
 
-    public function accept(Request $request, Order $booking): JsonResponse
+    public function accept(Request $request, string $booking): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
         try {
-            $updated = $this->items->acceptAll($booking);
+            $updated = $this->items->acceptAll($order);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }
@@ -105,15 +103,14 @@ class BookingController extends VendorApiController
         ], 'Booking accepted.');
     }
 
-    public function reject(Request $request, Order $booking): JsonResponse
+    public function reject(Request $request, string $booking): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
         $data = $this->validateVendor($request, VendorValidationRules::bookingReject());
 
         try {
-            $result = $this->items->rejectAll($booking, trim($data['reason']));
+            $result = $this->items->rejectAll($order, trim($data['reason']));
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }
@@ -131,13 +128,12 @@ class BookingController extends VendorApiController
         ], 'Booking rejected.');
     }
 
-    public function acceptItem(Request $request, Order $booking, OrderItem $item): JsonResponse
+    public function acceptItem(Request $request, string $booking, OrderItem $item): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
         try {
-            $updated = $this->items->acceptItem($booking, $item);
+            $updated = $this->items->acceptItem($order, $item);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }
@@ -148,15 +144,14 @@ class BookingController extends VendorApiController
         ], 'Item accepted.');
     }
 
-    public function rejectItem(Request $request, Order $booking, OrderItem $item): JsonResponse
+    public function rejectItem(Request $request, string $booking, OrderItem $item): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
         $data = $this->validateVendor($request, VendorValidationRules::bookingReject());
 
         try {
-            $result = $this->items->rejectItem($booking, $item, trim($data['reason']));
+            $result = $this->items->rejectItem($order, $item, trim($data['reason']));
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }
@@ -175,10 +170,9 @@ class BookingController extends VendorApiController
         ], 'Item rejected.');
     }
 
-    public function updateStatus(Request $request, Order $booking): JsonResponse
+    public function updateStatus(Request $request, string $booking): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
         $data = $request->validate([
             'status' => ['required', 'string', Rule::in(VendorBookingStatus::acceptedInputStatuses())],
@@ -190,23 +184,23 @@ class BookingController extends VendorApiController
             return $this->error('Invalid booking status.', 422);
         }
 
-        if (! OrderDispatchSupport::canTransitionTo($booking, $nextStatus)) {
+        if (! OrderDispatchSupport::canTransitionTo($order, $nextStatus)) {
             return $this->error(
-                'Invalid status transition from '.VendorBookingStatus::toApi($booking->status).' to '.VendorBookingStatus::toApi($nextStatus).'.',
+                'Invalid status transition from '.VendorBookingStatus::toApi($order->status).' to '.VendorBookingStatus::toApi($nextStatus).'.',
                 422
             );
         }
 
-        $booking->status = $nextStatus;
+        $order->status = $nextStatus;
 
         if (OrderDispatchSupport::isDispatchStatus($nextStatus)) {
-            OrderDispatchSupport::prepareForTransit($booking);
+            OrderDispatchSupport::prepareForTransit($order);
         }
 
-        $booking->save();
+        $order->save();
 
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($booking->fresh([
+            'booking' => VendorApiPresenter::bookingDetail($order->fresh([
                 'customer',
                 'category',
                 'driver',
@@ -216,24 +210,23 @@ class BookingController extends VendorApiController
         ], 'Booking status updated.');
     }
 
-    public function updateDamage(Request $request, Order $booking): JsonResponse
+    public function updateDamage(Request $request, string $booking): JsonResponse
     {
-        $vendor = $this->vendor($request);
-        $this->assertOwnsOrder($booking, $vendor);
+        $order = $this->resolveOwnedBooking($request, $booking);
 
-        if ($booking->status !== 'returned') {
+        if ($order->status !== 'returned') {
             return $this->error('Damage deduction can only be recorded for returned bookings.', 422);
         }
 
         $data = $this->validateVendor($request, VendorValidationRules::bookingDamage());
 
-        $booking->update([
+        $order->update([
             'damage_note' => $data['damage_note'] ?? null,
             'damage_deduct_percent' => $data['damage_deduct_percent'] ?? null,
         ]);
 
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($booking->fresh([
+            'booking' => VendorApiPresenter::bookingDetail($order->fresh([
                 'customer',
                 'category',
                 'driver',
