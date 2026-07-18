@@ -95,14 +95,25 @@ class CheckoutController extends ApiController
         }
     }
 
-    public function show(Request $request, CheckoutOrder $checkoutOrder): JsonResponse
+    public function show(Request $request, string $checkoutOrder): JsonResponse
     {
         /** @var Customer $customer */
         $customer = $request->user();
-        abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
-        $checkoutOrder->load(['subOrders.vendor', 'subOrders.category', 'subOrders.driver', 'subOrders.orderItems', 'subOrders.review', 'refunds.histories']);
+        $model = CheckoutOrder::query()
+            ->where('customer_id', $customer->id)
+            ->where(function ($query) use ($checkoutOrder) {
+                $query->where('order_number', $checkoutOrder);
+                if (ctype_digit($checkoutOrder)) {
+                    $query->orWhere('id', (int) $checkoutOrder);
+                }
+            })
+            ->first();
 
-        return $this->success(CustomerApiPresenter::checkoutOrderDetail($checkoutOrder));
+        abort_unless($model, 404, 'Checkout order not found.');
+
+        $model->load(['subOrders.vendor', 'subOrders.category', 'subOrders.driver', 'subOrders.orderItems', 'subOrders.review', 'refunds.histories']);
+
+        return $this->success(CustomerApiPresenter::checkoutOrderDetail($model));
     }
 }

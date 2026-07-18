@@ -90,15 +90,24 @@ class BookingController extends ApiController
         );
     }
 
-    public function show(Request $request, Order $booking): JsonResponse
+    public function show(Request $request, string $booking): JsonResponse
     {
         /** @var Customer $customer */
         $customer = $request->user();
-        abort_unless($booking->customer_id === $customer->id, 403);
 
-        $booking->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'review']);
+        // Multi-vendor checkouts appear in booking history with type=checkout_order.
+        // Accept numeric id OR order_number (e.g. JB260708090).
+        $checkout = $this->findCustomerCheckout($customer->id, $booking);
+        if ($checkout) {
+            return $this->success(CustomerApiPresenter::checkoutOrderDetail($checkout));
+        }
 
-        return $this->success(CustomerApiPresenter::bookingDetail($booking));
+        $order = $this->findCustomerOrder($customer->id, $booking);
+        abort_unless($order, 404, 'Booking not found.');
+
+        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'review', 'orderItems']);
+
+        return $this->success(CustomerApiPresenter::bookingDetail($order));
     }
 
     public function preview(Request $request, PortfolioItem $item): JsonResponse
@@ -372,5 +381,32 @@ class BookingController extends ApiController
         Vendor::query()->whereKey($vendorId)->update([
             'rating' => round((float) $average, 2),
         ]);
+    }
+
+    protected function findCustomerCheckout(int $customerId, string $key): ?CheckoutOrder
+    {
+        return CheckoutOrder::query()
+            ->where('customer_id', $customerId)
+            ->where(function ($query) use ($key) {
+                $query->where('order_number', $key);
+                if (ctype_digit($key)) {
+                    $query->orWhere('id', (int) $key);
+                }
+            })
+            ->first();
+    }
+
+    protected function findCustomerOrder(int $customerId, string $key): ?Order
+    {
+        return Order::query()
+            ->where('customer_id', $customerId)
+            ->where(function ($query) use ($key) {
+                $query->where('order_number', $key)
+                    ->orWhere('sub_order_number', $key);
+                if (ctype_digit($key)) {
+                    $query->orWhere('id', (int) $key);
+                }
+            })
+            ->first();
     }
 }
