@@ -167,10 +167,8 @@ class VendorBookingItemService
             $updates['status'] = 'accepted';
             $updates['cancellation_reason'] = null;
         } elseif ($pending->isNotEmpty()) {
-            // Keep awaiting response while some items are still pending.
-            if (in_array($booking->status, ['new', 'pending_acceptance', 'accepted'], true)) {
-                $updates['status'] = 'pending_acceptance';
-            }
+            // Partial accept/reject: booking stays pending until every item is decided.
+            $updates['status'] = 'pending_acceptance';
         }
 
         // Refresh display title from first active item when available.
