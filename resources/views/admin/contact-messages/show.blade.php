@@ -1,7 +1,9 @@
 @extends('admin.layouts.app')
 @section('title', $message->subject)
 @section('page_title', $message->subject)
-@section('page_subtitle', 'Received {{ $message->created_at?->diffForHumans() ?? "recently" }}')
+@section('page_subtitle')
+    Received {{ $message->created_at?->diffForHumans() ?? 'recently' }}
+@endsection
 @section('back_href', route('admin.contact-messages.index'))
 @section('content')
     <div class="jb-card max-w-3xl">
