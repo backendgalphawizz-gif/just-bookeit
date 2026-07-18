@@ -294,7 +294,7 @@
                     @if ($order->isRental() && $order->rentalDurationDays())
                         <div><dt>Rental duration</dt><dd>{{ $order->rentalDurationDays() }} days</dd></div>
                     @endif
-                </dl>
+            </dl>
                 <div class="jb-booking-payment-total">
                     <span>Total amount</span>
                     <strong>₹{{ number_format($order->grandTotal(), 0) }}</strong>
