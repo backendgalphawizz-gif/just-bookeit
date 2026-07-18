@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Models\Conversation;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Models\VendorPortfolioImage;
-use App\Models\Conversation;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\Request;
 
@@ -84,6 +85,20 @@ abstract class VendorApiController extends ApiController
         $this->assertOwnsOrder($order, $vendor, $requirePaymentConfirmed);
 
         return $order;
+    }
+
+    protected function resolveOwnedItem(Order $booking, string|int $item): OrderItem
+    {
+        $orderItem = $booking->orderItems()->whereKey($item)->first();
+
+        if (! $orderItem) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Item not found on this booking.',
+            ], 404));
+        }
+
+        return $orderItem;
     }
 
     protected function assertOwnsProduct(PortfolioItem $product, Vendor $vendor): void
