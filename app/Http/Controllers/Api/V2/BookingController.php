@@ -70,7 +70,8 @@ class BookingController extends VendorApiController
 
     public function show(Request $request, string $booking): JsonResponse
     {
-        $order = $this->resolveOwnedBooking($request, $booking);
+        // Detail should open for any booking the vendor owns (same id as list/home).
+        $order = $this->resolveOwnedBooking($request, $booking, requirePaymentConfirmed: false);
 
         return $this->success(
             VendorApiPresenter::bookingDetail(
@@ -100,7 +101,7 @@ class BookingController extends VendorApiController
 
         return $this->success([
             'booking' => VendorApiPresenter::bookingDetail($updated),
-        ], 'Booking accepted.');
+        ], 'Booking accepted. All pending items were accepted.');
     }
 
     public function reject(Request $request, string $booking): JsonResponse
@@ -128,39 +129,53 @@ class BookingController extends VendorApiController
         ], 'Booking rejected.');
     }
 
-    public function acceptItem(Request $request, string $booking, OrderItem $item): JsonResponse
+    public function acceptItem(Request $request, string $booking, string $item): JsonResponse
     {
         $order = $this->resolveOwnedBooking($request, $booking);
+        $orderItem = $this->resolveOwnedItem($order, $item);
 
         try {
-            $updated = $this->items->acceptItem($order, $item);
+            $updated = $this->items->acceptItem($order, $orderItem);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }
 
+        $pendingCount = $updated->orderItems
+            ->where('status', OrderItem::STATUS_PENDING)
+            ->count();
+
+        $message = $pendingCount > 0
+            ? 'Item accepted. Booking stays pending until all items are accepted.'
+            : 'Item accepted. All items are accepted — booking is now accepted.';
+
         return $this->success([
             'booking' => VendorApiPresenter::bookingDetail($updated),
-            'item' => VendorApiPresenter::orderLineItem($item->fresh()),
-        ], 'Item accepted.');
+            'item' => VendorApiPresenter::orderLineItem($orderItem->fresh()),
+            'pending_items_count' => $pendingCount,
+            'booking_fully_accepted' => $pendingCount === 0 && $updated->status === 'accepted',
+        ], $message);
     }
 
-    public function rejectItem(Request $request, string $booking, OrderItem $item): JsonResponse
+    public function rejectItem(Request $request, string $booking, string $item): JsonResponse
     {
         $order = $this->resolveOwnedBooking($request, $booking);
+        $orderItem = $this->resolveOwnedItem($order, $item);
 
         $data = $this->validateVendor($request, VendorValidationRules::bookingReject());
 
         try {
-            $result = $this->items->rejectItem($order, $item, trim($data['reason']));
+            $result = $this->items->rejectItem($order, $orderItem, trim($data['reason']));
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }
 
         $refund = $result['refund'];
+        $updated = $result['booking'];
 
         return $this->success([
-            'booking' => VendorApiPresenter::bookingDetail($result['booking']),
-            'item' => VendorApiPresenter::orderLineItem($item->fresh()),
+            'booking' => VendorApiPresenter::bookingDetail($updated),
+            'item' => VendorApiPresenter::orderLineItem($orderItem->fresh()),
+            'pending_items_count' => $updated->orderItems->where('status', OrderItem::STATUS_PENDING)->count(),
             'partial_refund' => $refund ? [
                 'id' => $refund->id,
                 'amount' => (float) $refund->amount,

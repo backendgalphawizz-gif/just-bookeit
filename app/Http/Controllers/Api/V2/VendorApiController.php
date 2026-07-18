@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Models\Conversation;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Models\VendorPortfolioImage;
-use App\Models\Conversation;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\Request;
 
@@ -21,45 +22,83 @@ abstract class VendorApiController extends ApiController
         return $vendor;
     }
 
-    protected function assertOwnsOrder(Order $order, Vendor $vendor): void
+    protected function assertOwnsOrder(Order $order, Vendor $vendor, bool $requirePaymentConfirmed = true): void
     {
-        abort_unless($order->vendor_id === $vendor->id, 403, 'This booking does not belong to your vendor account.');
-        abort_unless(
-            $order->isPaymentConfirmed(),
-            404,
-            'Booking not available until payment is confirmed (payment_status must be success).'
-        );
+        if ($order->vendor_id !== $vendor->id) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'This booking does not belong to your vendor account.',
+            ], 403));
+        }
+
+        if ($requirePaymentConfirmed && ! $order->isPaymentConfirmed()) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Booking not available until payment is confirmed.',
+                'payment_status' => $order->payment_status,
+            ], 404));
+        }
     }
 
     /**
      * Resolve a vendor booking by order id, order_number, or checkout_order_id.
      */
-    protected function resolveOwnedBooking(Request $request, string|int $booking): Order
+    protected function resolveOwnedBooking(Request $request, string|int $booking, bool $requirePaymentConfirmed = true): Order
     {
         $vendor = $this->vendor($request);
         $key = trim((string) $booking);
 
-        $order = Order::query()
-            ->where('vendor_id', $vendor->id)
-            ->where(function ($query) use ($key) {
-                $query->where('order_number', $key);
+        $order = null;
 
-                if (ctype_digit($key)) {
-                    $id = (int) $key;
-                    $query->orWhere('id', $id)
-                        ->orWhere('checkout_order_id', $id);
-                }
-            })
-            ->orderByDesc('id')
-            ->first();
+        if (ctype_digit($key)) {
+            $id = (int) $key;
 
-        if (! $order) {
-            abort(404, 'Booking not found for this vendor.');
+            // Prefer exact order id first (matches list `id`).
+            $order = Order::query()
+                ->where('vendor_id', $vendor->id)
+                ->where('id', $id)
+                ->first();
+
+            if (! $order) {
+                $order = Order::query()
+                    ->where('vendor_id', $vendor->id)
+                    ->where('checkout_order_id', $id)
+                    ->orderByDesc('id')
+                    ->first();
+            }
         }
 
-        $this->assertOwnsOrder($order, $vendor);
+        if (! $order) {
+            $order = Order::query()
+                ->where('vendor_id', $vendor->id)
+                ->where('order_number', $key)
+                ->first();
+        }
+
+        if (! $order) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Booking not found for this vendor.',
+            ], 404));
+        }
+
+        $this->assertOwnsOrder($order, $vendor, $requirePaymentConfirmed);
 
         return $order;
+    }
+
+    protected function resolveOwnedItem(Order $booking, string|int $item): OrderItem
+    {
+        $orderItem = $booking->orderItems()->whereKey($item)->first();
+
+        if (! $orderItem) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Item not found on this booking.',
+            ], 404));
+        }
+
+        return $orderItem;
     }
 
     protected function assertOwnsProduct(PortfolioItem $product, Vendor $vendor): void
