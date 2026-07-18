@@ -257,37 +257,55 @@
     <div class="contact-form-card jbw-card">
         <h1 class="jbw-page-title">Get in Touch</h1>
 
-        <form>
+        <form method="POST" action="{{ route('web.contact.store') }}">
+            @csrf
             <div class="contact-form-grid">
 
                 <div class="form-group">
-                    <label>Select Type</label>
-                    <select class="contact-select">
-                        <option>Inquiry Type</option>
-                        <option>Booking</option>
-                        <option>Order Tracking</option>
-                        <option>Support</option>
+                    <label for="inquiry_type">Select Type</label>
+                    <select id="inquiry_type" name="inquiry_type" class="contact-select" required>
+                        <option value="" disabled @selected(old('inquiry_type') === null || old('inquiry_type') === '')>Inquiry Type</option>
+                        @foreach ($inquiryTypes as $value => $label)
+                            <option value="{{ $value }}" @selected(old('inquiry_type') === $value)>{{ $label }}</option>
+                        @endforeach
                     </select>
+                    @error('inquiry_type')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email"
+                    <label for="email">Email Address</label>
+                    <input id="email"
+                        type="email"
+                        name="email"
                         class="contact-input"
-                        placeholder="julianne@example.com">
+                        value="{{ old('email', auth('customer')->user()?->email) }}"
+                        placeholder="julianne@example.com"
+                        required>
+                    @error('email')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group full-width">
-                    <label>Subject</label>
-                    <input type="text"
+                    <label for="subject">Subject</label>
+                    <input id="subject"
+                        type="text"
+                        name="subject"
                         class="contact-input"
-                        placeholder="What is this regarding?">
+                        value="{{ old('subject') }}"
+                        placeholder="What is this regarding?"
+                        required
+                        maxlength="200">
+                    @error('subject')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 </div>
 
                 <div class="form-group full-width">
-                    <label>Description</label>
-                    <textarea class="contact-textarea"
-                        placeholder="Tell us more about your request..."></textarea>
+                    <label for="message">Description</label>
+                    <textarea id="message"
+                        name="message"
+                        class="contact-textarea"
+                        placeholder="Tell us more about your request..."
+                        required
+                        maxlength="5000">{{ old('message') }}</textarea>
+                    @error('message')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 </div>
 
             </div>

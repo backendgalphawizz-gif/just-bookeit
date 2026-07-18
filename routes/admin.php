@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CheckoutOrderController;
+use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DisputeController;
@@ -67,6 +68,11 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::get('banners/{banner}/preview', [BannerController::class, 'preview'])->name('banners.preview');
             Route::resource('banners', BannerController::class)->except(['show']);
             Route::resource('faqs', FaqController::class)->except(['show']);
+
+            Route::get('contact-messages', [ContactMessageController::class, 'index'])->name('contact-messages.index');
+            Route::get('contact-messages/{contactMessage}', [ContactMessageController::class, 'show'])->name('contact-messages.show');
+            Route::post('contact-messages/{contactMessage}/mark-read', [ContactMessageController::class, 'markRead'])->name('contact-messages.mark-read');
+            Route::delete('contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
 
             Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
             Route::get('payments/{order}', [PaymentController::class, 'show'])->name('payments.show');

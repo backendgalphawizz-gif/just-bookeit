@@ -26,6 +26,7 @@ class RolePermissionSeeder extends Seeder
             'commissions' => 'Commission Management',
             'banners' => 'Banner & CMS',
             'faqs' => 'FAQ Management',
+            'contact_messages' => 'Contact Messages',
             'notifications' => 'Notifications',
             'reports' => 'Reports & Analytics',
             'disputes' => 'Dispute Management',
@@ -53,7 +54,7 @@ class RolePermissionSeeder extends Seeder
         }
 
         $support = Role::query()->where('slug', 'support_admin')->first();
-        $supportPermissions = ['dashboard', 'customers', 'orders', 'chat', 'disputes', 'refunds'];
+        $supportPermissions = ['dashboard', 'customers', 'orders', 'chat', 'disputes', 'refunds', 'contact_messages'];
 
         $this->attachPermissions($support, array_merge($supportPermissions, ['drivers']), edit: true, create: false);
 

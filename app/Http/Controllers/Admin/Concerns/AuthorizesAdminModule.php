@@ -31,7 +31,7 @@ trait AuthorizesAdminModule
             return 'delete';
         }
 
-        if (preg_match('/\.(approve|reject|suspend|activate|resolve|close|mark-paid|update-status|process)$/', $name)) {
+        if (preg_match('/\.(approve|reject|suspend|activate|resolve|close|mark-paid|mark-read|update-status|process)$/', $name)) {
             return 'edit';
         }
 

@@ -23,6 +23,7 @@ Route::get('/services', [CatalogController::class, 'services'])->name('web.servi
 Route::get('/catalog', [CatalogController::class, 'index'])->name('web.catalog.index');
 Route::get('/catalog/{item}', [CatalogController::class, 'show'])->name('web.catalog.show');
 Route::get('/contact', [ContactController::class, 'index'])->name('web.contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('web.contact.store');
 Route::get('/faq', [FaqController::class, 'index'])->name('web.faq');
 
 Route::get('/designers/{vendor}', [VendorController::class, 'show'])->name('web.vendors.show');

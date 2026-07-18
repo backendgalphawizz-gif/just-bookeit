@@ -102,6 +102,7 @@ class DashboardService
                 ->whereIn('status', VendorWithdrawalRequest::OPEN_STATUSES)
                 ->count(),
             'pending_portfolio' => (clone $portfolioQuery)->where('status', PortfolioItem::PENDING_STATUS)->count(),
+            'unread_contact_messages' => \App\Models\ContactMessage::query()->unread()->count(),
         ];
     }
 
