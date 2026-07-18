@@ -20,6 +20,7 @@ use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class BookingController extends ApiController
 {
@@ -39,29 +40,54 @@ class BookingController extends ApiController
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
-        $orders = CustomerBookingTab::applyToQuery(
-            Order::query()
-                ->with(['vendor', 'category', 'customer', 'dispute', 'review'])
-                ->where('customer_id', $customer->id)
-                ->whereNull('checkout_order_id'),
-            $request->input('tab')
-        )
-            ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 10));
+        $tab = $request->input('tab');
+        $categorySlug = CustomerBookingTab::categorySlug($tab);
+        $perPage = $request->integer('per_page', 10);
+        $page = max(1, $request->integer('page', 1));
 
-        $checkoutOrders = CheckoutOrder::query()
+        $standaloneQuery = Order::query()
+            ->with(['vendor', 'category', 'customer', 'dispute', 'review', 'orderItems'])
             ->where('customer_id', $customer->id)
-            ->with(['subOrders.vendor', 'subOrders.category'])
-            ->orderByDesc('created_at')
-            ->limit(20)
-            ->get()
-            ->map(fn (CheckoutOrder $checkout) => CustomerApiPresenter::checkoutOrderSummary($checkout))
-            ->all();
+            ->whereNull('checkout_order_id');
 
-        return $this->success([
-            ...CustomerApiPresenter::paginator($orders, fn (Order $order) => CustomerApiPresenter::bookingDetail($order)),
-            'checkout_orders' => $checkoutOrders,
-        ]);
+        if ($categorySlug) {
+            $standaloneQuery = CustomerBookingTab::applyToQuery($standaloneQuery, $tab);
+        }
+
+        $checkoutQuery = CheckoutOrder::query()
+            ->with(['subOrders.vendor', 'subOrders.category', 'subOrders.orderItems'])
+            ->where('customer_id', $customer->id);
+
+        if ($categorySlug) {
+            $checkoutQuery->whereHas('subOrders.category', fn ($q) => $q->where('slug', $categorySlug));
+        }
+
+        $entries = $standaloneQuery->get()
+            ->map(fn (Order $order) => [
+                'sort_at' => $order->created_at,
+                'payload' => CustomerApiPresenter::bookingDetail($order),
+            ])
+            ->concat(
+                $checkoutQuery->get()->map(fn (CheckoutOrder $checkout) => [
+                    'sort_at' => $checkout->created_at,
+                    'payload' => CustomerApiPresenter::checkoutOrderSummary($checkout),
+                ])
+            )
+            ->sortByDesc(fn (array $row) => $row['sort_at']?->timestamp ?? 0)
+            ->values()
+            ->map(fn (array $row) => $row['payload']);
+
+        $paginator = new LengthAwarePaginator(
+            $entries->slice(($page - 1) * $perPage, $perPage)->values(),
+            $entries->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        return $this->success(
+            CustomerApiPresenter::paginator($paginator, fn (array $item) => $item)
+        );
     }
 
     public function show(Request $request, Order $booking): JsonResponse

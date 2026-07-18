@@ -58,24 +58,24 @@
 								"url": "{{base_url}}/v1/config"
 							}
 						},
+				{
+					"name": "Send OTP",
+					"event": [
 						{
-							"name": "Send OTP",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-											"const json = pm.response.json();",
-											"if (json.data?.otp) { pm.environment.set('v1_otp', json.data.otp); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"if (json.data?.otp) { pm.environment.set('v1_otp', json.data.otp); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
@@ -84,33 +84,33 @@
 										"key": "Content-Type",
 										"value": "application/json"
 									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
-								},
-								"url": "{{base_url}}/v1/auth/otp/send"
-							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
+								"url": "{{base_url}}/v1/auth/otp/send"
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
 						{
-							"name": "Verify OTP",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-											"const json = pm.response.json();",
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
 											"if (json.data?.token) { pm.environment.set('v1_token', json.data.token); }",
 											"if (json.data?.registration_token) { pm.environment.set('v1_registration_token', json.data.registration_token); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
@@ -119,32 +119,32 @@
 										"key": "Content-Type",
 										"value": "application/json"
 									}
-								],
-								"body": {
-									"mode": "raw",
+						],
+						"body": {
+							"mode": "raw",
 									"raw": "{\n  \"mobile\": \"{{v1_mobile}}\",\n  \"otp\": \"{{v1_otp}}\",\n  \"type\": \"{{auth_type}}\",\n  \"fcm_token\": \"{{fcm_token}}\"\n}"
-								},
-								"url": "{{base_url}}/v1/auth/otp/verify"
-							}
 						},
+								"url": "{{base_url}}/v1/auth/otp/verify"
+					}
+				},
+				{
+					"name": "Register",
+					"event": [
 						{
-							"name": "Register",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
-											"const json = pm.response.json();",
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
 											"if (json.data?.token) { pm.environment.set('v1_token', json.data.token); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
@@ -153,45 +153,45 @@
 										"key": "Content-Type",
 										"value": "application/json"
 									}
-								],
-								"body": {
-									"mode": "raw",
+						],
+						"body": {
+							"mode": "raw",
 									"raw": "{\n  \"registration_token\": \"{{v1_registration_token}}\",\n  \"name\": \"Test Customer\",\n  \"mobile_no\": \"{{v1_mobile}}\",\n  \"email\": \"customer@example.com\",\n  \"address\": \"12 MG Road, Block A\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"pincode\": \"400001\"\n}"
-								},
-								"url": "{{base_url}}/v1/auth/register"
-							}
 						},
+								"url": "{{base_url}}/v1/auth/register"
+					}
+				},
+				{
+					"name": "Guest session",
+					"event": [
 						{
-							"name": "Guest session",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
-											"const json = pm.response.json();",
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
 											"if (json.data?.token) { pm.environment.set('v1_token', json.data.token); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
 									}
-								],
+						],
 								"url": "{{base_url}}/v1/auth/guest"
-							}
-						},
-						{
-							"name": "Me",
-							"request": {
-								"auth": {
-									"type": "bearer",
+					}
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
 									"bearer": [
 										{
 											"key": "token",
@@ -199,17 +199,17 @@
 											"type": "string"
 										}
 									]
-								},
-								"method": "GET",
+						},
+						"method": "GET",
 								"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/auth/me"
-							}
-						},
+						"url": "{{base_url}}/v1/auth/me"
+					}
+				},
 						{
 							"name": "Update Profile",
 							"request": {
@@ -283,11 +283,11 @@
 								"url": "{{base_url}}/v1/auth/profile"
 							}
 						},
-						{
-							"name": "Logout",
-							"request": {
-								"auth": {
-									"type": "bearer",
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
 									"bearer": [
 										{
 											"key": "token",
@@ -295,20 +295,20 @@
 											"type": "string"
 										}
 									]
-								},
-								"method": "POST",
+						},
+						"method": "POST",
 								"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v1/auth/logout"
-							}
-						}
-					]
-				},
-				{
+						"url": "{{base_url}}/v1/auth/logout"
+					}
+				}
+			]
+		},
+		{
 					"name": "Home & Discovery",
 					"item": [
 						{
@@ -2085,25 +2085,25 @@
 			"item": [
 				{
 					"name": "Auth",
-					"item": [
+			"item": [
+				{
+					"name": "Send OTP",
+					"event": [
 						{
-							"name": "Send OTP",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-											"const json = pm.response.json();",
-											"if (json.data?.otp) { pm.environment.set('v2_otp', json.data.otp); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
+									"if (json.data?.otp) { pm.environment.set('v2_otp', json.data.otp); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
@@ -2112,33 +2112,33 @@
 										"key": "Content-Type",
 										"value": "application/json"
 									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
-								},
-								"url": "{{base_url}}/v2/auth/otp/send"
-							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"type\": \"{{auth_type}}\"\n}"
 						},
+						"url": "{{base_url}}/v2/auth/otp/send"
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"event": [
 						{
-							"name": "Verify OTP",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 200', () => pm.response.to.have.status(200));",
-											"const json = pm.response.json();",
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"const json = pm.response.json();",
 											"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }",
 											"if (json.data?.registration_token) { pm.environment.set('v2_registration_token', json.data.registration_token); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
@@ -2147,40 +2147,40 @@
 										"key": "Content-Type",
 										"value": "application/json"
 									}
-								],
-								"body": {
-									"mode": "raw",
+						],
+						"body": {
+							"mode": "raw",
 									"raw": "{\n  \"mobile\": \"{{v2_mobile}}\",\n  \"otp\": \"{{v2_otp}}\",\n  \"type\": \"{{auth_type}}\",\n  \"fcm_token\": \"{{fcm_token}}\"\n}"
-								},
-								"url": "{{base_url}}/v2/auth/otp/verify"
-							}
 						},
+						"url": "{{base_url}}/v2/auth/otp/verify"
+					}
+				},
+				{
+					"name": "Register",
+					"event": [
 						{
-							"name": "Register",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"type": "text/javascript",
-										"exec": [
-											"pm.test('Status is 201', () => pm.response.to.have.status(201));",
-											"const json = pm.response.json();",
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status is 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
 											"if (json.data?.token) { pm.environment.set('v2_token', json.data.token); }"
-										]
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
 									}
-								],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
 										{
 											"key": "registration_token",
 											"value": "{{v2_registration_token}}",
@@ -2221,26 +2221,26 @@
 											"value": "Indore",
 											"type": "text"
 										},
-										{
-											"key": "aadhar_front",
-											"type": "file",
-											"src": []
-										},
-										{
-											"key": "aadhar_back",
-											"type": "file",
-											"src": []
-										}
-									]
+								{
+									"key": "aadhar_front",
+									"type": "file",
+									"src": []
 								},
-								"url": "{{base_url}}/v2/auth/register"
-							}
+								{
+									"key": "aadhar_back",
+									"type": "file",
+									"src": []
+								}
+							]
 						},
-						{
-							"name": "Me",
-							"request": {
-								"auth": {
-									"type": "bearer",
+								"url": "{{base_url}}/v2/auth/register"
+					}
+				},
+				{
+					"name": "Me",
+					"request": {
+						"auth": {
+							"type": "bearer",
 									"bearer": [
 										{
 											"key": "token",
@@ -2248,8 +2248,8 @@
 											"type": "string"
 										}
 									]
-								},
-								"method": "GET",
+						},
+						"method": "GET",
 								"header": [
 									{
 										"key": "Accept",
@@ -2330,13 +2330,13 @@
 								},
 								"url": "{{base_url}}/v2/auth/profile",
 								"description": "Update vendor profile. Supports `coverImage` (or `cover_image`) for shop banner, `profile_image`, `bio`, and `is_available`. Same fields returned on GET /v2/auth/me."
-							}
-						},
-						{
-							"name": "Logout",
-							"request": {
-								"auth": {
-									"type": "bearer",
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
 									"bearer": [
 										{
 											"key": "token",
@@ -2344,16 +2344,16 @@
 											"type": "string"
 										}
 									]
-								},
-								"method": "POST",
+						},
+						"method": "POST",
 								"header": [
 									{
 										"key": "Accept",
 										"value": "application/json"
 									}
 								],
-								"url": "{{base_url}}/v2/auth/logout"
-							}
+						"url": "{{base_url}}/v2/auth/logout"
+					}
 						}
 					]
 				},
