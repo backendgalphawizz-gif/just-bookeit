@@ -177,6 +177,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::delete('products/{product}', [VendorProductController::class, 'destroy'])->name('products.destroy');
 
         Route::get('chats', [VendorChatController::class, 'index'])->name('chats.index');
+        Route::post('chats', [VendorChatController::class, 'store'])->name('chats.store');
         Route::get('chats/{chat}', [VendorChatController::class, 'show'])->name('chats.show');
         Route::get('chats/{chat}/messages', [VendorChatController::class, 'messages'])->name('chats.messages');
         Route::post('chats/{chat}/messages', [VendorChatController::class, 'sendMessage'])->name('chats.messages.send');
