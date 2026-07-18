@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V2;
 
 use App\Models\ChatMessage;
 use App\Models\Conversation;
+use App\Models\Customer;
+use App\Models\Order;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
@@ -15,22 +17,102 @@ class ChatController extends VendorApiController
     public function index(Request $request): JsonResponse
     {
         $vendor = $this->vendor($request);
+        $search = trim((string) $request->input('search', ''));
 
         $query = $vendor->conversations()
             ->with(['customer', 'latestMessage'])
             ->orderByDesc('last_message_at')
             ->orderByDesc('id');
 
-        if ($request->filled('search')) {
-            $term = '%'.$request->string('search').'%';
-            $query->whereHas('customer', fn ($customer) => $customer->where('name', 'like', $term));
+        if ($search !== '') {
+            $term = '%'.$search.'%';
+            $query->whereHas('customer', function ($customer) use ($term) {
+                $customer->where('name', 'like', $term)
+                    ->orWhere('mobile', 'like', $term)
+                    ->orWhere('email', 'like', $term);
+            });
         }
 
         $chats = $query->paginate($request->integer('per_page', 20));
 
-        return $this->success(
-            VendorApiPresenter::paginator($chats, fn (Conversation $chat) => VendorApiPresenter::chatSummary($chat))
+        $payload = VendorApiPresenter::paginator(
+            $chats,
+            fn (Conversation $chat) => VendorApiPresenter::chatSummary($chat)
         );
+
+        // Common names / no prior chat: also return booking customers the vendor can start chatting with.
+        if ($search !== '') {
+            $existingCustomerIds = $vendor->conversations()->pluck('customer_id');
+
+            $startable = Customer::query()
+                ->where(function ($q) use ($search) {
+                    $term = '%'.$search.'%';
+                    $q->where('name', 'like', $term)
+                        ->orWhere('mobile', 'like', $term)
+                        ->orWhere('email', 'like', $term);
+                })
+                ->whereIn('id', function ($q) use ($vendor) {
+                    $q->select('customer_id')
+                        ->from('orders')
+                        ->where('vendor_id', $vendor->id)
+                        ->where('payment_status', 'success')
+                        ->whereNotNull('customer_id');
+                })
+                ->when($existingCustomerIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $existingCustomerIds))
+                ->orderBy('name')
+                ->limit(20)
+                ->get()
+                ->map(fn (Customer $customer) => VendorApiPresenter::chatStartableCustomer($customer))
+                ->values()
+                ->all();
+
+            $payload['startable_customers'] = $startable;
+        }
+
+        return $this->success($payload);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+
+        $data = $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'message' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $hasBooking = Order::query()
+            ->where('vendor_id', $vendor->id)
+            ->where('customer_id', $data['customer_id'])
+            ->paymentConfirmed()
+            ->exists();
+
+        if (! $hasBooking) {
+            return $this->error('You can only chat with customers who have a paid booking with you.', 422);
+        }
+
+        $conversation = Conversation::query()->firstOrCreate(
+            [
+                'customer_id' => (int) $data['customer_id'],
+                'vendor_id' => $vendor->id,
+            ],
+            ['last_message_at' => now()]
+        );
+
+        if (! empty($data['message'])) {
+            $message = $conversation->messages()->create([
+                'sender_type' => ChatMessage::SENDER_VENDOR,
+                'sender_id' => $vendor->id,
+                'body' => $data['message'],
+            ]);
+            $conversation->update(['last_message_at' => $message->created_at]);
+        }
+
+        $conversation->load(['customer', 'latestMessage']);
+
+        return $this->success([
+            'chat' => VendorApiPresenter::chatDetail($conversation),
+        ], 'Chat ready.', 201);
     }
 
     public function show(Request $request, Conversation $chat): JsonResponse

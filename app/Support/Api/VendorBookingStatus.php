@@ -24,6 +24,7 @@ class VendorBookingStatus
 
         return match ($key) {
             'completed' => 'delivered',
+            'rejected' => 'cancelled',
             're-intransit' => 're_intransit',
             're-delivered' => 're_delivered',
             'in-transit' => 'in_progress',
@@ -35,6 +36,7 @@ class VendorBookingStatus
     {
         return match ($status) {
             'delivered' => 'completed',
+            'cancelled' => 'rejected',
             're_intransit' => 're-intransit',
             're_delivered' => 're-delivered',
             default => $status,
@@ -50,12 +52,12 @@ class VendorBookingStatus
             'accepted' => ['accepted'],
             'in-progress', 'in_progress' => ['in_progress'],
             'completed' => ['delivered'],
-            'cancelled' => ['cancelled'],
+            'rejected', 'cancelled' => ['cancelled'],
             'returned' => ['returned'],
             'rework' => ['rework'],
             're-in-transit', 're_intransit' => ['re_intransit'],
             're-delivered', 're_delivered' => ['re_delivered'],
-            'new' => ['new', 'pending_acceptance'],
+            'new', 'pending' => ['new', 'pending_acceptance'],
             default => null,
         };
     }

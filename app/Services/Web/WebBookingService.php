@@ -5,6 +5,7 @@ namespace App\Services\Web;
 use App\Models\Customer;
 use App\Models\CustomerMeasurement;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PortfolioItem;
 use App\Services\Booking\BookingPricingService;
 use App\Support\BookingMeasurementSupport;
@@ -46,6 +47,13 @@ class WebBookingService
             $profile instanceof CustomerMeasurement ? $profile : null,
         );
 
+        $referencePaths = [];
+        if ($request?->hasFile('reference_images')) {
+            foreach ($request->file('reference_images') as $file) {
+                $referencePaths[] = StoresUploadedFiles::store($file, 'orders/reference-images');
+            }
+        }
+
         $order = Order::query()->create([
             'order_number' => CodeGenerator::orderNumber(),
             'customer_id' => $customer->id,
@@ -70,6 +78,7 @@ class WebBookingService
             'delivery_fee' => $pricing['shipping_fee'],
             'tax_amount' => $pricing['tax_amount'],
             'customer_notes' => $notes !== '' ? $notes : null,
+            'reference_image_paths' => $referencePaths !== [] ? $referencePaths : null,
             'measure_height_cm' => $measurements['measure_height_cm'],
             'measure_chest_cm' => $measurements['measure_chest_cm'],
             'measure_waist_cm' => $measurements['measure_waist_cm'],
@@ -84,13 +93,28 @@ class WebBookingService
             $order->saveQuietly();
         }
 
-        if ($request?->hasFile('reference_images')) {
-            $paths = [];
-            foreach ($request->file('reference_images') as $file) {
-                $paths[] = StoresUploadedFiles::store($file, 'orders/reference-images');
-            }
-            $order->update(['reference_image_paths' => $paths]);
-        }
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'portfolio_item_id' => $item->id,
+            'vendor_id' => $item->vendor_id,
+            'quantity' => 1,
+            'unit_price' => $pricing['daily_rate'],
+            'line_amount' => $pricing['subtotal'],
+            'status' => OrderItem::STATUS_PENDING,
+            'item_snapshot' => array_filter([
+                'title' => $item->title,
+                'image_url' => $variant?->image_path ?: $item->image_url,
+                'category' => $item->category?->name,
+                'size' => $variant?->size ?? ($data['size'] ?? null),
+                'color' => $variant?->color ?? null,
+                'variant_id' => $variant?->id,
+                'rental_start_date' => $data['rental_start_date'] ?? null,
+                'rental_end_date' => $data['rental_end_date'] ?? null,
+                'customer_notes' => $notes !== '' ? $notes : null,
+                'measurement_profile_id' => $profile instanceof CustomerMeasurement ? $profile->id : null,
+                'reference_image_paths' => $referencePaths !== [] ? $referencePaths : null,
+            ], fn ($value) => $value !== null && $value !== '' && $value !== []),
+        ]);
 
         if ($customer->city === null && ! empty($data['city'])) {
             $customer->update(['city' => $data['city']]);
@@ -99,7 +123,7 @@ class WebBookingService
         $count = Order::query()->where('customer_id', $customer->id)->count();
         $customer->update(['total_orders' => $count]);
 
-        $order->load(['vendor', 'category', 'subcategory', 'customer']);
+        $order->load(['vendor', 'category', 'subcategory', 'customer', 'orderItems']);
 
         return [
             'order' => $order,
