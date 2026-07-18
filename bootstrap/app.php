@@ -31,8 +31,31 @@ return Application::configure(basePath: dirname(__DIR__))
             'vendor.api' => \App\Http\Middleware\EnsureVendorApiIsAuthenticated::class,
             'driver.api' => \App\Http\Middleware\EnsureDriverApiIsAuthenticated::class,
         ]);
+
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            if ($request->is('admin') || $request->is('admin/*')) {
+                return route('admin.login');
+            }
+
+            if ($request->is('vendor') || $request->is('vendor/*')) {
+                return route('vendor.login');
+            }
+
+            return route('web.home');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+
+            return null;
+        });
+
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Session expired. Please refresh and try again.'], 419);

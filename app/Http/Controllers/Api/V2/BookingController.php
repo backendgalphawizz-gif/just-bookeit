@@ -70,7 +70,8 @@ class BookingController extends VendorApiController
 
     public function show(Request $request, string $booking): JsonResponse
     {
-        $order = $this->resolveOwnedBooking($request, $booking);
+        // Detail should open for any booking the vendor owns (same id as list/home).
+        $order = $this->resolveOwnedBooking($request, $booking, requirePaymentConfirmed: false);
 
         return $this->success(
             VendorApiPresenter::bookingDetail(
