@@ -83,6 +83,14 @@ class OtpService
         $type = $this->normalizeType($type);
         $this->assertActorType($actorType);
 
+        $this->assertAuthTypeMatchesAccount($actorType, $mobile, $type);
+
+        // Status check before OTP validation so pending/rejected accounts fail early.
+        if ($type === self::TYPE_LOGIN) {
+            $actor = $this->findActor($actorType, $mobile);
+            $this->assertActorCanAuthenticate($actorType, $actor);
+        }
+
         $record = OtpVerification::query()
             ->where('actor_type', $actorType)
             ->where('mobile', $mobile)
@@ -104,11 +112,8 @@ class OtpService
 
         $record->update(['verified_at' => now()]);
 
-        $this->assertAuthTypeMatchesAccount($actorType, $mobile, $type);
-
         if ($type === self::TYPE_LOGIN) {
             $actor = $this->findActor($actorType, $mobile);
-            $this->assertActorCanAuthenticate($actorType, $actor);
 
             $token = $actor->createToken($this->tokenName($actorType))->plainTextToken;
 

@@ -18,8 +18,8 @@ return [
         'icon' => 'products',
         'children' => [
             ['label' => 'Fashion Designer', 'route' => 'vendor.products.index', 'params' => ['type' => 'fashion-designer'], 'match' => ['vendor.products.index']],
-            ['label' => 'Rented Dresses', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-dress'], 'match' => ['vendor.products.index']],
-            ['label' => 'Rented Jewelry', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-jewellery'], 'match' => ['vendor.products.index']],
+            ['label' => 'Rental Dresses', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-dress'], 'match' => ['vendor.products.index']],
+            ['label' => 'Rental Jewelry', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-jewellery'], 'match' => ['vendor.products.index']],
         ],
     ],
     [
