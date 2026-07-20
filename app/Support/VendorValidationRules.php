@@ -38,20 +38,32 @@ class VendorValidationRules
         'Rented Dress' => 'rented-dress',
         'Rented Jewellery' => 'rented-jewellery',
         'Rental Jewellery' => 'rented-jewellery',
+        // Common API / app aliases
+        'Designer' => 'fashion-designer',
+        'Fashion' => 'fashion-designer',
+        'fashion-designer' => 'fashion-designer',
+        'rented-dress' => 'rented-dress',
+        'rented-jewellery' => 'rented-jewellery',
+        'rented-jewelry' => 'rented-jewellery',
     ];
 
     /** @return list<string> */
     public static function serviceTypeSlugs(array $serviceTypes): array
     {
         $slugs = [];
+        $aliasMap = [];
+
+        foreach (self::SERVICE_TYPE_SLUGS as $label => $slug) {
+            $aliasMap[strtolower(trim((string) $label))] = $slug;
+        }
 
         foreach ($serviceTypes as $type) {
-            $key = trim((string) $type);
+            $key = strtolower(trim((string) $type));
             if ($key === '') {
                 continue;
             }
 
-            $slug = self::SERVICE_TYPE_SLUGS[$key] ?? null;
+            $slug = $aliasMap[$key] ?? null;
             if ($slug && ! in_array($slug, $slugs, true)) {
                 $slugs[] = $slug;
             }
@@ -259,28 +271,26 @@ class VendorValidationRules
             return [];
         }
 
-        $result = [];
+        $raw = array_values(array_filter(array_map(
+            static fn ($value) => trim((string) $value),
+            $serviceTypes
+        ), static fn ($value) => $value !== ''));
 
-        foreach ($serviceTypes as $value) {
-            $value = trim((string) $value);
-            if ($value === '') {
+        $normalized = self::normalizeServiceTypes($raw);
+
+        // Keep unknown values so validation can still reject them.
+        $aliasKeys = array_map('strtolower', array_keys(self::SERVICE_TYPE_SLUGS));
+        foreach ($raw as $value) {
+            $key = strtolower($value);
+            if (in_array($key, $aliasKeys, true) || in_array($value, self::SERVICE_TYPES, true)) {
                 continue;
             }
-
-            if (isset(self::SERVICE_TYPE_SLUGS[$value]) || in_array($value, self::SERVICE_TYPES, true)) {
-                foreach (self::normalizeServiceTypes([$value]) as $label) {
-                    if (! in_array($label, $result, true)) {
-                        $result[] = $label;
-                    }
-                }
-
-                continue;
+            if (! in_array($value, $normalized, true)) {
+                $normalized[] = $value;
             }
-
-            $result[] = $value;
         }
 
-        return $result;
+        return $normalized;
     }
 
     public static function product(bool $creating): array
