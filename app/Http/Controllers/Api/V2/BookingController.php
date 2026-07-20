@@ -51,12 +51,17 @@ class BookingController extends VendorApiController
                 }
             })
             ->when($request->filled('status'), function ($q) use ($request) {
-                $status = VendorBookingStatus::normalizeInput($request->string('status')->toString());
-                if ($status === 'new') {
-                    $q->whereIn('status', ['new', 'pending_acceptance']);
-                } else {
-                    $q->where('status', $status);
+                $raw = strtolower(trim(str_replace('_', '-', $request->string('status')->toString())));
+                $statuses = VendorBookingStatus::statusesForTab($raw);
+
+                if ($statuses !== null) {
+                    $q->whereIn('status', $statuses);
+
+                    return;
                 }
+
+                $status = VendorBookingStatus::normalizeInput($request->string('status')->toString());
+                $q->where('status', $status);
             });
 
         $bookings = $this->applyDateRange($query, $request)
