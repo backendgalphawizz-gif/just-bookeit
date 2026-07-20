@@ -14,6 +14,7 @@
         margin-bottom: 25px;
         width: 100%;
         box-sizing: border-box;
+        align-items: stretch;
     }
 
     /* 2. Base Contact Cards */
@@ -28,8 +29,9 @@
         /* Content remains left-aligned inside cards */
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
         min-height: 160px;
+        height: 100%;
         box-sizing: border-box;
         border: 1px solid #e2e8f0;
     }
@@ -91,8 +93,17 @@
 
     /* 5. Values & Actions */
     .jbw-contact-value {
-        margin: auto 0 0 0;
+        margin-top: auto;
         /* Auto-pushes action anchor downward if heights differ */
+        padding-top: 0.5rem;
+    }
+
+    .contact-form-card {
+        margin-top: 1.5rem;
+    }
+
+    .contact-form-card .jbw-page-title {
+        margin-bottom: 1.5rem;
     }
 
     /* Interactive Link Elements */

@@ -3,7 +3,7 @@
         @unless ($webCustomer->is_guest)
             <button
                 type="button"
-                class="backgroundborder jbw-notification-btn"
+                class="jbw-icon-btn backgroundborder jbw-notification-btn"
                 @click="notificationOpen = !notificationOpen; locationOpen = false"
                 :aria-expanded="notificationOpen"
                 aria-label="Notifications{{ ($webNotificationUnread ?? 0) > 0 ? ' ('.$webNotificationUnread.' unread)' : '' }}"
@@ -74,7 +74,7 @@
                 </div>
             </div>
         @else
-            <a href="{{ route('web.register', ['redirect' => route('web.notifications.index')]) }}" class="jbw-notification-btn" aria-label="Sign in for notifications">
+            <a href="{{ route('web.register', ['redirect' => route('web.notifications.index')]) }}" class="jbw-icon-btn backgroundborder jbw-notification-btn" aria-label="Sign in for notifications">
                 <svg class="marginnotificationicon"
     width="18"
     height="18"
@@ -91,7 +91,7 @@
             </a>
         @endunless
     @else
-        <a href="{{ route('web.login', ['redirect' => route('web.notifications.index')]) }}" class=" jbw-notification-btn" aria-label="Sign in for notifications">
+        <a href="{{ route('web.login', ['redirect' => route('web.notifications.index')]) }}" class="jbw-icon-btn backgroundborder jbw-notification-btn" aria-label="Sign in for notifications">
             <svg class="marginnotificationicon"
     width="18"
     height="18"

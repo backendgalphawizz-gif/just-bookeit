@@ -50,6 +50,7 @@ body {
 .jbw-header-inner {
     min-height: 4.25rem;
     height: auto;
+    align-items: center;
 }
 
 .jbw-nav-link {
@@ -57,7 +58,7 @@ body {
     font-size: 0.9rem;
     color: #4b5563;
     padding: 0.45rem 0.75rem;
-    /* border-radius: var(--r-pill); */
+    border-radius: var(--r-btn);
     transition: color 0.2s, background 0.2s;
 }
 
@@ -65,11 +66,24 @@ body {
 .jbw-nav-link.is-active {
     color: var(--c-primary);
     background: var(--c-primary-soft);
+    text-decoration: none;
 }
 
-.jbw-icon-btn {
-    border-radius: var(--r-pill);
+.jbw-icon-btn,
+.jbw-notification-btn,
+.jbw-avatar-btn {
+    border-radius: 8px;
+    line-height: 0;
     transition: background 0.2s, transform 0.15s;
+}
+
+.jbw-header-tools {
+    align-items: center;
+}
+
+.jbw-header-search {
+    align-items: center;
+    margin: 0;
 }
 
 .jbw-icon-btn:hover {
@@ -342,8 +356,8 @@ body {
 
 /* Product grid — e-commerce cards */
 .jbw-product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.0rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
 }
 
 .jbw-product-card {
@@ -353,19 +367,32 @@ body {
     box-shadow: var(--shadow-card);
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 
 .jbw-product-card:hover {
-    /* transform: translateY(-6px); */
-     transform: translateY(-3px);
+    transform: translateY(-3px);
     box-shadow: var(--shadow-hover);
     border-color: rgb(232 93 58 / 0.2);
 }
 
 .jbw-product-card-img {
     position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    min-height: 0;
     overflow: hidden;
-    background: linear-gradient(145deg, #f3f0eb, #e8e4dd);
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #f5f2ed, #ebe6df);
+}
+
+.jbw-product-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    object-position: center center;
+    display: block;
 }
 
 .jbw-product-card-img::after {
@@ -382,6 +409,7 @@ body {
     background: rgb(26 47 56 / 0.75);
     backdrop-filter: blur(4px);
     border-radius: var(--r-pill);
+    z-index: 1;
 }
 
 .jbw-product-card-body {
