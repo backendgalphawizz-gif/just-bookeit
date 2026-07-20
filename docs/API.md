@@ -222,7 +222,7 @@ Reference images: `reference_images[]` (max 5, jpeg/png/webp, 4MB each).
 |--------|----------|-------------|
 | POST | `/v2/auth/otp/send` | Send OTP |
 | POST | `/v2/auth/otp/verify` | Verify OTP |
-| POST | `/v2/auth/register` | `multipart`: `registration_token`, `brand_name`, `owner_name`, `email`, `city?`, `aadhar_front`, `aadhar_back` (images) |
+| POST | `/v2/auth/register` | Same fields as web vendor register. `multipart`: `registration_token`, `owner_name`, `email`, `shop_name` (or `brand_name`), `service_types[]`, bank fields, `aadhar_front`/`aadhar_back` (required), optional `aadhar_number`, location, `latitude`, `longitude`, `gst_no`, `cover_image`, `profile_image`, `shop_logo`, `pan_card`. Returns Bearer `token`. Status `active`. |
 | GET | `/v2/auth/me` | Profile (auth) |
 | POST | `/v2/auth/logout` | Logout (auth) |
 

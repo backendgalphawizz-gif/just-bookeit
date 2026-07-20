@@ -38,20 +38,32 @@ class VendorValidationRules
         'Rented Dress' => 'rented-dress',
         'Rented Jewellery' => 'rented-jewellery',
         'Rental Jewellery' => 'rented-jewellery',
+        // Common API / app aliases
+        'Designer' => 'fashion-designer',
+        'Fashion' => 'fashion-designer',
+        'fashion-designer' => 'fashion-designer',
+        'rented-dress' => 'rented-dress',
+        'rented-jewellery' => 'rented-jewellery',
+        'rented-jewelry' => 'rented-jewellery',
     ];
 
     /** @return list<string> */
     public static function serviceTypeSlugs(array $serviceTypes): array
     {
         $slugs = [];
+        $aliasMap = [];
+
+        foreach (self::SERVICE_TYPE_SLUGS as $label => $slug) {
+            $aliasMap[strtolower(trim((string) $label))] = $slug;
+        }
 
         foreach ($serviceTypes as $type) {
-            $key = trim((string) $type);
+            $key = strtolower(trim((string) $type));
             if ($key === '') {
                 continue;
             }
 
-            $slug = self::SERVICE_TYPE_SLUGS[$key] ?? null;
+            $slug = $aliasMap[$key] ?? null;
             if ($slug && ! in_array($slug, $slugs, true)) {
                 $slugs[] = $slug;
             }
@@ -224,6 +236,63 @@ class VendorValidationRules
         ];
     }
 
+    /**
+     * Same fields as web vendor register, without mobile (verified via OTP registration_token).
+     *
+     * @return array<string, mixed>
+     */
+    public static function apiRegister(): array
+    {
+        $rules = self::register();
+        unset($rules['mobile']);
+
+        $rules['shop_name'] = ['required_without:brand_name', 'nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE];
+        $rules['brand_name'] = ['required_without:shop_name', 'nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE];
+        $rules['coverImage'] = $rules['cover_image'];
+        $rules['latitude'] = ['nullable', 'numeric', 'between:-90,90'];
+        $rules['longitude'] = ['nullable', 'numeric', 'between:-180,180'];
+
+        return $rules;
+    }
+
+    /**
+     * Coerce multipart/API service_types to an array and map known aliases to canonical labels.
+     * Unknown values are kept so validation can reject them.
+     *
+     * @return list<string>
+     */
+    public static function prepareServiceTypesInput(mixed $serviceTypes): array
+    {
+        if (is_string($serviceTypes)) {
+            $serviceTypes = array_values(array_filter(array_map('trim', explode(',', $serviceTypes))));
+        }
+
+        if (! is_array($serviceTypes)) {
+            return [];
+        }
+
+        $raw = array_values(array_filter(array_map(
+            static fn ($value) => trim((string) $value),
+            $serviceTypes
+        ), static fn ($value) => $value !== ''));
+
+        $normalized = self::normalizeServiceTypes($raw);
+
+        // Keep unknown values so validation can still reject them.
+        $aliasKeys = array_map('strtolower', array_keys(self::SERVICE_TYPE_SLUGS));
+        foreach ($raw as $value) {
+            $key = strtolower($value);
+            if (in_array($key, $aliasKeys, true) || in_array($value, self::SERVICE_TYPES, true)) {
+                continue;
+            }
+            if (! in_array($value, $normalized, true)) {
+                $normalized[] = $value;
+            }
+        }
+
+        return $normalized;
+    }
+
     public static function product(bool $creating): array
     {
         $priceRule = $creating ? 'required' : 'sometimes';
@@ -232,6 +301,7 @@ class VendorValidationRules
             'title' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'description' => ['nullable', 'string', 'max:5000', 'regex:'.AdminValidationRules::REGEX_TEXT],
             'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
+            'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'audience' => ['nullable', 'in:women,men,kids'],
             ...SubcategoryCatalog::subcategoryIdRules($creating),
             ...SubcategoryCatalog::mainCategoryIdRules(false),
@@ -241,6 +311,8 @@ class VendorValidationRules
             'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
+            'variants.*.stored_image_path' => ['nullable', 'string', 'max:500'],
+            'variants.*.image_base64' => ['nullable', 'string'],
             'damage_deductions' => ['nullable', 'array', 'max:20'],
             'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],

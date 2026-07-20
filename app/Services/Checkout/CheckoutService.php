@@ -36,6 +36,9 @@ class CheckoutService
             throw new InvalidArgumentException('Your cart is empty.');
         }
 
+        $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
+        $this->assertRentalPeriodWhenNeeded($cartItems, $data);
+
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
         $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null);
         $groups = $this->buildVendorGroups($cartItems, $data, $vendorShipments, $lineOverrides);
@@ -44,15 +47,39 @@ class CheckoutService
         $deliveryFee = round($groups->sum('delivery_fee'), 2);
         $taxAmount = round($groups->sum('tax_amount'), 2);
         $grandTotal = round($amount + $deliveryFee + $taxAmount, 2);
+        $advanceAmount = round($groups->sum('advance_amount'), 2);
 
         return [
-            'vendors' => $groups->values()->all(),
+            'vendors' => $groups->map(function (array $group) {
+                return [
+                    ...$group,
+                    'items' => collect($group['items'])->map(function (array $line) {
+                        /** @var PortfolioItem $portfolioItem */
+                        $portfolioItem = $line['portfolio_item'];
+
+                        return [
+                            'cart_item_id' => $line['cart_item']->id,
+                            'portfolio_item_id' => $portfolioItem->id,
+                            'portfolio_item_variant_id' => $line['variant']?->id,
+                            'title' => $portfolioItem->title,
+                            'quantity' => $line['quantity'],
+                            'unit_price' => $line['unit_price'],
+                            'line_amount' => $line['line_amount'],
+                            'advance_amount' => $line['advance_amount'],
+                            'rental_start_date' => $line['rental_start_date'],
+                            'rental_end_date' => $line['rental_end_date'],
+                        ];
+                    })->values()->all(),
+                ];
+            })->values()->all(),
             'summary' => [
                 'items_count' => $cartItems->sum('quantity'),
                 'vendor_count' => $groups->count(),
                 'amount' => $amount,
                 'delivery_fee' => $deliveryFee,
                 'tax_amount' => $taxAmount,
+                'advance_amount' => $advanceAmount,
+                'remaining_amount' => round(max(0, $grandTotal - $advanceAmount), 2),
                 'grand_total' => $grandTotal,
                 'currency' => 'INR',
             ],
@@ -67,6 +94,9 @@ class CheckoutService
             throw new InvalidArgumentException('Your cart is empty.');
         }
 
+        $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
+        $this->assertRentalPeriodWhenNeeded($cartItems, $data);
+
         $profileId = $data['measurement_profile_id'] ?? $data['measurement_id'] ?? null;
         $profile = BookingMeasurementSupport::resolveProfile($customer, $data);
 
@@ -80,6 +110,12 @@ class CheckoutService
         $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null, $request);
         $groups = $this->buildVendorGroups($cartItems, $data, $vendorShipments, $lineOverrides);
 
+        // Persist checkout-level dates from rental lines when top-level was empty.
+        $lineStarts = $groups->flatMap(fn (array $group) => collect($group['items'])->pluck('rental_start_date'))->filter()->values();
+        $lineEnds = $groups->flatMap(fn (array $group) => collect($group['items'])->pluck('rental_end_date'))->filter()->values();
+        $data['rental_start_date'] = $data['rental_start_date'] ?? $lineStarts->min();
+        $data['rental_end_date'] = $data['rental_end_date'] ?? $lineEnds->max();
+
         return DB::transaction(function () use ($customer, $data, $cartItems, $measurements, $groups) {
             $parentNumber = CodeGenerator::orderNumber();
 
@@ -91,6 +127,8 @@ class CheckoutService
                 'amount' => round($groups->sum('subtotal'), 2),
                 'delivery_fee' => round($groups->sum('delivery_fee'), 2),
                 'tax_amount' => round($groups->sum('tax_amount'), 2),
+                'advance_amount' => round($groups->sum('advance_amount'), 2),
+                'amount_paid' => 0,
                 'grand_total' => round($groups->sum('grand_total'), 2),
                 'delivery_address' => $data['delivery_address'],
                 'billing_address' => $data['billing_address'] ?? $data['delivery_address'],
@@ -114,6 +152,7 @@ class CheckoutService
                 $lineStarts = $group['items']->pluck('rental_start_date')->filter()->values();
                 $lineEnds = $group['items']->pluck('rental_end_date')->filter()->values();
 
+                $firstRequiresRental = $firstItem->requiresRentalPeriod();
                 $subOrder = Order::query()->create([
                     'checkout_order_id' => $checkout->id,
                     'order_number' => $subNumber,
@@ -123,15 +162,20 @@ class CheckoutService
                     'category_id' => $firstItem->category_id,
                     'portfolio_item_id' => $firstItem->id,
                     'subcategory_id' => $firstItem->subcategory_id,
-                    'order_type' => 'rental',
+                    'order_type' => $firstRequiresRental ? 'rental' : 'sale',
                     'item_title' => $group['items']->count() > 1
                         ? $group['vendor_name'].' — '.$group['items']->count().' items'
                         : $firstItem->title,
                     'item_description' => $firstItem->description,
                     'item_image_path' => $firstItem->image_url,
                     'quantity' => $group['items']->sum('quantity'),
-                    'rental_start_date' => $lineStarts->min() ?? ($data['rental_start_date'] ?? null),
-                    'rental_end_date' => $lineEnds->max() ?? ($data['rental_end_date'] ?? null),
+                    'rental_start_date' => $firstRequiresRental
+                        ? ($lineStarts->min() ?? ($data['rental_start_date'] ?? null))
+                        : ($lineStarts->min() ?: null),
+                    'rental_end_date' => $firstRequiresRental
+                        ? ($lineEnds->max() ?? ($data['rental_end_date'] ?? null))
+                        : ($lineEnds->max() ?: null),
+                    'event_date' => $data['event_date'] ?? null,
                     'delivery_address' => $data['delivery_address'],
                     'billing_address' => $data['billing_address'] ?? $data['delivery_address'],
                     'city' => $data['city'] ?? $customer->city,
@@ -139,6 +183,8 @@ class CheckoutService
                     'amount' => $group['subtotal'],
                     'delivery_fee' => $group['delivery_fee'],
                     'tax_amount' => $group['tax_amount'],
+                    'advance_amount' => $group['advance_amount'],
+                    'amount_paid' => 0,
                     'payment_status' => 'pending',
                     'status' => 'new',
                 ]);
@@ -173,7 +219,16 @@ class CheckoutService
                             'size' => $variant?->size ?? ($override['size'] ?? null),
                             'color' => $variant?->color ?? ($override['color'] ?? null),
                             'variant_id' => $variant?->id ?? ($override['portfolio_item_variant_id'] ?? null),
-                        ], CheckoutItemPayloadSupport::itemSnapshotExtras($override, $data)),
+                            'advance_amount' => $line['advance_amount'] ?? (
+                                $portfolioItem->advance_amount !== null
+                                    ? round((float) $portfolioItem->advance_amount * $line['quantity'], 2)
+                                    : 0
+                            ),
+                        ], CheckoutItemPayloadSupport::itemSnapshotExtras(
+                            $override,
+                            $data,
+                            $portfolioItem->requiresRentalPeriod()
+                        )),
                     ]);
                 }
 
@@ -197,31 +252,7 @@ class CheckoutService
 
     public function markPaid(CheckoutOrder $checkout, string $paymentMethod): CheckoutOrder
     {
-        if ($checkout->payment_status === 'success') {
-            return $checkout;
-        }
-
-        return DB::transaction(function () use ($checkout, $paymentMethod) {
-            $checkout->update([
-                'payment_status' => 'success',
-                'payment_method' => $paymentMethod,
-                'paid_at' => now(),
-                'status' => 'pending_acceptance',
-            ]);
-
-            $checkout->subOrders()->each(function (Order $subOrder) use ($paymentMethod) {
-                $subOrder->update([
-                    'payment_status' => 'success',
-                    'payment_method' => $paymentMethod,
-                    'paid_at' => now(),
-                    'status' => $subOrder->status === 'new' ? 'pending_acceptance' : $subOrder->status,
-                ]);
-
-                app(VendorWalletService::class)->creditFromPayment($subOrder->fresh());
-            });
-
-            return $this->rollup->sync($checkout->fresh(['subOrders.orderItems', 'subOrders.vendor']));
-        });
+        return app(\App\Services\Booking\BookingPaymentService::class)->payCheckout($checkout, $paymentMethod);
     }
 
     /**
@@ -271,15 +302,18 @@ class CheckoutService
                     }
 
                     $override = CheckoutItemPayloadSupport::resolveOverride($lineOverrides, $cartItem);
-                    $rental = CheckoutItemPayloadSupport::rentalWindow($override, $checkoutData);
+                    $requiresRentalPeriod = $portfolioItem->requiresRentalPeriod();
+                    $rental = CheckoutItemPayloadSupport::rentalWindow($override, $checkoutData, $requiresRentalPeriod);
 
                     $pricing = BookingPricingService::forPortfolioItem($portfolioItem, [
                         'rental_days' => $rental['days'],
+                        'requires_rental_period' => $requiresRentalPeriod,
                         'shipment_required' => false,
                         'daily_rate' => $portfolioItem->dailyRateFor($cartItem->variant),
                     ]);
 
                     $lineSubtotal = round((float) $pricing['subtotal'] * $cartItem->quantity, 2);
+                    $lineAdvance = round((float) ($pricing['advance_amount'] ?? 0) * $cartItem->quantity, 2);
 
                     return [
                         'cart_item' => $cartItem,
@@ -288,6 +322,7 @@ class CheckoutService
                         'quantity' => $cartItem->quantity,
                         'unit_price' => (float) $pricing['daily_rate'],
                         'line_amount' => $lineSubtotal,
+                        'advance_amount' => $lineAdvance,
                         'override' => $override,
                         'rental_start_date' => $rental['start'],
                         'rental_end_date' => $rental['end'],
@@ -295,6 +330,7 @@ class CheckoutService
                 });
 
                 $subtotal = round($lines->sum('line_amount'), 2);
+                $advanceAmount = round($lines->sum('advance_amount'), 2);
                 $shipmentRequired = $vendorShipments[(int) $vendorId] ?? true;
                 $deliveryFee = BookingPricingService::shippingFee($shipmentRequired);
                 $taxAmount = round($subtotal * (BookingPricingService::gstPercent() / 100), 2);
@@ -306,11 +342,38 @@ class CheckoutService
                     'shipment_required' => $shipmentRequired,
                     'items' => $lines,
                     'subtotal' => $subtotal,
+                    'advance_amount' => $advanceAmount,
+                    'remaining_amount' => round(max(0, $grandTotal - $advanceAmount), 2),
                     'delivery_fee' => $deliveryFee,
                     'tax_amount' => $taxAmount,
                     'grand_total' => $grandTotal,
                 ];
             })
             ->values();
+    }
+
+    /**
+     * Rental dress/jewellery bookings must include a rental window so admin can show duration.
+     *
+     * @param  Collection<int, CartItem>  $cartItems
+     * @param  array<string, mixed>  $data
+     */
+    protected function assertRentalPeriodWhenNeeded(Collection $cartItems, array $data): void
+    {
+        $cartItems->loadMissing('portfolioItem.category');
+
+        $needsRentalPeriod = $cartItems->contains(
+            fn (CartItem $item) => (bool) $item->portfolioItem?->requiresRentalPeriod()
+        );
+
+        if (! $needsRentalPeriod) {
+            return;
+        }
+
+        if (! filled($data['rental_start_date'] ?? null) || ! filled($data['rental_end_date'] ?? null)) {
+            throw new InvalidArgumentException(
+                'Rental start and end dates are required for rental dress or jewellery bookings. Send rental_start_date and rental_end_date.'
+            );
+        }
     }
 }

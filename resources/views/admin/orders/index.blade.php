@@ -57,7 +57,7 @@
                     <label class="jb-label" for="orders-filter-payment">Payment</label>
                     <select id="orders-filter-payment" name="payment_status" class="jb-select">
                         <option value="">All payments</option>
-                        @foreach (['pending', 'success', 'failed', 'refunded'] as $paymentStatus)
+                        @foreach (['pending', 'advance_paid', 'success', 'failed', 'refunded'] as $paymentStatus)
                             <option value="{{ $paymentStatus }}" @selected(request('payment_status') === $paymentStatus)>
                                 {{ ucfirst($paymentStatus) }}
                             </option>

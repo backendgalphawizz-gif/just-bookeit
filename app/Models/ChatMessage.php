@@ -19,6 +19,7 @@ class ChatMessage extends Model
         'sender_id',
         'body',
         'attachment_path',
+        'attachment_name',
         'read_at',
     ];
 
@@ -44,8 +45,22 @@ class ChatMessage extends Model
         return ChatAttachmentSupport::typeFromPath($this->attachment_path);
     }
 
+    public function attachmentDisplayName(): ?string
+    {
+        if (! $this->attachment_path) {
+            return null;
+        }
+
+        return ChatAttachmentSupport::displayName($this->attachment_path, $this->attachment_name);
+    }
+
     public function isFromCustomer(): bool
     {
         return $this->sender_type === self::SENDER_CUSTOMER;
+    }
+
+    public function isFromVendor(): bool
+    {
+        return $this->sender_type === self::SENDER_VENDOR;
     }
 }

@@ -57,9 +57,6 @@ class OrderController extends AdminController
             $paymentStatus = $request->string('payment_status')->toString();
             $standaloneQuery->where('payment_status', $paymentStatus);
             $checkoutQuery->where('payment_status', $paymentStatus);
-        } else {
-            $standaloneQuery->paymentConfirmed();
-            $checkoutQuery->paymentConfirmed();
         }
 
         if ($request->filled('vendor_id')) {
@@ -137,8 +134,6 @@ class OrderController extends AdminController
 
     public function show(Order $order): View
     {
-        abort_unless($order->isPaymentConfirmed(), 404);
-
         $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute', 'checkoutOrder', 'orderItems.portfolioItem']);
 
         return view('admin.orders.show', [
@@ -227,7 +222,14 @@ class OrderController extends AdminController
 
     protected function applyStatusSideEffects(Order $order, string $status, ?string $paymentStatus = null): void
     {
-        if ($status === 'delivered' && ($paymentStatus === 'pending' || $order->payment_status === 'pending')) {
+        // Do not auto-mark payment success on delivery when an advance is already paid —
+        // remaining balance is collected separately after completion.
+        if (
+            $status === 'delivered'
+            && ($paymentStatus === 'pending' || $order->payment_status === 'pending')
+            && (float) ($order->advance_amount ?? 0) <= 0
+            && (float) ($order->amount_paid ?? 0) <= 0
+        ) {
             $order->update([
                 'payment_status' => 'success',
                 'paid_at' => $order->paid_at ?? now(),

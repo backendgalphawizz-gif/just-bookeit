@@ -42,7 +42,7 @@ class Order extends Model
         'refunded' => 'Refunded',
     ];
 
-    public const PAYMENT_STATUSES = ['pending', 'success', 'failed', 'refunded'];
+    public const PAYMENT_STATUSES = ['pending', 'advance_paid', 'success', 'failed', 'refunded'];
 
     public const DRIVER_STATUS_ACCEPTED = 'accepted';
 
@@ -83,6 +83,8 @@ class Order extends Model
         'security_deposit',
         'delivery_fee',
         'tax_amount',
+        'advance_amount',
+        'amount_paid',
         'customer_notes',
         'cancellation_reason',
         'admin_notes',
@@ -120,6 +122,8 @@ class Order extends Model
         return [
             'amount' => 'decimal:2',
             'security_deposit' => 'decimal:2',
+            'advance_amount' => 'decimal:2',
+            'amount_paid' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'damage_deduct_percent' => 'decimal:2',
@@ -226,12 +230,12 @@ class Order extends Model
 
     public function scopePaymentConfirmed(Builder $query): Builder
     {
-        return $query->where('payment_status', 'success');
+        return $query->whereIn('payment_status', ['success', 'advance_paid']);
     }
 
     public function isPaymentConfirmed(): bool
     {
-        return $this->payment_status === 'success';
+        return in_array($this->payment_status, ['success', 'advance_paid'], true);
     }
 
     public function portfolioItem(): BelongsTo
@@ -271,12 +275,32 @@ class Order extends Model
 
     public function isRental(): bool
     {
+        $this->loadMissing('category');
+        $slug = $this->category?->slug;
+
+        if ($slug === 'fashion-designer') {
+            return false;
+        }
+
+        if (in_array($slug, ['rented-dress', 'rented-jewellery'], true)) {
+            return true;
+        }
+
         return ($this->order_type ?? 'rental') === 'rental';
+    }
+
+    public function requiresRentalPeriod(): bool
+    {
+        return $this->isRental();
     }
 
     public function orderTypeLabel(): string
     {
-        return $this->order_type === 'sale' ? 'Purchase' : 'Rental';
+        if (! $this->isRental()) {
+            return $this->order_type === 'sale' ? 'Purchase' : 'Service';
+        }
+
+        return 'Rental';
     }
 
     public static function statusLabelFor(?string $status): string

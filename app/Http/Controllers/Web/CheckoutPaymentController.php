@@ -3,51 +3,47 @@
 namespace App\Http\Controllers\Web;
 
 use App\Models\CheckoutOrder;
-use App\Models\Customer;
 use App\Models\PlatformSetting;
-use App\Services\Checkout\CheckoutService;
+use App\Services\Booking\BookingPaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class CheckoutPaymentController extends WebController
 {
     public function __construct(
-        protected CheckoutService $checkout
+        protected BookingPaymentService $payments
     ) {}
 
     public function show(CheckoutOrder $checkoutOrder): View|RedirectResponse
     {
-        /** @var Customer $customer */
         $customer = Auth::guard('customer')->user();
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
-        if ($checkoutOrder->payment_status === 'success') {
-            return redirect()
-                ->route('web.checkout.show-order', $checkoutOrder)
-                ->with('success', 'Payment already completed for this checkout.');
-        }
-
         $checkoutOrder->load(['subOrders.vendor', 'subOrders.orderItems']);
+        $pricing = $this->payments->summaryForCheckout($checkoutOrder);
+
+        if (! $pricing['can_pay']) {
+            return redirect()
+                ->route('web.bookings.checkout.show', $checkoutOrder)
+                ->with('success', $pricing['is_fully_paid']
+                    ? 'Payment already completed for this checkout.'
+                    : 'No payment is due for this checkout right now.');
+        }
 
         return view('web.checkout.payment', [
             'checkoutOrder' => $checkoutOrder,
+            'pricing' => $pricing,
             'paymentMethods' => $this->paymentMethods(),
         ]);
     }
 
     public function pay(Request $request, CheckoutOrder $checkoutOrder): RedirectResponse
     {
-        /** @var Customer $customer */
         $customer = Auth::guard('customer')->user();
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
-
-        if ($checkoutOrder->payment_status === 'success') {
-            return redirect()
-                ->route('web.checkout.show-order', $checkoutOrder)
-                ->with('success', 'Payment already completed for this checkout.');
-        }
 
         $methods = collect($this->paymentMethods())->pluck('id')->all();
 
@@ -59,11 +55,22 @@ class CheckoutPaymentController extends WebController
             return back()->with('error', 'Cash on delivery is not available.');
         }
 
-        $this->checkout->markPaid($checkoutOrder, $data['payment_method']);
+        try {
+            $checkoutOrder = $this->payments->payCheckout($checkoutOrder, $data['payment_method']);
+            $summary = $this->payments->summaryForCheckout($checkoutOrder);
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('web.bookings.checkout.show', $checkoutOrder)
+                ->with('error', $e->getMessage());
+        }
+
+        $message = in_array($summary['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+            ? 'Advance paid successfully. Remaining amount will be due when the booking is completed.'
+            : 'Payment successful. Your order is awaiting vendor confirmation.';
 
         return redirect()
-            ->route('web.checkout.show-order', $checkoutOrder)
-            ->with('success', 'Payment successful. Your order has been sent to the designers.');
+            ->route('web.bookings.checkout.show', $checkoutOrder)
+            ->with('success', $message);
     }
 
     /** @return array<int, array{id: string, label: string}> */

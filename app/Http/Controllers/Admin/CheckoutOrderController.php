@@ -29,7 +29,6 @@ class CheckoutOrderController extends AdminController
             })
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('payment_status'), fn ($q) => $q->where('payment_status', $request->string('payment_status')))
-            ->when(! $request->filled('payment_status'), fn ($q) => $q->paymentConfirmed())
             ->latest('id')
             ->paginate(15)
             ->withQueryString();
@@ -39,8 +38,6 @@ class CheckoutOrderController extends AdminController
 
     public function show(CheckoutOrder $checkoutOrder): View
     {
-        abort_unless($checkoutOrder->isPaymentConfirmed(), 404);
-
         $checkoutOrder->load([
             'customer',
             'subOrders.vendor',

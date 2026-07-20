@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Models\CheckoutOrder;
 use App\Models\Order;
 use App\Models\PortfolioItem;
+use App\Services\Booking\BookingPaymentService;
 use App\Services\Booking\BookingPricingService;
 use App\Services\Web\WebBookingService;
 use App\Support\Api\CustomerBookingTab;
@@ -20,7 +21,8 @@ use Illuminate\View\View;
 class BookingController extends WebController
 {
     public function __construct(
-        protected WebBookingService $bookings
+        protected WebBookingService $bookings,
+        protected BookingPaymentService $payments
     ) {}
 
     public function index(Request $request): View
@@ -88,9 +90,10 @@ class BookingController extends WebController
             return redirect()->route('web.bookings.checkout.show', $order->checkout_order_id);
         }
 
-        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute']);
+        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'orderItems.portfolioItem', 'portfolioItem']);
+        $paymentSummary = $this->payments->summaryForOrder($order);
 
-        return view('web.bookings.show', compact('order'));
+        return view('web.bookings.show', compact('order', 'paymentSummary'));
     }
 
     public function showCheckout(CheckoutOrder $checkoutOrder): View|RedirectResponse
@@ -102,11 +105,13 @@ class BookingController extends WebController
             'subOrders.vendor',
             'subOrders.category',
             'subOrders.driver',
-            'subOrders.orderItems',
+            'subOrders.orderItems.portfolioItem',
+            'subOrders.portfolioItem',
             'refunds',
         ]);
+        $paymentSummary = $this->payments->summaryForCheckout($checkoutOrder);
 
-        return view('web.bookings.checkout', compact('checkoutOrder'));
+        return view('web.bookings.checkout', compact('checkoutOrder', 'paymentSummary'));
     }
 
     public function overview(PortfolioItem $item): View|RedirectResponse
@@ -134,6 +139,7 @@ class BookingController extends WebController
 
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'rental_days' => $rentalDays,
+            'requires_rental_period' => $item->requiresRentalPeriod(),
             'daily_rate' => $item->dailyRateFor($selectedVariant),
         ]);
 
@@ -166,6 +172,7 @@ class BookingController extends WebController
 
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'rental_days' => $rentalDays,
+            'requires_rental_period' => $item->requiresRentalPeriod(),
             'shipment_required' => filter_var($data['shipment_required'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'daily_rate' => $item->dailyRateFor($variant),
         ]);
@@ -182,12 +189,15 @@ class BookingController extends WebController
 
         $item->loadMissing('variants');
 
+        $requiresRentalPeriod = $item->requiresRentalPeriod();
+
         $data = $request->validate(array_merge([
             'delivery_address' => ['required', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'pincode' => ['nullable', 'string', 'max:10'],
-            'rental_start_date' => ['required', 'date', 'after_or_equal:today'],
-            'rental_end_date' => ['required', 'date', 'after_or_equal:rental_start_date'],
+            'rental_start_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:today'],
+            'rental_end_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:rental_start_date'],
+            'event_date' => ['nullable', 'date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'size' => ['nullable', 'string', 'max:10'],
             'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
@@ -195,6 +205,11 @@ class BookingController extends WebController
             'measurement_profile_id' => ['nullable', 'integer'],
             'measurement_id' => ['nullable', 'integer'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
+
+        if (! $requiresRentalPeriod && (empty($data['rental_start_date']) || empty($data['rental_end_date']))) {
+            $data['rental_start_date'] = null;
+            $data['rental_end_date'] = null;
+        }
 
         if ($request->filled('portfolio_item_variant_id')) {
             $variant = $item->findVariant((int) $data['portfolio_item_variant_id']);

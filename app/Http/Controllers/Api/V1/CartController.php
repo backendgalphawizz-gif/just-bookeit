@@ -32,6 +32,11 @@ class CartController extends ApiController
 
         $data = $request->validate([
             'portfolio_item_id' => ['required', 'integer', 'exists:portfolio_items,id'],
+            'portfolio_item_variant_id' => [
+                'nullable',
+                'integer',
+                'exists:portfolio_item_variants,id',
+            ],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
         ]);
 
@@ -39,7 +44,8 @@ class CartController extends ApiController
             $cartItem = $this->cart->add(
                 $customer,
                 (int) $data['portfolio_item_id'],
-                (int) ($data['quantity'] ?? 1)
+                (int) ($data['quantity'] ?? 1),
+                isset($data['portfolio_item_variant_id']) ? (int) $data['portfolio_item_variant_id'] : null,
             );
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);

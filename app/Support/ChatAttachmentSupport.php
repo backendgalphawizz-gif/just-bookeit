@@ -4,20 +4,24 @@ namespace App\Support;
 
 class ChatAttachmentSupport
 {
+    /** 20 MB */
     public const MAX_KB = 20480;
 
-  /** @return list<string> */
-    public static function allowedMimes(): array
+    /** @return list<string> */
+    public static function imageExtensions(): array
     {
-        return [
-            'jpeg', 'jpg', 'png', 'webp', 'gif',
-            'mp4', 'webm', 'mov', 'qt', 'quicktime', '3gp', '3gpp',
-        ];
+        return ['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic', 'heif', 'avif'];
+    }
+
+    /** @return list<string> */
+    public static function videoExtensions(): array
+    {
+        return ['mp4', 'webm', 'mov', 'qt', 'quicktime', '3gp', '3gpp', 'avi', 'mkv', 'm4v'];
     }
 
     public static function acceptAttribute(): string
     {
-        return 'image/jpeg,image/jpg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/3gpp';
+        return '*/*';
     }
 
     /** @return array<int, string> */
@@ -26,7 +30,6 @@ class ChatAttachmentSupport
         $rules = [
             'nullable',
             'file',
-            'mimes:'.implode(',', self::allowedMimes()),
             'max:'.self::MAX_KB,
         ];
 
@@ -45,10 +48,34 @@ class ChatAttachmentSupport
 
         $extension = strtolower(pathinfo((string) $path, PATHINFO_EXTENSION));
 
-        return match ($extension) {
-            'mp4', 'webm', 'mov', 'qt', '3gp', '3gpp' => 'video',
-            'jpeg', 'jpg', 'png', 'webp', 'gif' => 'image',
-            default => null,
-        };
+        if ($extension === '') {
+            return 'file';
+        }
+
+        if (in_array($extension, self::imageExtensions(), true)) {
+            return 'image';
+        }
+
+        if (in_array($extension, self::videoExtensions(), true)) {
+            return 'video';
+        }
+
+        return 'file';
+    }
+
+    public static function displayName(?string $path, ?string $fallback = null): string
+    {
+        if (filled($fallback)) {
+            return (string) $fallback;
+        }
+
+        if (! filled($path)) {
+            return 'Attachment';
+        }
+
+        $basename = basename((string) $path);
+        $extension = strtoupper(pathinfo($basename, PATHINFO_EXTENSION));
+
+        return $extension !== '' ? "File .{$extension}" : 'Attachment';
     }
 }

@@ -17,12 +17,12 @@
         <div class="jb-tabs-list">
             @foreach ($typeTabs as $tab)
                 @php
-                    $count = (int) ($tabCounts[$tab->id] ?? 0);
-                    $label = $typeLabels[$tab->slug] ?? $tab->name;
+                    $tabCount = (int) ($tabCounts[$tab->id] ?? 0);
+                    $tabLabel = $typeLabels[$tab->slug] ?? $tab->name;
                 @endphp
                 <a href="{{ route('admin.portfolio.index', array_merge($filterQuery, ['type' => $tab->slug])) }}"
                    class="jb-settings-tab {{ $type === $tab->slug ? 'jb-settings-tab--active' : '' }}">
-                    {{ $label }} ({{ $count }})
+                    {{ $tabLabel }} ({{ $tabCount }})
                 </a>
             @endforeach
         </div>
@@ -104,7 +104,7 @@
                                     —
                                 @endif
                             </td>
-                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status])</td>
+                            <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status, 'label' => ucfirst((string) $item->status)])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ $item->created_at->format('M d, Y') }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">

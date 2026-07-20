@@ -55,11 +55,12 @@
                 @php
                     $isActive = $activeChat && $activeChat->id === $conversation->id;
                     $customer = $conversation->customer;
-                    $preview = $conversation->latestMessage?->body ?? 'No messages yet';
+                    $preview = \App\Support\WebChatLivePresenter::threadPreview($conversation->latestMessage);
                 @endphp
                 <a
                     href="{{ route('vendor.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
                     @class(['vp-chat-thread', 'is-active' => $isActive])
+                    data-thread-id="{{ $conversation->id }}"
                     data-chat-aside-thread
                 >
                     @if ($customer?->profileImageUrl())
@@ -70,9 +71,9 @@
                     <div class="vp-chat-thread-body">
                         <div class="vp-chat-thread-top">
                             <strong>{{ $customer?->name ?? 'Customer' }}</strong>
-                            <span>{{ $conversation->last_message_at?->format('g:i A') }}</span>
+                            <span>{{ \App\Support\WebChatLivePresenter::threadTime($conversation->last_message_at) }}</span>
                         </div>
-                        <p>{{ \Illuminate\Support\Str::limit($preview, 52) }}</p>
+                        <p>{{ $preview }}</p>
                     </div>
                 </a>
             @empty
@@ -109,11 +110,12 @@
             <div class="vp-chat-messages" id="vp-chat-messages" data-chat-messages>
                 <div class="vp-chat-messages-track" data-chat-messages-track>
                     @forelse ($messages as $message)
-                        <div @class(['vp-chat-row', 'vp-chat-row--mine' => $message->sender_type === 'vendor']) data-message-id="{{ $message->id }}">
+                        @php $isMine = $message->isFromVendor(); @endphp
+                        <div @class(['vp-chat-row', 'vp-chat-row--mine' => $isMine, 'vp-chat-row--theirs' => ! $isMine]) data-message-id="{{ $message->id }}">
                             <div @class([
                                 'vp-chat-bubble',
-                                'vp-chat-bubble--mine' => $message->sender_type === 'vendor',
-                                'vp-chat-bubble--theirs' => $message->sender_type !== 'vendor',
+                                'vp-chat-bubble--mine' => $isMine,
+                                'vp-chat-bubble--theirs' => ! $isMine,
                             ])>
                                 @if ($message->body)
                                     <p>{{ $message->body }}</p>
@@ -123,6 +125,7 @@
                                         'url' => $message->attachmentUrl(),
                                         'path' => $message->attachment_path,
                                         'type' => $message->attachmentType(),
+                                        'name' => $message->attachmentDisplayName(),
                                         'class' => 'vp-chat-attachment',
                                     ])
                                 @endif
@@ -135,32 +138,38 @@
                 </div>
             </div>
 
-            <form
-                method="POST"
-                action="{{ route('vendor.chat.messages', $activeChat, false) }}"
-                enctype="multipart/form-data"
-                class="vp-chat-compose"
-                data-chat-compose
-            >
-                @csrf
-                <label class="vp-chat-attach" aria-label="Attach image or video">
-                    <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}" hidden>
-                    <span class="vp-chat-attach-icon">+</span>
-                </label>
-                <textarea
-                    name="body"
-                    rows="1"
-                    class="vp-chat-input"
-                    placeholder="Type a message..."
-                    data-chat-input
-                >{{ old('body') }}</textarea>
-                <button type="submit" class="vp-chat-send" aria-label="Send message">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-            </form>
+            <div class="vp-chat-compose-stack">
+                <div class="vp-chat-attach-preview" data-chat-attach-preview hidden>
+                    <div class="vp-chat-attach-preview-body" data-chat-attach-preview-body></div>
+                    <button type="button" class="vp-chat-attach-preview-clear" data-chat-attach-clear aria-label="Remove attachment">&times;</button>
+                </div>
+                <form
+                    method="POST"
+                    action="{{ route('vendor.chat.messages', $activeChat, false) }}"
+                    enctype="multipart/form-data"
+                    class="vp-chat-compose"
+                    data-chat-compose
+                >
+                    @csrf
+                    <label class="vp-chat-attach" aria-label="Attach file">
+                        <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}" hidden data-chat-attach-input>
+                        <span class="vp-chat-attach-icon">+</span>
+                    </label>
+                    <textarea
+                        name="body"
+                        rows="1"
+                        class="vp-chat-input"
+                        placeholder="Type a message..."
+                        data-chat-input
+                    >{{ old('body') }}</textarea>
+                    <button type="submit" class="vp-chat-send" aria-label="Send message">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </div>
         @else
             <div class="vp-chat-main-empty">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">

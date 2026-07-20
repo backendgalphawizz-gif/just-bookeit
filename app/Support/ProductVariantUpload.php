@@ -94,7 +94,7 @@ class ProductVariantUpload
     {
         $file = self::resolveImage($request, $index);
 
-        if ($file instanceof UploadedFile) {
+        if ($file instanceof UploadedFile && $file->isValid()) {
             return StoresUploadedFiles::store($file, $directory);
         }
 

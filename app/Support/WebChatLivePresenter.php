@@ -4,8 +4,7 @@ namespace App\Support;
 
 use App\Models\ChatMessage;
 use App\Models\Conversation;
-use App\Models\Customer;
-use App\Models\Vendor;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 
 class WebChatLivePresenter
@@ -17,9 +16,49 @@ class WebChatLivePresenter
             'body' => $message->body,
             'attachment_url' => $message->attachmentUrl(),
             'attachment_type' => $message->attachmentType(),
+            'attachment_name' => $message->attachmentDisplayName(),
             'is_mine' => $message->sender_type === $viewerRole,
             'sent_at' => $message->created_at?->format('g:i A'),
         ];
+    }
+
+    public static function threadPreview(?ChatMessage $message): string
+    {
+        if (! $message) {
+            return 'No messages yet';
+        }
+
+        if (filled($message->body)) {
+            return Str::limit($message->body, 52);
+        }
+
+        return match ($message->attachmentType()) {
+            'video' => 'Video',
+            'image' => 'Photo',
+            'file' => Str::limit($message->attachmentDisplayName() ?? 'Attachment', 52),
+            default => $message->attachment_path ? 'Attachment' : 'No messages yet',
+        };
+    }
+
+    public static function threadTime(?CarbonInterface $at): string
+    {
+        if (! $at) {
+            return '';
+        }
+
+        if ($at->isToday()) {
+            return $at->format('g:i A');
+        }
+
+        if ($at->isYesterday()) {
+            return 'Yesterday';
+        }
+
+        if ($at->isCurrentYear()) {
+            return $at->format('M j');
+        }
+
+        return $at->format('M j, Y');
     }
 
     /** @return array<string, mixed> */
@@ -30,8 +69,8 @@ class WebChatLivePresenter
         return [
             'id' => $conversation->id,
             'name' => $customer?->name ?? 'Customer',
-            'preview' => Str::limit($conversation->latestMessage?->body ?? 'No messages yet', 52),
-            'time' => $conversation->last_message_at?->format('g:i A'),
+            'preview' => self::threadPreview($conversation->latestMessage),
+            'time' => self::threadTime($conversation->last_message_at),
             'avatar_url' => $customer?->profileImageUrl(),
             'initial' => strtoupper(substr($customer?->name ?? 'C', 0, 1)),
             'url' => route('vendor.chat.index', array_filter([
@@ -50,8 +89,8 @@ class WebChatLivePresenter
         return [
             'id' => $conversation->id,
             'name' => $name,
-            'preview' => Str::limit($conversation->latestMessage?->body ?? 'No messages yet', 52),
-            'time' => $conversation->last_message_at?->format('g:i A') ?? '',
+            'preview' => self::threadPreview($conversation->latestMessage),
+            'time' => self::threadTime($conversation->last_message_at),
             'avatar_url' => $vendor?->profileImageUrl() ?: $vendor?->shopLogoUrl(),
             'initial' => strtoupper(substr($name, 0, 1)),
             'url' => route('web.chat.index', array_filter([

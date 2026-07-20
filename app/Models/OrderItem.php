@@ -102,6 +102,18 @@ class OrderItem extends Model
         return $id !== null ? (int) $id : null;
     }
 
+    public function advanceAmount(): float
+    {
+        if (array_key_exists('advance_amount', $this->item_snapshot ?? []) && $this->item_snapshot['advance_amount'] !== null) {
+            return round((float) $this->item_snapshot['advance_amount'], 2);
+        }
+
+        $this->loadMissing('portfolioItem');
+        $unit = (float) ($this->portfolioItem?->advance_amount ?? 0);
+
+        return round($unit * max(1, (int) $this->quantity), 2);
+    }
+
     public function categoryName(): ?string
     {
         $name = $this->item_snapshot['category'] ?? null;

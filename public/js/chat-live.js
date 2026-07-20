@@ -1,5 +1,5 @@
 (function () {
-    const POLL_MS = 1000;
+    const POLL_MS = 2000;
 
     function csrfToken() {
         return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -71,6 +71,7 @@
 
         const className = theme === 'vendor' ? 'vp-chat-attachment' : 'jbw-chat-attachment';
         const url = escapeHtml(message.attachment_url);
+        const name = escapeHtml(message.attachment_name || 'Attachment');
 
         if (message.attachment_type === 'video') {
             return `<video src="${url}" class="${className}" controls playsinline preload="metadata"></video>`;
@@ -81,12 +82,26 @@
             return `<img src="${url}" alt="Attachment" class="${className}${lightbox}">`;
         }
 
-        return `<a href="${url}" target="_blank" rel="noopener" class="${className}">View attachment</a>`;
+        return `
+            <a href="${url}" target="_blank" rel="noopener" download class="${className} ${className}--file vp-chat-file">
+                <span class="vp-chat-file-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                </span>
+                <span class="vp-chat-file-meta">
+                    <span class="vp-chat-file-name">${name}</span>
+                    <span class="vp-chat-file-action">Download</span>
+                </span>
+            </a>
+        `;
     }
 
     function renderVendorMessage(message) {
-        const rowClass = message.is_mine ? 'vp-chat-row vp-chat-row--mine' : 'vp-chat-row';
-        const bubbleClass = message.is_mine ? 'vp-chat-bubble vp-chat-bubble--mine' : 'vp-chat-bubble vp-chat-bubble--theirs';
+        const isMine = !!message.is_mine;
+        const rowClass = isMine ? 'vp-chat-row vp-chat-row--mine' : 'vp-chat-row vp-chat-row--theirs';
+        const bubbleClass = isMine ? 'vp-chat-bubble vp-chat-bubble--mine' : 'vp-chat-bubble vp-chat-bubble--theirs';
         const body = message.body ? `<p>${escapeHtml(message.body)}</p>` : '';
 
         return `
@@ -265,7 +280,7 @@
         return true;
     }
 
-    function updateThreads(container, threads, theme, activeChatId) {
+    function updateThreads(container, threads, theme, activeChatId, options = {}) {
         const threadsBox = container.querySelector('[data-chat-threads]');
         if (!threadsBox || !Array.isArray(threads) || threads.length === 0) {
             return;
@@ -280,10 +295,61 @@
             .join('');
 
         threadsBox.innerHTML = html;
-        threadsBox.scrollTop = previousScrollTop;
+        threadsBox.scrollTop = options.scrollToTop ? 0 : previousScrollTop;
     }
 
-    async function poll(container) {
+    function promoteThread(container, thread, theme) {
+        const threadsBox = container.querySelector('[data-chat-threads]');
+        const chatId = thread?.id ?? container.dataset.chatId;
+
+        if (!threadsBox || !chatId) {
+            return;
+        }
+
+        let node = threadsBox.querySelector(`[data-thread-id="${chatId}"]`);
+
+        if (!node && thread) {
+            const html = theme === 'vendor'
+                ? renderVendorThread(thread, chatId)
+                : renderCustomerThread(thread, chatId);
+            threadsBox.insertAdjacentHTML('afterbegin', html);
+            threadsBox.scrollTop = 0;
+            return;
+        }
+
+        if (!node) {
+            node = threadsBox.querySelector('.vp-chat-thread.is-active, .jbw-chat-thread.is-active');
+        }
+
+        if (!node) {
+            return;
+        }
+
+        if (thread) {
+            const preview = node.querySelector('.vp-chat-thread-body p, .jbw-chat-thread-body p');
+            const time = node.querySelector('.vp-chat-thread-top span');
+            const name = node.querySelector('.vp-chat-thread-top strong');
+
+            if (preview && thread.preview != null) {
+                preview.textContent = thread.preview;
+            }
+            if (time && thread.time != null) {
+                time.textContent = thread.time;
+            }
+            if (name && thread.name) {
+                name.textContent = thread.name;
+            }
+        }
+
+        threadsBox.prepend(node);
+        threadsBox.scrollTop = 0;
+    }
+
+    async function poll(container, options = {}) {
+        if (container.dataset.chatPollingInFlight === '1') {
+            return;
+        }
+
         const pollUrl = resolveUrl(container.dataset.pollUrl);
         const chatId = container.dataset.chatId;
         const theme = container.dataset.chatTheme || 'vendor';
@@ -293,32 +359,152 @@
             return;
         }
 
-        const params = new URLSearchParams();
-        if (chatId) {
-            params.set('chat_id', chatId);
-            params.set('after_message_id', String(getLastMessageId(container)));
+        container.dataset.chatPollingInFlight = '1';
+
+        try {
+            const params = new URLSearchParams();
+            if (chatId) {
+                params.set('chat_id', chatId);
+                params.set('after_message_id', String(getLastMessageId(container)));
+            }
+            if (search) {
+                params.set('search', search);
+            }
+
+            const response = await fetch(`${pollUrl}?${params.toString()}`, {
+                headers: jsonHeaders(),
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await parseJsonResponse(response);
+
+            (data.messages || []).forEach((message) => {
+                appendMessage(container, message, theme);
+            });
+
+            updateThreads(container, data.threads || [], theme, chatId, options);
+        } finally {
+            container.dataset.chatPollingInFlight = '0';
         }
-        if (search) {
-            params.set('search', search);
+    }
+
+    function formatFileSize(bytes) {
+        const size = Number(bytes) || 0;
+        if (size < 1024) {
+            return `${size} B`;
+        }
+        if (size < 1024 * 1024) {
+            return `${(size / 1024).toFixed(1)} KB`;
+        }
+        return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function clearAttachPreview(form) {
+        const preview = form.closest('.vp-chat-compose-stack, .jbw-chat-compose-stack')
+            ?.querySelector('[data-chat-attach-preview]')
+            || form.parentElement?.querySelector('[data-chat-attach-preview]');
+        const body = preview?.querySelector('[data-chat-attach-preview-body]');
+        const fileField = form.querySelector('input[type="file"][name="attachment"]');
+
+        if (preview?.dataset.objectUrl) {
+            URL.revokeObjectURL(preview.dataset.objectUrl);
+            delete preview.dataset.objectUrl;
         }
 
-        const response = await fetch(`${pollUrl}?${params.toString()}`, {
-            headers: jsonHeaders(),
-            credentials: 'same-origin',
-            cache: 'no-store',
-        });
+        if (body) {
+            body.innerHTML = '';
+        }
 
-        if (!response.ok) {
+        if (preview) {
+            preview.hidden = true;
+        }
+
+        if (fileField) {
+            fileField.value = '';
+        }
+    }
+
+    function renderAttachPreview(form, file) {
+        const preview = form.closest('.vp-chat-compose-stack, .jbw-chat-compose-stack')
+            ?.querySelector('[data-chat-attach-preview]')
+            || form.parentElement?.querySelector('[data-chat-attach-preview]');
+        const body = preview?.querySelector('[data-chat-attach-preview-body]');
+
+        if (!preview || !body || !file) {
             return;
         }
 
-        const data = await parseJsonResponse(response);
+        if (preview.dataset.objectUrl) {
+            URL.revokeObjectURL(preview.dataset.objectUrl);
+            delete preview.dataset.objectUrl;
+        }
 
-        (data.messages || []).forEach((message) => {
-            appendMessage(container, message, theme);
+        const name = escapeHtml(file.name || 'Attachment');
+        const size = escapeHtml(formatFileSize(file.size));
+        const type = file.type || '';
+        let mediaHtml = `
+            <span class="vp-chat-attach-preview-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+            </span>
+        `;
+
+        if (type.startsWith('image/')) {
+            const objectUrl = URL.createObjectURL(file);
+            preview.dataset.objectUrl = objectUrl;
+            mediaHtml = `<img src="${escapeHtml(objectUrl)}" alt="" class="vp-chat-attach-preview-thumb">`;
+        } else if (type.startsWith('video/')) {
+            const objectUrl = URL.createObjectURL(file);
+            preview.dataset.objectUrl = objectUrl;
+            mediaHtml = `<video src="${escapeHtml(objectUrl)}" class="vp-chat-attach-preview-thumb vp-chat-attach-preview-thumb--video" muted playsinline></video>`;
+        }
+
+        body.innerHTML = `
+            ${mediaHtml}
+            <div class="vp-chat-attach-preview-meta">
+                <span class="vp-chat-attach-preview-name">${name}</span>
+                <span class="vp-chat-attach-preview-size">${size}</span>
+            </div>
+        `;
+        preview.hidden = false;
+    }
+
+    function bindAttachPreview(form) {
+        if (!form || form.dataset.chatAttachBound === '1') {
+            return;
+        }
+
+        const fileField = form.querySelector('input[type="file"][name="attachment"]');
+        const clearButton = form.closest('.vp-chat-compose-stack, .jbw-chat-compose-stack')
+            ?.querySelector('[data-chat-attach-clear]')
+            || form.parentElement?.querySelector('[data-chat-attach-clear]');
+
+        if (!fileField) {
+            return;
+        }
+
+        form.dataset.chatAttachBound = '1';
+
+        fileField.addEventListener('change', () => {
+            const file = fileField.files && fileField.files[0];
+            if (!file) {
+                clearAttachPreview(form);
+                return;
+            }
+            renderAttachPreview(form, file);
         });
 
-        updateThreads(container, data.threads || [], theme, chatId);
+        clearButton?.addEventListener('click', (event) => {
+            event.preventDefault();
+            clearAttachPreview(form);
+        });
     }
 
     async function sendMessage(form, container) {
@@ -353,7 +539,17 @@
             });
 
             if (!response.ok) {
-                throw new Error('send_failed');
+                let message = 'Could not send message.';
+                try {
+                    const errorData = await response.json();
+                    message = errorData.message
+                        || Object.values(errorData.errors || {}).flat()[0]
+                        || message;
+                } catch (parseError) {
+                    // ignore
+                }
+                window.alert(message);
+                return;
             }
 
             const data = await parseJsonResponse(response);
@@ -362,17 +558,24 @@
                 appendMessage(container, data.message, theme, true);
             }
 
+            if (data.thread) {
+                promoteThread(container, data.thread, theme);
+            } else {
+                promoteThread(container, {
+                    id: container.dataset.chatId,
+                    preview: bodyField?.value?.trim() || (hasFile ? 'Attachment' : ''),
+                    time: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+                }, theme);
+            }
+
             if (bodyField) {
                 bodyField.value = '';
             }
-            if (fileField) {
-                fileField.value = '';
-            }
+            clearAttachPreview(form);
 
-            await poll(container);
+            await poll(container, { scrollToTop: true });
         } catch (error) {
-            form.removeAttribute('data-chat-live-bound');
-            form.submit();
+            window.alert('Could not send message. Please try again.');
         } finally {
             form.dataset.chatSending = '0';
             if (submitButton) {
@@ -430,6 +633,7 @@
                 event.preventDefault();
                 sendMessage(form, container);
             });
+            bindAttachPreview(form);
         }
 
         bindMessageScroll(container);

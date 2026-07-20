@@ -5,7 +5,7 @@
 @section('content')
 <div class="vp-auth-card">
     @include('vendor.partials.auth-logo')
-    <p class="vp-auth-kicker">Vendor Partner</p>
+    <p class="vp-auth-brand">Vendor Partner</p>
     <h1 class="vp-auth-title">Verify OTP</h1>
     <p class="vp-auth-sub">We've sent a 4-digit code to <strong>{{ $maskedMobile }}</strong></p>
 

@@ -325,7 +325,7 @@ class AdminValidationRules
             'item_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
             'reference_images' => ['nullable', 'array'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-            'payment_status' => ['required', 'in:pending,success,failed,refunded'],
+            'payment_status' => ['required', 'in:pending,advance_paid,success,failed,refunded'],
             'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
         ];
     }
@@ -576,6 +576,8 @@ class AdminValidationRules
             'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.self::REGEX_TITLE],
             'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
+            'variants.*.stored_image_path' => ['nullable', 'string', 'max:500'],
+            'variants.*.image_base64' => ['nullable', 'string'],
             'variant_images' => ['nullable', 'array', 'max:50'],
             'variant_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
             'variants.*.image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],

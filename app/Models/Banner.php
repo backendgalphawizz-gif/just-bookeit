@@ -56,7 +56,8 @@ class Banner extends Model
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })
             ->where(function (Builder $q) {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+                // Treat date-only end values as inclusive through end of that day.
+                $q->whereNull('ends_at')->orWhereRaw('DATE(ends_at) >= ?', [now()->toDateString()]);
             });
     }
 

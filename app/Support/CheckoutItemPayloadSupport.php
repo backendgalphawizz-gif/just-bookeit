@@ -40,6 +40,8 @@ class CheckoutItemPayloadSupport
                 continue;
             }
 
+            $row = self::normalizeDateFields($row);
+
             $row['reference_image_paths'] = self::storeReferenceImages(
                 self::referenceImageFiles($request, $index),
                 $row['reference_image_paths'] ?? []
@@ -52,6 +54,89 @@ class CheckoutItemPayloadSupport
         }
 
         return $map;
+    }
+
+    /**
+     * Normalize top-level + items[] rental dates into rental_start_date / rental_end_date.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normalizeCheckoutDates(array $data): array
+    {
+        $data = self::normalizeDateFields($data);
+
+        $items = $data['items'] ?? null;
+        if (is_string($items)) {
+            $decoded = json_decode($items, true);
+            $items = is_array($decoded) ? $decoded : null;
+        }
+
+        if ((! filled($data['rental_start_date'] ?? null) || ! filled($data['rental_end_date'] ?? null))
+            && is_array($items)
+        ) {
+            foreach ($items as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+                $row = self::normalizeDateFields($row);
+                if (! filled($data['rental_start_date'] ?? null) && filled($row['rental_start_date'] ?? null)) {
+                    $data['rental_start_date'] = $row['rental_start_date'];
+                }
+                if (! filled($data['rental_end_date'] ?? null) && filled($row['rental_end_date'] ?? null)) {
+                    $data['rental_end_date'] = $row['rental_end_date'];
+                }
+                if (filled($data['rental_start_date'] ?? null) && filled($data['rental_end_date'] ?? null)) {
+                    break;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public static function normalizeDateFields(array $payload): array
+    {
+        $start = $payload['rental_start_date']
+            ?? $payload['start_date']
+            ?? $payload['from_date']
+            ?? $payload['rental_from']
+            ?? $payload['rentalStartDate']
+            ?? null;
+
+        $end = $payload['rental_end_date']
+            ?? $payload['end_date']
+            ?? $payload['to_date']
+            ?? $payload['rental_to']
+            ?? $payload['rentalEndDate']
+            ?? null;
+
+        if (filled($start)) {
+            $payload['rental_start_date'] = self::normalizeDateValue($start);
+        }
+
+        if (filled($end)) {
+            $payload['rental_end_date'] = self::normalizeDateValue($end);
+        }
+
+        return $payload;
+    }
+
+    protected static function normalizeDateValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse((string) $value)->toDateString();
+        } catch (\Throwable) {
+            return is_string($value) ? $value : null;
+        }
     }
 
     /** @return list<string> */
@@ -84,17 +169,24 @@ class CheckoutItemPayloadSupport
     /**
      * @param  array<string, mixed>  $override
      * @param  array<string, mixed>  $checkoutData
-     * @return array{start: ?string, end: ?string, days: int}
+     * @return array{start: ?string, end: ?string, days: ?int, billing_days: int}
      */
-    public static function rentalWindow(array $override, array $checkoutData): array
+    public static function rentalWindow(array $override, array $checkoutData, bool $requiresRentalPeriod = true): array
     {
-        $start = $override['rental_start_date'] ?? $checkoutData['rental_start_date'] ?? null;
-        $end = $override['rental_end_date'] ?? $checkoutData['rental_end_date'] ?? null;
+        // Fashion designer: only keep dates when the line item itself sends them.
+        $start = $override['rental_start_date'] ?? null;
+        $end = $override['rental_end_date'] ?? null;
+
+        if ($requiresRentalPeriod) {
+            $start = $start ?? ($checkoutData['rental_start_date'] ?? null);
+            $end = $end ?? ($checkoutData['rental_end_date'] ?? null);
+        }
 
         return [
             'start' => $start,
             'end' => $end,
             'days' => \App\Services\Booking\BookingPricingService::rentalDays($start, $end),
+            'billing_days' => \App\Services\Booking\BookingPricingService::billingDays($start, $end),
         ];
     }
 
@@ -120,13 +212,14 @@ class CheckoutItemPayloadSupport
      * @param  array<string, mixed>  $checkoutData
      * @return array<string, mixed>
      */
-    public static function itemSnapshotExtras(array $override, array $checkoutData): array
+    public static function itemSnapshotExtras(array $override, array $checkoutData, bool $requiresRentalPeriod = true): array
     {
-        $rental = self::rentalWindow($override, $checkoutData);
+        $rental = self::rentalWindow($override, $checkoutData, $requiresRentalPeriod);
 
         return array_filter([
             'rental_start_date' => $rental['start'],
             'rental_end_date' => $rental['end'],
+            'event_date' => $override['event_date'] ?? $checkoutData['event_date'] ?? null,
             'customer_notes' => filled($override['customer_notes'] ?? null) ? trim((string) $override['customer_notes']) : null,
             'measurement_profile_id' => $override['measurement_id'] ?? $override['measurement_profile_id'] ?? null,
             'service_type' => $override['service_type'] ?? null,

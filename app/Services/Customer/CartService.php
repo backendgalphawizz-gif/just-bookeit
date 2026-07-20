@@ -5,6 +5,7 @@ namespace App\Services\Customer;
 use App\Models\CartItem;
 use App\Models\Customer;
 use App\Models\PortfolioItem;
+use App\Services\Booking\BookingPricingService;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
@@ -34,12 +35,12 @@ class CartService
     }
 
     /** @return array<string, mixed> */
-    public function apiPayload(Customer $customer): array
+    public function apiPayload(Customer $customer, array $options = []): array
     {
         $items = $this->itemsFor($customer);
 
         return [
-            'summary' => $this->summary($customer),
+            'summary' => $this->summary($customer, $options),
             'items' => $items
                 ->map(fn (CartItem $item) => CustomerApiPresenter::cartItem($item))
                 ->values()
@@ -62,43 +63,78 @@ class CartService
     }
 
     /** @return array<string, mixed> */
-    public function summary(Customer $customer): array
+    public function summary(Customer $customer, array $options = []): array
     {
         $items = $this->itemsFor($customer);
-        $subtotal = $items->sum(function (CartItem $cartItem) {
+        $shipmentRequired = (bool) ($options['shipment_required'] ?? true);
+        $subtotal = round($items->sum(function (CartItem $cartItem) {
             return round($cartItem->unitDailyRate() * $cartItem->quantity, 2);
-        });
+        }), 2);
+        $advanceAmount = round($items->sum(function (CartItem $cartItem) {
+            $cartItem->loadMissing('portfolioItem');
+            $unitAdvance = (float) ($cartItem->portfolioItem?->advance_amount ?? 0);
+
+            return round($unitAdvance * $cartItem->quantity, 2);
+        }), 2);
 
         $vendors = $items
             ->groupBy('vendor_id')
-            ->map(function (Collection $group) {
+            ->map(function (Collection $group) use ($shipmentRequired) {
                 $vendor = $group->first()?->vendor;
-                $vendorSubtotal = $group->sum(function (CartItem $cartItem) {
+                $vendorSubtotal = round($group->sum(function (CartItem $cartItem) {
                     return round($cartItem->unitDailyRate() * $cartItem->quantity, 2);
-                });
+                }), 2);
+                $vendorAdvance = round($group->sum(function (CartItem $cartItem) {
+                    $cartItem->loadMissing('portfolioItem');
+                    $unitAdvance = (float) ($cartItem->portfolioItem?->advance_amount ?? 0);
+
+                    return round($unitAdvance * $cartItem->quantity, 2);
+                }), 2);
+                $deliveryFee = BookingPricingService::shippingFee($shipmentRequired);
+                $taxPercent = BookingPricingService::gstPercent();
+                $taxAmount = round($vendorSubtotal * ($taxPercent / 100), 2);
+                $totalAmount = round($vendorSubtotal + $deliveryFee + $taxAmount, 2);
 
                 return [
                     'vendor_id' => (int) $group->first()->vendor_id,
                     'vendor_name' => $vendor?->brand_name ?? $vendor?->shop_name,
                     'items_count' => $group->sum('quantity'),
-                    'subtotal' => round($vendorSubtotal, 2),
-                    'delivery_fee' => \App\Services\Booking\BookingPricingService::shippingFee(true),
+                    'subtotal' => $vendorSubtotal,
+                    'advance_amount' => $vendorAdvance,
+                    'delivery_fee' => $deliveryFee,
+                    'tax_percent' => $taxPercent,
+                    'gst_percent' => $taxPercent,
+                    'tax_amount' => $taxAmount,
+                    'total_amount' => $totalAmount,
+                    'remaining_amount' => round(max(0, $totalAmount - $vendorAdvance), 2),
                 ];
             })
             ->values()
             ->all();
 
         $deliveryFeeTotal = round(collect($vendors)->sum('delivery_fee'), 2);
+        $taxPercent = BookingPricingService::gstPercent();
+        $taxAmount = round($subtotal * ($taxPercent / 100), 2);
+        $totalAmount = round($subtotal + $deliveryFeeTotal + $taxAmount, 2);
 
         return [
             'items_count' => $items->sum('quantity'),
             'unique_items_count' => $items->count(),
             'vendor_count' => count($vendors),
             'vendors' => $vendors,
-            'subtotal' => round($subtotal, 2),
+            'subtotal' => $subtotal,
+            'delivery_fee' => $deliveryFeeTotal,
             'delivery_fee_total' => $deliveryFeeTotal,
+            'tax_percent' => $taxPercent,
+            'gst_percent' => $taxPercent,
+            'tax_amount' => $taxAmount,
+            'advance_amount' => $advanceAmount,
+            'remaining_amount' => round(max(0, $totalAmount - $advanceAmount), 2),
+            'total_amount' => $totalAmount,
+            'grand_total' => $totalAmount,
             'subtotal_label' => '₹'.number_format($subtotal, 0),
             'currency' => 'INR',
+            'shipment_required' => $shipmentRequired,
             'single_vendor_only' => false,
             'multi_vendor_enabled' => true,
         ];

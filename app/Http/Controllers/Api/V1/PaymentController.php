@@ -7,17 +7,16 @@ use App\Models\CheckoutOrder;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\PlatformSetting;
-use App\Services\Booking\BookingPricingService;
-use App\Services\Checkout\CheckoutService;
-use App\Services\Vendor\VendorWalletService;
+use App\Services\Booking\BookingPaymentService;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 class PaymentController extends ApiController
 {
     public function __construct(
-        protected CheckoutService $checkout
+        protected BookingPaymentService $payments
     ) {}
 
     /** @return array<int, array{id: string, label: string, enabled: bool}> */
@@ -47,9 +46,11 @@ class PaymentController extends ApiController
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
+        $paymentSummary = $this->payments->summaryForOrder($booking);
+
         return $this->success([
             'booking' => CustomerApiPresenter::bookingSummary($booking),
-            'payment_summary' => BookingPricingService::fromOrder($booking),
+            'payment_summary' => $paymentSummary,
             'payment_methods' => $this->paymentMethodItems(),
         ]);
     }
@@ -60,10 +61,6 @@ class PaymentController extends ApiController
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
-        if ($booking->payment_status === 'success') {
-            return $this->error('Payment already completed for this booking.', 409);
-        }
-
         $data = $request->validate([
             'payment_method' => ['required', 'in:upi,debit_card,credit_card,cod'],
         ]);
@@ -72,26 +69,33 @@ class PaymentController extends ApiController
             return $this->error('Cash on delivery is not available.', 422);
         }
 
-        $booking->update([
-            'payment_status' => 'success',
-            'payment_method' => $data['payment_method'],
-            'paid_at' => now(),
-            'status' => $booking->status === 'new' ? 'pending_acceptance' : $booking->status,
-        ]);
+        try {
+            $before = $this->payments->summaryForOrder($booking);
+            $booking = $this->payments->payOrder($booking, $data['payment_method']);
+            $after = $this->payments->summaryForOrder($booking);
+        } catch (InvalidArgumentException $e) {
+            $status = str_contains(strtolower($e->getMessage()), 'already') ? 409 : 422;
 
-        app(VendorWalletService::class)->creditFromPayment($booking->fresh());
+            return $this->error($e->getMessage(), $status);
+        }
 
-        $booking->load(['vendor', 'category']);
+        $booking->load(['vendor', 'category', 'orderItems.portfolioItem']);
 
         return $this->success([
             'booking' => CustomerApiPresenter::bookingDetail($booking),
+            'payment_summary' => $after,
             'payment' => [
                 'method' => $data['payment_method'],
-                'status' => 'success',
+                'status' => $booking->payment_status,
+                'phase' => $after['payment_phase'],
                 'transaction_id' => 'JBTX'.strtoupper(substr(md5($booking->id.now()->timestamp), 0, 12)),
-                'paid_amount' => $booking->grandTotal(),
+                'paid_amount' => (float) $before['payable_now'],
+                'amount_paid_total' => (float) $after['amount_paid'],
+                'remaining_amount' => (float) $after['remaining_amount'],
             ],
-        ], 'Payment successful.');
+        ], in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+            ? 'Advance paid successfully. Remaining amount is due on booking completion.'
+            : 'Payment successful.');
     }
 
     public function checkoutSummary(Request $request, CheckoutOrder $checkoutOrder): JsonResponse
@@ -100,10 +104,12 @@ class PaymentController extends ApiController
         $customer = $request->user();
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
-        $checkoutOrder->load(['subOrders.vendor', 'subOrders.orderItems']);
+        $checkoutOrder->load(['subOrders.vendor', 'subOrders.orderItems.portfolioItem']);
+        $paymentSummary = $this->payments->summaryForCheckout($checkoutOrder);
 
         return $this->success([
             'checkout_order' => CustomerApiPresenter::checkoutOrderSummary($checkoutOrder),
+            'payment_summary' => $paymentSummary,
             'payment_methods' => $this->paymentMethodItems(),
         ]);
     }
@@ -114,10 +120,6 @@ class PaymentController extends ApiController
         $customer = $request->user();
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
-        if ($checkoutOrder->payment_status === 'success') {
-            return $this->error('Payment already completed for this checkout.', 409);
-        }
-
         $data = $request->validate([
             'payment_method' => ['required', 'in:upi,debit_card,credit_card,cod'],
         ]);
@@ -126,17 +128,32 @@ class PaymentController extends ApiController
             return $this->error('Cash on delivery is not available.', 422);
         }
 
-        $checkout = $this->checkout->markPaid($checkoutOrder, $data['payment_method']);
+        try {
+            $before = $this->payments->summaryForCheckout($checkoutOrder);
+            $checkout = $this->payments->payCheckout($checkoutOrder, $data['payment_method']);
+            $after = $this->payments->summaryForCheckout($checkout);
+        } catch (InvalidArgumentException $e) {
+            $status = str_contains(strtolower($e->getMessage()), 'already') ? 409 : 422;
+
+            return $this->error($e->getMessage(), $status);
+        }
+
         $checkout->load(['subOrders.vendor', 'subOrders.category', 'subOrders.orderItems']);
 
         return $this->success([
             'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout),
+            'payment_summary' => $after,
             'payment' => [
                 'method' => $data['payment_method'],
-                'status' => 'success',
+                'status' => $checkout->payment_status,
+                'phase' => $after['payment_phase'],
                 'transaction_id' => 'JBTX'.strtoupper(substr(md5($checkout->id.now()->timestamp), 0, 12)),
-                'paid_amount' => (float) $checkout->grand_total,
+                'paid_amount' => (float) $before['payable_now'],
+                'amount_paid_total' => (float) $after['amount_paid'],
+                'remaining_amount' => (float) $after['remaining_amount'],
             ],
-        ], 'Payment successful.');
+        ], in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+            ? 'Advance paid successfully. Remaining amount is due on booking completion.'
+            : 'Payment successful.');
     }
 }

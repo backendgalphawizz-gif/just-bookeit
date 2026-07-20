@@ -177,18 +177,39 @@ class CustomerMeasurement extends Model
         $fields = [];
 
         foreach (self::EXTRA_FIELDS as $field) {
-            $fields[$field] = isset($extra[$field]) ? (string) $extra[$field] : null;
+            $fields[$field] = isset($extra[$field]) && $extra[$field] !== ''
+                ? (string) $extra[$field]
+                : null;
         }
+
+        $fields['height'] = $this->height_cm !== null
+            ? (string) $this->height_cm
+            : (isset($extra['height']) && $extra['height'] !== '' ? (string) $extra['height'] : null);
 
         $fields['chest'] = $this->chest_cm !== null
             ? (string) $this->chest_cm
-            : (isset($extra['chest']) ? (string) $extra['chest'] : null);
+            : (isset($extra['chest']) && $extra['chest'] !== '' ? (string) $extra['chest'] : null);
 
         $fields['waist'] = $this->waist_cm !== null
             ? (string) $this->waist_cm
-            : (isset($extra['waist']) ? (string) $extra['waist'] : null);
+            : (isset($extra['waist']) && $extra['waist'] !== '' ? (string) $extra['waist'] : null);
 
         return $fields;
+    }
+
+    /** @return array<string, string|null> */
+    public function apiExtraMeasurements(): array
+    {
+        $extra = $this->extra_measurements ?? [];
+        $normalized = [];
+
+        foreach (self::EXTRA_FIELDS as $field) {
+            $normalized[$field] = isset($extra[$field]) && $extra[$field] !== ''
+                ? (string) $extra[$field]
+                : null;
+        }
+
+        return $normalized;
     }
 
     protected $fillable = [

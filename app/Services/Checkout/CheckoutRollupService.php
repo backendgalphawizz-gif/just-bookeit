@@ -45,7 +45,7 @@ class CheckoutRollupService
             $checkout->status = 'pending_acceptance';
         } elseif ($anyInProgress || $anyDelivered || $anyAwaiting) {
             $checkout->status = 'processing';
-        } elseif ($checkout->payment_status === 'success') {
+        } elseif (in_array($checkout->payment_status, ['success', 'advance_paid'], true)) {
             $checkout->status = 'pending_acceptance';
         }
 
