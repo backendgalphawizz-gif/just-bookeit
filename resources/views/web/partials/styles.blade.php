@@ -5557,6 +5557,16 @@ background: #AE2A0B;
     background: #f8f8f8;
     flex-shrink: 0;
 }
+.jbw-chat-compose-stack {
+    margin: 0.75rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    flex-shrink: 0;
+}
+.jbw-chat-compose-stack .jbw-chat-compose {
+    margin: 0;
+}
 .jbw-chat-attach {
     display: grid;
     place-items: center;

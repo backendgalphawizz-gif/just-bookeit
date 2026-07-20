@@ -28,7 +28,9 @@ class VendorLayoutComposer
                 }
 
                 $item['children'] = $children->map(function (array $child) {
-                    $child['active'] = request('type') === ($child['params']['type'] ?? null)
+                    $childType = $child['params']['type'] ?? null;
+                    $child['active'] = $childType !== null
+                        && $this->currentProductType() === $childType
                         && request()->routeIs('vendor.products.*');
 
                     return $child;
@@ -67,6 +69,28 @@ class VendorLayoutComposer
                 'logo_url' => PlatformSetting::mediaUrl('vendor_logo') ?? PlatformSetting::mediaUrl('admin_logo'),
             ],
         ]);
+    }
+
+    protected function currentProductType(): ?string
+    {
+        $routeType = request()->route('type');
+        if (is_string($routeType) && $routeType !== '') {
+            return $routeType;
+        }
+
+        $queryType = request()->query('type');
+        if (is_string($queryType) && $queryType !== '') {
+            return $queryType;
+        }
+
+        $product = request()->route('product');
+        if (is_object($product) && isset($product->category)) {
+            $product->loadMissing('category');
+
+            return $product->category?->slug;
+        }
+
+        return null;
     }
 
     /** @param array<int, string> $patterns */

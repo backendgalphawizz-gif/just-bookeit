@@ -183,6 +183,7 @@ class ChatController extends VendorApiController
             'attachment_path' => $request->hasFile('attachment')
                 ? StoresUploadedFiles::store($request->file('attachment'), 'chat/attachments')
                 : null,
+            'attachment_name' => $request->file('attachment')?->getClientOriginalName(),
         ]);
 
         $chat->update(['last_message_at' => $message->created_at]);

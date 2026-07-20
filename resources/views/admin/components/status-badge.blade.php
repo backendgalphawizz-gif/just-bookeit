@@ -29,7 +29,10 @@
         'processing' => 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-600/10',
         'paid' => 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-600/10',
     ];
-    $class = $styles[$status] ?? 'bg-slate-100 text-slate-700 ring-1 ring-slate-600/10';
-    $label = $label ?? \App\Models\Order::statusLabelFor($status);
+    $statusKey = is_string($status ?? null) ? $status : '';
+    $class = $styles[$statusKey] ?? 'bg-slate-100 text-slate-700 ring-1 ring-slate-600/10';
+    $badgeLabel = isset($label) && is_string($label) && $label !== ''
+        ? $label
+        : \App\Models\Order::statusLabelFor($statusKey !== '' ? $statusKey : null);
 @endphp
-<span class="jb-badge {{ $class }}">{{ $label }}</span>
+<span class="jb-badge {{ $class }}" title="{{ $badgeLabel }}">{{ $badgeLabel }}</span>

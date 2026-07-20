@@ -84,16 +84,6 @@
                 </div>
             </div>
             <div class="vp-topbar-right">
-                <div class="vp-topbar-wallets">
-                    <a href="{{ route('vendor.payments.index') }}" class="vp-topbar-wallet vp-topbar-wallet--digital" title="Payments held for {{ \App\Services\Vendor\VendorWalletService::holdDays() }} days">
-                        <span class="vp-topbar-wallet-label">Digital</span>
-                        <span class="vp-topbar-wallet-value">₹{{ number_format($vendorUser?->digital_wallet_balance ?? 0, 0) }}</span>
-                    </a>
-                    <a href="{{ route('vendor.payments.index') }}" class="vp-topbar-wallet vp-topbar-wallet--actual" title="Available for withdrawal">
-                        <span class="vp-topbar-wallet-label">Actual</span>
-                        <span class="vp-topbar-wallet-value">₹{{ number_format($vendorUser?->wallet_balance ?? 0, 0) }}</span>
-                    </a>
-                </div>
                 @include('vendor.partials.notification-picker')
             </div>
         </header>

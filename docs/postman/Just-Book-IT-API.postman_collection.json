@@ -2187,11 +2187,6 @@
 											"type": "text"
 										},
 										{
-											"key": "shop_name",
-											"value": "Riya Rathore Studio",
-											"type": "text"
-										},
-										{
 											"key": "owner_name",
 											"value": "Riya Rathore",
 											"type": "text"
@@ -2202,8 +2197,18 @@
 											"type": "text"
 										},
 										{
-											"key": "service_types",
-											"value": "Fashion Designer, Rented Dress",
+											"key": "shop_name",
+											"value": "Riya Rathore Studio",
+											"type": "text"
+										},
+										{
+											"key": "service_types[]",
+											"value": "Fashion Designer",
+											"type": "text"
+										},
+										{
+											"key": "service_types[]",
+											"value": "Rental Dresses",
 											"type": "text"
 										},
 										{
@@ -2217,8 +2222,68 @@
 											"type": "text"
 										},
 										{
+											"key": "aadhar_number",
+											"value": "234567890123",
+											"type": "text"
+										},
+										{
+											"key": "address",
+											"value": "123 MG Road",
+											"type": "text"
+										},
+										{
 											"key": "city",
 											"value": "Indore",
+											"type": "text"
+										},
+										{
+											"key": "state",
+											"value": "Madhya Pradesh",
+											"type": "text"
+										},
+										{
+											"key": "country",
+											"value": "India",
+											"type": "text"
+										},
+										{
+											"key": "pincode",
+											"value": "452001",
+											"type": "text"
+										},
+										{
+											"key": "latitude",
+											"value": "22.7196",
+											"type": "text"
+										},
+										{
+											"key": "longitude",
+											"value": "75.8577",
+											"type": "text"
+										},
+										{
+											"key": "account_name",
+											"value": "Riya Rathore",
+											"type": "text"
+										},
+										{
+											"key": "account_no",
+											"value": "123456789012",
+											"type": "text"
+										},
+										{
+											"key": "bank_name",
+											"value": "HDFC Bank",
+											"type": "text"
+										},
+										{
+											"key": "ifsc_code",
+											"value": "HDFC0001234",
+											"type": "text"
+										},
+										{
+											"key": "account_type",
+											"value": "savings",
 											"type": "text"
 										},
 								{

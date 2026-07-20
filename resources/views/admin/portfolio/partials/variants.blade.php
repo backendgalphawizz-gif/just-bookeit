@@ -10,11 +10,12 @@
                 'color' => $v->color,
                 'price' => $v->price,
                 'image_url' => $v->imageUrl(),
+                'stored_image_path' => $v->image_path,
             ])->all()
             : [];
     }
     if ($variantRows === []) {
-        $variantRows = [['size' => '', 'color' => '', 'price' => '', 'image_url' => null]];
+        $variantRows = [['size' => '', 'color' => '', 'price' => '', 'image_url' => null, 'stored_image_path' => null]];
     }
 @endphp
 
@@ -47,6 +48,7 @@
                     @if (! empty($variant['image_url']))
                         <img src="{{ $variant['image_url'] }}" alt="" class="mb-2 h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
                     @endif
+                    <input type="hidden" name="variants[{{ $index }}][stored_image_path]" value="{{ $variant['stored_image_path'] ?? '' }}">
                     <input type="file" name="variants[{{ $index }}][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input vp-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
                 </div>
                 <div class="flex items-end">
@@ -76,6 +78,7 @@
             </div>
             <div>
                 <label class="jb-label">Variant image</label>
+                <input type="hidden" name="variants[__INDEX__][stored_image_path]" value="">
                 <input type="file" name="variants[__INDEX__][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
             </div>
             <div class="flex items-end">
@@ -96,8 +99,9 @@
 
         const reindexRows = () => {
             list.querySelectorAll('[data-product-variants-row]').forEach((row, index) => {
-                row.querySelectorAll('input[type="text"], input[type="number"], input[type="file"]').forEach((input) => {
-                    input.name = input.name.replace(/variants\[\d+]/, `variants[${index}]`);
+                row.querySelectorAll('input').forEach((input) => {
+                    if (!input.name) return;
+                    input.name = input.name.replace(/variants\[\d+\]/, `variants[${index}]`);
                 });
             });
         };
@@ -105,8 +109,9 @@
         const bindRemove = (row) => {
             row.querySelector('[data-product-variants-remove]')?.addEventListener('click', () => {
                 if (list.querySelectorAll('[data-product-variants-row]').length <= 1) {
-                    row.querySelectorAll('input[type="text"], input[type="number"]').forEach((input) => input.value = '');
-                    row.querySelector('input[type="file"]')?.value && (row.querySelector('input[type="file"]').value = '');
+                    row.querySelectorAll('input[type="text"], input[type="number"], input[type="hidden"]').forEach((input) => input.value = '');
+                    const file = row.querySelector('input[type="file"]');
+                    if (file) file.value = '';
                     return;
                 }
                 row.remove();

@@ -152,6 +152,7 @@ class ChatController extends ApiController
             'attachment_path' => $attachment
                 ? StoresUploadedFiles::store($attachment, 'chat/attachments')
                 : null,
+            'attachment_name' => $attachment?->getClientOriginalName(),
         ]);
 
         $conversation->update(['last_message_at' => $message->created_at]);

@@ -576,6 +576,8 @@ class AdminValidationRules
             'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.self::REGEX_TITLE],
             'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
+            'variants.*.stored_image_path' => ['nullable', 'string', 'max:500'],
+            'variants.*.image_base64' => ['nullable', 'string'],
             'variant_images' => ['nullable', 'array', 'max:50'],
             'variant_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
             'variants.*.image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
