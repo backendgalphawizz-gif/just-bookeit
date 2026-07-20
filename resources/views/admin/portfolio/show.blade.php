@@ -39,7 +39,7 @@
 
         <div class="jb-product-hero-body">
             <div class="jb-product-hero-badges">
-                @include('admin.components.status-badge', ['status' => $portfolio->status])
+                @include('admin.components.status-badge', ['status' => $portfolio->status, 'label' => ucfirst((string) $portfolio->status)])
                 @if ($portfolio->category?->name)
                     <span class="jb-product-type-pill">{{ $portfolio->category->name }}</span>
                 @endif
@@ -200,7 +200,7 @@
                     </div>
                     <div class="jb-product-fact">
                         <dt>Status</dt>
-                        <dd>@include('admin.components.status-badge', ['status' => $portfolio->status])</dd>
+                        <dd>@include('admin.components.status-badge', ['status' => $portfolio->status, 'label' => ucfirst((string) $portfolio->status)])</dd>
                     </div>
                     <div class="jb-product-fact">
                         <dt>Total photos</dt>
