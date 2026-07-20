@@ -6,12 +6,12 @@
 @php $fallbackImg = 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=300&q=80'; @endphp
 
 <div class="jbw-container jbw-page-shell jbw-payment-page">
-    <nav class="jbw-breadcrumb" style="margin-bottom:0.5rem">
+    <!-- <nav class="jbw-breadcrumb" style="margin-bottom:0.5rem">
         <a href="{{ route('web.bookings.checkout.show', $checkoutOrder) }}" class="jbw-breadcrumb-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
             Back to order
         </a>
-    </nav>
+    </nav> -->
 
     <div class="jbw-page-head" style="padding-top:0;margin-bottom:0.75rem">
         <h1 class="jbw-page-title">Complete payment</h1>
@@ -20,7 +20,7 @@
 
     <div class="jbw-payment-layout">
         <div class="jbw-payment-main">
-            <section class="jbw-overview-card">
+            <section class="jbw-overview-card" style="margin-bottom: 10px;">
                 <p class="jbw-overview-label">Order items</p>
                 @foreach ($checkoutOrder->subOrders as $subOrder)
                     <div class="jbw-checkout-vendor-block">

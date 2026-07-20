@@ -35,7 +35,7 @@
                 <span class="jbw-order-hero-tag">Order</span>
                 <h1 class="jbw-order-hero-id">#{{ $checkoutOrder->order_number }}</h1>
                 <p class="jbw-order-hero-meta">
-                    <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Placed {{ $checkoutOrder->created_at->format('M d, Y') }} · {{ $checkoutOrder->created_at->format('h:i A') }}</span>
+                    <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Booked On {{ $checkoutOrder->created_at->format('M d, Y') }} · {{ $checkoutOrder->created_at->format('h:i A') }}</span>
                     <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg> {{ $itemCount }} item{{ $itemCount === 1 ? '' : 's' }} from {{ $checkoutOrder->subOrders->count() }} designer{{ $checkoutOrder->subOrders->count() === 1 ? '' : 's' }}</span>
                 </p>
             </div>
@@ -75,7 +75,7 @@
         </div>
     @endif
 
-    <div class="jbw-order-detail-layout">
+    <div class="">
         <div class="jbw-order-detail-main">
             <section class="jbw-order-info-grid">
                 @if ($checkoutOrder->rental_start_date && $checkoutOrder->rental_end_date)
@@ -104,7 +104,7 @@
                 </div>
             </section>
 
-            <section class="jbw-order-vendors">
+            <section class="jbw-order-vendors" style="margin-bottom: 10px;">
                 <h2 class="jbw-order-section-title">Items &amp; tracking</h2>
 
                 @foreach ($checkoutOrder->subOrders as $subOrder)

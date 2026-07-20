@@ -25,15 +25,15 @@
     <nav class="jbw-breadcrumb">
         <a href="{{ route('web.bookings.index') }}" class="jbw-breadcrumb-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-            Back to bookings
+            Back to bookings - Booking details
         </a>
     </nav>
 
     <header class="jbw-booking-detail-header">
         <div class="jbw-booking-detail-header-main">
-            <p class="jbw-booking-detail-eyebrow">Booking details</p>
-            <h1 class="jbw-booking-detail-title">#{{ $order->order_number }}</h1>
-            <p class="jbw-booking-detail-meta">Booked on {{ $order->created_at->format('M d, Y · h:i A') }}</p>
+            <!-- <p class="jbw-booking-detail-eyebrow">Booking details</p> -->
+            <h1 class="jbw-booking-detail-title">#{{ $order->order_number }} / Booked on {{ $order->created_at->format('M d, Y · h:i A') }}</h1>
+            <!-- <p class="jbw-booking-detail-meta">Booked on {{ $order->created_at->format('M d, Y · h:i A') }}</p> -->
             <div class="jbw-booking-detail-badges">
                 <span class="jbw-booking-detail-type">{{ $order->orderTypeLabel() }}</span>
                 <span class="jbw-status jbw-status--{{ $statusClass }}">{{ $order->statusLabel() }}</span>

@@ -7,7 +7,7 @@
 
 <div class="jbw-container jbw-page-shell">
     <div class="jbw-page-head">
-        <span class="jbw-eyebrow">Shopping bag</span>
+        <!-- <span class="jbw-eyebrow">Shopping bag</span> -->
         <h1 class="jbw-page-title">Your cart</h1>
         <p class="jbw-page-subtitle">{{ $summary['items_count'] ?? 0 }} item{{ ($summary['items_count'] ?? 0) === 1 ? '' : 's' }} from {{ $summary['vendor_count'] ?? 0 }} vendor{{ ($summary['vendor_count'] ?? 0) === 1 ? '' : 's' }}</p>
     </div>

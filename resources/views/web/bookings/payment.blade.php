@@ -15,7 +15,9 @@
         <h1 class="jbw-page-title">{{ $isRemaining ? 'Pay remaining amount' : ($isAdvance ? 'Pay advance' : 'Complete payment') }}</h1>
         <p class="jbw-page-subtitle">Booking #{{ $order->order_number }}</p>
     </div>
+<div class="jbw-booking-layout">
 
+<div>
     <div class="jbw-overview-card" style="margin-bottom:1rem">
         <p class="jbw-overview-label">Order summary</p>
         <p style="margin:0;font-weight:700">{{ $order->itemDisplayName() }}</p>
@@ -27,6 +29,8 @@
             </p>
         @endif
     </div>
+
+
 
     <div class="jbw-overview-card" style="margin-bottom:1.25rem">
         <p class="jbw-overview-label">Amount due</p>
@@ -55,6 +59,7 @@
             </p>
         @endif
     </div>
+</div>
 
     <form method="POST" action="{{ route('web.bookings.payment.pay', $order) }}" class="jbw-overview-card">
         @csrf
@@ -75,5 +80,6 @@
             Secure demo payment — no real charge is made.
         </p>
     </form>
+</div>
 </div>
 @endsection

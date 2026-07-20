@@ -7,7 +7,7 @@
 @section('content')
     <div class="jbw-address-grid">
         @forelse ($addresses as $address)
-            <div class="jbw-card jbw-address-card">
+            <div class="jbw-card jbw-address-card" style="margin-top: 0px;">
                 <div style="display:flex;justify-content:space-between;gap:0.75rem;align-items:start">
                     <span class="jbw-address-tag">{{ $address->label }}</span>
                     @if ($address->is_default)

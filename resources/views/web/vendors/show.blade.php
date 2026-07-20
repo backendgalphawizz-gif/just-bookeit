@@ -4,6 +4,12 @@
 
 @section('content')
 <div class="jbw-container">
+<nav class="jbw-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ route('web.catalog.index') }}" class="jbw-breadcrumb-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            Back
+        </a>
+    </nav>
     <div class="jbw-vendor-hero">
         <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80" alt="{{ $vendor->brand_name }} cover">
     </div>
