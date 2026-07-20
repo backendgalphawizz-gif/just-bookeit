@@ -60,11 +60,12 @@
                 @php
                 $isActive = $activeChat && $activeChat->id === $conversation->id;
                 $vendor = $conversation->vendor;
-                $preview = $conversation->latestMessage?->body ?? 'No messages yet';
+                $preview = \App\Support\WebChatLivePresenter::threadPreview($conversation->latestMessage);
                 @endphp
                 <a
                     href="{{ route('web.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
                     @class(['jbw-chat-thread', 'is-active' => $isActive])
+                    data-thread-id="{{ $conversation->id }}"
                 >
                     @if ($vendor?->profileImageUrl() || $vendor?->shopLogoUrl())
                     <img src="{{ $vendor->profileImageUrl() ?: $vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
@@ -74,9 +75,9 @@
                     <div class="jbw-chat-thread-body">
                         <div class="jbw-chat-thread-top">
                             <strong>{{ $vendor?->brand_name ?? 'Designer' }}</strong>
-                            <span>{{ $conversation->last_message_at?->format('g:i A') ?? '' }}</span>
+                            <span>{{ \App\Support\WebChatLivePresenter::threadTime($conversation->last_message_at) }}</span>
                         </div>
-                        <p>{{ \Illuminate\Support\Str::limit($preview, 52) }}</p>
+                        <p>{{ $preview }}</p>
                     </div>
                 </a>
                 @empty
@@ -138,6 +139,7 @@
                                 'url' => $message->attachmentUrl(),
                                 'path' => $message->attachment_path,
                                 'type' => $message->attachmentType(),
+                                'name' => $message->attachmentDisplayName(),
                                 'class' => 'jbw-chat-attachment',
                             ])
                             @endif
@@ -151,35 +153,41 @@
                 </div>
             </div>
 
-            <form method="POST"
-                action="{{ route('web.chat.messages', $activeChat, false) }}"
-                enctype="multipart/form-data"
-                class="jbw-chat-compose"
-                data-chat-compose>
-                @csrf
+            <div class="jbw-chat-compose-stack">
+                <div class="vp-chat-attach-preview jbw-chat-attach-preview" data-chat-attach-preview hidden>
+                    <div class="vp-chat-attach-preview-body" data-chat-attach-preview-body></div>
+                    <button type="button" class="vp-chat-attach-preview-clear" data-chat-attach-clear aria-label="Remove attachment">&times;</button>
+                </div>
+                <form method="POST"
+                    action="{{ route('web.chat.messages', $activeChat, false) }}"
+                    enctype="multipart/form-data"
+                    class="jbw-chat-compose"
+                    data-chat-compose>
+                    @csrf
 
-                <label class="jbw-chat-attach" aria-label="Attach image or video">
-                    <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}" hidden>
-                    <span class="jbw-plus-icon"><span>+</span></span>
-                </label>
-                <textarea name="body"
-                    rows="1"
-                    class="jbw-chat-input"
-                    placeholder="Type a message..."
-                    data-chat-input>{{ old('body') }}</textarea>
+                    <label class="jbw-chat-attach" aria-label="Attach file">
+                        <input type="file" name="attachment" accept="{{ \App\Support\ChatAttachmentSupport::acceptAttribute() }}" hidden data-chat-attach-input>
+                        <span class="jbw-plus-icon"><span>+</span></span>
+                    </label>
+                    <textarea name="body"
+                        rows="1"
+                        class="jbw-chat-input"
+                        placeholder="Type a message..."
+                        data-chat-input>{{ old('body') }}</textarea>
 
-                <button type="submit" class="jbw-chat-send">
-                    <svg width="17" height="17"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        style="transform: rotate(45deg);">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-            </form>
+                    <button type="submit" class="jbw-chat-send">
+                        <svg width="17" height="17"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            style="transform: rotate(45deg);">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </div>
             @else
             <div class="jbw-chat-main-empty">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

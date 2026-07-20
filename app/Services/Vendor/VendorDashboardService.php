@@ -9,12 +9,13 @@ use Illuminate\Support\Collection;
 
 class VendorDashboardService
 {
-    public function stats(Vendor $vendor): array
+    public function stats(Vendor $vendor, ?Carbon $earningsMonth = null): array
     {
         $base = Order::query()->where('vendor_id', $vendor->id)->paymentConfirmed();
         $today = now()->startOfDay();
         $ytdStart = now()->startOfYear();
-        $monthStart = now()->startOfMonth();
+        $month = ($earningsMonth ?? now())->copy()->startOfMonth();
+        $monthEnd = $month->copy()->endOfMonth();
 
         return [
             'total_orders_today' => (clone $base)->where('created_at', '>=', $today)->count(),
@@ -23,7 +24,10 @@ class VendorDashboardService
             'completed_ytd' => (clone $base)->where('status', 'delivered')->where('updated_at', '>=', $ytdStart)->count(),
             'new_today' => (clone $base)->whereIn('status', ['new', 'pending_acceptance'])->where('created_at', '>=', $today)->count(),
             'in_progress_today' => (clone $base)->whereIn('status', Order::IN_PROGRESS_STATUSES)->where('updated_at', '>=', $today)->count(),
-            'earnings_month' => (float) (clone $base)->where('payment_status', 'success')->where('created_at', '>=', $monthStart)->sum('amount'),
+            'earnings_month' => (float) (clone $base)
+                ->where('payment_status', 'success')
+                ->whereBetween('created_at', [$month, $monthEnd])
+                ->sum('amount'),
             'earnings_ytd' => (float) (clone $base)->where('payment_status', 'success')->where('created_at', '>=', $ytdStart)->sum('amount'),
         ];
     }

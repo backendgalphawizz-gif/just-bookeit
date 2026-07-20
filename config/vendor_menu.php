@@ -17,9 +17,9 @@ return [
         'label' => 'Products',
         'icon' => 'products',
         'children' => [
-            ['label' => 'Fashion Designer', 'route' => 'vendor.products.index', 'params' => ['type' => 'fashion-designer'], 'match' => ['vendor.products.index']],
-            ['label' => 'Rental Dresses', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-dress'], 'match' => ['vendor.products.index']],
-            ['label' => 'Rental Jewelry', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-jewellery'], 'match' => ['vendor.products.index']],
+            ['label' => 'Fashion Designer', 'route' => 'vendor.products.index', 'params' => ['type' => 'fashion-designer'], 'match' => ['vendor.products.index', 'vendor.products.create', 'vendor.products.edit', 'vendor.products.show']],
+            ['label' => 'Rental Dresses', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-dress'], 'match' => ['vendor.products.index', 'vendor.products.create', 'vendor.products.edit', 'vendor.products.show']],
+            ['label' => 'Rental Jewelry', 'route' => 'vendor.products.index', 'params' => ['type' => 'rented-jewellery'], 'match' => ['vendor.products.index', 'vendor.products.create', 'vendor.products.edit', 'vendor.products.show']],
         ],
     ],
     [

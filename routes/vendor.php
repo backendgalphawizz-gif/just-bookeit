@@ -55,10 +55,19 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::delete('portfolio/{portfolioImage}', [PortfolioController::class, 'destroy'])->name('portfolio.destroy');
 
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
-        Route::get('products/create', [ProductController::class, 'create'])->name('products.create');
+        Route::get('products/create', function (\Illuminate\Http\Request $request) {
+            $type = $request->string('type')->toString() ?: 'fashion-designer';
+
+            return redirect()->route('vendor.products.create', ['type' => $type]);
+        });
+        Route::get('products/{type}/create', [ProductController::class, 'create'])
+            ->whereIn('type', ['fashion-designer', 'rented-dress', 'rented-jewellery'])
+            ->name('products.create');
         Route::post('products', [ProductController::class, 'store'])->name('products.store');
+        Route::get('products/{product}', [ProductController::class, 'show'])->name('products.show');
         Route::get('products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('products/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::patch('products/{product}/listing-active', [ProductController::class, 'toggleListingActive'])->name('products.listing-active');
         Route::delete('products/{product}/images/{image}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
 

@@ -7,19 +7,20 @@ use App\Models\Conversation;
 use App\Support\WebChatLivePresenter;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ChatLiveService
 {
     /**
-     * @param  Builder<Conversation>  $conversationsQuery
+     * @param  Builder<Conversation>|Relation  $conversationsQuery
      * @param  Closure(Conversation): array<string, mixed>  $threadPresenter
      * @param  Closure(Conversation): void  $authorizeChat
      */
     public function poll(
         Request $request,
-        Builder $conversationsQuery,
+        Builder|Relation $conversationsQuery,
         string $viewerRole,
         Closure $threadPresenter,
         Closure $authorizeChat,
@@ -33,6 +34,7 @@ class ChatLiveService
 
         $threads = (clone $conversationsQuery)
             ->with(['customer', 'vendor', 'latestMessage'])
+            ->orderByRaw('last_message_at is null')
             ->orderByDesc('last_message_at')
             ->orderByDesc('id')
             ->get()

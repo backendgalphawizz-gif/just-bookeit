@@ -198,6 +198,7 @@ class OtpService
                 'email' => $actor->email,
                 'business_mail' => $actor->business_email,
                 'service_types' => $actor->serviceType(),
+                'aadhar_number' => $actor->aadhar_number,
                 'gst_no' => $actor->gst_number,
                 'address' => $actor->address,
                 'country' => $actor->country,

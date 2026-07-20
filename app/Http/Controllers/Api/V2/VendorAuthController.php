@@ -10,13 +10,14 @@ use App\Support\CodeGenerator;
 use App\Support\LocationResolver;
 use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
+use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class VendorAuthController extends ApiController
 {
-    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'];
+    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB];
 
     public function __construct(
         protected OtpService $otp
@@ -62,11 +63,17 @@ class VendorAuthController extends ApiController
 
     public function register(Request $request): JsonResponse
     {
-        $data = $request->validate(array_merge(
-            ['registration_token' => ['required', 'string']],
-            StoresActorFcmToken::validationRules(),
-            $this->vendorFieldRules(required: true)
-        ));
+        $this->prepareRegisterInput($request);
+
+        $data = $request->validate(
+            array_merge(
+                ['registration_token' => ['required', 'string']],
+                StoresActorFcmToken::validationRules(),
+                VendorValidationRules::apiRegister()
+            ),
+            VendorValidationRules::messages(),
+            VendorValidationRules::attributes()
+        );
 
         $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_VENDOR, $data['registration_token']);
         $fcmToken = $data['fcm_token'] ?? StoresActorFcmToken::pullPending(OtpService::ACTOR_VENDOR, $mobile);
@@ -75,21 +82,48 @@ class VendorAuthController extends ApiController
             return $this->error('Vendor already registered.', 409);
         }
 
-        $vendor = new Vendor([
-            ...$this->mapVendorAttributes($data),
-            'vendor_code' => CodeGenerator::vendorCode(),
-            'mobile' => $mobile,
-            'status' => 'pending',
-        ]);
+        $shopName = $data['shop_name'] ?? $data['brand_name'];
 
-        $this->applyVendorFiles($vendor, $request);
-        $vendor->save();
+        $vendor = Vendor::query()->create([
+            'vendor_code' => CodeGenerator::vendorCode(),
+            'shop_name' => $shopName,
+            'brand_name' => $shopName,
+            'owner_name' => $data['owner_name'],
+            'email' => $data['email'],
+            'mobile' => $mobile,
+            'business_mobile' => $data['business_mobile'] ?? null,
+            'business_email' => $data['business_mail'] ?? null,
+            'aadhar_number' => $data['aadhar_number'] ?? null,
+            'gst_number' => isset($data['gst_no']) ? strtoupper($data['gst_no']) : null,
+            'address' => $data['address'] ?? null,
+            'city' => $data['city'] ?? null,
+            'state' => $data['state'] ?? null,
+            'country' => $data['country'] ?? null,
+            'pincode' => $data['pincode'] ?? null,
+            'service_types' => implode(', ', VendorValidationRules::normalizeServiceTypes($data['service_types'] ?? [])),
+            'account_name' => $data['account_name'],
+            'account_number' => $data['account_no'],
+            'bank_name' => $data['bank_name'],
+            'ifsc_code' => strtoupper($data['ifsc_code']),
+            'account_type' => $data['account_type'],
+            'status' => 'active',
+            'aadhar_front_path' => StoresUploadedFiles::store($request->file('aadhar_front'), 'vendors/aadhar/front'),
+            'aadhar_back_path' => StoresUploadedFiles::store($request->file('aadhar_back'), 'vendors/aadhar/back'),
+            'cover_image_path' => $this->storeOptionalImage($request, ['cover_image', 'coverImage'], 'vendors/cover-images'),
+            'profile_image_path' => $this->storeOptionalImage($request, ['profile_image'], 'vendors/profile-images'),
+            'shop_logo_path' => $this->storeOptionalImage($request, ['shop_logo'], 'vendors/shop-logos'),
+            'pan_card_path' => $this->storeOptionalImage($request, ['pan_card'], 'vendors/pan-cards'),
+        ]);
 
         StoresActorFcmToken::saveForActor($vendor, $fcmToken);
 
+        $token = $vendor->createToken('vendor-api')->plainTextToken;
+
         return $this->success([
+            'token' => $token,
+            'token_type' => 'Bearer',
             'user' => $this->otp->formatActor(OtpService::ACTOR_VENDOR, $vendor),
-        ], 'Vendor registration submitted for approval.', 201);
+        ], 'Vendor registration successful.', 201);
     }
 
     public function me(Request $request): JsonResponse
@@ -105,6 +139,12 @@ class VendorAuthController extends ApiController
         /** @var Vendor $vendor */
         $vendor = $request->user();
 
+        if ($request->filled('service_types')) {
+            $request->merge([
+                'service_types' => VendorValidationRules::prepareServiceTypesInput($request->input('service_types')),
+            ]);
+        }
+
         $data = $request->validate(array_merge(
             $this->vendorFieldRules(required: false, vendorId: $vendor->id),
             [
@@ -114,7 +154,7 @@ class VendorAuthController extends ApiController
                 'bio' => ['sometimes', 'nullable', 'string', 'max:2000'],
                 'is_available' => ['sometimes', 'boolean'],
             ]
-        ));
+        ), VendorValidationRules::messages(), VendorValidationRules::attributes());
 
         $vendor->fill($this->mapVendorAttributes($data));
 
@@ -141,6 +181,39 @@ class VendorAuthController extends ApiController
         return $this->success(null, 'Logged out.');
     }
 
+    private function prepareRegisterInput(Request $request): void
+    {
+        $merge = [];
+
+        if (! $request->filled('shop_name') && $request->filled('brand_name')) {
+            $merge['shop_name'] = $request->input('brand_name');
+        }
+
+        if ($request->has('service_types')) {
+            $merge['service_types'] = VendorValidationRules::prepareServiceTypesInput($request->input('service_types'));
+        }
+
+        if ($request->hasFile('coverImage') && ! $request->hasFile('cover_image')) {
+            $request->files->set('cover_image', $request->file('coverImage'));
+        }
+
+        if ($merge !== []) {
+            $request->merge($merge);
+        }
+    }
+
+    /** @param  list<string>  $keys */
+    private function storeOptionalImage(Request $request, array $keys, string $directory): ?string
+    {
+        foreach ($keys as $key) {
+            if ($request->hasFile($key)) {
+                return StoresUploadedFiles::store($request->file($key), $directory);
+            }
+        }
+
+        return null;
+    }
+
     private function vendorFieldRules(bool $required, ?int $vendorId = null): array
     {
         $rule = $required ? 'required' : 'sometimes';
@@ -152,16 +225,18 @@ class VendorAuthController extends ApiController
         }
 
         return [
-            'shop_name' => [$required ? 'required_without:brand_name' : 'sometimes', 'nullable', 'string', 'max:255'],
-            'brand_name' => [$required ? 'required_without:shop_name' : 'sometimes', 'nullable', 'string', 'max:255'],
-            'owner_name' => [$rule, 'string', 'max:255'],
+            'shop_name' => [$required ? 'required_without:brand_name' : 'sometimes', 'nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'brand_name' => [$required ? 'required_without:shop_name' : 'sometimes', 'nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'owner_name' => [$rule, 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
             'email' => array_merge([$rule], array_slice(AdminValidationRules::emailRules(false), 1)),
             'mobile_no' => $vendorId ? $mobileRules : ['prohibited'],
-            'service_types' => [$rule, 'string', 'max:500'],
-            'business_mobile' => [$rule, 'string', 'max:20'],
-            'business_mail' => array_merge([$rule], array_slice(AdminValidationRules::emailRules(false), 1)),
-            'gst_no' => ['nullable', 'string', 'max:15'],
-            'address' => [$rule, 'string', 'max:500'],
+            'service_types' => [$rule, 'array', 'min:1'],
+            'service_types.*' => ['string', 'max:100', Rule::in(VendorValidationRules::SERVICE_TYPES)],
+            'business_mobile' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE],
+            'business_mail' => array_merge([$required ? 'nullable' : 'sometimes'], array_slice(AdminValidationRules::emailRules(false), 1)),
+            'aadhar_number' => ['nullable', 'string', 'size:12', 'regex:/^[2-9][0-9]{11}$/'],
+            'gst_no' => ['nullable', 'string', 'size:15', 'regex:'.AdminValidationRules::REGEX_GST],
+            'address' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:500'],
             'country' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
@@ -171,11 +246,11 @@ class VendorAuthController extends ApiController
             'state_other' => ['nullable', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100'],
             'city_id' => ['nullable'],
             'city_other' => ['nullable', 'required_if:city_id,other', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100'],
-            'pincode' => [$rule, 'string', 'max:10'],
+            'pincode' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:10'],
             'aadhar_front' => [$rule, ...self::IMAGE_RULE],
             'aadhar_back' => [$rule, ...self::IMAGE_RULE],
-            'shop_logo' => [$rule, ...self::IMAGE_RULE],
-            'pan_card' => [$rule, ...self::IMAGE_RULE],
+            'shop_logo' => ['sometimes', 'nullable', ...self::IMAGE_RULE],
+            'pan_card' => ['sometimes', 'nullable', ...self::IMAGE_RULE],
             'account_name' => [$rule, 'string', 'max:255'],
             'account_no' => [$rule, 'string', 'max:20'],
             'ifsc_code' => [$rule, 'string', 'max:11'],
@@ -194,7 +269,6 @@ class VendorAuthController extends ApiController
         $attributes = collect($data)->only([
             'owner_name',
             'email',
-            'service_types',
             'business_mobile',
             'address',
             'country',
@@ -205,6 +279,7 @@ class VendorAuthController extends ApiController
             'ifsc_code',
             'bank_name',
             'account_type',
+            'aadhar_number',
         ])->all();
 
         if (isset($data['shop_name'])) {
@@ -215,16 +290,24 @@ class VendorAuthController extends ApiController
             $attributes['shop_name'] = $data['brand_name'];
         }
 
+        if (isset($data['service_types'])) {
+            $attributes['service_types'] = implode(', ', VendorValidationRules::normalizeServiceTypes($data['service_types']));
+        }
+
         if (isset($data['business_mail'])) {
             $attributes['business_email'] = $data['business_mail'];
         }
 
         if (array_key_exists('gst_no', $data)) {
-            $attributes['gst_number'] = $data['gst_no'];
+            $attributes['gst_number'] = $data['gst_no'] ? strtoupper($data['gst_no']) : null;
         }
 
         if (isset($data['account_no'])) {
             $attributes['account_number'] = $data['account_no'];
+        }
+
+        if (isset($data['ifsc_code'])) {
+            $attributes['ifsc_code'] = strtoupper($data['ifsc_code']);
         }
 
         if (isset($data['mobile_no'])) {

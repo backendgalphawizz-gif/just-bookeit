@@ -111,7 +111,8 @@ class PortfolioController extends AdminController
 
         $this->storeProductGalleryImages($request, $product, $request->file('image'));
         $this->storeProductGalleryVideos($request, $product);
-        $this->syncProductVariants($request, $product, $data['variants'] ?? []);
+        $this->syncProductVariants($request, $product, $request->input('variants', $data['variants'] ?? []));
+        $this->propagateVariantColorImages($product);
         $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
 
         return redirect()
@@ -182,7 +183,8 @@ class PortfolioController extends AdminController
 
         $this->storeProductGalleryImages($request, $portfolio);
         $this->storeProductGalleryVideos($request, $portfolio);
-        $this->syncProductVariants($request, $portfolio, $data['variants'] ?? [], true);
+        $this->syncProductVariants($request, $portfolio, $request->input('variants', $data['variants'] ?? []), true);
+        $this->propagateVariantColorImages($portfolio);
         $this->syncProductDamageDeductions($portfolio, $data['damage_deductions'] ?? [], true);
 
         return redirect()

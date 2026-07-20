@@ -1050,6 +1050,7 @@ class VendorApiPresenter
             'body' => $message->body,
             'attachment_url' => $message->attachmentUrl(),
             'attachment_type' => $message->attachmentType(),
+            'attachment_name' => $message->attachmentDisplayName(),
             'is_mine' => $message->sender_type === ChatMessage::SENDER_VENDOR,
             'is_read' => $message->read_at !== null,
             'sent_at' => $message->created_at?->format('g:i A'),

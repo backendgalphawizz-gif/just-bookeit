@@ -27,6 +27,7 @@ class ChatController extends WebController
                 $term = '%'.$request->string('search').'%';
                 $query->whereHas('vendor', fn ($vendor) => $vendor->where('brand_name', 'like', $term));
             })
+            ->orderByRaw('last_message_at is null')
             ->orderByDesc('last_message_at')
             ->orderByDesc('id')
             ->get();
@@ -111,20 +112,28 @@ class ChatController extends WebController
 
         abort_if(blank($data['body'] ?? null) && ! $request->hasFile('attachment'), 422);
 
+        $attachment = $request->file('attachment');
+
         $message = $chat->messages()->create([
             'sender_type' => ChatMessage::SENDER_CUSTOMER,
             'sender_id' => $customer->id,
             'body' => $data['body'] ?? null,
-            'attachment_path' => $request->hasFile('attachment')
-                ? StoresUploadedFiles::store($request->file('attachment'), 'chat/attachments')
+            'attachment_path' => $attachment
+                ? StoresUploadedFiles::store($attachment, 'chat/attachments')
                 : null,
+            'attachment_name' => $attachment?->getClientOriginalName(),
         ]);
 
-        $chat->update(['last_message_at' => $message->created_at]);
+        $chat->forceFill([
+            'last_message_at' => $message->created_at ?? now(),
+        ])->save();
+
+        $chat->load(['vendor', 'latestMessage']);
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'message' => WebChatLivePresenter::message($message, ChatMessage::SENDER_CUSTOMER),
+                'thread' => WebChatLivePresenter::customerThread($chat),
             ]);
         }
 
