@@ -68,6 +68,8 @@
 								{ "key": "state", "value": "Madhya Pradesh", "type": "text" },
 								{ "key": "country", "value": "India", "type": "text" },
 								{ "key": "pincode", "value": "452001", "type": "text" },
+								{ "key": "latitude", "value": "22.7196", "type": "text" },
+								{ "key": "longitude", "value": "75.8577", "type": "text" },
 								{ "key": "account_name", "value": "Riya Rathore", "type": "text" },
 								{ "key": "account_no", "value": "123456789012", "type": "text" },
 								{ "key": "bank_name", "value": "HDFC Bank", "type": "text" },

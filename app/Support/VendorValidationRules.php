@@ -237,6 +237,8 @@ class VendorValidationRules
         $rules['shop_name'] = ['required_without:brand_name', 'nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE];
         $rules['brand_name'] = ['required_without:shop_name', 'nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE];
         $rules['coverImage'] = $rules['cover_image'];
+        $rules['latitude'] = ['nullable', 'numeric', 'between:-90,90'];
+        $rules['longitude'] = ['nullable', 'numeric', 'between:-180,180'];
 
         return $rules;
     }

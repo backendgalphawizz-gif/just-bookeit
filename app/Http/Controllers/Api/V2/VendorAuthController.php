@@ -100,6 +100,8 @@ class VendorAuthController extends ApiController
             'state' => $data['state'] ?? null,
             'country' => $data['country'] ?? null,
             'pincode' => $data['pincode'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'service_types' => implode(', ', VendorValidationRules::normalizeServiceTypes($data['service_types'] ?? [])),
             'account_name' => $data['account_name'],
             'account_number' => $data['account_no'],

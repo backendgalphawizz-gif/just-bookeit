@@ -205,6 +205,8 @@ class OtpService
                 'state' => $actor->state,
                 'city' => $actor->city,
                 'pincode' => $actor->pincode,
+                'latitude' => $actor->latitude !== null ? (float) $actor->latitude : null,
+                'longitude' => $actor->longitude !== null ? (float) $actor->longitude : null,
                 'account_name' => $actor->account_name,
                 'account_no' => $actor->account_number,
                 'ifsc_code' => $actor->ifsc_code,

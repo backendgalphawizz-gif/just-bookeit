@@ -2252,6 +2252,16 @@
 											"type": "text"
 										},
 										{
+											"key": "latitude",
+											"value": "22.7196",
+											"type": "text"
+										},
+										{
+											"key": "longitude",
+											"value": "75.8577",
+											"type": "text"
+										},
+										{
 											"key": "account_name",
 											"value": "Riya Rathore",
 											"type": "text"
