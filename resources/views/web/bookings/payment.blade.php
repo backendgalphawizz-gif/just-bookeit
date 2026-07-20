@@ -3,14 +3,16 @@
 @section('title', 'Complete payment')
 
 @section('content')
-<div class="jbw-container" style="max-width:40rem">
-    <p style="margin-bottom:1rem"><a href="{{ route('web.bookings.show', $order) }}" class="jbw-back-link">← Booking detail</a></p>
+<div class="jbw-container">
+    <p style="margin-bottom:0rem"><a href="{{ route('web.bookings.show', $order) }}" class="jbw-back-link">← Booking detail</a></p>
 
     <div class="jbw-page-head">
         <h1 class="jbw-page-title">Complete payment</h1>
         <p class="jbw-page-subtitle">Booking #{{ $order->order_number }}</p>
     </div>
+<div class="jbw-booking-layout">
 
+<div>
     <div class="jbw-overview-card" style="margin-bottom:1rem">
         <p class="jbw-overview-label">Order summary</p>
         <p style="margin:0;font-weight:700">{{ $order->itemDisplayName() }}</p>
@@ -23,6 +25,8 @@
         @endif
     </div>
 
+
+
     <div class="jbw-overview-card" style="margin-bottom:1.25rem">
         <p class="jbw-overview-label">Amount due</p>
         <div class="jbw-payment-lines">
@@ -32,6 +36,7 @@
         </div>
         <div class="jbw-payment-total"><span>Total</span><strong>₹{{ number_format($pricing['total_amount'], 0) }}</strong></div>
     </div>
+</div>
 
     <form method="POST" action="{{ route('web.bookings.payment.pay', $order) }}" class="jbw-overview-card">
         @csrf
@@ -52,5 +57,6 @@
             Secure demo payment — no real charge is made.
         </p>
     </form>
+</div>
 </div>
 @endsection

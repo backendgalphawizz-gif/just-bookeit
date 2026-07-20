@@ -57,7 +57,7 @@ body {
     font-size: 0.9rem;
     color: #4b5563;
     padding: 0.45rem 0.75rem;
-    border-radius: var(--r-pill);
+    /* border-radius: var(--r-pill); */
     transition: color 0.2s, background 0.2s;
 }
 
@@ -232,7 +232,7 @@ body {
 
 /* Sections — tighter vertical rhythm */
 .jbw-section-band {
-    padding: 1.25rem 0 1.5rem;
+    padding: 1.00rem 0 1.000rem;
 }
 
 .jbw-section-band + .jbw-section-band {
@@ -240,7 +240,7 @@ body {
 }
 
 .jbw-section-band--warm {
-    padding: 1.5rem 0 1.75rem;
+    padding: 1.5rem 0 0.5000rem;
 }
 
 .jbw-section-band--compact {
@@ -266,7 +266,7 @@ body {
 
 .jbw-eyebrow {
     display: inline-block;
-    font-size: 0.6875rem;
+    font-size: 0.7875rem;
     font-weight: 800;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -343,7 +343,7 @@ body {
 /* Product grid — e-commerce cards */
 .jbw-product-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.5rem;
+    gap: 1.0rem;
 }
 
 .jbw-product-card {
@@ -356,7 +356,8 @@ body {
 }
 
 .jbw-product-card:hover {
-    transform: translateY(-6px);
+    /* transform: translateY(-6px); */
+     transform: translateY(-3px);
     box-shadow: var(--shadow-hover);
     border-color: rgb(232 93 58 / 0.2);
 }
@@ -384,7 +385,7 @@ body {
 }
 
 .jbw-product-card-body {
-    padding: 1rem 1.1rem 1.15rem;
+    padding: 0.55rem 1rem 0.55rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -408,7 +409,8 @@ body {
 
 .jbw-product-price {
     margin-top: auto;
-    padding-top: 0.5rem;
+    /* padding-top: 0.5rem; */
+     padding-top: 0.0rem;
     font-size: 1rem;
     font-weight: 800;
     color: var(--c-primary);
@@ -428,17 +430,23 @@ body {
 
 /* Page shells */
 .jbw-page-shell {
-    padding: 2rem 0 3rem;
+    padding: 0.500rem 0 1rem;
+}
+
+.shell-manage {
+   display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+   margin-bottom: 0.000rem !important;
+
 }
 
 .jbw-page-head {
-    margin-bottom: 2rem;
-    padding-top: 1.5rem;
+    margin-bottom: 1.05rem;
+    padding-top: 0.000rem;
 }
 
 .jbw-page-title {
     font-family: var(--font-serif);
-    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-size: clamp(1.75rem, 3vw, 2.00rem);
 }
 
 .jbw-overview-card,
@@ -495,15 +503,15 @@ body {
 .jbw-cart-vendor-count {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--c-muted);
-    background: var(--c-bg, #f7f5f2);
+    color: #fff;
+    background: var(--c-primary);
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
 }
 
 .jbw-cart-summary-note {
     margin: 0.75rem 0 0;
-    font-size: 0.75rem;
+    font-size: 0.80rem;
     color: var(--c-muted);
     line-height: 1.45;
 }
@@ -733,7 +741,9 @@ body {
 }
 
 /* Payment page */
-.jbw-payment-page { max-width: 1100px; }
+.jbw-payment-page {
+     /* max-width: 1100px; */
+     }
 
 .jbw-payment-layout {
     display: grid;
@@ -833,7 +843,7 @@ body {
     position: absolute;
     inset: 0 0 auto 0;
     height: 3px;
-    background: linear-gradient(90deg, #10b981, #34d399);
+    /* background: linear-gradient(90deg, #10b981, #34d399); */
 }
 .jbw-order-hero--pending::after {
     content: '';
@@ -1441,7 +1451,7 @@ body {
 }
 
 .jbw-order-item-progress-label {
-    font-size: 0.625rem;
+    font-size: 0.700rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -1566,7 +1576,7 @@ body {
 .jbw-order-item-rental-head {
     display: flex;
     justify-content: space-between;
-    font-size: 0.6875rem;
+    font-size: 0.7800rem;
     font-weight: 700;
     color: var(--c-muted);
     margin-bottom: 0.25rem;
@@ -1710,8 +1720,8 @@ body {
 /* Footer */
 .jbw-footer {
     background: var(--c-accent);
-    margin-top: 1.5rem;
-    padding-top: 2.5rem;
+    margin-top: 1.000rem;
+    padding-top: 2.000rem;
 }
 
 .jbw-footer-about {

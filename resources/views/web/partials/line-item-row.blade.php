@@ -22,7 +22,7 @@
             @elseif (!empty($showBaseVariant))
                 <div><dt>Variant</dt><dd>Base item</dd></div>
             @endif
-            <div><dt>Quantity</dt><dd>{{ $qty }}</dd></div>
+            <div><dt>Quantity </dt><dd>{{ $qty }}</dd></div>
             @if (!empty($unitPrice))
                 <div><dt>Rate</dt><dd>{{ $unitPrice }}</dd></div>
             @endif

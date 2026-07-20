@@ -595,9 +595,9 @@ border-radius: 8px !important;
 
 /* ─── Notifications page ──────────────────────────────────────────── */
 .jbw-notif-page {
-    max-width: 760px;
+    /* max-width: 760px; */
     margin: 0 auto;
-    padding-bottom: 2.5rem;
+    /* padding-bottom: 2.5rem; */
 }
 .jbw-notif-hero {
     display: flex;
@@ -741,7 +741,7 @@ border-radius: 8px !important;
     letter-spacing: 0.02em;
 }
 .jbw-notif-empty {
-    padding: 3.25rem 1.5rem;
+    padding: 2.25rem 1.5rem;
     text-align: center;
 }
 .jbw-notif-empty-icon {
@@ -1185,7 +1185,7 @@ border-radius: 8px !important;
     width: 100%;
     border: 1.5px solid var(--c-border);
     border-radius: 10px;
-    padding: 0.8125rem 1rem;
+    padding: 0.7000rem 1rem;
     font: inherit;
     font-size: 0.9375rem;
     background: var(--c-surface);
@@ -1442,7 +1442,7 @@ border-radius: 8px !important;
     margin: 0 auto;
     font-size: 1rem;
     line-height: 1.7;
-    max-width: 36rem;
+    max-width: 50rem;
 }
 
 .paddingtop {
@@ -1738,7 +1738,8 @@ border-radius: 8px !important;
     position: relative;
     border-radius: 18px;
     overflow: hidden;
-    aspect-ratio: 4 / 5;
+    /* aspect-ratio: 4 / 5; */
+    aspect-ratio: 4 / 4;
     min-height: 0;
     display: block;
     text-decoration: none;
@@ -1882,7 +1883,7 @@ border-radius: 8px !important;
 }
 
 .jbw-tile--category {
-    aspect-ratio: 4 / 5;
+    aspect-ratio: 4 / 4;
     min-height: 0;
     width: 100%;
 }
@@ -1955,7 +1956,7 @@ border-radius: 8px !important;
 @media (min-width: 720px) {
     .service-slider.slider-is-few,
     .category-slider.slider-is-few {
-        justify-content: center;
+        justify-content: start;
         overflow-x: visible;
         flex-wrap: wrap;
         row-gap: 1.5rem;
@@ -2593,7 +2594,7 @@ border-radius: 8px !important;
 .jbw-product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.25rem;
+    gap: 1.00rem;
 }
 
 .jbw-product-card {
@@ -2609,7 +2610,7 @@ border-radius: 8px !important;
 
 .jbw-product-card img {
     width: 100%;
-    aspect-ratio: 3/4;
+    /* aspect-ratio: 3/4; */
     object-fit: cover;
     background: #f0ede8;
     display: block;
@@ -2624,7 +2625,7 @@ border-radius: 8px !important;
     text-transform: uppercase;
     margin: 0;
 }
-.jbw-product-title { font-weight: 700; margin: 0.25rem 0; font-size: 0.9375rem; line-height: 1.4; }
+.jbw-product-title { font-weight: 700; margin: 0.10rem 0; font-size: 0.9375rem; line-height: 1.0; }
 .jbw-product-price { color: var(--c-primary); font-weight: 800; margin: 0; font-size: 0.9375rem; }
 
 @media (min-width: 900px) {
@@ -2636,7 +2637,10 @@ border-radius: 8px !important;
 .jbw-gallery-main { border-radius: 20px; overflow: hidden; background: #f0ede8; }
 .jbw-gallery-main img,
 .jbw-gallery-main video { width: 100%; display: block; aspect-ratio: 1 / 1; object-fit: cover; }
-.jbw-product-detail-title { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; margin: 0 0 0.625rem; }
+.jbw-product-detail-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.75rem, 3vw, 2.00rem);
+     margin: 0 0 0.0rem; }
 
 .jbw-variant-picker { margin: 1rem 0 1.25rem; }
 .jbw-variant-label { margin: 0 0 0.625rem; font-size: 0.8125rem; font-weight: 700; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.04em; }
@@ -2775,7 +2779,7 @@ border-radius: 8px !important;
     padding: 0.875rem 1rem;
     border: 1px solid var(--c-border);
     border-radius: 14px;
-    margin: 1.25rem 0;
+    margin: 0.425rem 0;
     text-decoration: none;
     color: inherit;
     transition: background var(--trans);
@@ -2787,7 +2791,7 @@ border-radius: 8px !important;
     border-radius: var(--r-btn);
     object-fit: cover;
 }
-.jbw-detail-actions { display: flex; flex-wrap: wrap; gap: 0.875rem; margin-top: 1.5rem; }
+.jbw-detail-actions { display: flex; flex-wrap: wrap; gap: 0.875rem; margin-top: 1.0rem; }
 
 @media (min-width: 900px) {
     .jbw-product-detail { grid-template-columns: 1fr 1fr; align-items: start; }
@@ -3020,7 +3024,7 @@ border-radius: 8px !important;
     grid-template-columns: 5.5rem 1fr auto;
     gap: 1.25rem;
     align-items: start;
-    padding: 1.15rem 1.25rem;
+    padding: 1.00rem 1.00rem;
     border: 1px solid var(--c-border);
     border-radius: 1rem;
     background: #fff;
@@ -3115,7 +3119,7 @@ border-radius: 8px !important;
 /* booking detail */
 .jbw-booking-layout { display: grid; gap: 1.5rem; }
 .jbw-booking-main,
-.jbw-booking-sidebar { display: grid; gap: 1.25rem; height: fit-content; }
+.jbw-booking-sidebar { display: grid; gap: 1.00rem; height: fit-content; }
 .jbw-booking-card {
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -3177,7 +3181,7 @@ border-radius: 8px !important;
     padding-bottom: 0.5rem;
 }
 .jbw-booking-detail-header {
-    margin-bottom: 1.75rem;
+    margin-bottom: 1.00rem;
 }
 .jbw-booking-detail-eyebrow {
     margin: 0 0 0.35rem;
@@ -3190,7 +3194,7 @@ border-radius: 8px !important;
 .jbw-booking-detail-title {
     margin: 0;
     font-family: var(--font-serif);
-    font-size: clamp(1.625rem, 3.5vw, 2.125rem);
+    font-size: clamp(1.625rem, 3.5vw, 1.700rem);
     font-weight: 600;
     line-height: 1.15;
     letter-spacing: -0.02em;
@@ -3205,7 +3209,7 @@ border-radius: 8px !important;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 1rem;
+    margin-top: 0.500rem;
 }
 .jbw-booking-detail-type {
     display: inline-flex;
@@ -3384,8 +3388,8 @@ border-radius: 8px !important;
     gap: 1.25rem;
 }
 @media (min-width: 1024px) {
-    .jbw-booking-sidebar-sticky {
-        position: sticky;
+     .jbw-booking-sidebar-sticky {
+        /* position: sticky; */
         top: 5.5rem;
     }
 }
@@ -3451,7 +3455,7 @@ border-radius: 8px !important;
 
 /* ─── Measurements ────────────────────────────────────────────────── */
 .jbw-measure-page { padding-top: 1.0rem; padding-bottom: 1rem; }
-.jbw-measure-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+.jbw-measure-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.0rem; }
 .jbw-measure-back {
     display: inline-flex; align-items: center; gap: 0.5rem;
     text-decoration: none; color: var(--c-text);
@@ -3472,14 +3476,14 @@ border-radius: 8px !important;
     border: 1px solid var(--c-border);
     border-radius: 20px;
     box-shadow: var(--c-shadow-md);
-    padding: 2rem 1.75rem 2.5rem;
+    padding: 1rem 1.75rem 1rem;
 }
-.jbw-measure-section + .jbw-measure-section { margin-top: 2rem; }
+.jbw-measure-section + .jbw-measure-section { margin-top: 1rem; }
 .jbw-measure-section-title {
     color: var(--c-primary);
     font-weight: 700; font-size: 0.875rem;
     letter-spacing: 0.04em; text-transform: uppercase;
-    margin: 0 0 1.25rem; padding-bottom: 0.75rem;
+    margin: 0 0 1.25rem; padding-bottom: 0.25rem;
     border-bottom: 1px solid var(--c-border);
 }
 .jbw-input--measure { text-align: start; color: var(--c-muted); }
@@ -3838,7 +3842,7 @@ border-radius: 8px !important;
 }
 
 /* ─── Breadcrumb ─────────────────────────────────────────────────── */
-.jbw-breadcrumb { margin-bottom: 1.5rem; padding-top: 0.5rem; }
+.jbw-breadcrumb { margin-bottom: 0.05rem; padding-top: 0.5rem; }
 .jbw-breadcrumb-link {
     display: inline-flex; align-items: center; gap: 0.375rem;
     text-decoration: none; color: var(--c-muted);
@@ -3850,10 +3854,10 @@ border-radius: 8px !important;
 /* ─── Detail page ────────────────────────────────────────────────── */
 .jbw-detail-price {
     font-size: 1.375rem; font-weight: 800;
-    color: var(--c-primary); margin: 0.25rem 0 1rem;
+    color: var(--c-primary); margin: 0rem 0 0rem;
 }
 .jbw-detail-desc {
-    color: var(--c-muted); line-height: 1.75; margin: 0 0 1.25rem;
+    color: var(--c-muted); line-height: 1.75; margin: 0 0 0.00rem;
     font-size: 0.9375rem;
 }
 
@@ -3871,7 +3875,7 @@ border-radius: 8px !important;
     display: flex;
     gap: 0.75rem;
     overflow-x: auto;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.1rem;
     margin-bottom: 1rem;
     scrollbar-width: thin;
 }
@@ -3895,8 +3899,8 @@ border-radius: 8px !important;
     box-shadow: 0 0 0 1px rgb(242 81 35 / 0.15);
 }
 .jbw-subcategory-chip-img {
-    width: 3.5rem;
-    height: 3.5rem;
+    width: 3.0rem;
+    height: 3.0rem;
     border-radius: 999px;
     object-fit: cover;
 }
@@ -3913,7 +3917,7 @@ border-radius: 8px !important;
     background: var(--c-surface);
     border: 1px solid var(--c-border);
     border-radius: 16px;
-    padding: 1.375rem 1.5rem;
+    padding: 0.900rem 1.0rem;
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
 }
 .jbw-overview-card--accent {
@@ -3968,7 +3972,7 @@ border-radius: 8px !important;
     .jbw-booking-layout { align-items: start; }
     .jbw-booking-sidebar {
         align-self: start;
-        position: sticky;
+        /* position: sticky; */
         top: 5.75rem;
     }
 }
@@ -4028,6 +4032,7 @@ border-radius: 8px !important;
     letter-spacing: 0.06em;
 }
 
+
 .jbw-measure-actions-row {
     display: flex;
     align-items: center;
@@ -4076,9 +4081,9 @@ border-radius: 8px !important;
 .jbw-measure-update-link:hover { text-decoration: underline; }
 
 .jbw-overview-label {
-    font-size: 0.6875rem; font-weight: 800;
+    font-size: 0.7500rem; font-weight: 700;
     letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--c-muted); margin: 0 0 1rem;
+    color: var(--c-muted); margin: 0 0 0.5rem;
 }
 
 .jbw-overview-product {
@@ -4096,11 +4101,11 @@ border-radius: 8px !important;
     color: var(--c-muted); margin: 0;
 }
 .jbw-overview-title {
-    font-weight: 700; font-size: 1.0625rem; margin: 0.25rem 0 0.25rem; line-height: 1.3;
+    font-weight: 700; font-size: 1.0625rem; margin: 0.15rem 0 0.15rem; line-height: 1.3;
 }
-.jbw-overview-cat { font-size: 0.8125rem; color: var(--c-muted); margin: 0 0 0.5rem; }
+.jbw-overview-cat { font-size: 0.8125rem; color: var(--c-muted); margin: 0 0 0.2rem; }
 .jbw-overview-price {
-    font-weight: 800; font-size: 1.0625rem; color: var(--c-primary); margin: 0;
+    font-weight: 800; font-size: 1.000rem; color: var(--c-primary); margin: 0;
 }
 
 .jbw-overview-dates-placeholder {
@@ -4266,7 +4271,7 @@ background: #AE2A0B;
 .contact-form-card{
     padding-top: 25px !important;
     background:#fff;
-    padding:50px;
+    padding:25px;
     margin-top:0px;
 }
 
@@ -4435,7 +4440,7 @@ background: #AE2A0B;
 /* Product card image wrapper */
 .jbw-product-card-img {
     width: 100%;
-    aspect-ratio: 1/1;
+    /* aspect-ratio: 1/1; */
     overflow: hidden;
     background: #f0ede8;
 }
@@ -4445,8 +4450,9 @@ background: #AE2A0B;
     display: block;
     transition: transform 0.4s ease;
 }
-.jbw-product-card:hover .jbw-product-card-img img { transform: scale(1.04); }
-
+/* .jbw-product-card:hover
+.jbw-product-card-img img { transform: scale(1.04); } */
+.jbw-product-card:hover  { transform: scale(1.04); }
 
 /* review section  */
 .reviews-section {

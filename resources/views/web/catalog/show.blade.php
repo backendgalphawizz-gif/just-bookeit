@@ -19,7 +19,7 @@
     <nav class="jbw-breadcrumb" aria-label="Breadcrumb">
         <a href="{{ route('web.catalog.index') }}" class="jbw-breadcrumb-link">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-            Details
+            Back
         </a>
     </nav>
 
@@ -92,7 +92,7 @@
         {{-- Info --}}
         <div class="jbw-detail-info">
             <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
-            <h1 class="jbw-product-detail-title">{{ $item->title }}</h1>
+            <h1 class="jbw-product-detail-title ">{{ $item->title }}</h1>
             <p class="jbw-detail-price" id="jbw-detail-price">{{ $item->rentalPriceLabel() }}</p>
 
             @include('web.catalog.partials.variant-picker', ['item' => $item, 'baseImageUrl' => $galleryUrls[0] ?? null])

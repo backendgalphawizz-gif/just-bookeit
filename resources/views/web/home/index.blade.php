@@ -292,7 +292,7 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
             <h2 class="jbw-section-title">Featured designers</h2>
             <p class="jbw-section-sub">Verified boutique partners crafting couture, occasion wear and everyday luxe. Hover the strip to pause.</p>
         </div>
-    </div>
+
 
     <div class="jbw-designer-marquee" data-designer-marquee>
         <div class="jbw-designer-marquee-track" data-designer-marquee-track>
@@ -325,6 +325,7 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
             @endfor
         </div>
     </div>
+     </div>
 </section>
 @endif
 

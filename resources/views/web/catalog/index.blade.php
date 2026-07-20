@@ -19,10 +19,25 @@
     @endphp
 
 <div class="jbw-container jbw-page-shell">
-    <div class="jbw-page-head">
-        <span class="jbw-eyebrow">{{ $isServicesBrowse ? 'Services' : 'Shop' }}</span>
+    <!-- <div class="jbw-page-head shell-manage">
+        <div>
+         <span class="jbw-eyebrow">{{ $isServicesBrowse ? 'Services' : 'Shop' }}</span>
         <h1 class="jbw-page-title">{{ $isServicesBrowse ? 'Our services' : 'Shop by category' }}</h1>
-        <p class="jbw-page-subtitle" style="margin-top:0.35rem;color:var(--c-muted);font-size:0.9375rem">
+        <p class="jbw-page-subtitle" style="margin-top:0.10rem;color:var(--c-muted);font-size:0.9375rem">
+            @if ($isServicesBrowse)
+                Fashion designer bookings, rental dresses, and rental jewellery from top vendors.
+            @else
+                Browse outfits by women, men, kids, and product categories.
+            @endif
+        </p>
+        </div>
+        <img height="150" width="250" src="{{asset('assets/frontend/servicedetail.png')}}"/>
+    </div> -->
+<div class="jbw-page-head shell-manage">
+    <div style="flex: 1; min-width: 280px;">
+        <span class="jbw-eyebrow">Home / {{ $isServicesBrowse ? 'Services' : 'Shop' }}</span>
+        <h1 class="jbw-page-title" style="margin: 0;">{{ $isServicesBrowse ? 'Our services' : 'Shop by category' }}</h1>
+        <p class="jbw-page-subtitle" style="margin-top: 0.25rem; margin-bottom: 0; color: var(--c-muted); font-size: 0.9375rem;">
             @if ($isServicesBrowse)
                 Fashion designer bookings, rental dresses, and rental jewellery from top vendors.
             @else
@@ -30,7 +45,17 @@
             @endif
         </p>
     </div>
-
+    <!-- <div style="flex-shrink: 0;">
+        <img height="150" width="130" src="{{ asset('assets/frontend/servicedetail.png') }}" style="max-width: 100%; height: auto; display: block; object-fit: contain;"/>
+    </div> -->
+    <div style="width: 130px; height: 150px; flex-shrink: 0; overflow: hidden;">
+    <img
+        src="{{ asset('assets/frontend/servicedetail.png') }}"
+        alt="Service Detail"
+        style="width: 100%; height: 100%; object-fit: contain; display: block;"
+    />
+</div>
+</div>
     <div class="jbw-catalog-layout" x-data="{ filterOpen: false }">
 
         <button

@@ -47,7 +47,7 @@
 
             @if ($headerRegistered)
                 <a href="{{ route('web.cart.index') }}" class="jbw-icon-btn" aria-label="Cart" style="position:relative">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: rgb(242, 81, 35);" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                     @if ($headerCartCount > 0)
                         <span style="position:absolute;top:-4px;right:-4px;min-width:1.1rem;height:1.1rem;padding:0 0.25rem;border-radius:999px;background:var(--c-primary);color:#fff;font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center">{{ $headerCartCount > 99 ? '99+' : $headerCartCount }}</span>
                     @endif
