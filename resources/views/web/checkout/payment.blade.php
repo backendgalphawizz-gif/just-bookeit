@@ -75,7 +75,7 @@
                 </div>
                 @error('payment_method')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block jbw-payment-submit">
-                    Pay ₹{{ number_format($checkoutOrder->grand_total, 0) }}
+                    {{ $pricing['pay_label'] ?? ('Pay ₹'.number_format($pricing['payable_now'] ?? $checkoutOrder->grand_total, 0)) }}
                 </button>
                 <p class="jbw-payment-secure-note">Secure demo payment — no real charge is made.</p>
             </form>
@@ -88,10 +88,17 @@
                     <div><span>Subtotal</span><span>₹{{ number_format($checkoutOrder->amount, 0) }}</span></div>
                     <div><span>Delivery</span><span>₹{{ number_format($checkoutOrder->delivery_fee, 0) }}</span></div>
                     <div><span>GST</span><span>₹{{ number_format($checkoutOrder->tax_amount, 0) }}</span></div>
+                    <div><span>Booking total</span><span>₹{{ number_format($checkoutOrder->grand_total, 0) }}</span></div>
+                    @if (($pricing['advance_amount'] ?? 0) > 0)
+                        <div><span>Advance</span><span>₹{{ number_format($pricing['advance_amount'], 0) }}</span></div>
+                    @endif
+                    @if (($pricing['amount_paid'] ?? 0) > 0)
+                        <div><span>Already paid</span><span>₹{{ number_format($pricing['amount_paid'], 0) }}</span></div>
+                    @endif
                 </div>
                 <div class="jbw-payment-total">
-                    <span>Total</span>
-                    <strong>₹{{ number_format($checkoutOrder->grand_total, 0) }}</strong>
+                    <span>{{ ($pricing['payment_phase'] ?? '') === 'remaining_due' ? 'Pay remaining' : (($pricing['payment_phase'] ?? '') === 'advance_due' ? 'Pay advance' : 'Pay now') }}</span>
+                    <strong>₹{{ number_format($pricing['payable_now'] ?? $checkoutOrder->grand_total, 0) }}</strong>
                 </div>
                 @if ($checkoutOrder->delivery_address)
                     <div class="jbw-payment-address">

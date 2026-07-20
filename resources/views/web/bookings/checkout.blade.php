@@ -17,9 +17,11 @@
     };
     $paymentClass = match ($checkoutOrder->payment_status) {
         'success' => 'paid',
+        'advance_paid' => 'pending',
         'failed' => 'failed',
         default => 'pending',
     };
+    $paymentSummary = $paymentSummary ?? [];
 @endphp
 
 <div class="jbw-order-detail">
@@ -53,13 +55,23 @@
         </div>
     </div>
 
-    @if ($checkoutOrder->payment_status === 'pending')
+    @if (($paymentSummary['can_pay'] ?? false))
         <div class="jbw-order-pay-banner">
             <div class="jbw-order-pay-banner-msg">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <p><strong>Payment pending.</strong> Complete payment to confirm this order.</p>
+                <p>
+                    @if (($paymentSummary['payment_phase'] ?? '') === 'remaining_due')
+                        <strong>Remaining payment due.</strong> Advance is paid — settle the balance to complete payment.
+                    @elseif (($paymentSummary['payment_phase'] ?? '') === 'advance_due')
+                        <strong>Advance payment pending.</strong> Pay the advance to confirm this order.
+                    @elseif (($paymentSummary['payment_phase'] ?? '') === 'advance_paid_waiting')
+                        <strong>Advance paid.</strong> Remaining balance will be due when the booking is completed.
+                    @else
+                        <strong>Payment pending.</strong> Complete payment to confirm this order.
+                    @endif
+                </p>
             </div>
-            <a href="{{ route('web.checkout.payment', $checkoutOrder) }}" class="jbw-btn jbw-btn--primary jbw-btn--sm">Pay ₹{{ number_format($checkoutOrder->grand_total, 0) }} now</a>
+            <a href="{{ route('web.checkout.payment', $checkoutOrder) }}" class="jbw-btn jbw-btn--primary jbw-btn--sm">{{ $paymentSummary['pay_label'] }}</a>
         </div>
     @endif
 
@@ -186,10 +198,27 @@
                     <div><span>Subtotal</span><span>₹{{ number_format($checkoutOrder->amount, 0) }}</span></div>
                     <div><span>Delivery</span><span>₹{{ number_format($checkoutOrder->delivery_fee, 0) }}</span></div>
                     <div><span>GST</span><span>₹{{ number_format($checkoutOrder->tax_amount, 0) }}</span></div>
+                    @if (($paymentSummary['advance_amount'] ?? 0) > 0)
+                        <div><span>Advance</span><span>₹{{ number_format($paymentSummary['advance_amount'], 0) }}</span></div>
+                    @endif
+                    @if (($paymentSummary['amount_paid'] ?? 0) > 0)
+                        <div><span>Paid so far</span><span>₹{{ number_format($paymentSummary['amount_paid'], 0) }}</span></div>
+                    @endif
+                    @if (($paymentSummary['remaining_amount'] ?? 0) > 0 && ($paymentSummary['payment_phase'] ?? '') === 'remaining_due')
+                        <div><span>Remaining</span><span>₹{{ number_format($paymentSummary['remaining_amount'], 0) }}</span></div>
+                    @endif
                 </div>
                 <div class="jbw-payment-total">
-                    <span>{{ $checkoutOrder->payment_status === 'success' ? 'Total paid' : 'Total payable' }}</span>
-                    <strong>₹{{ number_format($checkoutOrder->grand_total, 0) }}</strong>
+                    <span>
+                        @if ($checkoutOrder->payment_status === 'success')
+                            Total paid
+                        @elseif (($paymentSummary['can_pay'] ?? false))
+                            Pay now
+                        @else
+                            Booking total
+                        @endif
+                    </span>
+                    <strong>₹{{ number_format(($paymentSummary['can_pay'] ?? false) ? $paymentSummary['payable_now'] : $checkoutOrder->grand_total, 0) }}</strong>
                 </div>
                 @if ((float) $checkoutOrder->amount_refunded > 0)
                     <p class="jbw-order-refund-note">Refunded: ₹{{ number_format($checkoutOrder->amount_refunded, 0) }}</p>
@@ -199,6 +228,8 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         <span>Payment received</span>
                     </div>
+                @elseif (($paymentSummary['can_pay'] ?? false))
+                    <a href="{{ route('web.checkout.payment', $checkoutOrder) }}" class="jbw-btn jbw-btn--primary jbw-btn--block" style="margin-top:1rem">{{ $paymentSummary['pay_label'] }}</a>
                 @endif
             </div>
         </aside>

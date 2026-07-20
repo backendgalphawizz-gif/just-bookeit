@@ -3,6 +3,7 @@
 namespace App\Services\Booking;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PlatformSetting;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
@@ -14,10 +15,10 @@ class BookingPricingService
 
     public const DEFAULT_GST_PERCENT = 18.0;
 
-    public static function rentalDays(?string $startDate, ?string $endDate): int
+    public static function rentalDays(?string $startDate, ?string $endDate): ?int
     {
         if (! $startDate || ! $endDate) {
-            return 1;
+            return null;
         }
 
         $start = Carbon::parse($startDate)->startOfDay();
@@ -26,23 +27,41 @@ class BookingPricingService
         return max(1, (int) $start->diffInDays($end) + 1);
     }
 
+    /** Days used for amount calculation (1 when no rental window — e.g. fashion designer). */
+    public static function billingDays(?string $startDate, ?string $endDate): int
+    {
+        return self::rentalDays($startDate, $endDate) ?? 1;
+    }
+
     public static function forPortfolioItem(PortfolioItem $item, array $options = []): array
     {
+        $item->loadMissing('category');
+        $requiresRentalPeriod = (bool) ($options['requires_rental_period'] ?? $item->requiresRentalPeriod());
         $dailyRate = (float) ($options['daily_rate'] ?? $item->rentalPriceAmount());
-        $rentalDays = max(1, (int) ($options['rental_days'] ?? 1));
-        $subtotal = round($dailyRate * $rentalDays, 2);
+
+        $rentalDays = array_key_exists('rental_days', $options)
+            ? ($options['rental_days'] !== null ? max(1, (int) $options['rental_days']) : null)
+            : null;
+
+        $billingDays = max(1, (int) ($rentalDays ?? 1));
+        $subtotal = round($dailyRate * $billingDays, 2);
         $shipping = (float) ($options['shipping_fee'] ?? self::shippingFee($options['shipment_required'] ?? true));
         $gstPercent = (float) ($options['gst_percent'] ?? self::gstPercent());
         $tax = round($subtotal * ($gstPercent / 100), 2);
         $total = round($subtotal + $shipping + $tax, 2);
+        $advanceAmount = self::resolveAdvanceAmount($item, $options, $total);
 
         return [
             'daily_rate' => $dailyRate,
-            'rental_days' => $rentalDays,
+            'rental_days' => $requiresRentalPeriod ? $rentalDays : null,
+            'billing_days' => $billingDays,
+            'requires_rental_period' => $requiresRentalPeriod,
             'subtotal' => $subtotal,
             'shipping_fee' => $shipping,
             'tax_percent' => $gstPercent,
             'tax_amount' => $tax,
+            'advance_amount' => $advanceAmount,
+            'remaining_amount' => round(max(0, $total - $advanceAmount), 2),
             'total_amount' => $total,
             'currency' => (string) PlatformSetting::get('currency', 'INR'),
         ];
@@ -50,16 +69,49 @@ class BookingPricingService
 
     public static function fromOrder(Order $order): array
     {
+        $order->loadMissing(['portfolioItem', 'orderItems.portfolioItem', 'category']);
+        $total = $order->grandTotal();
+        $rentalDays = $order->rentalDurationDays();
+        $requiresRentalPeriod = $order->requiresRentalPeriod();
+
+        if ($order->orderItems->isNotEmpty()) {
+            $advanceAmount = round($order->orderItems->sum(fn (OrderItem $item) => $item->advanceAmount()), 2);
+        } else {
+            $advanceAmount = $order->portfolioItem?->advance_amount !== null
+                ? round((float) $order->portfolioItem->advance_amount, 2)
+                : 0.0;
+        }
+
         return [
-            'daily_rate' => $order->rentalDurationDays() ? round($order->subtotal() / max(1, $order->rentalDurationDays()), 2) : $order->subtotal(),
-            'rental_days' => $order->rentalDurationDays() ?? 1,
+            'daily_rate' => $rentalDays
+                ? round($order->subtotal() / max(1, $rentalDays), 2)
+                : $order->subtotal(),
+            'rental_days' => $rentalDays,
+            'billing_days' => max(1, $rentalDays ?? 1),
+            'requires_rental_period' => $requiresRentalPeriod,
             'subtotal' => $order->subtotal(),
             'shipping_fee' => (float) ($order->delivery_fee ?? 0),
             'tax_percent' => self::gstPercent(),
             'tax_amount' => (float) ($order->tax_amount ?? 0),
-            'total_amount' => $order->grandTotal(),
+            'advance_amount' => $advanceAmount,
+            'remaining_amount' => round(max(0, $total - $advanceAmount), 2),
+            'total_amount' => $total,
             'currency' => (string) PlatformSetting::get('currency', 'INR'),
         ];
+    }
+
+    /** @param array<string, mixed> $options */
+    protected static function resolveAdvanceAmount(PortfolioItem $item, array $options, float $total): float
+    {
+        if (array_key_exists('advance_amount', $options) && $options['advance_amount'] !== null) {
+            return round(max(0, (float) $options['advance_amount']), 2);
+        }
+
+        if ($item->advance_amount !== null) {
+            return round(max(0, (float) $item->advance_amount), 2);
+        }
+
+        return 0.0;
     }
 
     public static function vendorPaymentSummary(Order $order, ?Vendor $vendor = null): array

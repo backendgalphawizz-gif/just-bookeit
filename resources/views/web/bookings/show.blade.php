@@ -14,9 +14,11 @@
     };
     $paymentClass = match ($order->payment_status) {
         'paid', 'success' => 'paid',
+        'advance_paid' => 'pending',
         'failed' => 'failed',
         default => 'pending',
     };
+    $paymentSummary = $paymentSummary ?? null;
 @endphp
 
 <div class="jbw-container jbw-booking-detail-page">
@@ -104,19 +106,20 @@
                     @endif
                 </div>
 
-                @if ($order->isRental())
+                @if ($order->isRental() && $order->rental_start_date)
                     <div class="jbw-overview-card">
                         <p class="jbw-overview-label">Rental period</p>
-                        @if ($order->rental_start_date)
-                            <p class="jbw-booking-detail-rental-range">
-                                {{ $order->rental_start_date->format('d M') }}
-                                <span aria-hidden="true">→</span>
-                                {{ $order->rental_end_date?->format('d M, Y') }}
-                            </p>
-                            <p class="jbw-booking-product-meta">{{ $order->rentalDurationDays() }} {{ \Illuminate\Support\Str::plural('day', $order->rentalDurationDays()) }}</p>
-                        @else
-                            <p class="jbw-booking-detail-empty">Rental dates not set</p>
-                        @endif
+                        <p class="jbw-booking-detail-rental-range">
+                            {{ $order->rental_start_date->format('d M') }}
+                            <span aria-hidden="true">→</span>
+                            {{ $order->rental_end_date?->format('d M, Y') }}
+                        </p>
+                        <p class="jbw-booking-product-meta">{{ $order->rentalDurationDays() }} {{ \Illuminate\Support\Str::plural('day', $order->rentalDurationDays()) }}</p>
+                    </div>
+                @elseif ($order->event_date)
+                    <div class="jbw-overview-card">
+                        <p class="jbw-overview-label">Event date</p>
+                        <p class="jbw-booking-detail-rental-range">{{ $order->event_date->format('d M, Y') }}</p>
                     </div>
                 @endif
             </div>
@@ -206,7 +209,7 @@
                     </ol>
                 </div>
 
-                <div @class(['jbw-overview-card', 'jbw-booking-payment-card--pending' => $order->payment_status === 'pending'])>
+                <div @class(['jbw-overview-card', 'jbw-booking-payment-card--pending' => in_array($order->payment_status, ['pending', 'advance_paid'], true)])>
                     <p class="jbw-overview-label">Payment summary</p>
                     <div class="jbw-payment-lines">
                         <div><span>Subtotal</span><span>₹{{ number_format($order->subtotal(), 0) }}</span></div>
@@ -215,18 +218,36 @@
                         @endif
                         <div><span>Shipping</span><span>₹{{ number_format($order->delivery_fee ?? 0, 0) }}</span></div>
                         <div><span>Tax (GST)</span><span>₹{{ number_format($order->tax_amount ?? 0, 0) }}</span></div>
+                        @if ($paymentSummary && ($paymentSummary['advance_amount'] ?? 0) > 0)
+                            <div><span>Advance</span><span>₹{{ number_format($paymentSummary['advance_amount'], 0) }}</span></div>
+                        @endif
+                        @if ($paymentSummary && ($paymentSummary['amount_paid'] ?? 0) > 0)
+                            <div><span>Paid so far</span><span>₹{{ number_format($paymentSummary['amount_paid'], 0) }}</span></div>
+                        @endif
                     </div>
                     <div class="jbw-payment-total">
-                        <span>Total amount</span>
+                        <span>Booking total</span>
                         <strong>₹{{ number_format($order->grandTotal(), 0) }}</strong>
                     </div>
-                    @if ($order->payment_status === 'pending')
+                    @if ($paymentSummary && ($paymentSummary['can_pay'] ?? false))
                         <a href="{{ route('web.bookings.payment', $order) }}" class="jbw-btn jbw-btn--primary jbw-btn--block jbw-booking-detail-pay-btn">
-                            Pay now — ₹{{ number_format($order->grandTotal(), 0) }}
+                            {{ $paymentSummary['pay_label'] }}
                         </a>
-                    @else
+                        @if (($paymentSummary['payment_phase'] ?? '') === 'advance_due')
+                            <p class="jbw-booking-detail-paid-note">Only advance is due now. Remaining balance after completion.</p>
+                        @elseif (($paymentSummary['payment_phase'] ?? '') === 'remaining_due')
+                            <p class="jbw-booking-detail-paid-note">Advance received. Pay the remaining booking balance.</p>
+                        @endif
+                    @elseif ($order->payment_status === 'success')
                         <p class="jbw-booking-detail-paid-note">
                             Paid via <strong>{{ str_replace('_', ' ', ucfirst($order->payment_method ?? 'online')) }}</strong>
+                        </p>
+                    @elseif ($order->payment_status === 'advance_paid')
+                        <p class="jbw-booking-detail-paid-note">
+                            Advance paid via <strong>{{ str_replace('_', ' ', ucfirst($order->payment_method ?? 'online')) }}</strong>
+                            @if (($paymentSummary['remaining_amount'] ?? 0) > 0)
+                                · Remaining ₹{{ number_format($paymentSummary['remaining_amount'], 0) }} due on completion.
+                            @endif
                         </p>
                     @endif
                 </div>

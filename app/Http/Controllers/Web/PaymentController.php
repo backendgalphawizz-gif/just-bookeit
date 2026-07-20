@@ -4,31 +4,39 @@ namespace App\Http\Controllers\Web;
 
 use App\Models\Order;
 use App\Models\PlatformSetting;
-use App\Services\Booking\BookingPricingService;
-use App\Services\Vendor\VendorWalletService;
+use App\Services\Booking\BookingPaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class PaymentController extends WebController
 {
+    public function __construct(
+        protected BookingPaymentService $payments
+    ) {}
+
     public function show(Order $order): View|RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
         abort_unless($order->customer_id === $customer->id, 403);
 
-        if ($order->payment_status === 'success') {
+        $pricing = $this->payments->summaryForOrder($order);
+
+        if (! $pricing['can_pay']) {
             return redirect()
                 ->route('web.bookings.show', $order)
-                ->with('success', 'Payment already completed for this booking.');
+                ->with('success', $pricing['is_fully_paid']
+                    ? 'Payment already completed for this booking.'
+                    : 'No payment is due for this booking right now.');
         }
 
-        $order->load(['vendor', 'category', 'subcategory']);
+        $order->load(['vendor', 'category', 'subcategory', 'orderItems']);
 
         return view('web.bookings.payment', [
             'order' => $order,
-            'pricing' => BookingPricingService::fromOrder($order),
+            'pricing' => $pricing,
             'paymentMethods' => $this->paymentMethods(),
         ]);
     }
@@ -37,12 +45,6 @@ class PaymentController extends WebController
     {
         $customer = Auth::guard('customer')->user();
         abort_unless($order->customer_id === $customer->id, 403);
-
-        if ($order->payment_status === 'success') {
-            return redirect()
-                ->route('web.bookings.show', $order)
-                ->with('success', 'Payment already completed for this booking.');
-        }
 
         $methods = collect($this->paymentMethods())->pluck('id')->all();
 
@@ -54,18 +56,22 @@ class PaymentController extends WebController
             return back()->with('error', 'Cash on delivery is not available.');
         }
 
-        $order->update([
-            'payment_status' => 'success',
-            'payment_method' => $data['payment_method'],
-            'paid_at' => now(),
-            'status' => $order->status === 'new' ? 'pending_acceptance' : $order->status,
-        ]);
+        try {
+            $order = $this->payments->payOrder($order, $data['payment_method']);
+            $summary = $this->payments->summaryForOrder($order);
+        } catch (InvalidArgumentException $e) {
+            return redirect()
+                ->route('web.bookings.show', $order)
+                ->with('error', $e->getMessage());
+        }
 
-        app(VendorWalletService::class)->creditFromPayment($order->fresh());
+        $message = in_array($summary['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+            ? 'Advance paid successfully. Remaining amount will be due when the booking is completed.'
+            : 'Payment successful. Your booking is awaiting designer confirmation.';
 
         return redirect()
             ->route('web.bookings.show', $order)
-            ->with('success', 'Payment successful. Your booking is awaiting designer confirmation.');
+            ->with('success', $message);
     }
 
     /** @return array<int, array{id: string, label: string}> */

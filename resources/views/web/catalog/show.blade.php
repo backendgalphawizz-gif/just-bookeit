@@ -277,21 +277,26 @@
     const bookBase = @json(route('web.bookings.overview', $item));
     const inputs = picker.querySelectorAll('.jbw-variant-input');
 
-    const applyVariant = (input) => {
+    const applyVariant = (input, { syncGallery = true } = {}) => {
         if (!input) return;
 
         picker.querySelectorAll('.jbw-variant-chip').forEach((chip) => chip.classList.remove('is-selected'));
         input.closest('.jbw-variant-chip')?.classList.add('is-selected');
+        input.checked = true;
 
         if (priceEl && input.dataset.label) {
             priceEl.textContent = input.dataset.label;
         }
 
-        const imageUrl = input.dataset.image || picker.dataset.baseImage || '';
-        if (imageUrl) {
-            window.jbwShowProductGalleryImage(imageUrl);
+        // Only swap the main image when the chosen variant has its own photo.
+        // Gallery browsing must not change / clear the selected variant.
+        if (syncGallery && input.dataset.image) {
+            window.jbwShowProductGalleryImage(input.dataset.image);
             gallery?.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => {
-                thumb.classList.toggle('is-active', thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === imageUrl);
+                thumb.classList.toggle(
+                    'is-active',
+                    thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === input.dataset.image
+                );
             });
         }
 
@@ -319,11 +324,11 @@
     };
 
     inputs.forEach((input) => {
-        input.addEventListener('change', () => applyVariant(input));
+        input.addEventListener('change', () => applyVariant(input, { syncGallery: true }));
     });
 
     const checked = picker.querySelector('.jbw-variant-input:checked');
-    if (checked) applyVariant(checked);
+    if (checked) applyVariant(checked, { syncGallery: !!checked.dataset.image });
 })();
 </script>
 @endpush

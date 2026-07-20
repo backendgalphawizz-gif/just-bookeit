@@ -343,6 +343,8 @@ class CustomerApiPresenter
                 ->all(),
             'price' => $item->rentalPriceAmount(),
             'price_label' => $item->rentalPriceLabel(),
+            'requires_rental_period' => $item->requiresRentalPeriod(),
+            'advance_amount' => $item->advance_amount !== null ? (float) $item->advance_amount : null,
             'rating' => (float) ($item->vendor?->rating ?? 0),
             'audience' => $item->audience,
             'service' => $item->category ? self::category($item->category) : null,
@@ -456,23 +458,44 @@ class CustomerApiPresenter
 
     public static function measurementSummary(CustomerMeasurement $profile): array
     {
+        // Full profile payload so list/add/edit screens share the same fields.
+        return self::measurementDetail($profile);
+    }
+
+    public static function measurementDetail(CustomerMeasurement $profile): array
+    {
+        $fields = $profile->apiMeasurementFields();
+
         return [
             'id' => $profile->id,
             'name' => $profile->name,
             'measurement_type' => $profile->measurement_type,
             'updated_at' => $profile->updated_at?->format('M d, Y'),
+            'created_at' => $profile->created_at?->format('M d, Y'),
             'height_cm' => $profile->height_cm,
             'chest_cm' => $profile->chest_cm,
             'waist_cm' => $profile->waist_cm,
-        ];
-    }
-
-    public static function measurementDetail(CustomerMeasurement $profile): array
-    {
-        return [
-            ...self::measurementSummary($profile),
-            ...$profile->apiMeasurementFields(),
-            'extra_measurements' => $profile->extra_measurements ?? [],
+            'height' => $fields['height'],
+            'chest' => $fields['chest'],
+            'waist' => $fields['waist'],
+            'blouse_length' => $fields['blouse_length'],
+            'shoulder' => $fields['shoulder'],
+            'sleeve_length' => $fields['sleeve_length'],
+            'sleeve_loose' => $fields['sleeve_loose'],
+            'arm_hole' => $fields['arm_hole'],
+            'dot_point' => $fields['dot_point'],
+            'front_neck' => $fields['front_neck'],
+            'back_neck' => $fields['back_neck'],
+            'top_length' => $fields['top_length'],
+            'half_length' => $fields['half_length'],
+            'slit' => $fields['slit'],
+            'hip' => $fields['hip'],
+            'seat' => $fields['seat'],
+            'bottom_length' => $fields['bottom_length'],
+            'leg_loose' => $fields['leg_loose'],
+            'thigh' => $fields['thigh'],
+            'knees' => $fields['knees'],
+            'extra_measurements' => $profile->apiExtraMeasurements(),
         ];
     }
 
@@ -530,9 +553,10 @@ class CustomerApiPresenter
 
     public static function bookingSummary(Order $order): array
     {
-        $order->loadMissing(['vendor', 'category', 'customer', 'orderItems']);
+        $order->loadMissing(['vendor', 'category', 'customer', 'orderItems.portfolioItem', 'portfolioItem']);
         $bookingType = self::resolveBookingType($order);
         $itemsBreakdown = self::orderItemsStatusBreakdown($order);
+        $paymentSummary = app(\App\Services\Booking\BookingPaymentService::class)->summaryForOrder($order);
 
         return [
             'id' => $order->id,
@@ -549,8 +573,18 @@ class CustomerApiPresenter
             'item_title' => $order->itemDisplayName(),
             'item_image_url' => $order->itemImageUrl(),
             'size' => $order->size,
+            'requires_rental_period' => $order->requiresRentalPeriod(),
+            'rental_start_date' => $order->rental_start_date?->format('Y-m-d'),
+            'rental_end_date' => $order->rental_end_date?->format('Y-m-d'),
+            'rental_duration_days' => $order->rentalDurationDays(),
+            'event_date' => $order->event_date?->format('Y-m-d'),
             'amount' => (float) $order->amount,
+            'advance_amount' => $paymentSummary['advance_amount'],
+            'amount_paid' => $paymentSummary['amount_paid'],
+            'payable_now' => $paymentSummary['payable_now'],
+            'remaining_amount' => $paymentSummary['remaining_amount'],
             'total_amount' => $order->grandTotal(),
+            'payment_summary' => $paymentSummary,
             'booked_at' => $order->created_at?->format('d M Y, g:i A'),
             'designer' => $order->vendor ? self::designerSummary($order->vendor) : null,
             'address' => $order->delivery_address,
@@ -580,14 +614,17 @@ class CustomerApiPresenter
             'cancellation_reason' => $order->cancellation_reason,
             'customer_notes' => $order->customer_notes,
             'reference_image_urls' => $order->referenceImageUrls(),
+            'requires_rental_period' => $order->requiresRentalPeriod(),
             'rental_start_date' => $order->rental_start_date?->format('Y-m-d'),
             'rental_end_date' => $order->rental_end_date?->format('Y-m-d'),
+            'rental_duration_days' => $order->rentalDurationDays(),
+            'event_date' => $order->event_date?->format('Y-m-d'),
             'measurements' => $order->checkout_order_id
                 ? null
                 : BookingMeasurementSupport::orderMeasurements($order),
             'line_items' => $lineItems,
             'order_items' => $lineItems,
-            'payment_summary' => BookingPricingService::fromOrder($order),
+            'payment_summary' => app(\App\Services\Booking\BookingPaymentService::class)->summaryForOrder($order),
             'tracking_steps' => $order->trackBookingSteps(),
             'delivery_otp' => $order->ensureDeliveryOtp(),
             'category' => $order->category ? self::category($order->category) : null,
@@ -614,6 +651,8 @@ class CustomerApiPresenter
         ]);
         $bookingTypes = self::resolveCheckoutBookingTypes($checkout);
         $itemsBreakdown = self::checkoutItemsStatusBreakdown($checkout);
+        $paymentSummary = app(\App\Services\Booking\BookingPaymentService::class)->summaryForCheckout($checkout);
+        $grandTotal = (float) $checkout->grand_total;
 
         return [
             'id' => $checkout->id,
@@ -633,7 +672,12 @@ class CustomerApiPresenter
             'amount' => (float) $checkout->amount,
             'delivery_fee' => (float) $checkout->delivery_fee,
             'tax_amount' => (float) $checkout->tax_amount,
-            'grand_total' => (float) $checkout->grand_total,
+            'advance_amount' => $paymentSummary['advance_amount'],
+            'amount_paid' => $paymentSummary['amount_paid'],
+            'payable_now' => $paymentSummary['payable_now'],
+            'remaining_amount' => $paymentSummary['remaining_amount'],
+            'payment_summary' => $paymentSummary,
+            'grand_total' => $grandTotal,
             'amount_refunded' => (float) $checkout->amount_refunded,
             'vendor_count' => $checkout->subOrders->count(),
             'items_count' => max(1, $checkout->subOrders->sum(fn (Order $sub) => max(1, $sub->orderItems->count()))),
@@ -642,7 +686,7 @@ class CustomerApiPresenter
             'booked_at' => $checkout->created_at?->format('d M Y, g:i A'),
             'address' => $checkout->delivery_address,
             'city' => $checkout->city,
-            'can_cancel' => $checkout->payment_status === 'success'
+            'can_cancel' => in_array($checkout->payment_status, ['success', 'advance_paid'], true)
                 && $checkout->subOrders->every(fn (Order $sub) => in_array($sub->status, ['new', 'pending_acceptance'], true)),
         ];
     }
@@ -665,6 +709,7 @@ class CustomerApiPresenter
             'delivery_address' => $checkout->delivery_address,
             'rental_start_date' => $checkout->rental_start_date?->format('Y-m-d'),
             'rental_end_date' => $checkout->rental_end_date?->format('Y-m-d'),
+            'event_date' => $checkout->subOrders->first()?->event_date?->format('Y-m-d'),
             'customer_notes' => $checkout->customer_notes,
             'measurements' => BookingMeasurementSupport::checkoutMeasurements($checkout),
             'payment_method' => $checkout->payment_method,
@@ -676,8 +721,9 @@ class CustomerApiPresenter
 
     public static function subOrderSummary(Order $subOrder): array
     {
-        $subOrder->loadMissing(['vendor', 'category', 'orderItems']);
+        $subOrder->loadMissing(['vendor', 'category', 'orderItems.portfolioItem', 'portfolioItem']);
         $bookingType = self::resolveBookingType($subOrder);
+        $paymentSummary = BookingPricingService::fromOrder($subOrder);
 
         return [
             'id' => $subOrder->id,
@@ -693,7 +739,10 @@ class CustomerApiPresenter
             'item_image_url' => $subOrder->itemImageUrl(),
             'amount' => (float) $subOrder->amount,
             'delivery_fee' => (float) $subOrder->delivery_fee,
+            'advance_amount' => $paymentSummary['advance_amount'],
+            'remaining_amount' => $paymentSummary['remaining_amount'],
             'total_amount' => $subOrder->grandTotal(),
+            'payment_summary' => $paymentSummary,
             'designer' => $subOrder->vendor ? self::designerSummary($subOrder->vendor) : null,
             'items_count' => max(1, $subOrder->orderItems->count()),
             'items_status_breakdown' => self::orderItemsStatusBreakdown($subOrder),
@@ -733,12 +782,17 @@ class CustomerApiPresenter
             'quantity' => (int) $item->quantity,
             'unit_price' => (float) $item->unit_price,
             'line_amount' => (float) $item->line_amount,
+            'advance_amount' => $item->advanceAmount(),
             'status' => $item->status,
             'status_label' => $item->statusLabel(),
             'cancellation_reason' => $item->cancellation_reason,
+            'requires_rental_period' => in_array($serviceTypeSlug, ['rented-dress', 'rented-jewellery'], true),
             'rental_start_date' => $item->rentalStartDate(),
             'rental_end_date' => $item->rentalEndDate(),
             'rental_duration_days' => $item->rentalDurationDays(),
+            'event_date' => filled($item->item_snapshot['event_date'] ?? null)
+                ? (string) $item->item_snapshot['event_date']
+                : null,
             'customer_notes' => $item->customerNotes(),
             'reference_image_urls' => $item->referenceImageUrls(),
         ];
@@ -869,6 +923,7 @@ class CustomerApiPresenter
             'sizes' => ['S', 'M', 'L', 'XL', 'XXL'],
             'measurement_types' => ['women', 'men', 'kid'],
             'max_reference_images' => 5,
+            'advance_amount' => $pricing['advance_amount'] ?? null,
             'payment_summary' => $pricing,
             'shipment_required' => (bool) ($options['shipment_required'] ?? true),
             'cart' => $options['cart'] ?? null,

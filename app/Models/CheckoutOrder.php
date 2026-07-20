@@ -20,7 +20,7 @@ class CheckoutOrder extends Model
         'refunded',
     ];
 
-    public const PAYMENT_STATUSES = ['pending', 'success', 'failed', 'refunded', 'partially_refunded'];
+    public const PAYMENT_STATUSES = ['pending', 'advance_paid', 'success', 'failed', 'refunded', 'partially_refunded'];
 
     protected $fillable = [
         'order_number',
@@ -32,6 +32,8 @@ class CheckoutOrder extends Model
         'amount',
         'delivery_fee',
         'tax_amount',
+        'advance_amount',
+        'amount_paid',
         'grand_total',
         'amount_refunded',
         'delivery_address',
@@ -54,6 +56,8 @@ class CheckoutOrder extends Model
             'amount' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'tax_amount' => 'decimal:2',
+            'advance_amount' => 'decimal:2',
+            'amount_paid' => 'decimal:2',
             'grand_total' => 'decimal:2',
             'amount_refunded' => 'decimal:2',
             'paid_at' => 'datetime',
@@ -108,11 +112,11 @@ class CheckoutOrder extends Model
 
     public function scopePaymentConfirmed(Builder $query): Builder
     {
-        return $query->where('payment_status', 'success');
+        return $query->whereIn('payment_status', ['success', 'advance_paid']);
     }
 
     public function isPaymentConfirmed(): bool
     {
-        return $this->payment_status === 'success';
+        return in_array($this->payment_status, ['success', 'advance_paid'], true);
     }
 }

@@ -19,7 +19,7 @@ class MeasurementController extends ApiController
         $profiles = $customer->measurements()->latest('updated_at')->get();
 
         return $this->success([
-            'items' => $profiles->map(fn (CustomerMeasurement $profile) => CustomerApiPresenter::measurementSummary($profile))->values()->all(),
+            'items' => $profiles->map(fn (CustomerMeasurement $profile) => CustomerApiPresenter::measurementDetail($profile))->values()->all(),
         ]);
     }
 

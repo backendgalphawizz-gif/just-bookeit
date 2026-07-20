@@ -119,7 +119,27 @@ class PortfolioItem extends Model
 
     public function rentalPriceLabelFor(?PortfolioItemVariant $variant = null): string
     {
-        return '₹'.number_format((int) round($this->dailyRateFor($variant)), 0).' / day';
+        $amount = '₹'.number_format((int) round($this->dailyRateFor($variant)), 0);
+
+        return $this->requiresRentalPeriod() ? $amount.' / day' : $amount;
+    }
+
+    public function serviceCategorySlug(): ?string
+    {
+        $this->loadMissing('category');
+
+        return $this->category?->slug;
+    }
+
+    public function isFashionDesignerService(): bool
+    {
+        return $this->serviceCategorySlug() === 'fashion-designer';
+    }
+
+    /** Rental dress/jewellery need a period; fashion designer is a flat booking. */
+    public function requiresRentalPeriod(): bool
+    {
+        return in_array($this->serviceCategorySlug(), ['rented-dress', 'rented-jewellery'], true);
     }
 
     public function damageDeductions(): HasMany
@@ -237,7 +257,9 @@ class PortfolioItem extends Model
 
     public function rentalPriceLabel(): string
     {
-        return '₹'.number_format($this->rentalPriceAmount(), 0).' / day';
+        $amount = '₹'.number_format($this->rentalPriceAmount(), 0);
+
+        return $this->requiresRentalPeriod() ? $amount.' / day' : $amount;
     }
 
     public function isApprovedForCatalog(): bool

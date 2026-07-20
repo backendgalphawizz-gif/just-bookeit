@@ -123,7 +123,9 @@ class BookingController extends ApiController
 
         $options = [
             'shipment_required' => $request->boolean('shipment_required', true),
-            'cart' => $this->cart->apiPayload($customer),
+            'cart' => $this->cart->apiPayload($customer, [
+                'shipment_required' => $request->boolean('shipment_required', true),
+            ]),
             'cart_item_status' => $this->cart->itemStatusForProduct($customer, $item->id),
         ];
 
@@ -149,6 +151,7 @@ class BookingController extends ApiController
             'pincode' => ['nullable', 'string', 'max:10'],
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+            'event_date' => ['nullable', 'date'],
             'shipment_required' => ['nullable', 'boolean'],
             'measurement_id' => ['nullable', 'string'],
             'reference_images' => ['nullable', 'array', 'max:5'],
@@ -162,12 +165,22 @@ class BookingController extends ApiController
         abort_unless($item->status === 'approved', 422, 'This product is not available for booking.');
         abort_unless($item->vendor && $item->vendor->status === 'active', 422, 'Designer is not available.');
 
+        if ($item->requiresRentalPeriod() && (empty($data['rental_start_date']) || empty($data['rental_end_date']))) {
+            return $this->error('Rental start and end dates are required for this product.', 422);
+        }
+
+        // Fashion designer: store rental dates only when the app actually sends both.
+        $rentalStart = $data['rental_start_date'] ?? null;
+        $rentalEnd = $data['rental_end_date'] ?? null;
+        if (! $item->requiresRentalPeriod() && (! $rentalStart || ! $rentalEnd)) {
+            $rentalStart = null;
+            $rentalEnd = null;
+        }
+
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'shipment_required' => $request->boolean('shipment_required', true),
-            'rental_days' => BookingPricingService::rentalDays(
-                $data['rental_start_date'] ?? null,
-                $data['rental_end_date'] ?? null,
-            ),
+            'rental_days' => BookingPricingService::rentalDays($rentalStart, $rentalEnd),
+            'requires_rental_period' => $item->requiresRentalPeriod(),
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
@@ -186,14 +199,15 @@ class BookingController extends ApiController
             'category_id' => $item->category_id,
             'portfolio_item_id' => $item->id,
             'subcategory_id' => $item->subcategory_id,
-            'order_type' => 'rental',
+            'order_type' => $item->requiresRentalPeriod() ? 'rental' : 'sale',
             'item_title' => $item->title,
             'item_description' => $item->description,
             'item_image_path' => $item->image_url,
             'size' => $data['size'] ?? null,
             'quantity' => 1,
-            'rental_start_date' => $data['rental_start_date'] ?? null,
-            'rental_end_date' => $data['rental_end_date'] ?? null,
+            'rental_start_date' => $rentalStart,
+            'rental_end_date' => $rentalEnd,
+            'event_date' => $data['event_date'] ?? null,
             'delivery_address' => $data['delivery_address'],
             'billing_address' => $data['billing_address'] ?? $data['delivery_address'],
             'city' => $data['city'] ?? $customer->city,
@@ -201,6 +215,8 @@ class BookingController extends ApiController
             'amount' => $pricing['subtotal'],
             'delivery_fee' => $pricing['shipping_fee'],
             'tax_amount' => $pricing['tax_amount'],
+            'advance_amount' => $pricing['advance_amount'] ?? 0,
+            'amount_paid' => 0,
             'customer_notes' => $notes !== '' ? $notes : null,
             'measure_height_cm' => $measurements['measure_height_cm'],
             'measure_chest_cm' => $measurements['measure_chest_cm'],
@@ -247,6 +263,9 @@ class BookingController extends ApiController
             'pincode' => ['nullable', 'string', 'max:10'],
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'event_date' => ['nullable', 'date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'measurement_id' => ['nullable', 'integer'],
             'measurement_profile_id' => ['nullable', 'integer'],

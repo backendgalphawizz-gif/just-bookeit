@@ -21,10 +21,14 @@ class WebBookingService
     {
         abort_unless($item->isCatalogAvailable(), 404);
 
-        $rentalDays = BookingPricingService::rentalDays(
-            $data['rental_start_date'] ?? null,
-            $data['rental_end_date'] ?? null,
-        );
+        $rentalStart = $data['rental_start_date'] ?? null;
+        $rentalEnd = $data['rental_end_date'] ?? null;
+        if (! $item->requiresRentalPeriod() && (! $rentalStart || ! $rentalEnd)) {
+            $rentalStart = null;
+            $rentalEnd = null;
+        }
+
+        $rentalDays = BookingPricingService::rentalDays($rentalStart, $rentalEnd);
 
         $variant = null;
         if (! empty($data['portfolio_item_variant_id'])) {
@@ -34,6 +38,7 @@ class WebBookingService
         $pricing = BookingPricingService::forPortfolioItem($item, [
             'shipment_required' => (bool) ($data['shipment_required'] ?? true),
             'rental_days' => $rentalDays,
+            'requires_rental_period' => $item->requiresRentalPeriod(),
             'daily_rate' => $item->dailyRateFor($variant),
         ]);
 
@@ -53,15 +58,16 @@ class WebBookingService
             'category_id' => $item->category_id,
             'portfolio_item_id' => $item->id,
             'subcategory_id' => $item->subcategory_id,
-            'order_type' => 'rental',
+            'order_type' => $item->requiresRentalPeriod() ? 'rental' : 'sale',
             'item_title' => $item->title,
             'item_description' => $item->description,
             'item_image_path' => $variant?->image_path ?: $item->image_url,
             'size' => $variant?->size ?? ($data['size'] ?? null),
             'color' => $variant?->color ?? null,
             'quantity' => 1,
-            'rental_start_date' => $data['rental_start_date'] ?? null,
-            'rental_end_date' => $data['rental_end_date'] ?? null,
+            'rental_start_date' => $rentalStart,
+            'rental_end_date' => $rentalEnd,
+            'event_date' => $data['event_date'] ?? null,
             'delivery_address' => $data['delivery_address'],
             'billing_address' => $data['billing_address'] ?? $data['delivery_address'],
             'city' => $data['city'] ?? $customer->city,

@@ -58,26 +58,37 @@
                 </div>
             @endif
 
-            <div class="jbw-overview-card">
-                <div class="jbw-overview-card-head">
-                    <p class="jbw-overview-label">Rental Period</p>
-                    <span class="jbw-overview-hint" id="booking-rental-hint">
-                        {{ ($pricing['rental_days'] ?? 1) }} {{ Str::plural('day', $pricing['rental_days'] ?? 1) }}
-                    </span>
-                </div>
-                <div class="jbw-booking-grid-2">
-                    <div class="jbw-field">
-                        <label class="jbw-label" for="rental_start_date">Start date</label>
-                        <input type="date" id="rental_start_date" name="rental_start_date" class="jbw-input" value="{{ old('rental_start_date') }}" min="{{ now()->format('Y-m-d') }}" required>
+            @if ($item->requiresRentalPeriod())
+                <div class="jbw-overview-card">
+                    <div class="jbw-overview-card-head">
+                        <p class="jbw-overview-label">Rental Period</p>
+                        <span class="jbw-overview-hint" id="booking-rental-hint">
+                            {{ ($pricing['rental_days'] ?? $pricing['billing_days'] ?? 1) }} {{ Str::plural('day', $pricing['rental_days'] ?? $pricing['billing_days'] ?? 1) }}
+                        </span>
                     </div>
-                    <div class="jbw-field">
-                        <label class="jbw-label" for="rental_end_date">End date</label>
-                        <input type="date" id="rental_end_date" name="rental_end_date" class="jbw-input" value="{{ old('rental_end_date') }}" min="{{ now()->format('Y-m-d') }}" required>
+                    <div class="jbw-booking-grid-2">
+                        <div class="jbw-field">
+                            <label class="jbw-label" for="rental_start_date">Start date</label>
+                            <input type="date" id="rental_start_date" name="rental_start_date" class="jbw-input" value="{{ old('rental_start_date') }}" min="{{ now()->format('Y-m-d') }}" required>
+                        </div>
+                        <div class="jbw-field">
+                            <label class="jbw-label" for="rental_end_date">End date</label>
+                            <input type="date" id="rental_end_date" name="rental_end_date" class="jbw-input" value="{{ old('rental_end_date') }}" min="{{ now()->format('Y-m-d') }}" required>
+                        </div>
                     </div>
+                    @error('rental_start_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
+                    @error('rental_end_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
                 </div>
-                @error('rental_start_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
-                @error('rental_end_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
-            </div>
+            @else
+                <div class="jbw-overview-card">
+                    <p class="jbw-overview-label">Event date (optional)</p>
+                    <div class="jbw-field">
+                        <label class="jbw-label" for="event_date">When do you need this?</label>
+                        <input type="date" id="event_date" name="event_date" class="jbw-input" value="{{ old('event_date') }}" min="{{ now()->format('Y-m-d') }}">
+                    </div>
+                    @error('event_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
+                </div>
+            @endif
 
             <div class="jbw-overview-card">
                 <p class="jbw-overview-label">Delivery address</p>
@@ -192,7 +203,16 @@
             <div class="jbw-overview-card jbw-overview-card--accent" id="booking-payment-summary">
                 <p class="jbw-overview-label">Payment Summary</p>
                 <div class="jbw-payment-lines" style="margin-bottom:0">
-                    <div><span id="booking-rental-label">Rental ({{ $pricing['rental_days'] ?? 1 }} {{ Str::plural('day', $pricing['rental_days'] ?? 1) }})</span><span id="booking-line-subtotal">₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span></div>
+                    <div>
+                        <span id="booking-rental-label">
+                            @if ($item->requiresRentalPeriod())
+                                Rental ({{ $pricing['rental_days'] ?? $pricing['billing_days'] ?? 1 }} {{ Str::plural('day', $pricing['rental_days'] ?? $pricing['billing_days'] ?? 1) }})
+                            @else
+                                Service amount
+                            @endif
+                        </span>
+                        <span id="booking-line-subtotal">₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span>
+                    </div>
                     <div><span>Delivery</span><span id="booking-line-delivery">₹{{ number_format($pricing['shipping_fee'] ?? 150, 0) }}</span></div>
                     <div><span>GST &amp; tax</span><span id="booking-line-tax">₹{{ number_format($pricing['tax_amount'] ?? 0, 0) }}</span></div>
                 </div>
@@ -244,8 +264,13 @@
                 const { pricing } = await res.json();
                 if (!pricing) return;
 
-                const days = pricing.rental_days || 1;
-                document.getElementById('booking-rental-label').textContent = `Rental (${days} ${dayLabel(days)})`;
+                const days = pricing.rental_days || pricing.billing_days || 1;
+                const rentalLabel = document.getElementById('booking-rental-label');
+                if (rentalLabel) {
+                    rentalLabel.textContent = pricing.requires_rental_period
+                        ? `Rental (${days} ${dayLabel(days)})`
+                        : 'Service amount';
+                }
                 const hint = document.getElementById('booking-rental-hint');
                 if (hint) hint.textContent = `${days} ${dayLabel(days)}`;
                 document.getElementById('booking-line-subtotal').textContent = formatInr(pricing.subtotal);

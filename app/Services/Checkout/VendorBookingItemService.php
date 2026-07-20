@@ -118,7 +118,7 @@ class VendorBookingItemService
             ]);
 
             $refund = null;
-            if ($booking->checkout_order_id !== null && $booking->payment_status === 'success') {
+            if ($booking->checkout_order_id !== null && in_array($booking->payment_status, ['success', 'advance_paid'], true)) {
                 $refund = $this->refunds->forRejectedLineItem($booking->fresh(['orderItems', 'checkoutOrder']), $item->fresh(), $reason);
             }
 
@@ -196,7 +196,7 @@ class VendorBookingItemService
 
     protected function assertRespondable(Order $booking): void
     {
-        if ($booking->payment_status !== 'success') {
+        if (! in_array($booking->payment_status, ['success', 'advance_paid'], true)) {
             throw new InvalidArgumentException('This booking is not paid yet.');
         }
 

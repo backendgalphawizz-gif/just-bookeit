@@ -1498,6 +1498,98 @@
         margin-top: 0.25rem;
     }
 
+    .jb-measure-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .jb-measure-type {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        background: rgb(241 245 249);
+        color: rgb(71 85 105);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: capitalize;
+    }
+
+    .jb-measure-section {
+        margin: 0.75rem 0 0.4rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgb(100 116 139);
+    }
+
+    .jb-measure-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    .jb-measure-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        padding: 0.45rem 0.55rem;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.5rem;
+        background: #fff;
+        min-width: 0;
+    }
+
+    .jb-measure-cell-label {
+        font-size: 0.625rem;
+        font-weight: 600;
+        color: rgb(148 163 184);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        line-height: 1.2;
+    }
+
+    .jb-measure-cell-value {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+        line-height: 1.25;
+    }
+
+    .jb-schedule-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .jb-schedule-item {
+        padding: 0.65rem 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.625rem;
+        background: rgb(248 250 252);
+    }
+
+    .jb-schedule-label {
+        display: block;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: rgb(100 116 139);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 0.25rem;
+    }
+
+    .jb-schedule-value {
+        display: block;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
     .jb-booking-notes {
         font-size: 0.875rem;
         color: rgb(71 85 105);
@@ -1639,6 +1731,93 @@
         color: rgb(225 29 72);
     }
 
+    .jb-booking-billing {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    .jb-booking-billing-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        font-size: 0.875rem;
+        line-height: 1.35;
+    }
+
+    .jb-booking-billing-row > span:first-child,
+    .jb-booking-billing-label {
+        color: rgb(100 116 139);
+        font-weight: 500;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .jb-booking-billing-row > span:last-child,
+    .jb-booking-billing-row > strong,
+    .jb-booking-billing-value {
+        color: rgb(15 23 42);
+        font-weight: 650;
+        text-align: right;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .jb-booking-billing-row--total {
+        margin-top: 0.35rem;
+        padding-top: 0.7rem;
+        border-top: 1px solid rgb(226 232 240);
+        font-size: 0.9375rem;
+    }
+
+    .jb-booking-billing-row--total > span:first-child,
+    .jb-booking-billing-row--total .jb-booking-billing-label {
+        color: rgb(15 23 42);
+        font-weight: 700;
+    }
+
+    .jb-booking-billing-row--total > strong,
+    .jb-booking-billing-row--total .jb-booking-billing-value {
+        font-size: 1.05rem;
+        font-weight: 800;
+    }
+
+    .jb-booking-billing-row--accent > span:last-child,
+    .jb-booking-billing-row--accent .jb-booking-billing-value {
+        color: rgb(194 65 12);
+    }
+
+    .jb-booking-billing-row--muted > span:last-child,
+    .jb-booking-billing-row--muted .jb-booking-billing-value {
+        color: rgb(71 85 105);
+    }
+
+    .jb-booking-billing-meta {
+        margin-top: 0.85rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed rgb(226 232 240);
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .jb-booking-billing-meta p {
+        margin: 0;
+        font-size: 0.8125rem;
+        color: rgb(100 116 139);
+    }
+
+    .jb-booking-billing-meta strong {
+        color: rgb(51 65 85);
+        font-weight: 650;
+        text-transform: capitalize;
+    }
+
+    .jb-booking-card--accent .jb-booking-billing-row--total {
+        border-top-color: rgba(148, 163, 184, 0.45);
+    }
+
     .jb-booking-payment-total {
         display: flex;
         justify-content: space-between;
@@ -1689,8 +1868,10 @@
     }
 
     @media (max-width: 639px) {
-        .jb-booking-measures {
-            grid-template-columns: 1fr;
+        .jb-booking-measures,
+        .jb-measure-grid,
+        .jb-schedule-grid {
+            grid-template-columns: 1fr 1fr;
         }
 
         .jb-booking-product-row {
@@ -1701,6 +1882,12 @@
         .jb-booking-product-placeholder {
             width: 100%;
             height: 10rem;
+        }
+    }
+
+    @media (min-width: 640px) and (max-width: 1023px) {
+        .jb-measure-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
     }
 

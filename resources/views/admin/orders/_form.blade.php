@@ -138,7 +138,7 @@
 
 <p class="jb-form-section-title sm:col-span-2">Status</p>
 <x-admin.form-select label="Payment status" name="payment_status" :required="true">
-    @foreach (['pending','success','failed','refunded'] as $s)
+    @foreach (['pending','advance_paid','success','failed','refunded'] as $s)
         <option value="{{ $s }}" @selected(old('payment_status', $order?->payment_status ?? 'pending') === $s)>{{ ucfirst($s) }}</option>
     @endforeach
 </x-admin.form-select>

@@ -142,18 +142,34 @@
                         <p class="text-sm text-slate-500">No designer assigned</p>
                     @endif
                 </div>
-                @if ($order->isRental())
-                    <div class="jb-booking-card jb-booking-card--compact">
+                @if ($order->requiresRentalPeriod() || $order->rental_start_date || $order->rental_end_date)
+                    <div class="jb-booking-card jb-booking-card--compact jb-schedule-card">
                         <h3 class="jb-booking-card-title">Rental period</h3>
-                        @if ($order->rental_start_date || $order->rental_end_date)
-                            <p class="jb-booking-rental-dates">
-                                {{ $order->rental_start_date?->format('d M') ?? '—' }}
-                                – {{ $order->rental_end_date?->format('d M') ?? '—' }}
-                            </p>
-                            <p class="jb-booking-rental-days">{{ $order->rentalDurationDays() ?? '—' }} days duration</p>
-                        @else
-                            <p class="text-sm text-slate-500">Dates not set</p>
-                        @endif
+                        <div class="jb-schedule-grid">
+                            <div class="jb-schedule-item">
+                                <span class="jb-schedule-label">Start date</span>
+                                <strong class="jb-schedule-value">{{ $order->rental_start_date?->format('d M Y') ?? 'Not set' }}</strong>
+                            </div>
+                            <div class="jb-schedule-item">
+                                <span class="jb-schedule-label">End date</span>
+                                <strong class="jb-schedule-value">{{ $order->rental_end_date?->format('d M Y') ?? 'Not set' }}</strong>
+                            </div>
+                            <div class="jb-schedule-item">
+                                <span class="jb-schedule-label">Rental duration</span>
+                                <strong class="jb-schedule-value">
+                                    @if ($order->rentalDurationDays())
+                                        {{ $order->rentalDurationDays() }} {{ \Illuminate\Support\Str::plural('day', $order->rentalDurationDays()) }}
+                                    @else
+                                        Not provided
+                                    @endif
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                @elseif ($order->event_date)
+                    <div class="jb-booking-card jb-booking-card--compact">
+                        <h3 class="jb-booking-card-title">Event date</h3>
+                        <p class="jb-booking-rental-dates">{{ $order->event_date->format('d M, Y') }}</p>
                     </div>
                 @endif
             </div>
@@ -171,25 +187,13 @@
             </div>
 
             {{-- Measurements --}}
-            <div class="jb-booking-card">
-                <div class="jb-booking-card-head">
-                    <h3 class="jb-booking-card-title mb-0" title="{{ $order->customer->name }}&apos;s profile">{{ $order->customer->name }}&apos;s profile</h3>
-                    <a href="{{ route('admin.customers.show', $order->customer) }}" class="jb-booking-link">View full profile</a>
-                </div>
-                <div class="jb-booking-measures">
-                    <div class="jb-booking-measure">
-                        <span class="jb-booking-measure-label">Height</span>
-                        <span class="jb-booking-measure-value">{{ $order->measure_height_cm ? $order->measure_height_cm.' cm' : '—' }}</span>
-                    </div>
-                    <div class="jb-booking-measure">
-                        <span class="jb-booking-measure-label">Chest</span>
-                        <span class="jb-booking-measure-value">{{ $order->measure_chest_cm ? $order->measure_chest_cm.' cm' : '—' }}</span>
-                    </div>
-                    <div class="jb-booking-measure">
-                        <span class="jb-booking-measure-label">Waist</span>
-                        <span class="jb-booking-measure-value">{{ $order->measure_waist_cm ? $order->measure_waist_cm.' cm' : '—' }}</span>
-                    </div>
-                </div>
+            @php $orderMeasurements = \App\Support\BookingMeasurementSupport::orderMeasurements($order); @endphp
+            @include('admin.orders.partials.measurements', [
+                'measurements' => $orderMeasurements,
+                'title' => $order->customer->name."'s measurements",
+            ])
+            <div class="jb-booking-card jb-booking-card--compact">
+                <a href="{{ route('admin.customers.show', $order->customer) }}" class="jb-booking-link">View full customer profile</a>
             </div>
 
             {{-- Notes --}}
@@ -279,6 +283,7 @@
             @endif
 
             {{-- Payment summary --}}
+            @php $orderPayment = app(\App\Services\Booking\BookingPaymentService::class)->summaryForOrder($order); @endphp
             <div class="jb-booking-card jb-booking-payment">
                 <h3 class="jb-booking-card-title">Payment summary</h3>
                 <dl class="jb-booking-payment-lines">
@@ -291,8 +296,23 @@
                     @if ($order->security_deposit)
                         <div><dt>Security deposit</dt><dd>₹{{ number_format($order->security_deposit, 0) }}</dd></div>
                     @endif
+                    @if (($orderPayment['advance_amount'] ?? 0) > 0)
+                        <div><dt>Advance required</dt><dd>₹{{ number_format($orderPayment['advance_amount'], 0) }}</dd></div>
+                    @endif
+                    @if (($orderPayment['amount_paid'] ?? 0) > 0)
+                        <div><dt>Amount paid</dt><dd>₹{{ number_format($orderPayment['amount_paid'], 0) }}</dd></div>
+                    @endif
+                    @if (($orderPayment['remaining_amount'] ?? 0) > 0)
+                        <div><dt>Remaining</dt><dd>₹{{ number_format($orderPayment['remaining_amount'], 0) }}</dd></div>
+                    @endif
+                    @if (($orderPayment['payable_now'] ?? 0) > 0)
+                        <div><dt>Payable now</dt><dd>₹{{ number_format($orderPayment['payable_now'], 0) }}</dd></div>
+                    @endif
                     @if ($order->isRental() && $order->rentalDurationDays())
                         <div><dt>Rental duration</dt><dd>{{ $order->rentalDurationDays() }} days</dd></div>
+                    @endif
+                    @if ($order->event_date)
+                        <div><dt>Event date</dt><dd>{{ $order->event_date->format('M d, Y') }}</dd></div>
                     @endif
             </dl>
                 <div class="jb-booking-payment-total">
@@ -300,8 +320,14 @@
                     <strong>₹{{ number_format($order->grandTotal(), 0) }}</strong>
                 </div>
                 <div class="mt-3">
-                    @include('admin.components.status-badge', ['status' => $order->payment_status, 'label' => ucfirst($order->payment_status)])
+                    @include('admin.components.status-badge', ['status' => $order->payment_status, 'label' => ucfirst(str_replace('_', ' ', $order->payment_status))])
                 </div>
+                @if ($order->payment_method)
+                    <p class="jb-booking-product-meta" style="margin-top:0.5rem">Method: {{ strtoupper(str_replace('_', ' ', $order->payment_method)) }}</p>
+                @endif
+                @if ($order->paid_at)
+                    <p class="jb-booking-product-meta">Paid: {{ $order->paid_at->format('M d, Y · H:i') }}</p>
+                @endif
             </div>
 
             @if ($order->refund || $order->dispute)

@@ -14,7 +14,7 @@ class RefundRequestService
             return null;
         }
 
-        if ($order->status !== 'cancelled' || $order->payment_status !== 'success') {
+        if ($order->status !== 'cancelled' || ! in_array($order->payment_status, ['success', 'advance_paid'], true)) {
             return null;
         }
 
@@ -22,7 +22,10 @@ class RefundRequestService
             return $order->refund;
         }
 
-        $amount = $order->grandTotal();
+        $amount = round((float) ($order->amount_paid ?? 0), 2);
+        if ($amount <= 0) {
+            $amount = $order->grandTotal();
+        }
 
         if ($amount <= 0) {
             return null;
