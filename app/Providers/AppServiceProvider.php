@@ -13,6 +13,7 @@ use App\View\Composers\VendorLayoutComposer;
 use App\View\Composers\WebLayoutComposer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Broadcast::routes(['middleware' => ['web', 'auth:customer,vendor']]);
+
         if (! $this->app->runningInConsole()) {
             $request = request();
 

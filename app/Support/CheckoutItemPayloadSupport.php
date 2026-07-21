@@ -11,6 +11,111 @@ use InvalidArgumentException;
 class CheckoutItemPayloadSupport
 {
     /**
+     * Multipart uploads often send files as items[0][reference_images][], which makes PHP
+     * overwrite a sibling form field named "items" (JSON string). Prefer items_json in that case.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function hydrateItemsPayload(array $data, ?Request $request = null): array
+    {
+        if ($request) {
+            foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'from_date', 'to_date', 'items_json'] as $key) {
+                if (blank($data[$key] ?? null) && $request->filled($key)) {
+                    $data[$key] = $request->input($key);
+                }
+            }
+
+            // Nested multipart items[0][rental_start_date] survives alongside file uploads.
+            if (blank($data['items'] ?? null) || (is_array($data['items'] ?? null) && ! self::parseItemsCandidate($data['items']))) {
+                $requestItems = $request->input('items');
+                if (is_array($requestItems) && self::parseItemsCandidate($requestItems)) {
+                    $data['items'] = $requestItems;
+                }
+            }
+        }
+
+        $resolved = self::resolveItemsList(
+            $data['items_json'] ?? ($request?->input('items_json')),
+            $data['items'] ?? ($request?->input('items')),
+        );
+
+        if ($resolved !== null) {
+            $data['items'] = $resolved;
+        }
+
+        unset($data['items_json']);
+
+        return $data;
+    }
+
+    /**
+     * @return list<array<string, mixed>>|null
+     */
+    public static function resolveItemsList(mixed $itemsJson, mixed $items): ?array
+    {
+        foreach ([$itemsJson, $items] as $candidate) {
+            $parsed = self::parseItemsCandidate($candidate);
+            if ($parsed !== null) {
+                return $parsed;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<array<string, mixed>>|null
+     */
+    protected static function parseItemsCandidate(mixed $candidate): ?array
+    {
+        if ($candidate === null || $candidate === '') {
+            return null;
+        }
+
+        if (is_string($candidate)) {
+            $decoded = json_decode($candidate, true);
+            if (! is_array($decoded)) {
+                return null;
+            }
+            $candidate = $decoded;
+        }
+
+        if (! is_array($candidate)) {
+            return null;
+        }
+
+        $rows = [];
+        foreach (array_values($candidate) as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            // Ignore PHP's file-only shell left after items JSON was clobbered by items[N][... ] files.
+            if (! self::rowHasItemIdentity($row)) {
+                continue;
+            }
+
+            $rows[] = $row;
+        }
+
+        return $rows === [] ? null : $rows;
+    }
+
+    protected static function rowHasItemIdentity(array $row): bool
+    {
+        return filled($row['cart_item_id'] ?? null)
+            || filled($row['portfolio_item_id'] ?? null)
+            || filled($row['rental_start_date'] ?? null)
+            || filled($row['rental_end_date'] ?? null)
+            || filled($row['start_date'] ?? null)
+            || filled($row['end_date'] ?? null)
+            || filled($row['service_type'] ?? null)
+            || filled($row['customer_notes'] ?? null)
+            || filled($row['size'] ?? null);
+    }
+
+    /**
      * Parse items[] from JSON string or array and index by cart/product key.
      *
      * @return array<string, array<string, mixed>>
@@ -37,6 +142,10 @@ class CheckoutItemPayloadSupport
 
         foreach (array_values($items) as $index => $row) {
             if (! is_array($row)) {
+                continue;
+            }
+
+            if (! self::rowHasItemIdentity($row) && self::referenceImageFiles($request, $index) === []) {
                 continue;
             }
 
@@ -132,10 +241,18 @@ class CheckoutItemPayloadSupport
             return null;
         }
 
+        if (is_array($value)) {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return \Carbon\Carbon::instance($value)->toDateString();
+        }
+
         try {
-            return \Carbon\Carbon::parse((string) $value)->toDateString();
+            return \Carbon\Carbon::parse(trim((string) $value))->toDateString();
         } catch (\Throwable) {
-            return is_string($value) ? $value : null;
+            return is_string($value) ? trim($value) : null;
         }
     }
 
@@ -242,6 +359,15 @@ class CheckoutItemPayloadSupport
             "items.{$index}.reference_images.*",
             "items[{$index}][reference_images]",
             "items[{$index}][reference_images][]",
+            // Non-colliding alternatives when items_json holds the line payload.
+            "item_images.{$index}",
+            "item_images.{$index}.*",
+            "item_images[{$index}]",
+            "item_images[{$index}][]",
+            "reference_images.{$index}",
+            "reference_images.{$index}.*",
+            "reference_images[{$index}]",
+            "reference_images[{$index}][]",
         ];
 
         foreach ($candidates as $key) {

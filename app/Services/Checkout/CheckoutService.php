@@ -31,7 +31,7 @@ class CheckoutService
      * @param  bool  $requireRentalPeriod  When false, allow a soft preview (e.g. first checkout page load) before dates are chosen.
      * @return array<string, mixed>
      */
-    public function preview(Customer $customer, array $data, bool $requireRentalPeriod = true): array
+    public function preview(Customer $customer, array $data, bool $requireRentalPeriod = true, ?Request $request = null): array
     {
         $cartItems = $this->cart->itemsFor($customer);
 
@@ -39,6 +39,7 @@ class CheckoutService
             throw new InvalidArgumentException('Your cart is empty.');
         }
 
+        $data = CheckoutItemPayloadSupport::hydrateItemsPayload($data, $request);
         $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
 
         if ($requireRentalPeriod) {
@@ -100,6 +101,7 @@ class CheckoutService
             throw new InvalidArgumentException('Your cart is empty.');
         }
 
+        $data = CheckoutItemPayloadSupport::hydrateItemsPayload($data, $request);
         $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
         $this->assertRentalPeriodWhenNeeded($cartItems, $data);
 
@@ -378,7 +380,7 @@ class CheckoutService
 
         if (! filled($data['rental_start_date'] ?? null) || ! filled($data['rental_end_date'] ?? null)) {
             throw new InvalidArgumentException(
-                'Rental start and end dates are required for rental dress or jewellery bookings. Send rental_start_date and rental_end_date.'
+                'Rental start and end dates are required for rental dress or jewellery bookings. Send rental_start_date and rental_end_date (top-level), or include them in items_json.'
             );
         }
     }

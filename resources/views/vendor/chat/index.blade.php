@@ -18,6 +18,8 @@
     data-last-message-id="{{ $messages->last()?->id ?? 0 }}"
     data-chat-theme="vendor"
     data-chat-search="{{ request('search') }}"
+    data-viewer-role="vendor"
+    data-viewer-id="{{ auth('vendor')->id() }}"
 >
     <aside
         @class(['vp-chat-sidebar', 'vp-chat-sidebar--mobile-hide' => $activeChat])
@@ -216,6 +218,11 @@
 </div>
 
 @push('scripts')
+@php
+    $chatRealtimeViewerRole = 'vendor';
+    $chatRealtimeViewerId = auth('vendor')->id();
+@endphp
+@include('partials.chat-realtime')
 <script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
 @endpush
 @endsection

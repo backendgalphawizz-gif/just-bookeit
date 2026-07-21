@@ -19,6 +19,8 @@
         data-last-message-id="{{ $messages->last()?->id ?? 0 }}"
         data-chat-theme="customer"
         data-chat-search="{{ request('search') }}"
+        data-viewer-role="customer"
+        data-viewer-id="{{ auth('customer')->id() }}"
     >
         {{-- Mobile drawer backdrop --}}
         <div
@@ -226,6 +228,11 @@
 </div>
 
 @push('scripts')
+@php
+    $chatRealtimeViewerRole = 'customer';
+    $chatRealtimeViewerId = auth('customer')->id();
+@endphp
+@include('partials.chat-realtime')
 <script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
 @endpush
 @endsection

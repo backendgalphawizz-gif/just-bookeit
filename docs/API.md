@@ -124,6 +124,52 @@ Upload images in **Admin → Categories** when creating or editing a category.
 
 Reference images: `reference_images[]` (max 5, jpeg/png/webp, 4MB each).
 
+**Multi-item cart checkout** (`multipart/form-data` when uploading images):
+
+| Field | Notes |
+|--------|--------|
+| `rental_start_date` / `rental_end_date` | **Always send top-level** when the cart has rental dress/jewellery (single or multi). |
+| `items_json` | JSON string of cart lines. Use this instead of a text field named `items` when uploading `items[N][reference_images][]`. |
+| `items[N][…]` | Nested form fields also work (and survive with image uploads). |
+| `items[N][reference_images][]` | Optional images for line N. |
+
+**Working curl** (use `--form-string` for JSON so shells do not mangle it):
+
+```bash
+curl --location 'http://192.168.1.69:8000/api/v1/bookings' \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Bearer TOKEN' \
+  --form 'delivery_address=436, bajrang nagar, Indoree' \
+  --form 'city=Indoree' \
+  --form 'pincode=452001' \
+  --form 'shipment_required=1' \
+  --form 'rental_start_date=2026-07-22' \
+  --form 'rental_end_date=2026-07-24' \
+  --form-string 'items_json=[{"cart_item_id":42,"portfolio_item_id":1,"quantity":1,"service_type":"fashion-designer","size":"XL"},{"cart_item_id":41,"portfolio_item_id":2,"quantity":1,"service_type":"rented-jewellery","rental_start_date":"2026-07-22","rental_end_date":"2026-07-24"}]' \
+  --form 'items[0][reference_images][]=@/path/to/a.png' \
+  --form 'items[1][reference_images][]=@/path/to/b.png'
+```
+
+**Flutter FormData** (recommended):
+
+```dart
+final form = FormData.fromMap({
+  'delivery_address': address,
+  'city': city,
+  'pincode': pincode,
+  'shipment_required': 1,
+  // Required for any rental dress/jewellery in the cart:
+  'rental_start_date': '2026-07-22',
+  'rental_end_date': '2026-07-24',
+  // Do NOT use field name "items" for the JSON when also uploading items[n][reference_images][]
+  'items_json': jsonEncode(lineItems),
+});
+form.files.add(MapEntry('items[0][reference_images][]', await MultipartFile.fromFile(path0)));
+form.files.add(MapEntry('items[1][reference_images][]', await MultipartFile.fromFile(path1)));
+```
+
+**Single-item booking** (no cart / no `items_json`): send top-level `portfolio_item_id` + the same `rental_start_date` / `rental_end_date` when the product is rental dress or jewellery.
+
 ### Payment (Bearer required)
 
 | Method | Endpoint | Description |

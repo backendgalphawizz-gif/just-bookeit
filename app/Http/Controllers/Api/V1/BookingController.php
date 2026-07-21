@@ -137,7 +137,7 @@ class BookingController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
 
-        if ($request->filled('items')) {
+        if ($request->filled('items') || $request->filled('items_json')) {
             return $this->storeMultiItemCheckout($request, $customer);
         }
 
@@ -273,8 +273,22 @@ class BookingController extends ApiController
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
-            'items' => ['required'],
+            // Prefer items_json when uploading items[N][reference_images][] — a form field named
+            // "items" is overwritten by PHP when file fields use the items[...] prefix.
+            'items' => ['nullable'],
+            'items_json' => ['nullable'], // JSON string or already-decoded array
         ], BookingMeasurementSupport::checkoutValidationRules()));
+
+        if (! $request->filled('items') && ! $request->filled('items_json')) {
+            return $this->error('Send items_json (recommended) or items with the cart line payload.', 422);
+        }
+
+        // Multipart clients sometimes drop validated nullable dates; re-merge from the raw request.
+        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'event_date', 'items_json'] as $key) {
+            if ((! array_key_exists($key, $data) || blank($data[$key] ?? null)) && $request->filled($key)) {
+                $data[$key] = $request->input($key);
+            }
+        }
 
         if ($data['measurement_id'] ?? null) {
             $data['measurement_profile_id'] = $data['measurement_id'];

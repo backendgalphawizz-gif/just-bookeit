@@ -123,6 +123,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('chats', [ChatController::class, 'store'])->name('chats.store');
         Route::get('chats/{chat}/messages', [ChatController::class, 'messages'])->name('chats.messages');
         Route::post('chats/{chat}/messages', [ChatController::class, 'sendMessage'])->name('chats.messages.send');
+        Route::post('broadcasting/auth', [\Illuminate\Broadcasting\BroadcastController::class, 'authenticate'])
+            ->name('broadcasting.auth');
 
         Route::get('support-tickets', [SupportTicketController::class, 'index'])->name('support-tickets.index');
         Route::post('support-tickets', [SupportTicketController::class, 'store'])->name('support-tickets.store');
@@ -183,6 +185,8 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::get('chats/{chat}', [VendorChatController::class, 'show'])->name('chats.show');
         Route::get('chats/{chat}/messages', [VendorChatController::class, 'messages'])->name('chats.messages');
         Route::post('chats/{chat}/messages', [VendorChatController::class, 'sendMessage'])->name('chats.messages.send');
+        Route::post('broadcasting/auth', [\Illuminate\Broadcasting\BroadcastController::class, 'authenticate'])
+            ->name('broadcasting.auth');
 
         Route::get('payments', [VendorPaymentController::class, 'index'])->name('payments.index');
 

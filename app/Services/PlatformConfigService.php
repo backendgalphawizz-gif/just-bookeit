@@ -27,6 +27,7 @@ class PlatformConfigService
                 'maintenance_mode' => (bool) PlatformSetting::get('maintenance_mode', false),
                 'currency' => (string) PlatformSetting::get('currency', 'INR'),
             ],
+            'broadcasting' => \App\Support\BroadcastingConfig::clientConfig(url('/api/v1/broadcasting/auth')),
             'branding' => [
                 'platform_name' => (string) PlatformSetting::get('platform_name', 'Just Book IT'),
             ],

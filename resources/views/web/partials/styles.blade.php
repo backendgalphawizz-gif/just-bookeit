@@ -5307,9 +5307,6 @@ background: #AE2A0B;
         width: 100%;
     }
 }
-        gap: 0.75rem;
-    }
-}
 
 /* Profile shell - mobile stacks */
 @media (max-width: 899px) {

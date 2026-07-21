@@ -1005,6 +1005,127 @@
         });
     }
 
+    function normalizeRealtimeMessage(payloadMessage, viewerRole) {
+        if (!payloadMessage) {
+            return null;
+        }
+
+        return {
+            ...payloadMessage,
+            is_mine: payloadMessage.sender_type === viewerRole,
+            can_edit: false,
+            can_delete: false,
+        };
+    }
+
+    function normalizeRealtimeThread(thread, theme, container) {
+        if (!thread) {
+            return null;
+        }
+
+        const viewerRole = container.dataset.viewerRole || theme;
+        const name = viewerRole === 'vendor' ? (thread.customer_name || 'Customer') : (thread.vendor_name || 'Designer');
+        const initial = String(name || '?').charAt(0).toUpperCase();
+
+        return {
+            id: thread.id,
+            name,
+            preview: thread.preview || '',
+            time: thread.time || '',
+            avatar_url: null,
+            initial,
+            url: theme === 'vendor'
+                ? `${window.location.pathname}?chat=${thread.id}`
+                : `${window.location.pathname}?chat=${thread.id}`,
+        };
+    }
+
+    function handleRealtimePayload(container, payload, eventName) {
+        const theme = container.dataset.chatTheme || 'customer';
+        const viewerRole = container.dataset.viewerRole || theme;
+        const activeChatId = Number(container.dataset.chatId || 0);
+        const conversationId = Number(payload?.conversation_id || payload?.message?.conversation_id || 0);
+
+        if (eventName === 'deleted') {
+            const messageId = payload?.message_id;
+            if (messageId && activeChatId && conversationId === activeChatId) {
+                container.querySelector(`[data-message-id="${messageId}"]`)?.remove();
+            }
+            if (payload?.thread) {
+                promoteThread(container, normalizeRealtimeThread(payload.thread, theme, container), theme);
+            }
+            return;
+        }
+
+        if (payload?.thread) {
+            promoteThread(container, normalizeRealtimeThread(payload.thread, theme, container), theme);
+        }
+
+        if (!payload?.message || !activeChatId || conversationId !== activeChatId) {
+            return;
+        }
+
+        const message = normalizeRealtimeMessage(payload.message, viewerRole);
+        if (!message) {
+            return;
+        }
+
+        if (eventName === 'updated') {
+            const row = container.querySelector(`[data-message-id="${message.id}"]`);
+            if (row) {
+                applyMessageUpdate(row, message, theme);
+                return;
+            }
+        }
+
+        appendMessage(container, message, theme, container.dataset.chatPinnedBottom !== '0');
+    }
+
+    function bindRealtime(container) {
+        const cfg = window.JustBookChatRealtime;
+        const echo = window.Echo;
+
+        if (!cfg?.enabled || !echo || typeof echo.private !== 'function') {
+            return false;
+        }
+
+        if (container.dataset.chatRealtimeBound === '1') {
+            return true;
+        }
+
+        container.dataset.chatRealtimeBound = '1';
+
+        const theme = container.dataset.chatTheme || 'customer';
+        const viewerRole = container.dataset.viewerRole || theme;
+        const viewerId = Number(container.dataset.viewerId || cfg.viewerId || 0);
+        const chatId = Number(container.dataset.chatId || 0);
+        const createdEvent = cfg.events?.created || '.chat.message.created';
+        const updatedEvent = cfg.events?.updated || '.chat.message.updated';
+        const deletedEvent = cfg.events?.deleted || '.chat.message.deleted';
+
+        const listen = (channelName) => {
+            const channel = echo.private(channelName);
+            channel.listen(createdEvent, (payload) => handleRealtimePayload(container, payload, 'created'));
+            channel.listen(updatedEvent, (payload) => handleRealtimePayload(container, payload, 'updated'));
+            channel.listen(deletedEvent, (payload) => handleRealtimePayload(container, payload, 'deleted'));
+            return channel;
+        };
+
+        if (chatId) {
+            listen(`chat.conversation.${chatId}`);
+        }
+
+        if (viewerId) {
+            if (viewerRole === 'vendor') {
+                listen(`chat.vendor.${viewerId}`);
+            } else {
+                listen(`chat.customer.${viewerId}`);
+            }
+        }
+
+        return true;
+    }
+
     function bindContainer(container) {
         const form = container.querySelector('[data-chat-compose]');
 
@@ -1024,13 +1145,18 @@
         container.dataset.chatPinnedBottom = '1';
         scrollMessages(container, true);
 
+        const realtimeEnabled = bindRealtime(container);
+
         if (container.dataset.chatLivePolling === '1') {
             return;
         }
 
         container.dataset.chatLivePolling = '1';
 
+        // Keep a light poll as fallback (and for thread list sync) even with websockets.
         poll(container).catch(() => {});
+
+        const pollMs = realtimeEnabled ? 15000 : 2000;
 
         window.setInterval(() => {
             if (document.hidden) {
@@ -1038,7 +1164,7 @@
             }
 
             poll(container).catch(() => {});
-        }, POLL_MS);
+        }, pollMs);
     }
 
     function init() {
