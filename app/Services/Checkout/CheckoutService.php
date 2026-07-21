@@ -42,12 +42,13 @@ class CheckoutService
         $data = CheckoutItemPayloadSupport::hydrateItemsPayload($data, $request);
         $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
 
+        $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
+        $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null, $request);
+
         if ($requireRentalPeriod) {
-            $this->assertRentalPeriodWhenNeeded($cartItems, $data);
+            $this->assertRentalPeriodWhenNeeded($cartItems, $data, $lineOverrides);
         }
 
-        $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
-        $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null);
         $groups = $this->buildVendorGroups($cartItems, $data, $vendorShipments, $lineOverrides);
 
         $amount = round($groups->sum('subtotal'), 2);
@@ -103,7 +104,6 @@ class CheckoutService
 
         $data = CheckoutItemPayloadSupport::hydrateItemsPayload($data, $request);
         $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
-        $this->assertRentalPeriodWhenNeeded($cartItems, $data);
 
         $profileId = $data['measurement_profile_id'] ?? $data['measurement_id'] ?? null;
         $profile = BookingMeasurementSupport::resolveProfile($customer, $data);
@@ -116,6 +116,7 @@ class CheckoutService
 
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
         $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null, $request);
+        $this->assertRentalPeriodWhenNeeded($cartItems, $data, $lineOverrides);
         $groups = $this->buildVendorGroups($cartItems, $data, $vendorShipments, $lineOverrides);
 
         // Persist checkout-level dates from rental lines when top-level was empty.
@@ -195,6 +196,12 @@ class CheckoutService
                     'amount_paid' => 0,
                     'payment_status' => 'pending',
                     'status' => 'new',
+                    'measure_height_cm' => $measurements['measure_height_cm'],
+                    'measure_chest_cm' => $measurements['measure_chest_cm'],
+                    'measure_waist_cm' => $measurements['measure_waist_cm'],
+                    'measurement_type' => $measurements['measurement_type'],
+                    'measure_extra' => $measurements['measure_extra'],
+                    'customer_notes' => filled($data['customer_notes'] ?? null) ? trim($data['customer_notes']) : null,
                 ]);
 
                 OrderDispatchSupport::preparePickupAddress($subOrder);
@@ -202,11 +209,17 @@ class CheckoutService
                     $subOrder->saveQuietly();
                 }
 
+                $orderReferencePaths = [];
+
                 foreach ($group['items'] as $line) {
                     /** @var PortfolioItem $portfolioItem */
                     $portfolioItem = $line['portfolio_item'];
                     $variant = $line['variant'] ?? null;
                     $override = $line['override'] ?? [];
+                    $lineReferencePaths = is_array($override['reference_image_paths'] ?? null)
+                        ? array_values(array_filter($override['reference_image_paths'], 'is_string'))
+                        : [];
+                    $orderReferencePaths = array_merge($orderReferencePaths, $lineReferencePaths);
 
                     OrderItem::query()->create([
                         'order_id' => $subOrder->id,
@@ -235,6 +248,12 @@ class CheckoutService
                             $data,
                             $portfolioItem->requiresRentalPeriod()
                         )),
+                    ]);
+                }
+
+                if ($orderReferencePaths !== []) {
+                    $subOrder->update([
+                        'reference_image_paths' => array_values(array_unique($orderReferencePaths)),
                     ]);
                 }
 
@@ -360,27 +379,46 @@ class CheckoutService
     }
 
     /**
-     * Rental dress/jewellery bookings must include a rental window so admin can show duration.
+     * Each rental dress/jewellery cart line needs its own rental window.
+     * Fashion designer lines never require dates.
      *
      * @param  Collection<int, CartItem>  $cartItems
      * @param  array<string, mixed>  $data
+     * @param  array<string, array<string, mixed>>  $lineOverrides
      */
-    protected function assertRentalPeriodWhenNeeded(Collection $cartItems, array $data): void
+    protected function assertRentalPeriodWhenNeeded(Collection $cartItems, array $data, array $lineOverrides = []): void
     {
         $cartItems->loadMissing('portfolioItem.category');
 
-        $needsRentalPeriod = $cartItems->contains(
+        $rentalLines = $cartItems->filter(
             fn (CartItem $item) => (bool) $item->portfolioItem?->requiresRentalPeriod()
         );
 
-        if (! $needsRentalPeriod) {
+        if ($rentalLines->isEmpty()) {
             return;
         }
 
-        if (! filled($data['rental_start_date'] ?? null) || ! filled($data['rental_end_date'] ?? null)) {
-            throw new InvalidArgumentException(
-                'Rental start and end dates are required for rental dress or jewellery bookings. Send rental_start_date and rental_end_date (top-level), or include them in items_json.'
-            );
+        $missing = [];
+
+        foreach ($rentalLines as $cartItem) {
+            $override = CheckoutItemPayloadSupport::resolveOverride($lineOverrides, $cartItem);
+        // Prefer dates on the cart line itself. Top-level dates are only a shared fallback.
+            $window = CheckoutItemPayloadSupport::rentalWindow($override, $data, true);
+
+            if (! filled($window['start'] ?? null) || ! filled($window['end'] ?? null)) {
+                $title = $cartItem->portfolioItem?->title ?: ('cart item #'.$cartItem->id);
+                $missing[] = $title;
+            }
         }
+
+        if ($missing === []) {
+            return;
+        }
+
+        throw new InvalidArgumentException(
+            'Rental start and end dates are required for each rental dress/jewellery item ('
+            .implode(', ', $missing)
+            .'). Put rental_start_date and rental_end_date on that line inside items / items_json. Fashion designer items do not need dates.'
+        );
     }
 }

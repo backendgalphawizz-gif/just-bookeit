@@ -168,53 +168,132 @@ class BookingMeasurementSupport
     /** @return array<string, mixed> */
     public static function checkoutMeasurements(CheckoutOrder $checkout): array
     {
-        $extra = $checkout->measure_extra ?? [];
-        $fields = [];
-
-        foreach (CustomerMeasurement::EXTRA_FIELDS as $field) {
-            $fields[$field] = isset($extra[$field]) ? (string) $extra[$field] : null;
-        }
-
-        return [
-            'measurement_type' => $checkout->measurement_type,
-            'height_cm' => $checkout->measure_height_cm,
-            'chest_cm' => $checkout->measure_chest_cm,
-            'waist_cm' => $checkout->measure_waist_cm,
-            ...$fields,
-            'extra_measurements' => $extra,
-        ];
+        return self::presentMeasurements(
+            measurementType: $checkout->measurement_type,
+            heightCm: $checkout->measure_height_cm !== null ? (int) $checkout->measure_height_cm : null,
+            chestCm: $checkout->measure_chest_cm !== null ? (int) $checkout->measure_chest_cm : null,
+            waistCm: $checkout->measure_waist_cm !== null ? (int) $checkout->measure_waist_cm : null,
+            extra: is_array($checkout->measure_extra) ? $checkout->measure_extra : [],
+            size: null,
+            name: null,
+        );
     }
 
     /** @return array<string, mixed> */
     public static function orderMeasurements(Order $order): array
     {
-        $extra = $order->measure_extra ?? [];
+        $order->loadMissing(['checkoutOrder', 'customer']);
+
+        $checkout = $order->checkoutOrder;
+        $profileName = $order->customer?->measurements()->latest('id')->value('name');
+
+        // Sub-orders historically stored measurements only on the parent checkout.
+        if ($checkout && blank($order->measurement_type) && blank($order->measure_extra)
+            && $order->measure_height_cm === null && $order->measure_chest_cm === null && $order->measure_waist_cm === null) {
+            return self::presentMeasurements(
+                measurementType: $checkout->measurement_type ?? self::parseMeasurementTypeFromNotes($order),
+                heightCm: $checkout->measure_height_cm !== null ? (int) $checkout->measure_height_cm : null,
+                chestCm: $checkout->measure_chest_cm !== null ? (int) $checkout->measure_chest_cm : null,
+                waistCm: $checkout->measure_waist_cm !== null ? (int) $checkout->measure_waist_cm : null,
+                extra: is_array($checkout->measure_extra) ? $checkout->measure_extra : [],
+                size: $order->size,
+                name: $profileName ? (string) $profileName : null,
+            );
+        }
+
+        $extra = is_array($order->measure_extra) ? $order->measure_extra : [];
+
+        return self::presentMeasurements(
+            measurementType: $order->measurement_type ?? self::parseMeasurementTypeFromNotes($order),
+            heightCm: $order->measure_height_cm !== null ? (int) $order->measure_height_cm : null,
+            chestCm: $order->measure_chest_cm !== null ? (int) $order->measure_chest_cm : null,
+            waistCm: $order->measure_waist_cm !== null ? (int) $order->measure_waist_cm : null,
+            extra: $extra,
+            size: $order->size,
+            name: $profileName ? (string) $profileName : null,
+        );
+    }
+
+    /**
+     * Flat fields (backward compatible) + named sections for mobile UI.
+     *
+     * @param  array<string, mixed>  $extra
+     * @return array<string, mixed>
+     */
+    public static function presentMeasurements(
+        ?string $measurementType,
+        ?int $heightCm,
+        ?int $chestCm,
+        ?int $waistCm,
+        array $extra = [],
+        ?string $size = null,
+        ?string $name = null,
+    ): array {
         $fields = [];
 
         foreach (CustomerMeasurement::EXTRA_FIELDS as $field) {
-            $fields[$field] = isset($extra[$field]) ? (string) $extra[$field] : null;
+            $fields[$field] = isset($extra[$field]) && $extra[$field] !== ''
+                ? (string) $extra[$field]
+                : null;
         }
 
-        $fields['height'] = $order->measure_height_cm !== null
-            ? (string) $order->measure_height_cm
+        $fields['height'] = $heightCm !== null
+            ? (string) $heightCm
             : (isset($extra['height']) ? (string) $extra['height'] : null);
-
-        $fields['chest'] = $order->measure_chest_cm !== null
-            ? (string) $order->measure_chest_cm
+        $fields['chest'] = $chestCm !== null
+            ? (string) $chestCm
             : (isset($extra['chest']) ? (string) $extra['chest'] : null);
-
-        $fields['waist'] = $order->measure_waist_cm !== null
-            ? (string) $order->measure_waist_cm
+        $fields['waist'] = $waistCm !== null
+            ? (string) $waistCm
             : (isset($extra['waist']) ? (string) $extra['waist'] : null);
 
+        $labelToField = WebMeasurementForm::labelToField();
+
+        $sections = [];
+        foreach (WebMeasurementForm::sectionsForType($measurementType) as $sectionName => $labels) {
+            $sectionFields = [];
+            foreach ($labels as $label) {
+                $key = $labelToField[$label] ?? null;
+                if (! $key) {
+                    continue;
+                }
+                $sectionFields[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'value' => $fields[$key] ?? null,
+                ];
+            }
+            $sections[] = [
+                'name' => $sectionName,
+                'fields' => $sectionFields,
+            ];
+        }
+
+        // Core height/chest/waist not always in the section map for every type — expose under Basics when present.
+        $basics = array_values(array_filter([
+            ['key' => 'height', 'label' => 'Height (cm)', 'value' => $fields['height']],
+            ['key' => 'chest', 'label' => 'Chest (cm)', 'value' => $fields['chest']],
+            ['key' => 'waist', 'label' => 'Waist (cm)', 'value' => $fields['waist']],
+        ], fn (array $row) => filled($row['value'])));
+
+        if ($basics !== []) {
+            array_unshift($sections, [
+                'name' => 'Basics',
+                'fields' => $basics,
+            ]);
+        }
+
         return [
-            'measurement_type' => $order->measurement_type ?? self::parseMeasurementTypeFromNotes($order),
-            'size' => $order->size,
-            'height_cm' => $order->measure_height_cm,
-            'chest_cm' => $order->measure_chest_cm,
-            'waist_cm' => $order->measure_waist_cm,
+            'name' => $name,
+            'measurement_type' => $measurementType,
+            'size' => $size,
+            'height_cm' => $heightCm,
+            'chest_cm' => $chestCm,
+            'waist_cm' => $waistCm,
             ...$fields,
             'extra_measurements' => $extra,
+            'sections' => $sections,
+            'section_names' => array_values(array_map(fn (array $section) => $section['name'], $sections)),
         ];
     }
 

@@ -16,12 +16,13 @@
         'legal' => 'Legal & policies',
         'refund_rules' => 'Refund rules',
         'commission' => 'Commission',
+        'discovery' => 'Discovery radius',
     ];
 @endphp
 
 @section('title', 'Settings')
 @section('page_title', 'System settings')
-@section('page_subtitle', 'Logos, legal content, refund rules, contact, and platform options')
+@section('page_subtitle', 'Logos, legal content, refund rules, contact, discovery radius, and platform options')
 @section('content')
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
@@ -190,6 +191,23 @@
             @elseif ($tab === 'commission')
                 @include('admin.partials.form-input', ['label' => 'Global commission (%)', 'name' => 'global_commission_percent', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('global_commission_percent', $values['global_commission_percent'] ?? '10'), 'required' => true])
                 <p class="mt-2 text-sm text-slate-500">Applied to vendor payouts unless overridden per vendor.</p>
+            @elseif ($tab === 'discovery')
+                <p class="mb-6 text-sm text-slate-500">
+                    When the customer app sends <code class="rounded bg-slate-100 px-1">latitude</code> and
+                    <code class="rounded bg-slate-100 px-1">longitude</code> to Home, Catalog, or Designers,
+                    only vendors within this radius are returned. Vendors need latitude/longitude saved on their profile.
+                </p>
+                @include('admin.partials.form-input', [
+                    'label' => 'Discovery radius (km)',
+                    'name' => 'discovery_radius_km',
+                    'type' => 'number',
+                    'step' => '0.1',
+                    'min' => '0.1',
+                    'max' => '500',
+                    'value' => old('discovery_radius_km', $values['discovery_radius_km'] ?? '25'),
+                    'required' => true,
+                    'hint' => 'Default 25 km. Used by /api/v1/home, /api/v1/catalog, and /api/v1/designers.',
+                ])
             @endif
         </div>
         @if (auth('admin')->user()->hasPermission('settings', 'edit'))

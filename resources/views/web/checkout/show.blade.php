@@ -35,6 +35,10 @@
                                     $variant = $cartItem->variant;
                                     $variantLabel = $variant ? collect([$variant->size, $variant->color])->filter()->implode(' · ') : null;
                                     $unitRate = $product?->dailyRateFor($variant) ?? 0;
+                                    $needsRental = (bool) $product?->requiresRentalPeriod();
+                                    $oldItem = collect(old('items', []))->first(
+                                        fn ($row) => (int) ($row['cart_item_id'] ?? 0) === (int) $cartItem->id
+                                    ) ?? [];
                                 @endphp
                                 @include('web.partials.line-item-row', [
                                     'image' => $variant?->imageUrl() ?: $product?->displayImageUrl(),
@@ -44,29 +48,42 @@
                                     'variantLabel' => $variantLabel,
                                     'showBaseVariant' => $product?->hasVariants() && ! $variant,
                                     'quantity' => $cartItem->quantity,
-                                    'unitPrice' => '₹'.number_format($unitRate, 0).' / day',
+                                    'unitPrice' => $needsRental
+                                        ? '₹'.number_format($unitRate, 0).' / day'
+                                        : '₹'.number_format($unitRate, 0),
                                     'compact' => true,
                                 ])
+                                <input type="hidden" name="items[{{ $cartItem->id }}][cart_item_id]" value="{{ $cartItem->id }}">
+                                <input type="hidden" name="items[{{ $cartItem->id }}][portfolio_item_id]" value="{{ $product?->id }}">
+                                @if ($needsRental)
+                                    <div class="jbw-measure-form-grids checkout-item-rental" data-cart-item-id="{{ $cartItem->id }}" style="grid-template-columns:1fr 1fr;margin:0.75rem 0 1.25rem;padding-left:0.25rem">
+                                        <div class="jbw-field">
+                                            <label class="jbw-label" for="item_rental_start_{{ $cartItem->id }}">Rental start <span class="jbw-required">*</span></label>
+                                            <input type="date"
+                                                   id="item_rental_start_{{ $cartItem->id }}"
+                                                   name="items[{{ $cartItem->id }}][rental_start_date]"
+                                                   class="jbw-input checkout-item-rental-start"
+                                                   value="{{ $oldItem['rental_start_date'] ?? '' }}"
+                                                   min="{{ now()->format('Y-m-d') }}"
+                                                   required>
+                                        </div>
+                                        <div class="jbw-field">
+                                            <label class="jbw-label" for="item_rental_end_{{ $cartItem->id }}">Rental end <span class="jbw-required">*</span></label>
+                                            <input type="date"
+                                                   id="item_rental_end_{{ $cartItem->id }}"
+                                                   name="items[{{ $cartItem->id }}][rental_end_date]"
+                                                   class="jbw-input checkout-item-rental-end"
+                                                   value="{{ $oldItem['rental_end_date'] ?? '' }}"
+                                                   min="{{ now()->format('Y-m-d') }}"
+                                                   required>
+                                        </div>
+                                    </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>
                 @endforeach
-            </section>
-
-            <section class="jbw-overview-card">
-                <p class="jbw-overview-label">Rental period <span class="jbw-required">*</span></p>
-                <div class="jbw-measure-form-grids" style="grid-template-columns:1fr 1fr">
-                    <div class="jbw-field">
-                        <label class="jbw-label" for="rental_start_date">Start date</label>
-                        <input type="date" id="rental_start_date" name="rental_start_date" class="jbw-input" value="{{ old('rental_start_date') }}" min="{{ now()->format('Y-m-d') }}" required>
-                        @error('rental_start_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
-                    </div>
-                    <div class="jbw-field">
-                        <label class="jbw-label" for="rental_end_date">End date</label>
-                        <input type="date" id="rental_end_date" name="rental_end_date" class="jbw-input" value="{{ old('rental_end_date') }}" min="{{ now()->format('Y-m-d') }}" required>
-                        @error('rental_end_date')<p class="jbw-field-error">{{ $message }}</p>@enderror
-                    </div>
-                </div>
+                @error('items')<p class="jbw-field-error">{{ $message }}</p>@enderror
             </section>
 
             <section class="jbw-overview-card">
@@ -250,14 +267,28 @@
     const refreshPreview = () => {
         clearTimeout(timer);
         timer = setTimeout(async () => {
-            const start = form.querySelector('#rental_start_date')?.value;
-            const end = form.querySelector('#rental_end_date')?.value;
-            if (!start || !end) return;
-
             const body = new FormData();
             body.append('_token', csrf);
-            body.append('rental_start_date', start);
-            body.append('rental_end_date', end);
+
+            let rentalLinesComplete = true;
+            form.querySelectorAll('.checkout-item-rental').forEach((row) => {
+                const start = row.querySelector('.checkout-item-rental-start')?.value;
+                const end = row.querySelector('.checkout-item-rental-end')?.value;
+                const cartItemId = row.dataset.cartItemId;
+                if (!start || !end) {
+                    rentalLinesComplete = false;
+                    return;
+                }
+                body.append(`items[${cartItemId}][cart_item_id]`, cartItemId);
+                body.append(`items[${cartItemId}][rental_start_date]`, start);
+                body.append(`items[${cartItemId}][rental_end_date]`, end);
+            });
+
+            // Wait until every rental line has both dates before hitting the priced preview.
+            if (form.querySelectorAll('.checkout-item-rental').length > 0 && !rentalLinesComplete) {
+                return;
+            }
+
             collectShipments().forEach((row, i) => {
                 body.append(`vendor_shipments[${i}][vendor_id]`, row.vendor_id);
                 if (row.shipment_required) {
@@ -274,25 +305,28 @@
         }, 300);
     };
 
-    const startInput = form.querySelector('#rental_start_date');
-    const endInput = form.querySelector('#rental_end_date');
-
-    const syncEndMin = () => {
+    const syncItemEndMin = (row) => {
+        const startInput = row.querySelector('.checkout-item-rental-start');
+        const endInput = row.querySelector('.checkout-item-rental-end');
         if (!startInput || !endInput) return;
         const start = startInput.value;
         if (start) {
             endInput.min = start;
-            // Clear an end date that is now before the start date.
             if (endInput.value && endInput.value < start) {
                 endInput.value = '';
             }
         }
     };
 
-    syncEndMin();
+    form.querySelectorAll('.checkout-item-rental').forEach((row) => {
+        syncItemEndMin(row);
+        row.querySelector('.checkout-item-rental-start')?.addEventListener('change', () => {
+            syncItemEndMin(row);
+            refreshPreview();
+        });
+        row.querySelector('.checkout-item-rental-end')?.addEventListener('change', refreshPreview);
+    });
 
-    startInput?.addEventListener('change', () => { syncEndMin(); refreshPreview(); });
-    endInput?.addEventListener('change', refreshPreview);
     form.querySelectorAll('.checkout-shipment-toggle').forEach((el) => el.addEventListener('change', () => {
         applyLocalShipmentState();
         refreshPreview();
@@ -302,7 +336,7 @@
 
     // After draft restore (returning from measurements), re-sync date mins + totals.
     form.addEventListener('jbw:draft-restored', () => {
-        syncEndMin();
+        form.querySelectorAll('.checkout-item-rental').forEach(syncItemEndMin);
         refreshPreview();
     });
 })();

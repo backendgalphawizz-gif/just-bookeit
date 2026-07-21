@@ -7,6 +7,7 @@ use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Vendor;
+use App\Services\ChatPresenceService;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
@@ -15,10 +16,15 @@ use Illuminate\Http\Request;
 
 class ChatController extends ApiController
 {
+    public function __construct(
+        protected ChatPresenceService $presence
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         /** @var Customer $customer */
         $customer = $request->user();
+        // Listing chats does not mean the chat screen is open — do not mark online here.
 
         $query = $customer->conversations()
             ->with(['vendor', 'latestMessage'])
@@ -38,6 +44,29 @@ class ChatController extends ApiController
         return $this->success(
             CustomerApiPresenter::paginator($conversations, fn (Conversation $conversation) => CustomerApiPresenter::chatSummary($conversation))
         );
+    }
+
+    public function presence(Request $request): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+
+        $data = $request->validate([
+            'status' => ['nullable', 'string', 'in:online,offline'],
+        ]);
+
+        if (($data['status'] ?? 'online') === 'offline') {
+            $this->presence->leave(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
+            $online = false;
+        } else {
+            $this->presence->touch(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
+            $online = true;
+        }
+
+        return $this->success([
+            'is_online' => $online,
+            'online_status' => $online ? 'online' : 'offline',
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -77,6 +106,7 @@ class ChatController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
         abort_unless($chat->customer_id === $customer->id, 403);
+        $this->presence->touch(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
 
         $chat->load('vendor');
 
@@ -119,6 +149,7 @@ class ChatController extends ApiController
         /** @var Customer $customer */
         $customer = $request->user();
         abort_unless($chat->customer_id === $customer->id, 403);
+        $this->presence->touch(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000', 'required_without:attachment'],

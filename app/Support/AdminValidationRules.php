@@ -208,6 +208,8 @@ class AdminValidationRules
             'city_id' => ['nullable'],
             'city_other' => ['nullable', 'required_if:city_id,other', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'pincode' => ['nullable', 'string', 'max:10'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
             'account_number' => ['nullable', 'string', 'max:20', 'regex:'.self::REGEX_ACCOUNT_NUMBER],
             'ifsc_code' => ['nullable', 'string', 'size:11', 'regex:'.self::REGEX_IFSC],
@@ -538,6 +540,13 @@ class AdminValidationRules
         ];
     }
 
+    public static function settingsDiscovery(): array
+    {
+        return [
+            'discovery_radius_km' => ['required', 'numeric', 'min:0.1', 'max:500'],
+        ];
+    }
+
     public static function vendorSuspend(): array
     {
         return [
@@ -786,6 +795,7 @@ class AdminValidationRules
             'order_id' => 'order',
             'raised_by' => 'raised by',
             'global_commission_percent' => 'commission',
+            'discovery_radius_km' => 'discovery radius (km)',
             'refund_rental_cancel_days' => 'rental cancellation days',
             'refund_rental_late_fee_per_day' => 'late return fee',
             'damage_deduction_rules.*.category_id' => 'category',

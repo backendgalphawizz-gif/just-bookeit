@@ -83,6 +83,7 @@ Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
 
     Route::get('/chat', [ChatController::class, 'index'])->name('web.chat.index');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('web.chat.poll');
+    Route::post('/chat/presence', [ChatController::class, 'presence'])->name('web.chat.presence');
     Route::get('/chat/start/{vendor}', [ChatController::class, 'start'])->name('web.chat.start');
     Route::post('/chat/{chat}/messages', [ChatController::class, 'sendMessage'])->name('web.chat.messages');
     Route::patch('/chat/{chat}/messages/{message}', [ChatController::class, 'updateMessage'])->name('web.chat.messages.update');

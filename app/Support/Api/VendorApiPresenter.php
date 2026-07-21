@@ -991,13 +991,17 @@ class VendorApiPresenter
         $customer = $conversation->customer;
         $latest = $conversation->latestMessage;
         $unread = $conversation->unreadCountForVendor();
+        $isOnline = $customer
+            ? app(\App\Services\ChatPresenceService::class)->customerOnline((int) $customer->id)
+            : false;
 
         return [
             'id' => $conversation->id,
             'customer_id' => $conversation->customer_id,
             'customer_name' => $customer?->name,
             'customer_image_url' => $customer?->profileImageUrl(),
-            'is_online' => true,
+            'is_online' => $isOnline,
+            'online_status' => $isOnline ? 'online' : 'offline',
             'last_message' => $latest?->body,
             'last_message_at' => $latest?->created_at?->toIso8601String(),
             'time_label' => $latest?->created_at?->diffForHumans(),
@@ -1011,13 +1015,16 @@ class VendorApiPresenter
     /** @return array<string, mixed> */
     public static function chatStartableCustomer(Customer $customer): array
     {
+        $isOnline = app(\App\Services\ChatPresenceService::class)->customerOnline((int) $customer->id);
+
         return [
             'id' => null,
             'customer_id' => $customer->id,
             'customer_name' => $customer->name,
             'customer_image_url' => $customer->profileImageUrl(),
             'customer_mobile' => $customer->mobile,
-            'is_online' => false,
+            'is_online' => $isOnline,
+            'online_status' => $isOnline ? 'online' : 'offline',
             'last_message' => null,
             'last_message_at' => null,
             'time_label' => null,

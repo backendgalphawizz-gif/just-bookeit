@@ -6,6 +6,7 @@ use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Services\ChatPresenceService;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
@@ -14,9 +15,14 @@ use Illuminate\Http\Request;
 
 class ChatController extends VendorApiController
 {
+    public function __construct(
+        protected ChatPresenceService $presence
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $vendor = $this->vendor($request);
+        // Listing chats does not mean the chat screen is open — do not mark online here.
         $search = trim((string) $request->input('search', ''));
 
         $query = $vendor->conversations()
@@ -72,9 +78,32 @@ class ChatController extends VendorApiController
         return $this->success($payload);
     }
 
+    public function presence(Request $request): JsonResponse
+    {
+        $vendor = $this->vendor($request);
+
+        $data = $request->validate([
+            'status' => ['nullable', 'string', 'in:online,offline'],
+        ]);
+
+        if (($data['status'] ?? 'online') === 'offline') {
+            $this->presence->leave(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
+            $online = false;
+        } else {
+            $this->presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
+            $online = true;
+        }
+
+        return $this->success([
+            'is_online' => $online,
+            'online_status' => $online ? 'online' : 'offline',
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $vendor = $this->vendor($request);
+        $this->presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
 
         $data = $request->validate([
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
@@ -119,6 +148,7 @@ class ChatController extends VendorApiController
     {
         $vendor = $this->vendor($request);
         $this->assertOwnsChat($chat, $vendor);
+        $this->presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
 
         return $this->success(VendorApiPresenter::chatDetail($chat));
     }
@@ -127,6 +157,7 @@ class ChatController extends VendorApiController
     {
         $vendor = $this->vendor($request);
         $this->assertOwnsChat($chat, $vendor);
+        $this->presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
 
         $chat->load('customer');
 
@@ -168,6 +199,7 @@ class ChatController extends VendorApiController
     {
         $vendor = $this->vendor($request);
         $this->assertOwnsChat($chat, $vendor);
+        $this->presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
 
         $data = $request->validate([
             'body' => ['nullable', 'string', 'max:5000', 'required_without:attachment'],

@@ -17,7 +17,7 @@ class SettingsController extends AdminController
     public function index(Request $request): View
     {
         $tab = $request->string('tab', 'branding')->toString();
-        $allowed = ['branding', 'theme', 'contact', 'legal', 'features', 'commission', 'refund_rules'];
+        $allowed = ['branding', 'theme', 'contact', 'legal', 'features', 'commission', 'refund_rules', 'discovery'];
         if (! in_array($tab, $allowed, true)) {
             $tab = 'branding';
         }
@@ -53,6 +53,7 @@ class SettingsController extends AdminController
             'features' => $this->updateFeatures($request),
             'commission' => $this->updateCommission($request),
             'refund_rules' => $this->updateRefundRules($request),
+            'discovery' => $this->updateDiscovery($request),
             default => null,
         };
 
@@ -163,6 +164,17 @@ class SettingsController extends AdminController
         );
 
         PlatformSetting::set('global_commission_percent', $data['global_commission_percent'], 'commission');
+    }
+
+    protected function updateDiscovery(Request $request): void
+    {
+        $data = $request->validate(
+            AdminValidationRules::settingsDiscovery(),
+            AdminValidationRules::messages(),
+            AdminValidationRules::attributes()
+        );
+
+        PlatformSetting::set('discovery_radius_km', $data['discovery_radius_km'], 'discovery');
     }
 
     protected function updateRefundRules(Request $request): void

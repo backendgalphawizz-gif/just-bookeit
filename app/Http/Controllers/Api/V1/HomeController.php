@@ -9,6 +9,7 @@ use App\Models\Vendor;
 use App\Services\NotificationInboxService;
 use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\Api\VendorProximityFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -20,9 +21,9 @@ class HomeController extends ApiController
 
     public function index(Request $request): JsonResponse
     {
-        $request->validate([
+        $request->validate(array_merge([
             'city' => ['nullable', 'string', 'max:100'],
-        ]);
+        ], VendorProximityFilter::validationRules()));
 
         $banners = Banner::query()
             ->forAudience(Banner::AUDIENCE_CUSTOMER)
@@ -51,6 +52,7 @@ class HomeController extends ApiController
             ? trim($request->string('city')->toString())
             : trim((string) ($customer?->city ?? ''));
         $city = $city !== '' ? $city : null;
+        $coords = VendorProximityFilter::coordinatesFromRequest($request);
 
         $featuredDesignersQuery = Vendor::query()
             ->active()
@@ -58,7 +60,13 @@ class HomeController extends ApiController
             ->orderByDesc('rating')
             ->limit(7);
 
-        if ($city) {
+        if ($coords) {
+            VendorProximityFilter::applyOnVendorQuery(
+                $featuredDesignersQuery,
+                $coords['latitude'],
+                $coords['longitude']
+            );
+        } elseif ($city) {
             CatalogFilter::applyCityOnVendorQuery($featuredDesignersQuery, $city);
         }
 
@@ -74,14 +82,23 @@ class HomeController extends ApiController
                 'total_count' => $this->notifications->totalCount(NotificationInboxService::TYPE_CUSTOMER),
             ];
 
+        $location = [
+            'label' => $city ?? 'Home',
+            'city' => $city,
+            'address' => $city ?? $customer?->city,
+        ];
+
+        if ($coords) {
+            $location['latitude'] = $coords['latitude'];
+            $location['longitude'] = $coords['longitude'];
+            $location['radius_km'] = VendorProximityFilter::radiusKm();
+        }
+
         return $this->success([
-            'location' => [
-                'label' => $city ?? 'Home',
-                'city' => $city,
-                'address' => $city ?? $customer?->city,
-            ],
+            'location' => $location,
             'filters' => array_filter([
                 'city' => $city,
+                ...VendorProximityFilter::appliedMeta($request),
             ]),
             'notifications' => $notificationSummary,
             'banners' => $banners->map(fn ($banner) => CustomerApiPresenter::banner($banner))->values()->all(),

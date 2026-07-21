@@ -507,13 +507,17 @@ class CustomerApiPresenter
         $vendor = $conversation->vendor;
         $latest = $conversation->latestMessage;
         $unread = $conversation->unreadCountForCustomer();
+        $isOnline = $vendor
+            ? app(\App\Services\ChatPresenceService::class)->vendorOnline((int) $vendor->id)
+            : false;
 
         return [
             'id' => $conversation->id,
             'vendor_id' => $conversation->vendor_id,
             'designer_name' => $vendor?->brand_name ?? $vendor?->shop_name,
             'designer_image_url' => $vendor?->profileImageUrl() ?? $vendor?->shopLogoUrl(),
-            'is_online' => $vendor?->status === 'active',
+            'is_online' => $isOnline,
+            'online_status' => $isOnline ? 'online' : 'offline',
             'last_message' => $latest?->body,
             'last_message_at' => $latest?->created_at?->toIso8601String(),
             'time_label' => $latest?->created_at?->diffForHumans(),
@@ -600,10 +604,12 @@ class CustomerApiPresenter
 
     public static function bookingDetail(Order $order): array
     {
-        $order->loadMissing(['category', 'dispute', 'review', 'orderItems', 'refund.histories']);
+        $order->loadMissing(['category', 'dispute', 'review', 'orderItems', 'refund.histories', 'checkoutOrder']);
         $lineItems = $order->orderItems->isNotEmpty()
             ? $order->orderItems->map(fn (OrderItem $item) => self::orderLineItem($item))->values()->all()
             : null;
+
+        $referenceUrls = self::bookingReferenceImageUrls($order);
 
         return [
             ...self::bookingSummary($order),
@@ -616,15 +622,14 @@ class CustomerApiPresenter
             'pickup_address' => $order->pickup_address,
             'cancellation_reason' => $order->cancellation_reason,
             'customer_notes' => $order->customer_notes,
-            'reference_image_urls' => $order->referenceImageUrls(),
+            'reference_image_urls' => $referenceUrls,
+            'reference_images' => self::referenceImagesPayload($referenceUrls),
             'requires_rental_period' => $order->requiresRentalPeriod(),
             'rental_start_date' => $order->rental_start_date?->format('Y-m-d'),
             'rental_end_date' => $order->rental_end_date?->format('Y-m-d'),
             'rental_duration_days' => $order->rentalDurationDays(),
             'event_date' => $order->event_date?->format('Y-m-d'),
-            'measurements' => $order->checkout_order_id
-                ? null
-                : BookingMeasurementSupport::orderMeasurements($order),
+            'measurements' => BookingMeasurementSupport::orderMeasurements($order),
             'line_items' => $lineItems,
             'order_items' => $lineItems,
             'payment_summary' => app(\App\Services\Booking\BookingPaymentService::class)->summaryForOrder($order),
@@ -643,6 +648,36 @@ class CustomerApiPresenter
             'review' => $order->review ? self::orderReview($order->review) : null,
             'refund' => $order->refund ? self::refund($order->refund) : null,
         ];
+    }
+
+    /**
+     * @param  list<string>  $urls
+     * @return list<array{url: string, label: string}>
+     */
+    protected static function referenceImagesPayload(array $urls): array
+    {
+        return collect($urls)
+            ->filter()
+            ->values()
+            ->map(fn (string $url, int $index) => [
+                'url' => $url,
+                'label' => 'Reference image '.($index + 1),
+            ])
+            ->all();
+    }
+
+    /** @return list<string> */
+    protected static function bookingReferenceImageUrls(Order $order): array
+    {
+        $urls = $order->referenceImageUrls();
+
+        foreach ($order->orderItems as $item) {
+            foreach ($item->referenceImageUrls() as $url) {
+                $urls[] = $url;
+            }
+        }
+
+        return array_values(array_unique(array_filter($urls)));
     }
 
     public static function checkoutOrderSummary(CheckoutOrder $checkout): array
@@ -798,6 +833,7 @@ class CustomerApiPresenter
                 : null,
             'customer_notes' => $item->customerNotes(),
             'reference_image_urls' => $item->referenceImageUrls(),
+            'reference_images' => self::referenceImagesPayload($item->referenceImageUrls()),
         ];
     }
 

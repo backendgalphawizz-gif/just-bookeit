@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Vendor;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Services\ChatLiveService;
+use App\Services\ChatPresenceService;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use App\Support\WebChatLivePresenter;
@@ -15,7 +16,7 @@ use Illuminate\View\View;
 
 class ChatController extends VendorController
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request, ChatPresenceService $presence): View|RedirectResponse
     {
         $vendor = $this->vendor();
 
@@ -37,6 +38,13 @@ class ChatController extends VendorController
             $activeChat = $conversations->firstWhere('id', $request->integer('chat'));
         } elseif ($conversations->isNotEmpty()) {
             $activeChat = $conversations->first();
+        }
+
+        // Online only while a conversation thread is open.
+        if ($activeChat) {
+            $presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
+        } else {
+            $presence->leave(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
         }
 
         if ($activeChat) {
@@ -61,9 +69,13 @@ class ChatController extends VendorController
         return view('vendor.chat.index', compact('conversations', 'activeChat', 'messages'));
     }
 
-    public function poll(Request $request, ChatLiveService $live): JsonResponse
+    public function poll(Request $request, ChatLiveService $live, ChatPresenceService $presence): JsonResponse
     {
         $vendor = $this->vendor();
+
+        if ($request->filled('chat_id') || $request->filled('chat')) {
+            $presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
+        }
 
         $query = $vendor->conversations();
 
@@ -79,6 +91,28 @@ class ChatController extends VendorController
             fn (Conversation $conversation) => WebChatLivePresenter::vendorThread($conversation),
             fn (Conversation $chat) => abort_unless($chat->vendor_id === $vendor->id, 403),
         );
+    }
+
+    public function presence(Request $request, ChatPresenceService $presence): JsonResponse
+    {
+        $vendor = $this->vendor();
+
+        $data = $request->validate([
+            'status' => ['nullable', 'string', 'in:online,offline'],
+        ]);
+
+        if (($data['status'] ?? 'online') === 'offline') {
+            $presence->leave(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
+            $online = false;
+        } else {
+            $presence->touch(ChatPresenceService::ROLE_VENDOR, (int) $vendor->id);
+            $online = true;
+        }
+
+        return response()->json([
+            'is_online' => $online,
+            'online_status' => $online ? 'online' : 'offline',
+        ]);
     }
 
     public function show(Conversation $chat): RedirectResponse

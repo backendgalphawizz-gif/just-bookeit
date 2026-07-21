@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Services\Checkout\CheckoutService;
 use App\Services\Customer\CartService;
 use App\Support\BookingMeasurementSupport;
+use App\Support\CheckoutItemPayloadSupport;
 use App\Support\WebMeasurementForm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,10 +46,9 @@ class CheckoutController extends WebController
         $vendorShipments = $this->vendorShipmentsFromRequest($request, $summary['vendors'] ?? []);
 
         try {
-            // Soft preview: rental dates are collected on this page, so don't require them yet.
+            // Soft preview: per-item rental dates are collected on this page.
             $preview = $this->checkout->preview($customer, [
-                'rental_start_date' => old('rental_start_date'),
-                'rental_end_date' => old('rental_end_date'),
+                'items' => old('items'),
                 'vendor_shipments' => $vendorShipments,
             ], requireRentalPeriod: false);
         } catch (InvalidArgumentException $exception) {
@@ -81,19 +81,25 @@ class CheckoutController extends WebController
 
         $summary = $this->cart->summary($customer);
         $data = $request->validate([
-            'rental_start_date' => ['required', 'date', 'after_or_equal:today'],
-            'rental_end_date' => ['required', 'date', 'after_or_equal:rental_start_date'],
+            'rental_start_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+            'items' => ['nullable', 'array'],
+            'items.*.cart_item_id' => ['nullable', 'integer'],
+            'items.*.portfolio_item_id' => ['nullable', 'integer'],
+            'items.*.rental_start_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'items.*.rental_end_date' => ['nullable', 'date', 'after_or_equal:items.*.rental_start_date'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
         ]);
 
+        $data['items'] = $this->normalizeItemsPayload($data['items'] ?? []);
         $data['vendor_shipments'] = $this->normalizeVendorShipments(
             $data['vendor_shipments'] ?? $this->vendorShipmentsFromRequest($request, $summary['vendors'] ?? [])
         );
 
         try {
-            return response()->json($this->checkout->preview($customer, $data));
+            return response()->json($this->checkout->preview($customer, $data, false, $request));
         } catch (InvalidArgumentException $exception) {
             return response()->json(['message' => $exception->getMessage()], 422);
         }
@@ -109,8 +115,14 @@ class CheckoutController extends WebController
             'billing_address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'pincode' => ['nullable', 'string', 'max:10'],
-            'rental_start_date' => ['required', 'date', 'after_or_equal:today'],
-            'rental_end_date' => ['required', 'date', 'after_or_equal:rental_start_date'],
+            // Top-level dates are optional fallback; prefer per-item dates in items[].
+            'rental_start_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+            'items' => ['nullable', 'array'],
+            'items.*.cart_item_id' => ['nullable', 'integer'],
+            'items.*.portfolio_item_id' => ['nullable', 'integer'],
+            'items.*.rental_start_date' => ['nullable', 'date', 'after_or_equal:today'],
+            'items.*.rental_end_date' => ['nullable', 'date', 'after_or_equal:items.*.rental_start_date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
             'measurement_profile_id' => ['nullable', 'integer'],
@@ -133,6 +145,7 @@ class CheckoutController extends WebController
             $data['measurement_profile_id'] = $data['measurement_id'];
         }
 
+        $data['items'] = $this->normalizeItemsPayload($data['items'] ?? []);
         $data['vendor_shipments'] = $this->normalizeVendorShipments($data['vendor_shipments'] ?? []);
 
         try {
@@ -153,6 +166,35 @@ class CheckoutController extends WebController
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
         return redirect()->route('web.bookings.checkout.show', $checkoutOrder);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>|array<string|int, array<string, mixed>>  $rows
+     * @return list<array<string, mixed>>
+     */
+    protected function normalizeItemsPayload(array $rows): array
+    {
+        $normalized = [];
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $row = CheckoutItemPayloadSupport::normalizeDateFields($row);
+
+            if (! filled($row['cart_item_id'] ?? null)
+                && ! filled($row['portfolio_item_id'] ?? null)
+                && ! filled($row['rental_start_date'] ?? null)
+                && ! filled($row['rental_end_date'] ?? null)
+            ) {
+                continue;
+            }
+
+            $normalized[] = $row;
+        }
+
+        return $normalized;
     }
 
     /**

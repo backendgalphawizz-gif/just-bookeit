@@ -16,6 +16,7 @@ use App\Support\Api\CustomerApiPresenter;
 use App\Support\OrderDispatchSupport;
 use App\Support\Api\CustomerBookingTab;
 use App\Support\BookingMeasurementSupport;
+use App\Support\CheckoutItemPayloadSupport;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -277,14 +278,16 @@ class BookingController extends ApiController
             // "items" is overwritten by PHP when file fields use the items[...] prefix.
             'items' => ['nullable'],
             'items_json' => ['nullable'], // JSON string or already-decoded array
+            'cart_items' => ['nullable'],
+            'line_items' => ['nullable'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
-        if (! $request->filled('items') && ! $request->filled('items_json')) {
+        if (! $request->filled('items') && ! $request->filled('items_json') && ! $request->filled('cart_items') && ! $request->filled('line_items')) {
             return $this->error('Send items_json (recommended) or items with the cart line payload.', 422);
         }
 
         // Multipart clients sometimes drop validated nullable dates; re-merge from the raw request.
-        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'event_date', 'items_json'] as $key) {
+        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'event_date', 'items_json', 'cart_items', 'line_items'] as $key) {
             if ((! array_key_exists($key, $data) || blank($data[$key] ?? null)) && $request->filled($key)) {
                 $data[$key] = $request->input($key);
             }

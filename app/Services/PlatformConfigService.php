@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Faq;
 use App\Models\PlatformSetting;
+use App\Support\Api\VendorProximityFilter;
 use App\Support\ProductOptionCatalog;
 
 class PlatformConfigService
@@ -27,8 +28,9 @@ class PlatformConfigService
                 'enable_guest_browse' => (bool) PlatformSetting::get('enable_guest_browse', false),
                 'maintenance_mode' => (bool) PlatformSetting::get('maintenance_mode', false),
                 'currency' => (string) PlatformSetting::get('currency', 'INR'),
+                'discovery_radius_km' => VendorProximityFilter::radiusKm(),
             ],
-            'broadcasting' => \App\Support\BroadcastingConfig::clientConfig(url('/api/v1/broadcasting/auth')),
+            'broadcasting' => \App\Support\BroadcastingConfig::clientConfig('/api/v1/broadcasting/auth'),
             'branding' => [
                 'platform_name' => (string) PlatformSetting::get('platform_name', 'Just Book IT'),
             ],

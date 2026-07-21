@@ -6,11 +6,23 @@
     }
 
     function jsonHeaders() {
-        return {
+        const headers = {
             Accept: 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
             'X-CSRF-TOKEN': csrfToken(),
         };
+
+        // Lets broadcast(...)->toOthers() skip the sender tab.
+        try {
+            const socketId = window.Echo?.socketId?.();
+            if (socketId) {
+                headers['X-Socket-ID'] = socketId;
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        return headers;
     }
 
     function escapeHtml(value) {
@@ -180,13 +192,18 @@
 
     function renderVendorThread(thread, activeChatId) {
         const activeClass = Number(activeChatId) === Number(thread.id) ? ' is-active' : '';
+        const onlineClass = thread.is_online ? ' is-online' : ' is-offline';
+        const onlineLabel = thread.is_online ? 'Online' : 'Offline';
         const avatar = thread.avatar_url
             ? `<img src="${escapeHtml(thread.avatar_url)}" alt="" class="vp-chat-avatar">`
             : `<span class="vp-chat-avatar vp-chat-avatar--fallback">${escapeHtml(thread.initial)}</span>`;
 
         return `
-            <a href="${escapeHtml(thread.url)}" class="vp-chat-thread${activeClass}" data-thread-id="${thread.id}">
-                ${avatar}
+            <a href="${escapeHtml(thread.url)}" class="vp-chat-thread${activeClass}${onlineClass}" data-thread-id="${thread.id}" data-online="${thread.is_online ? '1' : '0'}">
+                <span class="chat-avatar-wrap">
+                    ${avatar}
+                    <span class="chat-online-dot" title="${onlineLabel}" aria-label="${onlineLabel}"></span>
+                </span>
                 <div class="vp-chat-thread-body">
                     <div class="vp-chat-thread-top">
                         <strong>${escapeHtml(thread.name)}</strong>
@@ -200,15 +217,20 @@
 
     function renderCustomerThread(thread, activeChatId) {
         const activeClass = Number(activeChatId) === Number(thread.id) ? ' is-active' : '';
+        const onlineClass = thread.is_online ? ' is-online' : ' is-offline';
+        const onlineLabel = thread.is_online ? 'Online' : 'Offline';
         const avatar = thread.avatar_url
             ? `<img src="${escapeHtml(thread.avatar_url)}" alt="" class="jbw-chat-thread-avatar">`
             : `<span class="jbw-chat-thread-avatar jbw-chat-thread-avatar--fallback">${escapeHtml(thread.initial)}</span>`;
 
         return `
-            <a href="${escapeHtml(thread.url)}" class="jbw-chat-thread${activeClass}" data-thread-id="${thread.id}">
-                ${avatar}
+            <a href="${escapeHtml(thread.url)}" class="jbw-chat-thread${activeClass}${onlineClass}" data-thread-id="${thread.id}" data-online="${thread.is_online ? '1' : '0'}">
+                <span class="chat-avatar-wrap">
+                    ${avatar}
+                    <span class="chat-online-dot" title="${onlineLabel}" aria-label="${onlineLabel}"></span>
+                </span>
                 <div class="jbw-chat-thread-body">
-                    <div class="vp-chat-thread-top">
+                    <div class="jbw-chat-thread-top">
                         <strong>${escapeHtml(thread.name)}</strong>
                         <span>${escapeHtml(thread.time || '')}</span>
                     </div>
@@ -341,6 +363,36 @@
 
         threadsBox.innerHTML = html;
         threadsBox.scrollTop = options.scrollToTop ? 0 : previousScrollTop;
+        syncHeaderPresence(container, threads, activeChatId);
+    }
+
+    function syncHeaderPresence(container, threads, activeChatId) {
+        if (!activeChatId || !Array.isArray(threads)) {
+            return;
+        }
+
+        const active = threads.find((thread) => Number(thread.id) === Number(activeChatId));
+        if (!active || typeof active.is_online === 'undefined') {
+            return;
+        }
+
+        const label = container.querySelector('[data-chat-online-label]');
+        if (label) {
+            label.textContent = active.is_online ? 'Online' : 'Offline';
+            label.classList.toggle('is-online', !!active.is_online);
+        }
+
+        const headDotWrap = container.querySelector('.jbw-chat-main-head .chat-avatar-wrap, .vp-chat-main-head .chat-avatar-wrap');
+        if (headDotWrap) {
+            headDotWrap.classList.toggle('is-online', !!active.is_online);
+            headDotWrap.classList.toggle('is-offline', !active.is_online);
+            const dot = headDotWrap.querySelector('.chat-online-dot');
+            if (dot) {
+                const text = active.is_online ? 'Online' : 'Offline';
+                dot.setAttribute('title', text);
+                dot.setAttribute('aria-label', text);
+            }
+        }
     }
 
     function promoteThread(container, thread, theme) {
@@ -372,8 +424,8 @@
 
         if (thread) {
             const preview = node.querySelector('.vp-chat-thread-body p, .jbw-chat-thread-body p');
-            const time = node.querySelector('.vp-chat-thread-top span');
-            const name = node.querySelector('.vp-chat-thread-top strong');
+            const time = node.querySelector('.vp-chat-thread-top span, .jbw-chat-thread-top span');
+            const name = node.querySelector('.vp-chat-thread-top strong, .jbw-chat-thread-top strong');
 
             if (preview && thread.preview != null) {
                 preview.textContent = thread.preview;
@@ -383,6 +435,19 @@
             }
             if (name && thread.name) {
                 name.textContent = thread.name;
+            }
+            node.classList.toggle('is-online', !!thread.is_online);
+            node.classList.toggle('is-offline', !thread.is_online);
+            node.dataset.online = thread.is_online ? '1' : '0';
+            const dot = node.querySelector('.chat-online-dot');
+            if (dot) {
+                const label = thread.is_online ? 'Online' : 'Offline';
+                dot.setAttribute('title', label);
+                dot.setAttribute('aria-label', label);
+            }
+
+            if (Number(chatId) === Number(container.dataset.chatId)) {
+                syncHeaderPresence(container, [thread], chatId);
             }
         }
 
@@ -1026,6 +1091,9 @@
         const viewerRole = container.dataset.viewerRole || theme;
         const name = viewerRole === 'vendor' ? (thread.customer_name || 'Customer') : (thread.vendor_name || 'Designer');
         const initial = String(name || '?').charAt(0).toUpperCase();
+        const isOnline = viewerRole === 'vendor'
+            ? !!thread.customer_is_online
+            : !!thread.vendor_is_online;
 
         return {
             id: thread.id,
@@ -1034,6 +1102,8 @@
             time: thread.time || '',
             avatar_url: null,
             initial,
+            is_online: typeof thread.is_online === 'boolean' ? thread.is_online : isOnline,
+            online_status: (typeof thread.is_online === 'boolean' ? thread.is_online : isOnline) ? 'online' : 'offline',
             url: theme === 'vendor'
                 ? `${window.location.pathname}?chat=${thread.id}`
                 : `${window.location.pathname}?chat=${thread.id}`,
@@ -1070,6 +1140,17 @@
             return;
         }
 
+        // Already rendered from REST response or earlier event.
+        if (message.id && container.querySelector(`[data-message-id="${message.id}"]`)) {
+            if (eventName === 'updated') {
+                const row = container.querySelector(`[data-message-id="${message.id}"]`);
+                if (row) {
+                    applyMessageUpdate(row, message, theme);
+                }
+            }
+            return;
+        }
+
         if (eventName === 'updated') {
             const row = container.querySelector(`[data-message-id="${message.id}"]`);
             if (row) {
@@ -1085,7 +1166,8 @@
         const cfg = window.JustBookChatRealtime;
         const echo = window.Echo;
 
-        if (!cfg?.enabled || !echo || typeof echo.private !== 'function') {
+        if (!cfg?.enabled || !cfg.ready || !echo || typeof echo.private !== 'function') {
+            console.warn('[JustBook chat] realtime disabled — falling back to polling');
             return false;
         }
 
@@ -1096,7 +1178,7 @@
         container.dataset.chatRealtimeBound = '1';
 
         const theme = container.dataset.chatTheme || 'customer';
-        const viewerRole = container.dataset.viewerRole || theme;
+        const viewerRole = container.dataset.viewerRole || cfg.viewerRole || theme;
         const viewerId = Number(container.dataset.viewerId || cfg.viewerId || 0);
         const chatId = Number(container.dataset.chatId || 0);
         const createdEvent = cfg.events?.created || '.chat.message.created';
@@ -1104,11 +1186,19 @@
         const deletedEvent = cfg.events?.deleted || '.chat.message.deleted';
 
         const listen = (channelName) => {
-            const channel = echo.private(channelName);
-            channel.listen(createdEvent, (payload) => handleRealtimePayload(container, payload, 'created'));
-            channel.listen(updatedEvent, (payload) => handleRealtimePayload(container, payload, 'updated'));
-            channel.listen(deletedEvent, (payload) => handleRealtimePayload(container, payload, 'deleted'));
-            return channel;
+            try {
+                const channel = echo.private(channelName);
+                channel.listen(createdEvent, (payload) => handleRealtimePayload(container, payload, 'created'));
+                channel.listen(updatedEvent, (payload) => handleRealtimePayload(container, payload, 'updated'));
+                channel.listen(deletedEvent, (payload) => handleRealtimePayload(container, payload, 'deleted'));
+                channel.error?.((status) => {
+                    console.warn('[JustBook chat] channel error', channelName, status);
+                });
+                return channel;
+            } catch (error) {
+                console.warn('[JustBook chat] failed to subscribe', channelName, error);
+                return null;
+            }
         };
 
         if (chatId) {
@@ -1121,6 +1211,10 @@
             } else {
                 listen(`chat.customer.${viewerId}`);
             }
+        }
+
+        if (viewerRole === 'vendor') {
+            console.info('[JustBook chat] vendor realtime subscribed', { viewerId, chatId });
         }
 
         return true;
@@ -1165,6 +1259,63 @@
 
             poll(container).catch(() => {});
         }, pollMs);
+
+        bindPresenceHeartbeat(container);
+    }
+
+    function bindPresenceHeartbeat(container) {
+        const presenceUrl = resolveUrl(container.dataset.presenceUrl);
+        if (!presenceUrl) {
+            return;
+        }
+
+        const chatOpen = !!container.dataset.chatId;
+
+        const postPresence = (status) => {
+            const body = new FormData();
+            body.append('_token', csrfToken());
+            body.append('status', status);
+
+            return fetch(presenceUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                body,
+                keepalive: status === 'offline',
+            }).catch(() => {});
+        };
+
+        if (!chatOpen) {
+            postPresence('offline');
+            return;
+        }
+
+        postPresence('online');
+
+        const heartbeatMs = 25000;
+        const timer = window.setInterval(() => {
+            if (document.hidden) {
+                return;
+            }
+            postPresence('online');
+        }, heartbeatMs);
+
+        const goOffline = () => {
+            window.clearInterval(timer);
+            postPresence('offline');
+        };
+
+        window.addEventListener('pagehide', goOffline);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                postPresence('offline');
+            } else if (container.dataset.chatId) {
+                postPresence('online');
+            }
+        });
     }
 
     function init() {

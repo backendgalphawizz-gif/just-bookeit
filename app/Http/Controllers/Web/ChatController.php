@@ -6,6 +6,7 @@ use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Vendor;
 use App\Services\ChatLiveService;
+use App\Services\ChatPresenceService;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use App\Support\WebChatLivePresenter;
@@ -17,7 +18,7 @@ use Illuminate\View\View;
 
 class ChatController extends WebController
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request, ChatPresenceService $presence): View|RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
 
@@ -39,6 +40,13 @@ class ChatController extends WebController
             $activeChat = $conversations->firstWhere('id', $request->integer('chat'));
         } elseif ($conversations->isNotEmpty()) {
             $activeChat = $conversations->first();
+        }
+
+        // Online only while a conversation thread is open.
+        if ($activeChat) {
+            $presence->touch(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
+        } else {
+            $presence->leave(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
         }
 
         if ($activeChat) {
@@ -63,9 +71,13 @@ class ChatController extends WebController
         return view('web.chat.index', compact('conversations', 'activeChat', 'messages'));
     }
 
-    public function poll(Request $request, ChatLiveService $live): JsonResponse
+    public function poll(Request $request, ChatLiveService $live, ChatPresenceService $presence): JsonResponse
     {
         $customer = Auth::guard('customer')->user();
+
+        if ($request->filled('chat_id') || $request->filled('chat')) {
+            $presence->touch(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
+        }
 
         $query = $customer->conversations();
 
@@ -81,6 +93,28 @@ class ChatController extends WebController
             fn (Conversation $conversation) => WebChatLivePresenter::customerThread($conversation),
             fn (Conversation $chat) => abort_unless($chat->customer_id === $customer->id, 403),
         );
+    }
+
+    public function presence(Request $request, ChatPresenceService $presence): JsonResponse
+    {
+        $customer = Auth::guard('customer')->user();
+
+        $data = $request->validate([
+            'status' => ['nullable', 'string', 'in:online,offline'],
+        ]);
+
+        if (($data['status'] ?? 'online') === 'offline') {
+            $presence->leave(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
+            $online = false;
+        } else {
+            $presence->touch(ChatPresenceService::ROLE_CUSTOMER, (int) $customer->id);
+            $online = true;
+        }
+
+        return response()->json([
+            'is_online' => $online,
+            'online_status' => $online ? 'online' : 'offline',
+        ]);
     }
 
     public function start(Vendor $vendor): RedirectResponse

@@ -19,10 +19,46 @@
 @endphp
 
 <p class="jb-form-section-title sm:col-span-2">Address</p>
-@include('admin.partials.form-input', ['label' => 'Address', 'name' => $prefix.'address', 'value' => $value('address'), 'full' => true])
+@php
+    $enableGooglePlaces = (bool) ($enableGooglePlaces ?? false)
+        && filled(config('services.google.maps_api_key'));
+    $addressInputId = $field('address');
+@endphp
+@if ($enableGooglePlaces)
+    <div class="sm:col-span-2 jb-places-wrap">
+        <label for="{{ $addressInputId }}" class="jb-label">Address</label>
+        <input
+            type="text"
+            id="{{ $addressInputId }}"
+            name="{{ $prefix }}address"
+            value="{{ $value('address') }}"
+            class="jb-input jb-places-input"
+            placeholder="Start typing to search address…"
+            autocomplete="off"
+            data-jb-places-address
+            data-jb-restrict="text"
+            maxlength="500"
+            data-jb-max-chars="500"
+        >
+        <p class="mt-1 text-xs text-slate-500">Focus this field to see address suggestions. Click away to hide them.</p>
+        @error($prefix.'address')
+            <p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>
+        @enderror
+        <input type="hidden" name="{{ $prefix }}latitude" id="{{ $field('latitude') }}" value="{{ $value('latitude') }}">
+        <input type="hidden" name="{{ $prefix }}longitude" id="{{ $field('longitude') }}" value="{{ $value('longitude') }}">
+    </div>
+@else
+    @include('admin.partials.form-input', [
+        'label' => 'Address',
+        'name' => $prefix.'address',
+        'value' => $value('address'),
+        'full' => true,
+    ])
+@endif
 
 <div
-    class="jb-location-picker sm:col-span-2"
+    class="jb-location-picker sm:col-span-2{{ $enableGooglePlaces ? ' jb-location-picker--after-places' : '' }}"
+    @if ($enableGooglePlaces) data-jb-places-location @endif
     x-data="{
         catalog: @js($locationCatalog),
         countryId: @js((string) $countryId),
@@ -238,3 +274,79 @@
         </div>
     </div>
 </div>
+
+@if ($enableGooglePlaces)
+    @once
+        @push('styles')
+            <style>
+                .jb-places-wrap {
+                    position: relative;
+                    z-index: 30;
+                    margin-bottom: 0.25rem;
+                }
+
+                .jb-places-input {
+                    margin-bottom: 0 !important;
+                }
+
+                .jb-location-picker--after-places {
+                    position: relative;
+                    z-index: 1;
+                    margin-top: 0.75rem;
+                }
+
+                /* Google Places dropdown */
+                .pac-container {
+                    z-index: 99999 !important;
+                    margin-top: 6px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+                    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+                    overflow: hidden;
+                    background: #fff;
+                }
+
+                .pac-container.jb-places-hidden {
+                    display: none !important;
+                    visibility: hidden !important;
+                    pointer-events: none !important;
+                    opacity: 0 !important;
+                }
+
+                .pac-item {
+                    padding: 10px 12px;
+                    border-top: 1px solid #f1f5f9;
+                    line-height: 1.35;
+                    cursor: pointer;
+                }
+
+                .pac-item:first-child {
+                    border-top: 0;
+                }
+
+                .pac-item:hover,
+                .pac-item-selected {
+                    background: #fff1f2;
+                }
+
+                .pac-item-query {
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .pac-icon {
+                    margin-top: 4px;
+                }
+            </style>
+        @endpush
+        @push('scripts')
+            <script src="{{ asset('js/admin-google-places.js') }}?v={{ @filemtime(public_path('js/admin-google-places.js')) }}"></script>
+            <script
+                src="https://maps.googleapis.com/maps/api/js?key={{ urlencode(config('services.google.maps_api_key')) }}&libraries=places&callback=initAdminGooglePlaces"
+                async
+                defer
+            ></script>
+        @endpush
+    @endonce
+@endif

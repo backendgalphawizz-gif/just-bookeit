@@ -15,6 +15,7 @@
         @keydown.escape.window="sidebarOpen = false"
         data-chat-live
         data-poll-url="{{ route('web.chat.poll', [], false) }}"
+        data-presence-url="{{ route('web.chat.presence', [], false) }}"
         data-chat-id="{{ $activeChat?->id }}"
         data-last-message-id="{{ $messages->last()?->id ?? 0 }}"
         data-chat-theme="customer"
@@ -63,17 +64,24 @@
                 $isActive = $activeChat && $activeChat->id === $conversation->id;
                 $vendor = $conversation->vendor;
                 $preview = \App\Support\WebChatLivePresenter::threadPreview($conversation->latestMessage);
+                $peerOnline = $vendor
+                    ? app(\App\Services\ChatPresenceService::class)->vendorOnline((int) $vendor->id)
+                    : false;
                 @endphp
                 <a
                     href="{{ route('web.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
-                    @class(['jbw-chat-thread', 'is-active' => $isActive])
+                    @class(['jbw-chat-thread', 'is-active' => $isActive, 'is-online' => $peerOnline, 'is-offline' => ! $peerOnline])
                     data-thread-id="{{ $conversation->id }}"
+                    data-online="{{ $peerOnline ? '1' : '0' }}"
                 >
-                    @if ($vendor?->profileImageUrl() || $vendor?->shopLogoUrl())
-                    <img src="{{ $vendor->profileImageUrl() ?: $vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
-                    @else
-                    <span class="jbw-chat-thread-avatar jbw-chat-thread-avatar--fallback">{{ strtoupper(substr($vendor?->brand_name ?? 'D', 0, 1)) }}</span>
-                    @endif
+                    <span class="chat-avatar-wrap">
+                        @if ($vendor?->profileImageUrl() || $vendor?->shopLogoUrl())
+                        <img src="{{ $vendor->profileImageUrl() ?: $vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
+                        @else
+                        <span class="jbw-chat-thread-avatar jbw-chat-thread-avatar--fallback">{{ strtoupper(substr($vendor?->brand_name ?? 'D', 0, 1)) }}</span>
+                        @endif
+                        <span class="chat-online-dot" title="{{ $peerOnline ? 'Online' : 'Offline' }}" aria-label="{{ $peerOnline ? 'Online' : 'Offline' }}"></span>
+                    </span>
                     <div class="jbw-chat-thread-body">
                         <div class="jbw-chat-thread-top">
                             <strong>{{ $vendor?->brand_name ?? 'Designer' }}</strong>
@@ -94,6 +102,9 @@
         {{-- Active thread --}}
         <div @class(['jbw-chat-main', 'jbw-chat-main--mobile-hide' => ! $activeChat])>
             @if ($activeChat && $activeChat->vendor)
+            @php
+                $activePeerOnline = app(\App\Services\ChatPresenceService::class)->vendorOnline((int) $activeChat->vendor->id);
+            @endphp
             <div class="jbw-chat-main-head">
                 <div class="jbw-chat-main-vendor">
                     <button
@@ -109,12 +120,18 @@
                         </svg>
                     </button>
 
-                    @if ($activeChat->vendor->profileImageUrl() || $activeChat->vendor->shopLogoUrl())
-                    <img src="{{ $activeChat->vendor->profileImageUrl() ?: $activeChat->vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
-                    @else
-                    <span class="jbw-chat-thread-avatar jbw-chat-thread-avatar--fallback">{{ strtoupper(substr($activeChat->vendor->brand_name, 0, 1)) }}</span>
-                    @endif
-                    <strong>{{ $activeChat->vendor->brand_name }}</strong>
+                    <span @class(['chat-avatar-wrap', 'is-online' => $activePeerOnline, 'is-offline' => ! $activePeerOnline])>
+                        @if ($activeChat->vendor->profileImageUrl() || $activeChat->vendor->shopLogoUrl())
+                        <img src="{{ $activeChat->vendor->profileImageUrl() ?: $activeChat->vendor->shopLogoUrl() }}" alt="" class="jbw-chat-thread-avatar">
+                        @else
+                        <span class="jbw-chat-thread-avatar jbw-chat-thread-avatar--fallback">{{ strtoupper(substr($activeChat->vendor->brand_name, 0, 1)) }}</span>
+                        @endif
+                        <span class="chat-online-dot" title="{{ $activePeerOnline ? 'Online' : 'Offline' }}" aria-label="{{ $activePeerOnline ? 'Online' : 'Offline' }}"></span>
+                    </span>
+                    <div class="jbw-chat-peer">
+                        <strong>{{ $activeChat->vendor->brand_name }}</strong>
+                        <span @class(['jbw-chat-online-label', 'is-online' => $activePeerOnline]) data-chat-online-label>{{ $activePeerOnline ? 'Online' : 'Offline' }}</span>
+                    </div>
                 </div>
                 <img src="../../../../assets/frontend/Container.png" alt="">
             </div>
@@ -227,6 +244,8 @@
     </div>
 </div>
 
+@endsection
+
 @push('scripts')
 @php
     $chatRealtimeViewerRole = 'customer';
@@ -235,4 +254,3 @@
 @include('partials.chat-realtime')
 <script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
 @endpush
-@endsection

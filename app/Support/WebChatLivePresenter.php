@@ -80,6 +80,9 @@ class WebChatLivePresenter
     public static function vendorThread(Conversation $conversation): array
     {
         $customer = $conversation->customer;
+        $isOnline = $customer
+            ? app(\App\Services\ChatPresenceService::class)->customerOnline((int) $customer->id)
+            : false;
 
         return [
             'id' => $conversation->id,
@@ -88,6 +91,8 @@ class WebChatLivePresenter
             'time' => self::threadTime($conversation->last_message_at),
             'avatar_url' => $customer?->profileImageUrl(),
             'initial' => strtoupper(substr($customer?->name ?? 'C', 0, 1)),
+            'is_online' => $isOnline,
+            'online_status' => $isOnline ? 'online' : 'offline',
             'url' => route('vendor.chat.index', array_filter([
                 'chat' => $conversation->id,
                 'search' => request('search'),
@@ -100,6 +105,9 @@ class WebChatLivePresenter
     {
         $vendor = $conversation->vendor;
         $name = $vendor?->brand_name ?? $vendor?->shop_name ?? 'Designer';
+        $isOnline = $vendor
+            ? app(\App\Services\ChatPresenceService::class)->vendorOnline((int) $vendor->id)
+            : false;
 
         return [
             'id' => $conversation->id,
@@ -108,6 +116,8 @@ class WebChatLivePresenter
             'time' => self::threadTime($conversation->last_message_at),
             'avatar_url' => $vendor?->profileImageUrl() ?: $vendor?->shopLogoUrl(),
             'initial' => strtoupper(substr($name, 0, 1)),
+            'is_online' => $isOnline,
+            'online_status' => $isOnline ? 'online' : 'offline',
             'url' => route('web.chat.index', array_filter([
                 'chat' => $conversation->id,
                 'search' => request('search'),

@@ -153,6 +153,12 @@
                 <div><dt>State</dt><dd>{{ $vendor->state ?? '—' }}</dd></div>
                 <div><dt>City</dt><dd>{{ $vendor->city ?? '—' }}</dd></div>
                 <div><dt>Pincode</dt><dd>{{ $vendor->pincode ?? '—' }}</dd></div>
+                @if ($vendor->latitude && $vendor->longitude)
+                    <div class="sm:col-span-2">
+                        <dt>Map coordinates</dt>
+                        <dd>{{ $vendor->latitude }}, {{ $vendor->longitude }}</dd>
+                    </div>
+                @endif
             </dl>
         </div>
 

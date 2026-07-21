@@ -90,7 +90,7 @@ class ConfigController extends ApiController
             ],
             'locations' => LocationResolver::catalog(),
             'location_other_value' => LocationResolver::OTHER,
-            'broadcasting' => \App\Support\BroadcastingConfig::clientConfig(url('/api/v2/broadcasting/auth')),
+            'broadcasting' => \App\Support\BroadcastingConfig::clientConfig('/api/v2/broadcasting/auth'),
         ]);
     }
 }

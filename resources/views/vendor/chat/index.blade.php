@@ -14,6 +14,7 @@
     class="vp-chat-layout"
     data-chat-live
     data-poll-url="{{ route('vendor.chat.poll', [], false) }}"
+    data-presence-url="{{ route('vendor.chat.presence', [], false) }}"
     data-chat-id="{{ $activeChat?->id }}"
     data-last-message-id="{{ $messages->last()?->id ?? 0 }}"
     data-chat-theme="vendor"
@@ -58,18 +59,25 @@
                     $isActive = $activeChat && $activeChat->id === $conversation->id;
                     $customer = $conversation->customer;
                     $preview = \App\Support\WebChatLivePresenter::threadPreview($conversation->latestMessage);
+                    $peerOnline = $customer
+                        ? app(\App\Services\ChatPresenceService::class)->customerOnline((int) $customer->id)
+                        : false;
                 @endphp
                 <a
                     href="{{ route('vendor.chat.index', array_filter(['chat' => $conversation->id, 'search' => request('search')]), false) }}"
-                    @class(['vp-chat-thread', 'is-active' => $isActive])
+                    @class(['vp-chat-thread', 'is-active' => $isActive, 'is-online' => $peerOnline, 'is-offline' => ! $peerOnline])
                     data-thread-id="{{ $conversation->id }}"
+                    data-online="{{ $peerOnline ? '1' : '0' }}"
                     data-chat-aside-thread
                 >
-                    @if ($customer?->profileImageUrl())
-                        <img src="{{ $customer->profileImageUrl() }}" alt="" class="vp-chat-avatar">
-                    @else
-                        <span class="vp-chat-avatar vp-chat-avatar--fallback">{{ strtoupper(substr($customer?->name ?? 'C', 0, 1)) }}</span>
-                    @endif
+                    <span class="chat-avatar-wrap">
+                        @if ($customer?->profileImageUrl())
+                            <img src="{{ $customer->profileImageUrl() }}" alt="" class="vp-chat-avatar">
+                        @else
+                            <span class="vp-chat-avatar vp-chat-avatar--fallback">{{ strtoupper(substr($customer?->name ?? 'C', 0, 1)) }}</span>
+                        @endif
+                        <span class="chat-online-dot" title="{{ $peerOnline ? 'Online' : 'Offline' }}" aria-label="{{ $peerOnline ? 'Online' : 'Offline' }}"></span>
+                    </span>
                     <div class="vp-chat-thread-body">
                         <div class="vp-chat-thread-top">
                             <strong>{{ $customer?->name ?? 'Customer' }}</strong>
@@ -88,6 +96,9 @@
 
     <div @class(['vp-chat-main', 'vp-chat-main--mobile-hide' => ! $activeChat])>
         @if ($activeChat && $activeChat->customer)
+            @php
+                $activePeerOnline = app(\App\Services\ChatPresenceService::class)->customerOnline((int) $activeChat->customer->id);
+            @endphp
             <div class="vp-chat-main-head">
                 <div class="vp-chat-main-user">
                     <button type="button" class="vp-chat-back" data-chat-aside-open aria-label="Open messages">
@@ -95,13 +106,17 @@
                             <path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/>
                         </svg>
                     </button>
-                    @if ($activeChat->customer->profileImageUrl())
-                        <img src="{{ $activeChat->customer->profileImageUrl() }}" alt="" class="vp-chat-avatar">
-                    @else
-                        <span class="vp-chat-avatar vp-chat-avatar--fallback">{{ strtoupper(substr($activeChat->customer->name, 0, 1)) }}</span>
-                    @endif
+                    <span @class(['chat-avatar-wrap', 'is-online' => $activePeerOnline, 'is-offline' => ! $activePeerOnline])>
+                        @if ($activeChat->customer->profileImageUrl())
+                            <img src="{{ $activeChat->customer->profileImageUrl() }}" alt="" class="vp-chat-avatar">
+                        @else
+                            <span class="vp-chat-avatar vp-chat-avatar--fallback">{{ strtoupper(substr($activeChat->customer->name, 0, 1)) }}</span>
+                        @endif
+                        <span class="chat-online-dot" title="{{ $activePeerOnline ? 'Online' : 'Offline' }}" aria-label="{{ $activePeerOnline ? 'Online' : 'Offline' }}"></span>
+                    </span>
                     <div>
                         <strong>{{ $activeChat->customer->name }}</strong>
+                        <span @class(['vp-chat-main-sub', 'is-online' => $activePeerOnline]) data-chat-online-label>{{ $activePeerOnline ? 'Online' : 'Offline' }}</span>
                         @if ($activeChat->customer->mobile)
                             <span class="vp-chat-main-sub">{{ $activeChat->customer->mobile }}</span>
                         @endif
@@ -216,6 +231,7 @@
     </div>
 </div>
 </div>
+@endsection
 
 @push('scripts')
 @php
@@ -225,4 +241,3 @@
 @include('partials.chat-realtime')
 <script src="/js/chat-live.js?v={{ @filemtime(public_path('js/chat-live.js')) }}"></script>
 @endpush
-@endsection

@@ -80,6 +80,7 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
 
         Route::get('chat', [ChatController::class, 'index'])->name('chat.index');
         Route::get('chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
+        Route::post('chat/presence', [ChatController::class, 'presence'])->name('chat.presence');
         Route::get('chat/{chat}', [ChatController::class, 'show'])->name('chat.show');
         Route::post('chat/{chat}/messages', [ChatController::class, 'sendMessage'])->name('chat.messages');
         Route::patch('chat/{chat}/messages/{message}', [ChatController::class, 'updateMessage'])->name('chat.messages.update');

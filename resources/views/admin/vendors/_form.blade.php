@@ -62,13 +62,18 @@
 @include('admin.partials.form-input', ['label' => 'Business Email ID', 'name' => 'business_email', 'type' => 'email', 'value' => old('business_email', $vendor?->business_email)])
 @include('admin.partials.form-input', ['label' => 'GST number', 'name' => 'gst_number', 'value' => old('gst_number', $vendor?->gst_number), 'restrict' => 'gst', 'placeholder' => '15-character GSTIN'])
 
-@include('admin.partials.address-fields', ['values' => [
-    'address' => $vendor?->address,
-    'country' => $vendor?->country,
-    'state' => $vendor?->state,
-    'city' => $vendor?->city,
-    'pincode' => $vendor?->pincode,
-]])
+@include('admin.partials.address-fields', [
+    'enableGooglePlaces' => true,
+    'values' => [
+        'address' => $vendor?->address,
+        'country' => $vendor?->country,
+        'state' => $vendor?->state,
+        'city' => $vendor?->city,
+        'pincode' => $vendor?->pincode,
+        'latitude' => $vendor?->latitude,
+        'longitude' => $vendor?->longitude,
+    ],
+])
 
 <p class="jb-form-section-title sm:col-span-2">KYC documents</p>
 <div class="sm:col-span-2">

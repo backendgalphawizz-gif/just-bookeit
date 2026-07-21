@@ -7,6 +7,7 @@ use App\Models\PortfolioItem;
 use App\Models\Vendor;
 use App\Support\Api\CatalogFilter;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\Api\VendorProximityFilter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,7 @@ class SearchController extends ApiController
         $request->validate([
             'q' => ['required', 'string', 'min:1', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
+            ...VendorProximityFilter::validationRules(),
         ]);
 
         $term = '%'.$request->string('q').'%';
@@ -30,6 +32,7 @@ class SearchController extends ApiController
 
         CatalogFilter::applyCustomerCatalogConstraints($itemsQuery);
         CatalogFilter::applyVendorCity($itemsQuery, $request->string('city')->toString());
+        VendorProximityFilter::applyToCatalogQuery($itemsQuery, $request);
 
         $items = $itemsQuery->latest('id')->limit(10)->get();
 
@@ -42,7 +45,11 @@ class SearchController extends ApiController
                     ->orWhere('city', 'like', $term);
             });
 
-        if ($request->filled('city')) {
+        $coords = VendorProximityFilter::coordinatesFromRequest($request);
+
+        if ($coords) {
+            VendorProximityFilter::applyOnVendorQuery($designersQuery, $coords['latitude'], $coords['longitude']);
+        } elseif ($request->filled('city')) {
             CatalogFilter::applyCityOnVendorQuery($designersQuery, $request->string('city')->toString());
         }
 

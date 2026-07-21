@@ -67,7 +67,7 @@ Auto-saved variables: `v1_token`, `v1_otp`, `v1_portfolio_item_id`, `v1_designer
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/v1/home` | Banners, services, shop categories, featured designers. `?city=` filters designers by vendor city (defaults to profile city when Bearer token sent). |
+| GET | `/v1/home` | Banners, services, shop categories, featured designers. `?city=` filters by vendor city. `?latitude=&longitude=` (or `lat`/`lng`) filters designers within the admin discovery radius (km). |
 | GET | `/v1/categories` | `?type=service`, `?roots=1`, `?parent_id=` — each category includes `image_url` |
 
 **`GET /v1/categories?roots=1`** returns shop categories and services separately:
@@ -84,11 +84,16 @@ Auto-saved variables: `v1_token`, `v1_otp`, `v1_portfolio_item_id`, `v1_designer
 ```
 
 Upload images in **Admin → Categories** when creating or editing a category.
-| GET | `/v1/search` | `?q=` — catalog items + designers |
-| GET | `/v1/catalog` | `?search=`, `?category_id=`, `?vendor_id=`, `?service=`, `?page=`, `?per_page=` |
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/search` | `?q=` — catalog items + designers. Optional `?city=` or `?latitude=&longitude=` (admin radius). |
+| GET | `/v1/catalog` | `?search=`, `?category_id=`, `?vendor_id=`, `?service=`, `?city=`, `?latitude=&longitude=`, `?page=`, `?per_page=` |
 | GET | `/v1/catalog/{id}` | Product detail, reviews, related items |
-| GET | `/v1/designers` | `?search=`, `?featured=1`, `?page=` |
+| GET | `/v1/designers` | `?search=`, `?featured=1`, `?city=`, `?latitude=&longitude=`, `?page=` |
 | GET | `/v1/designers/{id}` | Designer profile + portfolio |
+
+**Location radius:** Admin → Settings → **Discovery radius** sets `discovery_radius_km` (default 25). When the app sends `latitude` + `longitude`, Home / Catalog / Designers / Search only return vendors (and their products) within that km. Vendors must have latitude/longitude saved. Without lat/lng, `city` filtering still works as before. Radius is also exposed on `GET /v1/config` as `features.discovery_radius_km`.
 
 ### Bookings (Bearer required)
 
@@ -128,10 +133,11 @@ Reference images: `reference_images[]` (max 5, jpeg/png/webp, 4MB each).
 
 | Field | Notes |
 |--------|--------|
-| `rental_start_date` / `rental_end_date` | **Always send top-level** when the cart has rental dress/jewellery (single or multi). |
-| `items_json` | JSON string of cart lines. Use this instead of a text field named `items` when uploading `items[N][reference_images][]`. |
-| `items[N][…]` | Nested form fields also work (and survive with image uploads). |
-| `items[N][reference_images][]` | Optional images for line N. |
+| `items_json` | **Preferred** JSON string of cart lines when also uploading `items[N][reference_images][]`. |
+| `items` | JSON string of cart lines. **Do not** use this name if files are `items[N][…]` — PHP overwrites it. Use `items_json` instead, or upload files as `reference_images[N][]`. |
+| Per-line `rental_start_date` / `rental_end_date` | Required on each **rental dress / jewellery** line. Omit on fashion designer lines. |
+| Top-level rental dates | Optional fallback only (same window for every rental line). |
+| `items[N][reference_images][]` or `reference_images[N][]` | Optional images for line N. |
 
 **Working curl** (use `--form-string` for JSON so shells do not mangle it):
 
@@ -143,32 +149,54 @@ curl --location 'http://192.168.1.69:8000/api/v1/bookings' \
   --form 'city=Indoree' \
   --form 'pincode=452001' \
   --form 'shipment_required=1' \
-  --form 'rental_start_date=2026-07-22' \
-  --form 'rental_end_date=2026-07-24' \
   --form-string 'items_json=[{"cart_item_id":42,"portfolio_item_id":1,"quantity":1,"service_type":"fashion-designer","size":"XL"},{"cart_item_id":41,"portfolio_item_id":2,"quantity":1,"service_type":"rented-jewellery","rental_start_date":"2026-07-22","rental_end_date":"2026-07-24"}]' \
   --form 'items[0][reference_images][]=@/path/to/a.png' \
   --form 'items[1][reference_images][]=@/path/to/b.png'
 ```
 
-**Flutter FormData** (recommended):
+**Flutter FormData** — pick one pattern:
 
 ```dart
+// Option A (recommended): items_json + items[N] images
 final form = FormData.fromMap({
   'delivery_address': address,
   'city': city,
   'pincode': pincode,
   'shipment_required': 1,
-  // Required for any rental dress/jewellery in the cart:
-  'rental_start_date': '2026-07-22',
-  'rental_end_date': '2026-07-24',
-  // Do NOT use field name "items" for the JSON when also uploading items[n][reference_images][]
-  'items_json': jsonEncode(lineItems),
+  'items_json': jsonEncode([
+    {
+      'cart_item_id': 42,
+      'portfolio_item_id': 1,
+      'service_type': 'fashion-designer',
+      'size': 'XL',
+      // no rental dates
+    },
+    {
+      'cart_item_id': 58,
+      'portfolio_item_id': 2,
+      'service_type': 'rented-jewellery',
+      'customer_notes': 'for the testing',
+      'rental_start_date': '2026-07-22',
+      'rental_end_date': '2026-07-24',
+    },
+  ]),
 });
 form.files.add(MapEntry('items[0][reference_images][]', await MultipartFile.fromFile(path0)));
 form.files.add(MapEntry('items[1][reference_images][]', await MultipartFile.fromFile(path1)));
+
+// Option B: keep field name "items", but do NOT prefix files with items[...]
+final formB = FormData.fromMap({
+  'items': jsonEncode(lineItems), // dates live here
+});
+formB.files.add(MapEntry('reference_images[0][]', await MultipartFile.fromFile(path0)));
 ```
 
-**Single-item booking** (no cart / no `items_json`): send top-level `portfolio_item_id` + the same `rental_start_date` / `rental_end_date` when the product is rental dress or jewellery.
+**Per-item rental rules**
+- `fashion-designer` → **no** `rental_start_date` / `rental_end_date` (and none required)
+- `rented-dress` / `rented-jewellery` → each line must include its own dates
+- Mixed carts can use different date ranges per rental line
+
+**Single-item booking** (no cart / no `items_json`): send top-level `portfolio_item_id` + `rental_start_date` / `rental_end_date` when the product is rental dress or jewellery.
 
 ### Payment (Bearer required)
 
@@ -228,9 +256,10 @@ form.files.add(MapEntry('items[1][reference_images][]', await MultipartFile.from
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/v1/chats` | Chat list. `?search=` filters by designer name |
+| GET | `/v1/chats` | Chat list. `?search=` filters by designer name. Each item includes `is_online` / `online_status` for the designer |
 | POST | `/v1/chats` | Start chat: `{ "vendor_id", "message?" }` |
-| GET | `/v1/chats/{id}/messages` | Message history (marks vendor messages read) |
+| POST | `/v1/chats/presence` | Mark self online/offline while chat is open: `{ "status": "online" \| "offline" }`. Call `online` when opening a thread, `offline` when leaving. Heartbeat every ~25s while open |
+| GET | `/v1/chats/{id}/messages` | Message history (marks vendor messages read; refreshes your online presence) |
 | POST | `/v1/chats/{id}/messages` | Send message: `{ "body" }` or `multipart` with `attachment` |
 
 ### Help & Support (Bearer required)
@@ -252,8 +281,8 @@ form.files.add(MapEntry('items[1][reference_images][]', await MultipartFile.from
 | Booking overview | `GET /v1/bookings/preview/{id}` → `POST /v1/bookings` |
 | Payment | `GET /v1/payment/bookings/{id}` → `POST /v1/payment/bookings/{id}/pay` |
 | Booking history | `GET /v1/bookings?tab=designers` |
-| Chat list | `GET /v1/chats` |
-| Chat thread | `GET /v1/chats/{id}/messages` → `POST /v1/chats/{id}/messages` |
+| Chat list | `GET /v1/chats` (`is_online` / `online_status`) |
+| Chat thread | `POST /v1/chats/presence` (`online`/`offline`) → `GET /v1/chats/{id}/messages` → `POST /v1/chats/{id}/messages` |
 | Profile | `GET /v1/profile` |
 | Measurements | `GET/POST/PUT/DELETE /v1/measurements` |
 | Address | `GET/POST/PUT/DELETE /v1/addresses` |

@@ -20,7 +20,7 @@ class CheckoutItemPayloadSupport
     public static function hydrateItemsPayload(array $data, ?Request $request = null): array
     {
         if ($request) {
-            foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'from_date', 'to_date', 'items_json'] as $key) {
+            foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'from_date', 'to_date', 'items_json', 'cart_items', 'line_items'] as $key) {
                 if (blank($data[$key] ?? null) && $request->filled($key)) {
                     $data[$key] = $request->input($key);
                 }
@@ -35,26 +35,108 @@ class CheckoutItemPayloadSupport
             }
         }
 
+        // Laravel validate()/all() merges $_FILES into "items", which hides the JSON string that
+        // Flutter still sent as a text field named "items" alongside items[N][reference_images][].
+        // Prefer the raw POST/input string (or items_json) over that file-merged shell.
+        $itemsCandidate = self::preferredItemsCandidate($data, $request);
+
         $resolved = self::resolveItemsList(
             $data['items_json'] ?? ($request?->input('items_json')),
-            $data['items'] ?? ($request?->input('items')),
+            $data['cart_items'] ?? ($request?->input('cart_items')),
+            $data['line_items'] ?? ($request?->input('line_items')),
+            $itemsCandidate,
         );
 
         if ($resolved !== null) {
             $data['items'] = $resolved;
+        } elseif (self::itemsJsonWasClobberedByFiles($data, $request)) {
+            throw new InvalidArgumentException(
+                'Cart line JSON was overwritten by file fields named items[N][reference_images][]. '
+                .'Send the lines as items_json (keep image fields as items[N][reference_images][]), '
+                .'or keep field name items and upload images as reference_images[N][] instead. '
+                .'Rental dress/jewellery lines need rental_start_date and rental_end_date; fashion designer lines do not.'
+            );
         }
 
-        unset($data['items_json']);
+        unset($data['items_json'], $data['cart_items'], $data['line_items']);
 
         return $data;
     }
 
     /**
+     * Recover the cart-line JSON when validate()/all() merged upload files over the "items" text field.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected static function preferredItemsCandidate(array $data, ?Request $request): mixed
+    {
+        $fromData = $data['items'] ?? null;
+        $fromInput = $request?->input('items');
+        $fromPost = $request?->request->all()['items'] ?? null;
+
+        foreach ([$fromInput, $fromPost, $fromData] as $candidate) {
+            if (is_string($candidate) && self::parseItemsCandidate($candidate) !== null) {
+                return $candidate;
+            }
+        }
+
+        foreach ([$fromInput, $fromPost, $fromData] as $candidate) {
+            if (is_array($candidate) && self::parseItemsCandidate($candidate) !== null) {
+                return $candidate;
+            }
+        }
+
+        return $fromData ?? $fromInput ?? $fromPost;
+    }
+
+    /**
+     * True when multipart left only a file shell under "items" and no alternate JSON field.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function itemsJsonWasClobberedByFiles(array $data, ?Request $request = null): bool
+    {
+        $items = $data['items'] ?? $request?->input('items');
+
+        if (! is_array($items) || self::parseItemsCandidate($items) !== null) {
+            return false;
+        }
+
+        foreach (['items_json', 'cart_items', 'line_items'] as $key) {
+            if (filled($data[$key] ?? null) || $request?->filled($key)) {
+                return false;
+            }
+        }
+
+        // File-only shell, or empty array after PHP merged items[N][reference_images][] over the JSON string.
+        return $items === [] || self::arrayLooksLikeFileShell($items);
+    }
+
+    /** @param  array<mixed>  $items */
+    protected static function arrayLooksLikeFileShell(array $items): bool
+    {
+        foreach ($items as $row) {
+            if (! is_array($row)) {
+                return false;
+            }
+            if (self::rowHasItemIdentity($row)) {
+                return false;
+            }
+            if (! array_key_exists('reference_images', $row) && ! array_key_exists('reference_image', $row)) {
+                // Still treat unknown nested arrays without identity as clobbered shells.
+                continue;
+            }
+        }
+
+        return $items !== [];
+    }
+
+    /**
      * @return list<array<string, mixed>>|null
      */
-    public static function resolveItemsList(mixed $itemsJson, mixed $items): ?array
+    public static function resolveItemsList(mixed ...$candidates): ?array
     {
-        foreach ([$itemsJson, $items] as $candidate) {
+        foreach ($candidates as $candidate) {
             $parsed = self::parseItemsCandidate($candidate);
             if ($parsed !== null) {
                 return $parsed;
@@ -75,6 +157,10 @@ class CheckoutItemPayloadSupport
 
         if (is_string($candidate)) {
             $decoded = json_decode($candidate, true);
+            // Some clients double-encode the JSON string.
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
             if (! is_array($decoded)) {
                 return null;
             }
@@ -354,20 +440,20 @@ class CheckoutItemPayloadSupport
             return [];
         }
 
+        // Prefer non-colliding keys first so clients can keep a text field named "items".
         $candidates = [
-            "items.{$index}.reference_images",
-            "items.{$index}.reference_images.*",
-            "items[{$index}][reference_images]",
-            "items[{$index}][reference_images][]",
-            // Non-colliding alternatives when items_json holds the line payload.
-            "item_images.{$index}",
-            "item_images.{$index}.*",
-            "item_images[{$index}]",
-            "item_images[{$index}][]",
             "reference_images.{$index}",
             "reference_images.{$index}.*",
             "reference_images[{$index}]",
             "reference_images[{$index}][]",
+            "item_images.{$index}",
+            "item_images.{$index}.*",
+            "item_images[{$index}]",
+            "item_images[{$index}][]",
+            "items.{$index}.reference_images",
+            "items.{$index}.reference_images.*",
+            "items[{$index}][reference_images]",
+            "items[{$index}][reference_images][]",
         ];
 
         foreach ($candidates as $key) {

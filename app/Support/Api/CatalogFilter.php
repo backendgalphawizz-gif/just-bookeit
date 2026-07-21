@@ -88,6 +88,7 @@ class CatalogFilter
             'subcategory' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
             'browse' => ['nullable', 'string', Rule::in([self::BROWSE_CATEGORIES, self::BROWSE_SERVICES])],
+            ...VendorProximityFilter::validationRules(),
         ];
     }
 
@@ -318,6 +319,7 @@ class CatalogFilter
             }
 
             self::applyVendorCity($query, $request->string('city')->toString());
+            VendorProximityFilter::applyToCatalogQuery($query, $request);
 
             return $query;
         }
@@ -346,6 +348,7 @@ class CatalogFilter
         }
 
         self::applyVendorCity($query, $request->string('city')->toString());
+        VendorProximityFilter::applyToCatalogQuery($query, $request);
 
         return $query;
     }
@@ -398,6 +401,7 @@ class CatalogFilter
             'audience' => $audience,
             'city' => $city !== '' ? $city : null,
             'vendor_id' => $request->filled('vendor_id') ? $request->integer('vendor_id') : null,
+            ...VendorProximityFilter::appliedMeta($request),
             'service' => $serviceCategory ? [
                 'id' => $serviceCategory->id,
                 'name' => $serviceCategory->name,

@@ -1296,6 +1296,29 @@ img { max-width: 100%; display: block; }
     object-fit: cover;
     flex-shrink: 0;
 }
+.chat-avatar-wrap {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+.chat-online-dot {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 999px;
+    background: #94a3b8;
+    border: 2px solid #fff;
+    box-sizing: content-box;
+}
+.vp-chat-thread.is-online .chat-online-dot,
+.chat-avatar-wrap.is-online .chat-online-dot {
+    background: #22c55e;
+}
+[data-chat-online-label].is-online {
+    color: #16a34a;
+}
 .vp-chat-avatar--fallback {
     display: grid;
     place-items: center;

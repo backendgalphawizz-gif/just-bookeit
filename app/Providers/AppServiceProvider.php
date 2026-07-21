@@ -13,6 +13,7 @@ use App\View\Composers\VendorLayoutComposer;
 use App\View\Composers\WebLayoutComposer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -28,6 +29,26 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Broadcast::routes(['middleware' => ['web', 'auth:customer,vendor']]);
+
+        // Prefer the matching panel session when both customer + vendor are logged in.
+        Broadcast::resolveAuthenticatedUserUsing(function ($request) {
+            if (Auth::guard('vendor')->check() && str_contains((string) $request->input('channel_name'), 'chat.vendor.')) {
+                return Auth::guard('vendor')->user();
+            }
+
+            if (Auth::guard('customer')->check() && str_contains((string) $request->input('channel_name'), 'chat.customer.')) {
+                return Auth::guard('customer')->user();
+            }
+
+            if (Auth::guard('vendor')->check() && Auth::guard('customer')->check()) {
+                // Conversation channels: return whichever party belongs to the thread.
+                return Auth::guard('vendor')->user();
+            }
+
+            return Auth::guard('vendor')->user()
+                ?? Auth::guard('customer')->user()
+                ?? Auth::user();
+        });
 
         if (! $this->app->runningInConsole()) {
             $request = request();

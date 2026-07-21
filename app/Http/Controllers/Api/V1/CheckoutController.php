@@ -51,12 +51,14 @@ class CheckoutController extends ApiController
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'items' => ['nullable'],
             'items_json' => ['nullable'],
+            'cart_items' => ['nullable'],
+            'line_items' => ['nullable'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
-        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'items_json'] as $key) {
+        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'items_json', 'cart_items', 'line_items'] as $key) {
             if ((! array_key_exists($key, $data) || blank($data[$key] ?? null)) && $request->filled($key)) {
                 $data[$key] = $request->input($key);
             }
@@ -89,6 +91,8 @@ class CheckoutController extends ApiController
             'measurement_profile_id' => ['nullable', 'integer'],
             'items' => ['nullable'],
             'items_json' => ['nullable'],
+            'cart_items' => ['nullable'],
+            'line_items' => ['nullable'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
@@ -98,7 +102,7 @@ class CheckoutController extends ApiController
             $data['measurement_profile_id'] = $data['measurement_id'];
         }
 
-        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'items_json'] as $key) {
+        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'items_json', 'cart_items', 'line_items'] as $key) {
             if ((! array_key_exists($key, $data) || blank($data[$key] ?? null)) && $request->filled($key)) {
                 $data[$key] = $request->input($key);
             }

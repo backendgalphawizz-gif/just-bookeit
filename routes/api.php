@@ -124,6 +124,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::get('chats', [ChatController::class, 'index'])->name('chats.index');
         Route::post('chats', [ChatController::class, 'store'])->name('chats.store');
+        Route::post('chats/presence', [ChatController::class, 'presence'])->name('chats.presence');
         Route::get('chats/{chat}/messages', [ChatController::class, 'messages'])->name('chats.messages');
         Route::post('chats/{chat}/messages', [ChatController::class, 'sendMessage'])->name('chats.messages.send');
         Route::post('broadcasting/auth', [\Illuminate\Broadcasting\BroadcastController::class, 'authenticate'])
@@ -187,6 +188,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
 
         Route::get('chats', [VendorChatController::class, 'index'])->name('chats.index');
         Route::post('chats', [VendorChatController::class, 'store'])->name('chats.store');
+        Route::post('chats/presence', [VendorChatController::class, 'presence'])->name('chats.presence');
         Route::get('chats/{chat}', [VendorChatController::class, 'show'])->name('chats.show');
         Route::get('chats/{chat}/messages', [VendorChatController::class, 'messages'])->name('chats.messages');
         Route::post('chats/{chat}/messages', [VendorChatController::class, 'sendMessage'])->name('chats.messages.send');

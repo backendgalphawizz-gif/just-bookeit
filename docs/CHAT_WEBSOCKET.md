@@ -101,3 +101,96 @@ Clients set `is_mine` with `message.sender_type === viewerRole`.
 5. Listen for `.chat.message.created` / `.updated` / `.deleted` (leading dot required).
 
 Web / vendor panel auth uses session cookie against `POST /broadcasting/auth`.
+
+## Flutter / mobile integration (v1 customer)
+
+There is **no** `GET /live-messages` API. Live delivery is WebSocket-only.
+
+```dart
+// 1) From GET /api/v1/config → data.broadcasting
+final b = config['broadcasting'];
+if (b['enabled'] != true) {
+  // fall back to polling GET /api/v1/chats/{id}/messages
+  return;
+}
+
+// 2) Connect (Pusher protocol → Reverb)
+final pusher = PusherClient(
+  b['key'], // e.g. c7tpsunm8sg7wyzx82wr
+  PusherOptions(
+    host: b['host'], // 192.168.1.69
+    wsPort: b['port'], // 8080
+    encrypted: b['useTLS'] == true,
+    auth: PusherAuth(
+      b['auth_endpoint'], // /api/v1/broadcasting/auth
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    ),
+  ),
+);
+await pusher.connect();
+
+// 3) Subscribe
+// Inbox:
+pusher.subscribe('private-chat.customer.$customerId');
+// Open thread:
+final channel = pusher.subscribe('private-chat.conversation.$chatId');
+
+// 4) Listen (event names include the leading dot in Echo;
+//    some Flutter Pusher packages use without the leading dot: chat.message.created)
+channel.bind('chat.message.created', (event) {
+  final data = jsonDecode(event.data);
+  final message = data['message'];
+  // append to UI; dedupe by message['id']
+});
+
+// 5) Still send/load via REST
+// GET  /api/v1/chats/{chatId}/messages
+// POST /api/v1/chats/{chatId}/messages
+```
+
+Vendor app is identical with `/api/v2` and channel `private-chat.vendor.$vendorId`.
+
+## Online / offline presence
+
+`is_online` / `online_status` on chat list/detail mean the **other party** currently has a chat thread open (not merely the app open).
+
+### Rules
+
+- Online only while a conversation is open.
+- Chat **list** alone does **not** mark you online.
+- Opening messages / sending keeps you online (server heartbeat TTL ≈ 60s).
+- Explicitly leave with `status=offline` when closing the thread.
+
+### Endpoints
+
+| Client | Endpoint | Body |
+|---|---|---|
+| Customer app | `POST /api/v1/chats/presence` | `{ "status": "online" }` or `{ "status": "offline" }` |
+| Vendor app | `POST /api/v2/chats/presence` | same |
+| Customer web | `POST /chat/presence` | `status=online\|offline` (+ CSRF) |
+| Vendor panel | `POST /vendor/chat/presence` | same |
+
+### Flutter
+
+```dart
+// When opening a thread:
+await api.post('/api/v1/chats/presence', {'status': 'online'});
+// Heartbeat while the thread screen stays mounted (~25s):
+Timer.periodic(Duration(seconds: 25), (_) {
+  api.post('/api/v1/chats/presence', {'status': 'online'});
+});
+// When leaving the thread (dispose / back):
+await api.post('/api/v1/chats/presence', {'status': 'offline'});
+```
+
+Chat list items already return:
+
+```json
+{
+  "is_online": true,
+  "online_status": "online"
+}
+```

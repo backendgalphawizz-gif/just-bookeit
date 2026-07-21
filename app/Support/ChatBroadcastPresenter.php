@@ -33,6 +33,9 @@ class ChatBroadcastPresenter
         $vendor = $conversation->vendor;
         $customer = $conversation->customer;
         $vendorName = $vendor?->brand_name ?? $vendor?->shop_name ?? 'Designer';
+        $presence = app(\App\Services\ChatPresenceService::class);
+        $customerOnline = $customer ? $presence->customerOnline((int) $customer->id) : false;
+        $vendorOnline = $vendor ? $presence->vendorOnline((int) $vendor->id) : false;
 
         return [
             'id' => $conversation->id,
@@ -43,6 +46,8 @@ class ChatBroadcastPresenter
             'preview' => WebChatLivePresenter::threadPreview($conversation->latestMessage),
             'time' => WebChatLivePresenter::threadTime($conversation->last_message_at),
             'last_message_at' => $conversation->last_message_at?->toIso8601String(),
+            'customer_is_online' => $customerOnline,
+            'vendor_is_online' => $vendorOnline,
         ];
     }
 }
