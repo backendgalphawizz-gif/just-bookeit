@@ -390,7 +390,7 @@ body {
 .jbw-product-card-img img {
     width: 100%;
     height: 100%;
-    object-fit: fill;
+    object-fit: cover;
     object-position: center center;
     display: block;
 }
@@ -462,9 +462,41 @@ body {
 }
 
 .shell-manage {
-   display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;
-   margin-bottom: 0.000rem !important;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   gap: 1.5rem;
+   flex-wrap: wrap;
+   margin-bottom: 0 !important;
+}
 
+.jbw-page-head-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.jbw-page-head-copy .jbw-page-title {
+    margin: 0;
+}
+
+.jbw-page-head-copy .jbw-page-subtitle {
+    margin: 0.25rem 0 0;
+    color: var(--c-muted);
+    font-size: 0.9375rem;
+}
+
+.jbw-page-head-media {
+    width: 130px;
+    height: 150px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.jbw-page-head-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
 }
 
 .jbw-page-head {
@@ -512,6 +544,12 @@ body {
     margin-bottom: 1rem;
 }
 
+@media (max-width: 640px) {
+    .jbw-cart-vendor {
+        padding: 1rem;
+    }
+}
+
 .jbw-cart-vendor-head {
     display: flex;
     align-items: center;
@@ -553,7 +591,7 @@ body {
 
 .jbw-line-item {
     display: grid;
-    grid-template-columns: 88px 1fr auto;
+    grid-template-columns: 88px minmax(0, 1fr) auto;
     gap: 1rem;
     align-items: start;
     padding: 1rem 0;
@@ -564,11 +602,19 @@ body {
 .jbw-line-item:first-child { padding-top: 0; }
 
 .jbw-line-item--compact {
-    grid-template-columns: 72px 1fr;
+    grid-template-columns: 72px minmax(0, 1fr);
     padding: 0.85rem 0;
 }
 
 .jbw-line-item--compact .jbw-line-item-actions { display: none; }
+
+.jbw-line-item-media {
+    min-width: 0;
+}
+
+.jbw-line-item-body {
+    min-width: 0;
+}
 
 .jbw-line-item-img {
     width: 100%;
@@ -600,14 +646,15 @@ body {
 .jbw-line-item-details {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.35rem 1rem;
+    column-gap: 1.25rem;
+    row-gap: 0.55rem;
     margin: 0;
 }
 
 .jbw-line-item-details > div {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
+    gap: 0.15rem;
     min-width: 0;
 }
 
@@ -616,8 +663,9 @@ body {
     font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     color: var(--c-muted);
+    line-height: 1.2;
 }
 
 .jbw-line-item-details dd {
@@ -625,6 +673,8 @@ body {
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--c-text, #1a1a1a);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
 }
 
 .jbw-line-item-total {
@@ -634,9 +684,46 @@ body {
 
 .jbw-line-item-actions {
     align-self: center;
+    flex-shrink: 0;
 }
 
 .jbw-line-item-remove-form { margin: 0; }
+
+@media (max-width: 640px) {
+    .jbw-line-item {
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+        gap: 0.75rem 0.85rem;
+    }
+
+    .jbw-line-item-actions {
+        grid-column: 1 / -1;
+        align-self: start;
+        justify-self: start;
+        padding-top: 0.15rem;
+    }
+
+    .jbw-line-item-title {
+        margin-bottom: 0.65rem;
+    }
+
+    /* Label | value rows — avoids CATEGORYQUANTITY mash on narrow screens */
+    .jbw-line-item-details {
+        grid-template-columns: 1fr;
+        gap: 0.4rem;
+    }
+
+    .jbw-line-item-details > div {
+        display: grid;
+        grid-template-columns: 5.75rem minmax(0, 1fr);
+        align-items: baseline;
+        column-gap: 0.75rem;
+        row-gap: 0;
+    }
+
+    .jbw-line-item-details dt {
+        letter-spacing: 0.02em;
+    }
+}
 
 .jbw-required {
     color: var(--c-primary);
@@ -1821,5 +1908,232 @@ body {
     object-fit: cover;
     margin: 0 auto 0.75rem;
     border: 3px solid var(--c-primary-soft);
+}
+
+/* Mobile home — keep after desktop rules so cascade wins */
+@media (max-width: 768px) {
+    .jbw-hero {
+        height: min(38vh, 260px);
+        min-height: 200px;
+        max-height: 260px;
+    }
+
+    .jbw-hero-content {
+        max-width: 92%;
+        padding: 1rem 0.875rem;
+    }
+
+    .jbw-hero-title {
+        font-size: clamp(1.5rem, 7vw, 2rem);
+        margin-bottom: 0.5rem;
+    }
+
+    .jbw-hero-text {
+        font-size: 0.875rem;
+        margin-bottom: 0.875rem;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .jbw-section-band {
+        padding: 1.35rem 0;
+    }
+
+    .jbw-section-band + .jbw-section-band {
+        padding-top: 0.35rem;
+    }
+
+    .service-slider,
+    .category-slider {
+        gap: 0.75rem;
+    }
+
+    .service-card,
+    .category-card {
+        width: min(46vw, 168px);
+        min-width: min(46vw, 168px);
+        max-width: 168px;
+    }
+
+    .jbw-tile,
+    .jbw-tile--category {
+        aspect-ratio: 3 / 4;
+        min-height: 0 !important;
+        border-radius: 14px;
+    }
+
+    .service-card .jbw-step-title,
+    .category-card .jbw-step-title {
+        margin-top: 0.55rem;
+        font-size: 0.875rem;
+    }
+
+    .jbw-trust-grid {
+        gap: 0.5rem 0.75rem;
+    }
+
+    .jbw-trust-item {
+        padding: 0.25rem 0;
+        gap: 0.55rem;
+    }
+
+    .jbw-trust-icon {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
+/* Catalog / services — mobile card & header alignment */
+@media (max-width: 899px) {
+    .shell-manage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 5.5rem;
+        align-items: center;
+        gap: 0.75rem 1rem;
+    }
+
+    .jbw-page-head-media {
+        width: 5.5rem;
+        height: 5.5rem;
+    }
+
+    .jbw-page-head-copy .jbw-page-title {
+        font-size: clamp(1.4rem, 6vw, 1.75rem);
+    }
+
+    .jbw-page-head-copy .jbw-page-subtitle {
+        font-size: 0.8125rem;
+        line-height: 1.4;
+    }
+
+    .jbw-product-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.75rem;
+    }
+
+    .jbw-product-card-img {
+        aspect-ratio: 3 / 4 !important;
+        min-height: 0 !important;
+        background: #f3f0eb;
+    }
+
+    .jbw-product-card-img img {
+        object-fit: cover !important;
+    }
+
+    .jbw-product-card-body {
+        padding: 0.7rem 0.65rem 0.8rem;
+    }
+
+    .jbw-subcategory-chip {
+        min-width: 4.75rem;
+        max-width: 5.25rem;
+    }
+
+    .jbw-subcategory-chip-img {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+
+    .jbw-container {
+        width: 100%;
+        max-width: 100%;
+        padding-inline: 1rem;
+        box-sizing: border-box;
+    }
+
+    .jbw-gallery-wrap {
+        flex-direction: column-reverse;
+        gap: 0.65rem;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .jbw-gallery-thumbs {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto !important;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        touch-action: pan-x;
+        scroll-snap-type: x proximity;
+        gap: 0.5rem;
+        padding-bottom: 6px;
+    }
+
+    .jbw-gallery-thumbs button {
+        flex: 0 0 64px !important;
+        width: 64px !important;
+        min-width: 64px !important;
+        scroll-snap-align: start;
+    }
+
+    .jbw-gallery-main {
+        aspect-ratio: 1 / 1 !important;
+        max-height: min(48vh, 360px) !important;
+        min-height: 220px !important;
+        border-radius: 14px;
+    }
+
+    .jbw-gallery-main img,
+    .jbw-gallery-main video {
+        object-fit: cover !important;
+    }
+
+    .jbw-product-detail {
+        gap: 1.15rem;
+        min-width: 0;
+    }
+
+    .jbw-detail-desc {
+        text-align: left;
+        width: 100%;
+        margin: 0.85rem 0 1rem;
+        font-size: 0.875rem;
+        line-height: 1.65;
+    }
+
+    .jbw-variant-options {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .jbw-variant-chip {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .jbw-detail-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+        width: 100%;
+    }
+
+    .jbw-detail-action-form,
+    .jbw-detail-actions .jbw-btn,
+    .jbw-detail-actions form {
+        width: 100% !important;
+        display: flex;
+        margin: 0;
+    }
+
+    .jbw-detail-action-form .jbw-btn {
+        width: 100% !important;
+        justify-content: center;
+    }
+
+    .reviews-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

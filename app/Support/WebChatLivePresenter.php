@@ -11,15 +11,30 @@ class WebChatLivePresenter
 {
     public static function message(ChatMessage $message, string $viewerRole): array
     {
-        return [
+        $isMine = $message->sender_type === $viewerRole;
+        $payload = [
             'id' => $message->id,
             'body' => $message->body,
             'attachment_url' => $message->attachmentUrl(),
             'attachment_type' => $message->attachmentType(),
             'attachment_name' => $message->attachmentDisplayName(),
-            'is_mine' => $message->sender_type === $viewerRole,
+            'is_mine' => $isMine,
+            'is_edited' => $message->edited_at !== null,
+            'can_edit' => $isMine && filled($message->body),
+            'can_delete' => $isMine,
             'sent_at' => $message->created_at?->format('g:i A'),
         ];
+
+        if ($isMine) {
+            $payload['update_url'] = $viewerRole === ChatMessage::SENDER_CUSTOMER
+                ? route('web.chat.messages.update', [$message->conversation_id, $message], false)
+                : route('vendor.chat.messages.update', [$message->conversation_id, $message], false);
+            $payload['delete_url'] = $viewerRole === ChatMessage::SENDER_CUSTOMER
+                ? route('web.chat.messages.destroy', [$message->conversation_id, $message], false)
+                : route('vendor.chat.messages.destroy', [$message->conversation_id, $message], false);
+        }
+
+        return $payload;
     }
 
     public static function threadPreview(?ChatMessage $message): string

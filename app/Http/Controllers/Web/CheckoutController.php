@@ -45,11 +45,12 @@ class CheckoutController extends WebController
         $vendorShipments = $this->vendorShipmentsFromRequest($request, $summary['vendors'] ?? []);
 
         try {
+            // Soft preview: rental dates are collected on this page, so don't require them yet.
             $preview = $this->checkout->preview($customer, [
                 'rental_start_date' => old('rental_start_date'),
                 'rental_end_date' => old('rental_end_date'),
                 'vendor_shipments' => $vendorShipments,
-            ]);
+            ], requireRentalPeriod: false);
         } catch (InvalidArgumentException $exception) {
             return redirect()
                 ->route('web.cart.index')

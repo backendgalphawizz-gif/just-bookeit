@@ -27,8 +27,11 @@ class CheckoutService
         protected CheckoutRollupService $rollup
     ) {}
 
-    /** @return array<string, mixed> */
-    public function preview(Customer $customer, array $data): array
+    /**
+     * @param  bool  $requireRentalPeriod  When false, allow a soft preview (e.g. first checkout page load) before dates are chosen.
+     * @return array<string, mixed>
+     */
+    public function preview(Customer $customer, array $data, bool $requireRentalPeriod = true): array
     {
         $cartItems = $this->cart->itemsFor($customer);
 
@@ -37,7 +40,10 @@ class CheckoutService
         }
 
         $data = CheckoutItemPayloadSupport::normalizeCheckoutDates($data);
-        $this->assertRentalPeriodWhenNeeded($cartItems, $data);
+
+        if ($requireRentalPeriod) {
+            $this->assertRentalPeriodWhenNeeded($cartItems, $data);
+        }
 
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);
         $lineOverrides = CheckoutItemPayloadSupport::normalizeMap($data['items'] ?? null);

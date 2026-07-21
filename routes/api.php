@@ -94,8 +94,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::get('payment/methods', [PaymentController::class, 'methods'])->name('payment.methods');
         Route::get('payment/bookings/{booking}', [PaymentController::class, 'summary'])->name('payment.summary');
+        Route::post('payment/bookings/{booking}/razorpay/order', [PaymentController::class, 'createRazorpayOrder'])->name('payment.razorpay.order');
         Route::post('payment/bookings/{booking}/pay', [PaymentController::class, 'pay'])->name('payment.pay');
         Route::get('payment/checkout-orders/{checkoutOrder}', [PaymentController::class, 'checkoutSummary'])->name('payment.checkout.summary');
+        Route::post('payment/checkout-orders/{checkoutOrder}/razorpay/order', [PaymentController::class, 'createCheckoutRazorpayOrder'])->name('payment.checkout.razorpay.order');
         Route::post('payment/checkout-orders/{checkoutOrder}/pay', [PaymentController::class, 'payCheckout'])->name('payment.checkout.pay');
 
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

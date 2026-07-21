@@ -127,9 +127,9 @@
 
                 @auth('customer')
                     @if ($webCustomer->is_guest)
-                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheightjbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Create account to book</a>
+                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Create account to book</a>
                     @else
-                        <form method="POST" action="{{ route('web.cart.store') }}" id="jbw-add-to-cart-form" style="display:inline">
+                        <form method="POST" action="{{ route('web.cart.store') }}" id="jbw-add-to-cart-form" class="jbw-detail-action-form">
                             @csrf
                             <input type="hidden" name="portfolio_item_id" value="{{ $item->id }}">
                             <input type="hidden" name="redirect" value="{{ route('web.catalog.show', $item) }}">
@@ -161,10 +161,8 @@
             </div>
         </section>
     @endif
-    <section class="jbw-section" style="padding-top: 0rem;">
-        <div>
-            <h2 class="jbw-product-detail-title">Customer Reviews</h2>
-        </div>
+    <section class="jbw-section jbw-reviews-block" style="padding-top: 0;">
+        <h2 class="jbw-product-detail-title">Customer Reviews</h2>
 
         @if ($reviewCount > 0)
             @php
@@ -255,17 +253,36 @@
     window.jbwShowProductGalleryImage = (url) => showGalleryMedia('image', url, null);
 
     if (gallery) {
+        const thumbsStrip = gallery.querySelector('.jbw-gallery-thumbs');
+
+        const activateThumb = (btn) => {
+            gallery.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => thumb.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            showGalleryMedia(
+                btn.dataset.galleryType || 'image',
+                btn.dataset.galleryUrl,
+                btn.dataset.galleryPoster || null
+            );
+            if (typeof btn.scrollIntoView === 'function') {
+                btn.scrollIntoView({
+                    behavior: 'smooth',
+                    inline: 'center',
+                    block: 'nearest',
+                });
+            }
+        };
+
         gallery.querySelectorAll('[data-gallery-url]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                gallery.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => thumb.classList.remove('is-active'));
-                btn.classList.add('is-active');
-                showGalleryMedia(
-                    btn.dataset.galleryType || 'image',
-                    btn.dataset.galleryUrl,
-                    btn.dataset.galleryPoster || null
-                );
-            });
+            btn.addEventListener('click', () => activateThumb(btn));
         });
+
+        // Keep the initially selected thumb visible in the horizontal strip.
+        const initialActive = gallery.querySelector('.jbw-gallery-thumb.is-active');
+        if (initialActive && thumbsStrip) {
+            requestAnimationFrame(() => {
+                initialActive.scrollIntoView({ inline: 'center', block: 'nearest' });
+            });
+        }
     }
 
     const picker = document.getElementById('jbw-variant-picker');
@@ -293,10 +310,11 @@
         if (syncGallery && input.dataset.image) {
             window.jbwShowProductGalleryImage(input.dataset.image);
             gallery?.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => {
-                thumb.classList.toggle(
-                    'is-active',
-                    thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === input.dataset.image
-                );
+                const isMatch = thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === input.dataset.image;
+                thumb.classList.toggle('is-active', isMatch);
+                if (isMatch && typeof thumb.scrollIntoView === 'function') {
+                    thumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
             });
         }
 

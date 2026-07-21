@@ -62,8 +62,11 @@
                 @endif
             </section>
 
-            <form method="POST" action="{{ route('web.checkout.payment.pay', $checkoutOrder) }}" class="jbw-overview-card">
+            <form id="jbw-payment-form" method="POST" action="{{ route('web.checkout.payment.pay', $checkoutOrder) }}" class="jbw-overview-card">
                 @csrf
+                <input type="hidden" name="razorpay_payment_id" value="">
+                <input type="hidden" name="razorpay_order_id" value="">
+                <input type="hidden" name="razorpay_signature" value="">
                 <p class="jbw-overview-label">Payment method</p>
                 <div class="jbw-payment-methods">
                     @foreach ($paymentMethods as $method)
@@ -77,7 +80,13 @@
                 <button type="submit" class="jbw-btn jbw-btn--primary jbw-btn--block jbw-payment-submit">
                     {{ $pricing['pay_label'] ?? ('Pay ₹'.number_format($pricing['payable_now'] ?? $checkoutOrder->grand_total, 0)) }}
                 </button>
-                <p class="jbw-payment-secure-note">Secure demo payment — no real charge is made.</p>
+                <p class="jbw-payment-secure-note">
+                    @if (! empty($razorpayEnabled))
+                        Secured by Razorpay. Test mode — use Razorpay test cards / UPI.
+                    @else
+                        Secure demo payment — no real charge is made.
+                    @endif
+                </p>
             </form>
         </div>
 
@@ -113,4 +122,7 @@
         </aside>
     </div>
 </div>
+@push('scripts')
+@include('web.partials.razorpay-checkout', ['razorpayOptions' => $razorpayOptions ?? null])
+@endpush
 @endsection

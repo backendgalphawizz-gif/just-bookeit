@@ -1453,6 +1453,83 @@ img { max-width: 100%; display: block; }
     font-size: .68rem;
     color: var(--vp-muted);
 }
+.vp-chat-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: .2rem;
+    margin-top: .2rem;
+}
+.vp-chat-row--theirs .vp-chat-meta {
+    align-items: flex-start;
+}
+.vp-chat-message-actions {
+    display: flex;
+    gap: .55rem;
+}
+.vp-chat-action {
+    border: 0;
+    background: none;
+    padding: 0;
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--vp-muted);
+    cursor: pointer;
+}
+.vp-chat-action:hover { color: #0f172a; }
+.vp-chat-action--danger:hover { color: #b42318; }
+.vp-chat-edited {
+    color: var(--vp-muted);
+    font-weight: 500;
+}
+.vp-chat-edit-banner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+    margin: 0 .15rem;
+    padding: .65rem .75rem;
+    border-left: 3px solid var(--vp-teal, #0f766e);
+    border-radius: .65rem;
+    background: #ecfeff;
+}
+.vp-chat-edit-banner[hidden] {
+    display: none !important;
+}
+.vp-chat-edit-banner-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+.vp-chat-edit-banner-copy strong {
+    font-size: .75rem;
+    font-weight: 800;
+    color: var(--vp-teal, #0f766e);
+}
+.vp-chat-edit-banner-copy span {
+    font-size: .8125rem;
+    color: var(--vp-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.vp-chat-edit-banner-close {
+    border: 0;
+    background: transparent;
+    color: var(--vp-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+.vp-chat-row.is-editing .vp-chat-bubble {
+    outline: 2px solid rgb(15 118 110 / 0.35);
+    outline-offset: 2px;
+}
+.vp-chat-compose.is-editing-message .vp-chat-attach[hidden] {
+    display: none !important;
+}
 .vp-chat-attachment {
     display: block;
     margin-top: .5rem;
@@ -5075,6 +5152,8 @@ border-bottom: 0px !important;
 .vp-chat-attach-preview-thumb {
     width: 3rem;
     height: 3rem;
+    max-width: 3rem;
+    max-height: 3rem;
     border-radius: .65rem;
     object-fit: cover;
     flex-shrink: 0;

@@ -141,4 +141,74 @@ class ChatController extends WebController
             ->route('web.chat.index', ['chat' => $chat->id])
             ->with('success', 'Message sent.');
     }
+
+    public function updateMessage(Request $request, Conversation $chat, ChatMessage $message): JsonResponse|RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($chat->customer_id === $customer->id, 403);
+        abort_unless($message->conversation_id === $chat->id, 404);
+        abort_unless(
+            $message->sender_type === ChatMessage::SENDER_CUSTOMER && (int) $message->sender_id === (int) $customer->id,
+            403
+        );
+        abort_unless(filled($message->body) || filled($message->attachment_path), 422);
+
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $message->forceFill([
+            'body' => trim($data['body']),
+            'edited_at' => now(),
+        ])->save();
+
+        $chat->load(['vendor', 'latestMessage']);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'message' => WebChatLivePresenter::message($message->fresh(), ChatMessage::SENDER_CUSTOMER),
+                'thread' => WebChatLivePresenter::customerThread($chat),
+            ]);
+        }
+
+        return redirect()
+            ->route('web.chat.index', ['chat' => $chat->id])
+            ->with('success', 'Message updated.');
+    }
+
+    public function destroyMessage(Request $request, Conversation $chat, ChatMessage $message): JsonResponse|RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($chat->customer_id === $customer->id, 403);
+        abort_unless($message->conversation_id === $chat->id, 404);
+        abort_unless(
+            $message->sender_type === ChatMessage::SENDER_CUSTOMER && (int) $message->sender_id === (int) $customer->id,
+            403
+        );
+
+        if ($message->attachment_path) {
+            StoresUploadedFiles::delete($message->attachment_path);
+        }
+
+        $messageId = $message->id;
+        $message->delete();
+
+        $latest = $chat->messages()->latest('id')->first();
+        $chat->forceFill([
+            'last_message_at' => $latest?->created_at,
+        ])->save();
+        $chat->load(['vendor', 'latestMessage']);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'deleted' => true,
+                'message_id' => $messageId,
+                'thread' => WebChatLivePresenter::customerThread($chat),
+            ]);
+        }
+
+        return redirect()
+            ->route('web.chat.index', ['chat' => $chat->id])
+            ->with('success', 'Message deleted.');
+    }
 }

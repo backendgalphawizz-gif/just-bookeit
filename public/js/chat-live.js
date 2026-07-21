@@ -98,19 +98,64 @@
         `;
     }
 
+    function renderMessageActions(message, theme) {
+        // Edit / Delete temporarily disabled in the UI.
+        return '';
+
+        /*
+        if (!message.is_mine) {
+            return '';
+        }
+
+        const editBtn = message.can_edit
+            ? `<button type="button" class="${theme === 'vendor' ? 'vp-chat-action' : 'jbw-chat-action'}" data-chat-edit>Edit</button>`
+            : '';
+        const dangerClass = theme === 'vendor' ? 'vp-chat-action vp-chat-action--danger' : 'jbw-chat-action jbw-chat-action--danger';
+
+        return `
+            <div class="${theme === 'vendor' ? 'vp-chat-message-actions' : 'jbw-chat-message-actions'}">
+                ${editBtn}
+                <button type="button" class="${dangerClass}" data-chat-delete>Delete</button>
+            </div>
+        `;
+        */
+    }
+
+    function renderMessageMeta(message, theme) {
+        const edited = message.is_edited
+            ? `<span class="${theme === 'vendor' ? 'vp-chat-edited' : 'jbw-chat-edited'}">· Edited</span>`
+            : '';
+        const timeClass = theme === 'vendor' ? 'vp-chat-time' : 'jbw-chat-time';
+        const metaClass = theme === 'vendor' ? 'vp-chat-meta' : 'jbw-chat-meta';
+        const timeTag = theme === 'vendor' ? 'span' : 'p';
+
+        return `
+            <div class="${metaClass}">
+                <${timeTag} class="${timeClass}">${escapeHtml(message.sent_at || '')}${edited}</${timeTag}>
+                ${renderMessageActions(message, theme)}
+            </div>
+        `;
+    }
+
+    function messageUrlAttrs(message) {
+        const update = message.update_url ? ` data-update-url="${escapeHtml(message.update_url)}"` : '';
+        const destroy = message.delete_url ? ` data-delete-url="${escapeHtml(message.delete_url)}"` : '';
+        return `${update}${destroy}`;
+    }
+
     function renderVendorMessage(message) {
         const isMine = !!message.is_mine;
         const rowClass = isMine ? 'vp-chat-row vp-chat-row--mine' : 'vp-chat-row vp-chat-row--theirs';
         const bubbleClass = isMine ? 'vp-chat-bubble vp-chat-bubble--mine' : 'vp-chat-bubble vp-chat-bubble--theirs';
-        const body = message.body ? `<p>${escapeHtml(message.body)}</p>` : '';
+        const body = message.body ? `<p data-chat-body>${escapeHtml(message.body)}</p>` : '';
 
         return `
-            <div class="${rowClass}" data-message-id="${message.id}">
-                <div class="${bubbleClass}">
+            <div class="${rowClass}" data-message-id="${message.id}"${messageUrlAttrs(message)}>
+                <div class="${bubbleClass}" data-chat-bubble>
                     ${body}
                     ${renderAttachment(message, 'vendor')}
                 </div>
-                <span class="vp-chat-time">${escapeHtml(message.sent_at)}</span>
+                ${renderMessageMeta(message, 'vendor')}
             </div>
         `;
     }
@@ -120,15 +165,15 @@
             ? 'jbw-chat-message-wrapper jbw-chat-message-wrapper--mine'
             : 'jbw-chat-message-wrapper jbw-chat-message-wrapper--theirs';
         const bubbleClass = message.is_mine ? 'jbw-chat-bubble jbw-chat-bubble--mine' : 'jbw-chat-bubble jbw-chat-bubble--theirs';
-        const body = message.body ? `<p>${escapeHtml(message.body)}</p>` : '';
+        const body = message.body ? `<p data-chat-body>${escapeHtml(message.body)}</p>` : '';
 
         return `
-            <div class="${wrapperClass}" data-message-id="${message.id}">
-                <div class="${bubbleClass}">
+            <div class="${wrapperClass}" data-message-id="${message.id}"${messageUrlAttrs(message)}>
+                <div class="${bubbleClass}" data-chat-bubble>
                     ${body}
                     ${renderAttachment(message, 'customer')}
                 </div>
-                <p class="jbw-chat-time">${escapeHtml(message.sent_at)}</p>
+                ${renderMessageMeta(message, 'customer')}
             </div>
         `;
     }
@@ -474,6 +519,10 @@
             </div>
         `;
         preview.hidden = false;
+
+        const stack = form.closest('.vp-chat-compose-stack, .jbw-chat-compose-stack');
+        stack?.scrollIntoView({ block: 'nearest' });
+        form.querySelector('[data-chat-input]')?.focus();
     }
 
     function bindAttachPreview(form) {
@@ -509,6 +558,11 @@
 
     async function sendMessage(form, container) {
         if (form.dataset.chatSending === '1') {
+            return;
+        }
+
+        if (container.dataset.editingMessageId) {
+            await saveComposeEdit(container, form);
             return;
         }
 
@@ -624,6 +678,333 @@
         });
     }
 
+    function syncChatViewportHeight() {
+        const viewport = window.visualViewport;
+        const height = Math.round(viewport?.height || window.innerHeight || 0);
+
+        if (!height) {
+            return;
+        }
+
+        document.documentElement.style.setProperty('--jbw-app-height', `${height}px`);
+
+        if (document.body.classList.contains('jbw-body--chat')) {
+            const offsetTop = Math.max(0, Math.round(viewport?.offsetTop || 0));
+            document.body.style.height = `${height}px`;
+            document.body.style.top = `${offsetTop}px`;
+        }
+    }
+
+    function bindChatViewport(container) {
+        if (document.documentElement.dataset.jbwChatViewportBound === '1') {
+            syncChatViewportHeight();
+            return;
+        }
+
+        document.documentElement.dataset.jbwChatViewportBound = '1';
+
+        const onViewportChange = () => {
+            syncChatViewportHeight();
+            document.querySelectorAll('[data-chat-live]').forEach((node) => {
+                scrollMessages(node, node.dataset.chatPinnedBottom !== '0');
+            });
+        };
+
+        syncChatViewportHeight();
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', onViewportChange);
+            window.visualViewport.addEventListener('scroll', onViewportChange);
+        }
+
+        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('orientationchange', () => {
+            window.setTimeout(onViewportChange, 150);
+        });
+
+        document.addEventListener('focusin', (event) => {
+            if (!event.target.closest('[data-chat-input], [data-chat-compose]')) {
+                return;
+            }
+
+            window.setTimeout(onViewportChange, 50);
+            window.setTimeout(onViewportChange, 300);
+        });
+
+        document.addEventListener('focusout', (event) => {
+            if (!event.target.closest('[data-chat-input], [data-chat-compose]')) {
+                return;
+            }
+
+            window.setTimeout(onViewportChange, 50);
+            window.setTimeout(onViewportChange, 300);
+        });
+    }
+
+    function getComposeStack(container) {
+        return container.querySelector('.jbw-chat-compose-stack, .vp-chat-compose-stack');
+    }
+
+    function clearComposeEdit(container) {
+        const form = container.querySelector('[data-chat-compose]');
+        const banner = container.querySelector('[data-chat-edit-banner]');
+        const preview = banner?.querySelector('[data-chat-edit-preview]');
+        const input = form?.querySelector('[data-chat-input]');
+        const attach = form?.querySelector('.jbw-chat-attach, .vp-chat-attach');
+
+        container.querySelectorAll('[data-message-id].is-editing').forEach((row) => {
+            row.classList.remove('is-editing');
+        });
+
+        delete container.dataset.editingMessageId;
+        delete container.dataset.editingUpdateUrl;
+
+        if (banner) {
+            banner.hidden = true;
+        }
+        if (preview) {
+            preview.textContent = '';
+        }
+        if (input) {
+            input.placeholder = 'Type a message...';
+            if (!input.value.trim()) {
+                input.value = '';
+            }
+        }
+        if (attach) {
+            attach.hidden = false;
+        }
+        if (form) {
+            form.classList.remove('is-editing-message');
+        }
+    }
+
+    function startMessageEdit(row) {
+        const container = row.closest('[data-chat-live]');
+        const bodyNode = row.querySelector('[data-chat-body]');
+        const updateUrl = row.dataset.updateUrl;
+        const form = container?.querySelector('[data-chat-compose]');
+        const input = form?.querySelector('[data-chat-input]');
+        const banner = container?.querySelector('[data-chat-edit-banner]');
+        const preview = banner?.querySelector('[data-chat-edit-preview]');
+        const attach = form?.querySelector('.jbw-chat-attach, .vp-chat-attach');
+
+        if (!container || !bodyNode || !updateUrl || !form || !input) {
+            return;
+        }
+
+        const text = (bodyNode.textContent || '').trim();
+        if (!text) {
+            return;
+        }
+
+        clearComposeEdit(container);
+
+        container.dataset.editingMessageId = String(row.dataset.messageId || '');
+        container.dataset.editingUpdateUrl = updateUrl;
+        row.classList.add('is-editing');
+        form.classList.add('is-editing-message');
+
+        if (attach) {
+            attach.hidden = true;
+        }
+        clearAttachPreview(form);
+
+        input.value = text;
+        input.placeholder = 'Edit message...';
+        if (banner) {
+            banner.hidden = false;
+        }
+        if (preview) {
+            preview.textContent = text.length > 80 ? `${text.slice(0, 80)}…` : text;
+        }
+
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+
+        if (typeof input.scrollIntoView === 'function') {
+            getComposeStack(container)?.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    async function saveComposeEdit(container, form) {
+        const updateUrl = container.dataset.editingUpdateUrl;
+        const messageId = container.dataset.editingMessageId;
+        const input = form.querySelector('[data-chat-input]');
+        const body = (input?.value || '').trim();
+        const theme = container.dataset.chatTheme || 'customer';
+
+        if (!updateUrl || !messageId || !body) {
+            return;
+        }
+
+        if (form.dataset.chatSending === '1') {
+            return;
+        }
+
+        const submitButton = form.querySelector('[type="submit"]');
+        form.dataset.chatSending = '1';
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        try {
+            const payload = new FormData();
+            payload.append('_token', csrfToken());
+            payload.append('_method', 'PATCH');
+            payload.append('body', body);
+
+            const response = await fetch(resolveUrl(updateUrl), {
+                method: 'POST',
+                body: payload,
+                headers: jsonHeaders(),
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                let message = 'Could not update message.';
+                try {
+                    const errorData = await response.json();
+                    message = errorData.message
+                        || Object.values(errorData.errors || {}).flat()[0]
+                        || message;
+                } catch (e) {
+                    // ignore
+                }
+                window.alert(message);
+                return;
+            }
+
+            const data = await parseJsonResponse(response);
+            const row = container.querySelector(`[data-message-id="${messageId}"]`);
+
+            if (row && data.message) {
+                applyMessageUpdate(row, data.message, theme);
+            }
+
+            if (data.thread) {
+                promoteThread(container, data.thread, theme);
+            }
+
+            if (input) {
+                input.value = '';
+            }
+            clearComposeEdit(container);
+            scrollMessages(container, true);
+        } catch (error) {
+            window.alert('Could not update message. Please try again.');
+        } finally {
+            form.dataset.chatSending = '0';
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
+
+    function applyMessageUpdate(row, message, theme) {
+        const html = theme === 'vendor' ? renderVendorMessage(message) : renderCustomerMessage(message);
+        row.outerHTML = html;
+    }
+
+    async function deleteMessage(row) {
+        const deleteUrl = row.dataset.deleteUrl;
+        if (!deleteUrl) {
+            return;
+        }
+
+        if (!window.confirm('Delete this message?')) {
+            return;
+        }
+
+        const container = row.closest('[data-chat-live]');
+        if (container && String(container.dataset.editingMessageId || '') === String(row.dataset.messageId || '')) {
+            clearComposeEdit(container);
+            const input = container.querySelector('[data-chat-input]');
+            if (input) {
+                input.value = '';
+            }
+        }
+
+        const payload = new FormData();
+        payload.append('_token', csrfToken());
+        payload.append('_method', 'DELETE');
+
+        const response = await fetch(resolveUrl(deleteUrl), {
+            method: 'POST',
+            body: payload,
+            headers: jsonHeaders(),
+            credentials: 'same-origin',
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            let message = 'Could not delete message.';
+            try {
+                const errorData = await response.json();
+                message = errorData.message || message;
+            } catch (e) {
+                // ignore
+            }
+            window.alert(message);
+            return;
+        }
+
+        const data = await parseJsonResponse(response);
+        const theme = container?.dataset.chatTheme || 'customer';
+        row.remove();
+
+        if (container && data.thread) {
+            promoteThread(container, data.thread, theme);
+        }
+
+        const track = container ? getMessageTrack(container) : null;
+        if (track && !track.querySelector('[data-message-id]')) {
+            const emptyClass = theme === 'vendor' ? 'vp-chat-empty-thread' : 'jbw-chat-empty-thread';
+            const emptyText = theme === 'vendor'
+                ? 'No messages yet. Say hello to your customer.'
+                : 'Say hello to start the conversation.';
+            track.innerHTML = `<p class="${emptyClass}">${emptyText}</p>`;
+        }
+    }
+
+    function bindMessageActions(container) {
+        if (container.dataset.chatActionsBound === '1') {
+            return;
+        }
+
+        container.dataset.chatActionsBound = '1';
+
+        container.addEventListener('click', (event) => {
+            if (event.target.closest('[data-chat-edit-cancel]')) {
+                event.preventDefault();
+                const form = container.querySelector('[data-chat-compose]');
+                const input = form?.querySelector('[data-chat-input]');
+                clearComposeEdit(container);
+                if (input) {
+                    input.value = '';
+                }
+                return;
+            }
+
+            const row = event.target.closest('[data-message-id]');
+            if (!row || !container.contains(row)) {
+                return;
+            }
+
+            if (event.target.closest('[data-chat-edit]')) {
+                event.preventDefault();
+                startMessageEdit(row);
+                return;
+            }
+
+            if (event.target.closest('[data-chat-delete]')) {
+                event.preventDefault();
+                deleteMessage(row).catch(() => {});
+            }
+        });
+    }
+
     function bindContainer(container) {
         const form = container.querySelector('[data-chat-compose]');
 
@@ -638,14 +1019,10 @@
 
         bindMessageScroll(container);
         bindMobileAside(container);
+        bindMessageActions(container);
+        bindChatViewport(container);
         container.dataset.chatPinnedBottom = '1';
         scrollMessages(container, true);
-
-        if (window.visualViewport) {
-            const onViewportChange = () => scrollMessages(container, container.dataset.chatPinnedBottom !== '0');
-            window.visualViewport.addEventListener('resize', onViewportChange);
-            window.visualViewport.addEventListener('scroll', onViewportChange);
-        }
 
         if (container.dataset.chatLivePolling === '1') {
             return;

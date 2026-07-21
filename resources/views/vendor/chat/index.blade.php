@@ -110,15 +110,22 @@
             <div class="vp-chat-messages" id="vp-chat-messages" data-chat-messages>
                 <div class="vp-chat-messages-track" data-chat-messages-track>
                     @forelse ($messages as $message)
-                        @php $isMine = $message->isFromVendor(); @endphp
-                        <div @class(['vp-chat-row', 'vp-chat-row--mine' => $isMine, 'vp-chat-row--theirs' => ! $isMine]) data-message-id="{{ $message->id }}">
+                        @php
+                            $isMine = $message->isFromVendor();
+                            $payload = \App\Support\WebChatLivePresenter::message($message, \App\Models\ChatMessage::SENDER_VENDOR);
+                        @endphp
+                        <div @class(['vp-chat-row', 'vp-chat-row--mine' => $isMine, 'vp-chat-row--theirs' => ! $isMine])
+                            data-message-id="{{ $message->id }}"
+                            @if ($payload['can_edit'] ?? false) data-update-url="{{ $payload['update_url'] }}" @endif
+                            @if ($payload['can_delete'] ?? false) data-delete-url="{{ $payload['delete_url'] }}" @endif
+                        >
                             <div @class([
                                 'vp-chat-bubble',
                                 'vp-chat-bubble--mine' => $isMine,
                                 'vp-chat-bubble--theirs' => ! $isMine,
-                            ])>
+                            ]) data-chat-bubble>
                                 @if ($message->body)
-                                    <p>{{ $message->body }}</p>
+                                    <p data-chat-body>{{ $message->body }}</p>
                                 @endif
                                 @if ($message->attachmentUrl())
                                     @include('partials.chat-attachment-media', [
@@ -130,7 +137,24 @@
                                     ])
                                 @endif
                             </div>
-                            <span class="vp-chat-time">{{ $message->created_at?->format('g:i A') }}</span>
+                            <div class="vp-chat-meta">
+                                <span class="vp-chat-time">
+                                    {{ $message->created_at?->format('g:i A') }}
+                                    @if ($message->edited_at)
+                                        <span class="vp-chat-edited">· Edited</span>
+                                    @endif
+                                </span>
+                                {{-- Edit / Delete temporarily disabled
+                                @if ($isMine)
+                                    <div class="vp-chat-message-actions">
+                                        @if ($payload['can_edit'] ?? false)
+                                            <button type="button" class="vp-chat-action" data-chat-edit>Edit</button>
+                                        @endif
+                                        <button type="button" class="vp-chat-action vp-chat-action--danger" data-chat-delete>Delete</button>
+                                    </div>
+                                @endif
+                                --}}
+                            </div>
                         </div>
                     @empty
                         <p class="vp-chat-empty-thread">No messages yet. Say hello to your customer.</p>
@@ -139,6 +163,15 @@
             </div>
 
             <div class="vp-chat-compose-stack">
+                {{-- Edit banner temporarily disabled with Edit/Delete UI
+                <div class="vp-chat-edit-banner" data-chat-edit-banner hidden>
+                    <div class="vp-chat-edit-banner-copy">
+                        <strong>Edit message</strong>
+                        <span data-chat-edit-preview></span>
+                    </div>
+                    <button type="button" class="vp-chat-edit-banner-close" data-chat-edit-cancel aria-label="Cancel edit">&times;</button>
+                </div>
+                --}}
                 <div class="vp-chat-attach-preview" data-chat-attach-preview hidden>
                     <div class="vp-chat-attach-preview-body" data-chat-attach-preview-body></div>
                     <button type="button" class="vp-chat-attach-preview-clear" data-chat-attach-clear aria-label="Remove attachment">&times;</button>

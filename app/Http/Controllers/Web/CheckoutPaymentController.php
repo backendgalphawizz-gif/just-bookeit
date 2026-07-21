@@ -5,16 +5,21 @@ namespace App\Http\Controllers\Web;
 use App\Models\CheckoutOrder;
 use App\Models\PlatformSetting;
 use App\Services\Booking\BookingPaymentService;
+use App\Services\Payment\RazorpayService;
+use App\Support\RazorpayPaymentSupport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 class CheckoutPaymentController extends WebController
 {
     public function __construct(
-        protected BookingPaymentService $payments
+        protected BookingPaymentService $payments,
+        protected RazorpayService $razorpay
     ) {}
 
     public function show(CheckoutOrder $checkoutOrder): View|RedirectResponse
@@ -33,10 +38,23 @@ class CheckoutPaymentController extends WebController
                     : 'No payment is due for this checkout right now.');
         }
 
+        $razorpayOptions = null;
+        if ($this->razorpay->enabled()) {
+            try {
+                $razorpayOptions = RazorpayPaymentSupport::createCheckoutPayloadForCheckout($checkoutOrder, $customer, $pricing);
+            } catch (Throwable $e) {
+                return redirect()
+                    ->route('web.bookings.checkout.show', $checkoutOrder)
+                    ->with('error', $e->getMessage());
+            }
+        }
+
         return view('web.checkout.payment', [
             'checkoutOrder' => $checkoutOrder,
             'pricing' => $pricing,
-            'paymentMethods' => $this->paymentMethods(),
+            'paymentMethods' => RazorpayPaymentSupport::paymentMethods(),
+            'razorpayOptions' => $razorpayOptions,
+            'razorpayEnabled' => $this->razorpay->enabled(),
         ]);
     }
 
@@ -45,10 +63,13 @@ class CheckoutPaymentController extends WebController
         $customer = Auth::guard('customer')->user();
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
-        $methods = collect($this->paymentMethods())->pluck('id')->all();
+        $methods = collect(RazorpayPaymentSupport::paymentMethods())->pluck('id')->all();
 
         $data = $request->validate([
             'payment_method' => ['required', 'in:'.implode(',', $methods)],
+            'razorpay_order_id' => ['nullable', 'string'],
+            'razorpay_payment_id' => ['nullable', 'string'],
+            'razorpay_signature' => ['nullable', 'string'],
         ]);
 
         if ($data['payment_method'] === 'cod' && ! (bool) PlatformSetting::get('enable_cod', false)) {
@@ -56,11 +77,19 @@ class CheckoutPaymentController extends WebController
         }
 
         try {
+            if (RazorpayPaymentSupport::isOnlineMethod($data['payment_method'])) {
+                if (! $this->razorpay->enabled()) {
+                    throw new RuntimeException('Online payments are not configured.');
+                }
+                RazorpayPaymentSupport::assertVerifiedCheckoutPayment($request, $checkoutOrder);
+                $data['payment_method'] = 'razorpay';
+            }
+
             $checkoutOrder = $this->payments->payCheckout($checkoutOrder, $data['payment_method']);
             $summary = $this->payments->summaryForCheckout($checkoutOrder);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException|RuntimeException $e) {
             return redirect()
-                ->route('web.bookings.checkout.show', $checkoutOrder)
+                ->route('web.checkout.payment', $checkoutOrder)
                 ->with('error', $e->getMessage());
         }
 
@@ -71,21 +100,5 @@ class CheckoutPaymentController extends WebController
         return redirect()
             ->route('web.bookings.checkout.show', $checkoutOrder)
             ->with('success', $message);
-    }
-
-    /** @return array<int, array{id: string, label: string}> */
-    protected function paymentMethods(): array
-    {
-        $methods = [
-            ['id' => 'upi', 'label' => 'UPI'],
-            ['id' => 'debit_card', 'label' => 'Debit Card'],
-            ['id' => 'credit_card', 'label' => 'Credit Card'],
-        ];
-
-        if ((bool) PlatformSetting::get('enable_cod', false)) {
-            $methods[] = ['id' => 'cod', 'label' => 'Cash on Delivery'];
-        }
-
-        return $methods;
     }
 }

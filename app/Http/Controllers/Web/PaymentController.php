@@ -5,16 +5,21 @@ namespace App\Http\Controllers\Web;
 use App\Models\Order;
 use App\Models\PlatformSetting;
 use App\Services\Booking\BookingPaymentService;
+use App\Services\Payment\RazorpayService;
+use App\Support\RazorpayPaymentSupport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 class PaymentController extends WebController
 {
     public function __construct(
-        protected BookingPaymentService $payments
+        protected BookingPaymentService $payments,
+        protected RazorpayService $razorpay
     ) {}
 
     public function show(Order $order): View|RedirectResponse
@@ -34,10 +39,23 @@ class PaymentController extends WebController
 
         $order->load(['vendor', 'category', 'subcategory', 'orderItems']);
 
+        $razorpayOptions = null;
+        if ($this->razorpay->enabled()) {
+            try {
+                $razorpayOptions = RazorpayPaymentSupport::createCheckoutPayloadForOrder($order, $customer, $pricing);
+            } catch (Throwable $e) {
+                return redirect()
+                    ->route('web.bookings.show', $order)
+                    ->with('error', $e->getMessage());
+            }
+        }
+
         return view('web.bookings.payment', [
             'order' => $order,
             'pricing' => $pricing,
-            'paymentMethods' => $this->paymentMethods(),
+            'paymentMethods' => RazorpayPaymentSupport::paymentMethods(),
+            'razorpayOptions' => $razorpayOptions,
+            'razorpayEnabled' => $this->razorpay->enabled(),
         ]);
     }
 
@@ -46,10 +64,13 @@ class PaymentController extends WebController
         $customer = Auth::guard('customer')->user();
         abort_unless($order->customer_id === $customer->id, 403);
 
-        $methods = collect($this->paymentMethods())->pluck('id')->all();
+        $methods = collect(RazorpayPaymentSupport::paymentMethods())->pluck('id')->all();
 
         $data = $request->validate([
             'payment_method' => ['required', 'in:'.implode(',', $methods)],
+            'razorpay_order_id' => ['nullable', 'string'],
+            'razorpay_payment_id' => ['nullable', 'string'],
+            'razorpay_signature' => ['nullable', 'string'],
         ]);
 
         if ($data['payment_method'] === 'cod' && ! (bool) PlatformSetting::get('enable_cod', false)) {
@@ -57,11 +78,19 @@ class PaymentController extends WebController
         }
 
         try {
+            if (RazorpayPaymentSupport::isOnlineMethod($data['payment_method'])) {
+                if (! $this->razorpay->enabled()) {
+                    throw new RuntimeException('Online payments are not configured.');
+                }
+                RazorpayPaymentSupport::assertVerifiedOrderPayment($request, $order);
+                $data['payment_method'] = 'razorpay';
+            }
+
             $order = $this->payments->payOrder($order, $data['payment_method']);
             $summary = $this->payments->summaryForOrder($order);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException|RuntimeException $e) {
             return redirect()
-                ->route('web.bookings.show', $order)
+                ->route('web.bookings.payment', $order)
                 ->with('error', $e->getMessage());
         }
 
@@ -72,21 +101,5 @@ class PaymentController extends WebController
         return redirect()
             ->route('web.bookings.show', $order)
             ->with('success', $message);
-    }
-
-    /** @return array<int, array{id: string, label: string}> */
-    protected function paymentMethods(): array
-    {
-        $methods = [
-            ['id' => 'upi', 'label' => 'UPI'],
-            ['id' => 'debit_card', 'label' => 'Debit Card'],
-            ['id' => 'credit_card', 'label' => 'Credit Card'],
-        ];
-
-        if ((bool) PlatformSetting::get('enable_cod', false)) {
-            $methods[] = ['id' => 'cod', 'label' => 'Cash on Delivery'];
-        }
-
-        return $methods;
     }
 }

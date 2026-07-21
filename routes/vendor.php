@@ -82,6 +82,8 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::get('chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
         Route::get('chat/{chat}', [ChatController::class, 'show'])->name('chat.show');
         Route::post('chat/{chat}/messages', [ChatController::class, 'sendMessage'])->name('chat.messages');
+        Route::patch('chat/{chat}/messages/{message}', [ChatController::class, 'updateMessage'])->name('chat.messages.update');
+        Route::delete('chat/{chat}/messages/{message}', [ChatController::class, 'destroyMessage'])->name('chat.messages.destroy');
 
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');

@@ -3,7 +3,7 @@
 @section('title', 'Chat')
 
 @section('content')
-<div class="jbw-page--chat @if($activeChat) jbw-page--chat-active @endif">
+<div class="jbw-container jbw-page--chat @if($activeChat) jbw-page--chat-active @endif">
     <div class="jbw-page-head jbw-page-head--chat">
         <h1 class="jbw-page-title">Chat</h1>
         <!-- <p class="jbw-page-subtitle">Message designers about outfits, fittings, and bookings</p> -->
@@ -120,18 +120,25 @@
             <div class="jbw-chat-messages" id="jbw-chat-messages" data-chat-messages>
                 <div class="jbw-chat-messages-track" data-chat-messages-track>
                     @forelse ($messages as $message)
+                    @php
+                        $isMine = $message->isFromCustomer();
+                        $payload = \App\Support\WebChatLivePresenter::message($message, \App\Models\ChatMessage::SENDER_CUSTOMER);
+                    @endphp
                     <div @class([
                         'jbw-chat-message-wrapper',
-                        'jbw-chat-message-wrapper--mine' => $message->isFromCustomer(),
-                        'jbw-chat-message-wrapper--theirs' => ! $message->isFromCustomer(),
-                    ]) data-message-id="{{ $message->id }}">
+                        'jbw-chat-message-wrapper--mine' => $isMine,
+                        'jbw-chat-message-wrapper--theirs' => ! $isMine,
+                    ])
+                        data-message-id="{{ $message->id }}"
+                    
+                    >
                         <div @class([
                             'jbw-chat-bubble',
-                            'jbw-chat-bubble--mine' => $message->isFromCustomer(),
-                            'jbw-chat-bubble--theirs' => ! $message->isFromCustomer(),
-                        ])>
+                            'jbw-chat-bubble--mine' => $isMine,
+                            'jbw-chat-bubble--theirs' => ! $isMine,
+                        ]) data-chat-bubble>
                             @if ($message->body)
-                            <p>{{ $message->body }}</p>
+                            <p data-chat-body>{{ $message->body }}</p>
                             @endif
 
                             @if ($message->attachmentUrl())
@@ -145,7 +152,15 @@
                             @endif
                         </div>
 
-                        <p class="jbw-chat-time">{{ $message->created_at?->format('g:i A') }}</p>
+                        <div class="jbw-chat-meta">
+                            <p class="jbw-chat-time">
+                                {{ $message->created_at?->format('g:i A') }}
+                                @if ($message->edited_at)
+                                    <span class="jbw-chat-edited">· Edited</span>
+                                @endif
+                            </p>
+                            {{-- Edit / Delete temporarily disabled --}}
+                        </div>
                     </div>
                     @empty
                     <p class="jbw-chat-empty-thread">Say hello to start the conversation.</p>
@@ -154,6 +169,15 @@
             </div>
 
             <div class="jbw-chat-compose-stack">
+                {{-- Edit banner temporarily disabled with Edit/Delete UI
+                <div class="jbw-chat-edit-banner" data-chat-edit-banner hidden>
+                    <div class="jbw-chat-edit-banner-copy">
+                        <strong>Edit message</strong>
+                        <span data-chat-edit-preview></span>
+                    </div>
+                    <button type="button" class="jbw-chat-edit-banner-close" data-chat-edit-cancel aria-label="Cancel edit">&times;</button>
+                </div>
+                --}}
                 <div class="vp-chat-attach-preview jbw-chat-attach-preview" data-chat-attach-preview hidden>
                     <div class="vp-chat-attach-preview-body" data-chat-attach-preview-body></div>
                     <button type="button" class="vp-chat-attach-preview-clear" data-chat-attach-clear aria-label="Remove attachment">&times;</button>

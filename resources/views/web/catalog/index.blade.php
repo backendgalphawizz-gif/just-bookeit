@@ -34,10 +34,10 @@
         <img height="150" width="250" src="{{asset('assets/frontend/servicedetail.png')}}"/>
     </div> -->
 <div class="jbw-page-head shell-manage">
-    <div style="flex: 1; min-width: 280px;">
+    <div class="jbw-page-head-copy">
         <span class="jbw-eyebrow">Home / {{ $isServicesBrowse ? 'Services' : 'Shop' }}</span>
-        <h1 class="jbw-page-title" style="margin: 0;">{{ $isServicesBrowse ? 'Our services' : 'Shop by category' }}</h1>
-        <p class="jbw-page-subtitle" style="margin-top: 0.25rem; margin-bottom: 0; color: var(--c-muted); font-size: 0.9375rem;">
+        <h1 class="jbw-page-title">{{ $isServicesBrowse ? 'Our services' : 'Shop by category' }}</h1>
+        <p class="jbw-page-subtitle">
             @if ($isServicesBrowse)
                 Fashion designer bookings, rental dresses, and rental jewellery from top vendors.
             @else
@@ -45,23 +45,19 @@
             @endif
         </p>
     </div>
-    <!-- <div style="flex-shrink: 0;">
-        <img height="150" width="130" src="{{ asset('assets/frontend/servicedetail.png') }}" style="max-width: 100%; height: auto; display: block; object-fit: contain;"/>
-    </div> -->
-    <div style="width: 130px; height: 150px; flex-shrink: 0; overflow: hidden;">
-    <img
-        src="{{ asset('assets/frontend/servicedetail.png') }}"
-        alt="Service Detail"
-        style="width: 100%; height: 100%; object-fit: contain; display: block;"
-    />
-</div>
+    <div class="jbw-page-head-media">
+        <img
+            src="{{ asset('assets/frontend/servicedetail.png') }}"
+            alt=""
+        />
+    </div>
 </div>
     <div class="jbw-catalog-layout" x-data="{ filterOpen: false }">
 
         <button
             type="button"
             class="jbw-filter-toggle"
-            @click="filterOpen = !filterOpen"
+            x-on:click="filterOpen = !filterOpen"
             :aria-expanded="filterOpen"
         >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
