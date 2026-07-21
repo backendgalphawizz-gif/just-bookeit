@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\V2\PaymentController as VendorPaymentController;
 use App\Http\Controllers\Api\V2\PortfolioController as VendorPortfolioController;
 use App\Http\Controllers\Api\V2\ProductController as VendorProductController;
 use App\Http\Controllers\Api\V2\ProfileController as VendorProfileController;
+use App\Http\Controllers\Api\V2\EarningsController as VendorEarningsController;
 use App\Http\Controllers\Api\V2\VendorAuthController;
 use App\Http\Controllers\Api\V3\ConfigController as DriverConfigController;
 use App\Http\Controllers\Api\V3\DeliveryController as DriverDeliveryController;
@@ -196,6 +197,7 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
             ->name('broadcasting.auth');
 
         Route::get('payments', [VendorPaymentController::class, 'index'])->name('payments.index');
+        Route::get('earnings/analytics', [VendorEarningsController::class, 'analytics'])->name('earnings.analytics');
 
         Route::get('profile', [VendorProfileController::class, 'index'])->name('profile.index');
         Route::get('profile/pages', [VendorProfileController::class, 'pages'])->name('profile.pages');
