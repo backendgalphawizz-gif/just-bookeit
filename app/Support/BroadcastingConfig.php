@@ -6,8 +6,10 @@ class BroadcastingConfig
 {
     /**
      * Client config for web Echo and mobile Pusher clients.
-     * Host + auth endpoint always follow the current request host so LAN IPs work
-     * even when APP_URL is http://127.0.0.1:8000.
+     *
+     * Server-side PHP → Reverb uses REVERB_HOST / REVERB_PORT / REVERB_SCHEME
+     * (usually 127.0.0.1:8080 http). Clients use REVERB_CLIENT_* when set,
+     * otherwise the current request host + server Reverb port/scheme.
      *
      * @param  string|null  $authEndpoint  Absolute URL, or path like /api/v1/broadcasting/auth
      * @return array<string, mixed>
@@ -22,23 +24,29 @@ class BroadcastingConfig
             ? $request->getSchemeAndHttpHost()
             : rtrim((string) config('app.url'), '/');
 
+        $serverHost = (string) (config('broadcasting.connections.reverb.options.host') ?: '127.0.0.1');
+        $serverPort = (int) (config('broadcasting.connections.reverb.options.port') ?: 8080);
+        $serverScheme = (string) (config('broadcasting.connections.reverb.options.scheme') ?: 'http');
+
         $clientHost = config('broadcasting.connections.reverb.client_host');
         if (! filled($clientHost)) {
-            $clientHost = $request?->getHost()
-                ?: (string) (config('broadcasting.connections.reverb.options.host') ?: '127.0.0.1');
+            $clientHost = $request?->getHost() ?: $serverHost;
         }
 
-        $port = (int) (config('broadcasting.connections.reverb.options.port') ?: 8080);
-        $scheme = (string) (config('broadcasting.connections.reverb.options.scheme') ?: 'http');
+        $clientPort = config('broadcasting.connections.reverb.client_port');
+        $clientPort = filled($clientPort) ? (int) $clientPort : $serverPort;
+
+        $clientScheme = config('broadcasting.connections.reverb.client_scheme');
+        $clientScheme = filled($clientScheme) ? (string) $clientScheme : $serverScheme;
 
         return [
             'enabled' => $enabled,
             'driver' => 'reverb',
             'key' => (string) config('broadcasting.connections.reverb.key'),
             'host' => (string) $clientHost,
-            'port' => $port,
-            'scheme' => $scheme,
-            'useTLS' => $scheme === 'https',
+            'port' => $clientPort,
+            'scheme' => $clientScheme,
+            'useTLS' => $clientScheme === 'https',
             'auth_endpoint' => self::resolveAuthEndpoint($authEndpoint, $requestRoot),
             'channels' => [
                 'conversation' => 'private-chat.conversation.{id}',

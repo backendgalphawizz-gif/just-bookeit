@@ -173,7 +173,7 @@
 
                         <div class="jbw-chat-meta">
                             <p class="jbw-chat-time">
-                                {{ $message->created_at?->format('g:i A') }}
+                                {{ \App\Support\ChatDateTime::clock($message->created_at) }}
                                 @if ($message->edited_at)
                                     <span class="jbw-chat-edited">· Edited</span>
                                 @endif

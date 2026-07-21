@@ -14,6 +14,7 @@ use App\Models\VendorPortfolioImage;
 use App\Models\VendorWalletTransaction;
 use App\Services\Booking\BookingPricingService;
 use App\Support\BookingMeasurementSupport;
+use App\Support\ChatDateTime;
 use App\Support\OrderDispatchSupport;
 use App\Support\Api\VendorBookingStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -1004,7 +1005,7 @@ class VendorApiPresenter
             'online_status' => $isOnline ? 'online' : 'offline',
             'last_message' => $latest?->body,
             'last_message_at' => $latest?->created_at?->toIso8601String(),
-            'time_label' => $latest?->created_at?->diffForHumans(),
+            'time_label' => ChatDateTime::relative($latest?->created_at),
             'has_unread' => $unread > 0,
             'unread_count' => $unread,
             'has_chat' => true,
@@ -1062,9 +1063,9 @@ class VendorApiPresenter
             'attachment_name' => $message->attachmentDisplayName(),
             'is_mine' => $message->sender_type === ChatMessage::SENDER_VENDOR,
             'is_read' => $message->read_at !== null,
-            'sent_at' => $message->created_at?->format('g:i A'),
+            'sent_at' => ChatDateTime::clock($message->created_at),
             'sent_at_iso' => $message->created_at?->toIso8601String(),
-            'date_label' => $message->created_at?->isToday() ? 'TODAY' : $message->created_at?->format('M d, Y'),
+            'date_label' => ChatDateTime::dateLabel($message->created_at),
         ];
     }
 

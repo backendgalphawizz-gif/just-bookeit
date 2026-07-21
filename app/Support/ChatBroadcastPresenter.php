@@ -20,7 +20,7 @@ class ChatBroadcastPresenter
             'attachment_type' => $message->attachmentType(),
             'attachment_name' => $message->attachmentDisplayName(),
             'is_edited' => $message->edited_at !== null,
-            'sent_at' => $message->created_at?->format('g:i A'),
+            'sent_at' => ChatDateTime::clock($message->created_at),
             'created_at' => $message->created_at?->toIso8601String(),
         ];
     }

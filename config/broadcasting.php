@@ -41,7 +41,10 @@ return [
                 'scheme' => env('REVERB_SCHEME', 'https'),
                 'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
             ],
+            // What Flutter / browsers connect to (can differ from PHP → Reverb host).
             'client_host' => env('REVERB_CLIENT_HOST'),
+            'client_port' => env('REVERB_CLIENT_PORT'),
+            'client_scheme' => env('REVERB_CLIENT_SCHEME'),
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
             ],

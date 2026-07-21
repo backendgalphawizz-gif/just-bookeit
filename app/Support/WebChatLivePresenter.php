@@ -22,7 +22,7 @@ class WebChatLivePresenter
             'is_edited' => $message->edited_at !== null,
             'can_edit' => $isMine && filled($message->body),
             'can_delete' => $isMine,
-            'sent_at' => $message->created_at?->format('g:i A'),
+            'sent_at' => ChatDateTime::clock($message->created_at),
         ];
 
         if ($isMine) {
@@ -57,23 +57,7 @@ class WebChatLivePresenter
 
     public static function threadTime(?CarbonInterface $at): string
     {
-        if (! $at) {
-            return '';
-        }
-
-        if ($at->isToday()) {
-            return $at->format('g:i A');
-        }
-
-        if ($at->isYesterday()) {
-            return 'Yesterday';
-        }
-
-        if ($at->isCurrentYear()) {
-            return $at->format('M j');
-        }
-
-        return $at->format('M j, Y');
+        return ChatDateTime::threadTime($at);
     }
 
     /** @return array<string, mixed> */

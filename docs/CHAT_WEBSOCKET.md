@@ -36,6 +36,75 @@ php artisan reverb:start
 
 On phones / other devices on your LAN, leave `REVERB_CLIENT_HOST` empty so the client uses the same host as the page (e.g. `192.168.1.69`). Allow inbound TCP **8080** on the machine running Reverb.
 
+## Production (HTTPS / Apache)
+
+Flutter connecting to `https://your-domain/app/...` **fails** until:
+
+1. **Reverb is running** on the server (`php artisan reverb:start` or Supervisor).
+2. **Apache/Nginx proxies WebSocket** `/app` → `127.0.0.1:8080`.
+3. **`.env` separates PHP → Reverb vs client WSS**:
+
+```env
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=...
+REVERB_APP_KEY=...
+REVERB_APP_SECRET=...
+
+# PHP broadcasts to Reverb on localhost (NOT the public HTTPS URL)
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
+REVERB_SCHEME=http
+REVERB_SERVER_HOST=0.0.0.0
+REVERB_SERVER_PORT=8080
+
+# Apps / browsers connect via public WSS (Apache proxies /app)
+REVERB_CLIENT_HOST=just-bookeit.developmentalphawizz.com
+REVERB_CLIENT_PORT=443
+REVERB_CLIENT_SCHEME=https
+```
+
+Then: `php artisan config:clear` (or `config:cache`).
+
+### Apache reverse proxy example
+
+```apache
+ProxyPreserveHost On
+ProxyRequests Off
+
+RewriteEngine On
+RewriteCond %{HTTP:Upgrade} =websocket [NC]
+RewriteRule ^/app/(.*)$ ws://127.0.0.1:8080/app/$1 [P,L]
+RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+RewriteRule ^/app/(.*)$ http://127.0.0.1:8080/app/$1 [P,L]
+
+ProxyPass /app http://127.0.0.1:8080/app
+ProxyPassReverse /app http://127.0.0.1:8080/app
+```
+
+Enable modules: `proxy`, `proxy_http`, `proxy_wstunnel`, `rewrite`.
+
+### Why you see these errors
+
+| Error | Cause |
+|---|---|
+| `was not upgraded to websocket` | Apache got `/app/...` but did not proxy WS to Reverb (or Reverb not running) |
+| `POST /chats/.../messages` → 500 | PHP tried to publish to Reverb using public HTTPS host/port instead of `127.0.0.1:8080` |
+| URL ends with `#%27` / `%27` | Flutter has a stray `'` in the WebSocket URL — remove it |
+
+After proxy + env fix, `GET /api/v2/config` → `data.broadcasting` should look like:
+
+```json
+{
+  "enabled": true,
+  "host": "just-bookeit.developmentalphawizz.com",
+  "port": 443,
+  "scheme": "https",
+  "useTLS": true
+}
+```
+
+Messages still save if Reverb is down (broadcast is soft-failed); live updates need Reverb + proxy.
+
 ## Channels
 
 | Channel | Who can join | Purpose |

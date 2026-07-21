@@ -8,6 +8,8 @@ use App\Events\ChatMessageUpdated;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Services\AppPushNotificationService;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ChatMessageObserver
 {
@@ -15,13 +17,16 @@ class ChatMessageObserver
     {
         app(AppPushNotificationService::class)->chatMessageCreated($message);
 
-        broadcast(new ChatMessageCreated($message))->toOthers();
+        $this->safeBroadcast(fn () => broadcast(new ChatMessageCreated($message))->toOthers());
     }
 
     public function updated(ChatMessage $message): void
     {
         if ($message->wasChanged(['body', 'edited_at', 'attachment_path', 'attachment_name'])) {
-            broadcast(new ChatMessageUpdated($message->fresh()))->toOthers();
+            $fresh = $message->fresh();
+            if ($fresh) {
+                $this->safeBroadcast(fn () => broadcast(new ChatMessageUpdated($fresh))->toOthers());
+            }
         }
     }
 
@@ -31,10 +36,22 @@ class ChatMessageObserver
             ->with(['customer', 'vendor', 'latestMessage'])
             ->find($message->conversation_id);
 
-        broadcast(new ChatMessageDeleted(
+        $this->safeBroadcast(fn () => broadcast(new ChatMessageDeleted(
             (int) $message->conversation_id,
             (int) $message->id,
             $conversation,
-        ))->toOthers();
+        ))->toOthers());
+    }
+
+    /** Never fail the HTTP request if Reverb is down / misconfigured. */
+    protected function safeBroadcast(callable $callback): void
+    {
+        try {
+            $callback();
+        } catch (Throwable $e) {
+            Log::warning('Chat broadcast failed: '.$e->getMessage(), [
+                'exception' => $e::class,
+            ]);
+        }
     }
 }

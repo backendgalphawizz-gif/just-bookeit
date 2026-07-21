@@ -156,7 +156,7 @@
                             </div>
                             <div class="vp-chat-meta">
                                 <span class="vp-chat-time">
-                                    {{ $message->created_at?->format('g:i A') }}
+                                    {{ \App\Support\ChatDateTime::clock($message->created_at) }}
                                     @if ($message->edited_at)
                                         <span class="vp-chat-edited">· Edited</span>
                                     @endif
