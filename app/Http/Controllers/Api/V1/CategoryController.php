@@ -13,19 +13,36 @@ class CategoryController extends ApiController
 {
     public function index(Request $request): JsonResponse
     {
+        $serviceCategoryId = CatalogFilter::resolveServiceCategoryId($request);
+        $mainCategoryId = CatalogFilter::resolveMainCategoryId($request)
+            ?? ($request->filled('parent_id') ? $request->integer('parent_id') : null);
+
         if ($request->boolean('roots')) {
-            $categories = Category::query()
+            $subQuery = fn ($query) => $query
+                ->with('serviceCategory')
+                ->active()
+                ->when(
+                    $serviceCategoryId,
+                    fn ($q) => CatalogFilter::applySubcategoryServiceFilter($q, $serviceCategoryId)
+                )
+                ->orderBy('sort_order')
+                ->orderBy('name');
+
+            $categoriesQuery = Category::query()
                 ->active()
                 ->main()
                 ->whereNull('parent_id')
-                ->with(['subcategories' => fn ($query) => $query->with('serviceCategory')->active()->orderBy('sort_order')->orderBy('name')])
+                ->when($mainCategoryId, fn ($q) => $q->where('id', $mainCategoryId))
+                ->with(['subcategories' => $subQuery])
                 ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get();
+                ->orderBy('name');
+
+            $categories = $categoriesQuery->get();
 
             $services = Category::query()
                 ->active()
                 ->service()
+                ->when($serviceCategoryId, fn ($q) => $q->where('id', $serviceCategoryId))
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
@@ -33,31 +50,46 @@ class CategoryController extends ApiController
             return $this->success([
                 'categories' => $categories->map(fn ($category) => CustomerApiPresenter::category($category, includeSubcategories: true))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+                'filters' => array_filter([
+                    'category_id' => $mainCategoryId,
+                    'parent_id' => $mainCategoryId,
+                    'service_category_id' => $serviceCategoryId,
+                ]),
             ]);
         }
 
         $query = Category::query()->active();
 
+        // Combined shop category + service category → subcategories matching both.
+        $filteringByShopOrService = $mainCategoryId || $serviceCategoryId;
+
         if ($request->filled('type')) {
             $query->where('type', $request->string('type'));
+        } elseif ($filteringByShopOrService) {
+            $query->sub();
         }
 
-        if ($request->filled('parent_id')) {
+        if ($mainCategoryId) {
+            $query->where('parent_id', $mainCategoryId);
+        } elseif ($request->filled('parent_id')) {
             $query->where('parent_id', $request->integer('parent_id'));
         }
 
-        if ($request->filled('service_category_id') || $request->filled('service')) {
-            $serviceCategoryId = CatalogFilter::resolveServiceCategoryId($request);
-
-            if ($serviceCategoryId) {
-                CatalogFilter::applySubcategoryServiceFilter($query, $serviceCategoryId);
-            }
+        if ($serviceCategoryId) {
+            CatalogFilter::applySubcategoryServiceFilter($query, $serviceCategoryId);
         }
 
         $categories = $query->with('serviceCategory')->orderBy('sort_order')->orderBy('name')->get();
 
         return $this->success([
             'items' => $categories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
+            'filters' => array_filter([
+                'type' => $request->filled('type') ? $request->string('type')->toString() : ($filteringByShopOrService ? 'sub' : null),
+                'category_id' => $mainCategoryId,
+                'parent_id' => $mainCategoryId ?? ($request->filled('parent_id') ? $request->integer('parent_id') : null),
+                'service_category_id' => $serviceCategoryId,
+                'service' => $request->filled('service') ? $request->string('service')->toString() : null,
+            ]),
         ]);
     }
 }
