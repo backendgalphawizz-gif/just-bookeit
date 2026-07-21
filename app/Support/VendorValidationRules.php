@@ -305,7 +305,7 @@ class VendorValidationRules
 
         $rules = [
             'title' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
-            'description' => ['nullable', 'string', 'max:5000', 'regex:'.AdminValidationRules::REGEX_TEXT],
+            'description' => ['nullable', 'string', 'max:5000'],
             'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
             'advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'audience' => ['nullable', 'in:women,men,kids'],
