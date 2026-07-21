@@ -224,12 +224,52 @@
         const slots = Array.from(wrap.querySelectorAll('[data-vp-dress-media-preview]'));
         if (!input || !slots.length) return;
 
+        const maxFiles = Number.parseInt(
+            input.getAttribute('data-vp-max-media-files') || wrap.getAttribute('data-vp-max-media-files') || '5',
+            10
+        );
+
+        const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'mpg', 'm4v', 'wmv', 'flv', 'ogv'];
+
+        const isVideoFile = (file) => {
+            const type = String(file?.type || '').toLowerCase();
+            if (type.startsWith('video/')) {
+                return true;
+            }
+            const ext = String(file?.name || '').split('.').pop()?.toLowerCase() || '';
+
+            return videoExtensions.includes(ext);
+        };
+
+        let previewObjectUrls = [];
+
+        const revokePreviewUrls = () => {
+            previewObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+            previewObjectUrls = [];
+        };
+
+        const applyFiles = (files) => {
+            const selected = Array.from(files || []).slice(0, maxFiles);
+            if ((files || []).length > maxFiles) {
+                window.alert(`You can upload up to ${maxFiles} files (image or video).`);
+            }
+            try {
+                const dt = new DataTransfer();
+                selected.forEach((file) => dt.items.add(file));
+                input.files = dt.files;
+            } catch (_) {
+                return;
+            }
+            render();
+        };
+
         const clearNewPreviews = (slot) => {
             slot.querySelectorAll('[data-vp-new-preview]').forEach((el) => el.remove());
         };
 
         const render = () => {
-            const files = Array.from(input.files || []);
+            revokePreviewUrls();
+            const files = Array.from(input.files || []).slice(0, maxFiles);
             const emptySlots = slots.filter((slot) => !slot.querySelector('[data-vp-existing-media]'));
 
             slots.forEach((slot) => {
@@ -255,24 +295,43 @@
                 if (emptyIcon) emptyIcon.hidden = true;
                 slot.classList.add('has-file');
 
-                if (file.type.startsWith('video/')) {
+                if (isVideoFile(file)) {
+                    const preview = document.createElement('div');
+                    preview.className = 'vp-dress-media-video-preview';
+                    preview.dataset.vpNewPreview = '1';
+
+                    const objectUrl = URL.createObjectURL(file);
+                    previewObjectUrls.push(objectUrl);
+
+                    const video = document.createElement('video');
+                    video.src = objectUrl;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.preload = 'metadata';
+                    video.setAttribute('playsinline', '');
+
                     const badge = document.createElement('span');
                     badge.className = 'vp-dress-media-video-badge';
-                    badge.dataset.vpNewPreview = '1';
                     badge.textContent = 'Video';
-                    slot.appendChild(badge);
+
+                    preview.appendChild(video);
+                    preview.appendChild(badge);
+                    slot.appendChild(preview);
                     return;
                 }
 
+                const objectUrl = URL.createObjectURL(file);
+                previewObjectUrls.push(objectUrl);
+
                 const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
+                img.src = objectUrl;
                 img.alt = '';
                 img.dataset.vpNewPreview = '1';
                 slot.appendChild(img);
             });
         };
 
-        input.addEventListener('change', render);
+        input.addEventListener('change', () => applyFiles(input.files));
         wrap.addEventListener('dragover', (e) => {
             e.preventDefault();
             wrap.classList.add('is-dragover');
@@ -282,12 +341,7 @@
             e.preventDefault();
             wrap.classList.remove('is-dragover');
             if (!e.dataTransfer?.files?.length) return;
-            try {
-                const dt = new DataTransfer();
-                Array.from(e.dataTransfer.files).forEach((file) => dt.items.add(file));
-                input.files = dt.files;
-                input.dispatchEvent(new Event('change', { bubbles: true }));
-            } catch (_) {}
+            applyFiles(e.dataTransfer.files);
         });
     })();
 

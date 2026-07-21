@@ -346,7 +346,7 @@
 								{ "key": "advance_amount", "value": "500", "type": "text", "description": "Optional for jewellery/designer. Omit for rented-dress (use variants[].advance_amount)." },
 								{ "key": "audience", "value": "women", "type": "text", "description": "Category dropdown: women | men | kids" },
 								{ "key": "image", "type": "file", "src": [], "description": "Primary product image (required if no gallery_images)" },
-								{ "key": "gallery_images", "type": "file", "src": [], "description": "Extra product images (add multiple rows with same key)" },
+								{ "key": "gallery_images", "type": "file", "src": [], "description": "Product media — up to 5 files total (image or video). Add multiple rows with same key." },
 								{ "key": "variants", "value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200,\"advance_amount\":500,\"quantity\":2},{\"size\":\"L\",\"color\":\"Blue\",\"price\":1100,\"advance_amount\":400,\"quantity\":1}]", "type": "text", "description": "JSON array — price required; size and color: provide at least one (other optional); optional advance_amount & quantity (no image in JSON when using variant_images)" },
 								{ "key": "variant_images", "type": "file", "src": [], "description": "Variant image index 0 — add more rows with same key for index 1, 2, …" },
 								{ "key": "damage_deductions", "value": "[{\"damage_type\":\"Tear\",\"percent\":10},{\"damage_type\":\"Stain\",\"percent\":5}]", "type": "text", "description": "JSON array of damage rules (damage_type, percent)" }

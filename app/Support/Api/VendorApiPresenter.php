@@ -16,6 +16,7 @@ use App\Services\Booking\BookingPricingService;
 use App\Support\BookingMeasurementSupport;
 use App\Support\ChatDateTime;
 use App\Support\OrderDispatchSupport;
+use App\Support\ProductOptionCatalog;
 use App\Support\Api\VendorBookingStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -879,22 +880,18 @@ class VendorApiPresenter
                 : url($path);
         };
 
-        // Images + videos in one array (sorted) so mobile can render a single gallery.
-        $galleryMediaUrls = collect();
-        if ($primary = $item->displayImageUrl()) {
-            $galleryMediaUrls->push($absoluteUrl($primary));
-        }
-        foreach ($item->images->sortBy('sort_order') as $media) {
-            $url = $absoluteUrl($media->mediaUrl());
-            if ($url) {
-                $galleryMediaUrls->push($url);
-            }
-        }
-        $galleryMediaUrls = $galleryMediaUrls->filter()->unique()->values()->all();
+        // Images and videos are returned separately for mobile clients.
+        $galleryImageUrls = collect($item->galleryImageUrls())
+            ->map(fn ($path) => $absoluteUrl($path))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
         $videoUrls = collect($item->galleryVideoUrls())
             ->map(fn ($path) => $absoluteUrl($path))
             ->filter()
+            ->unique()
             ->values()
             ->all();
 
@@ -903,7 +900,7 @@ class VendorApiPresenter
             'title' => $item->title,
             'description' => $item->description,
             'image_url' => $absoluteUrl($item->displayImageUrl()),
-            'gallery_image_urls' => $galleryMediaUrls,
+            'gallery_image_urls' => $galleryImageUrls,
             'video_urls' => $videoUrls,
             'gallery_videos' => $item->images
                 ->filter(fn ($media) => $media->isVideo())
@@ -924,6 +921,7 @@ class VendorApiPresenter
                 'id' => $variant->id,
                 'size' => $variant->size,
                 'color' => $variant->color,
+                'color_code' => ProductOptionCatalog::hexForName($variant->color),
                 'price' => (float) $variant->price,
                 'advance_amount' => $variant->advance_amount !== null ? (float) $variant->advance_amount : null,
                 'quantity' => $variant->quantity !== null ? (int) $variant->quantity : null,

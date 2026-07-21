@@ -18,9 +18,26 @@
         'parent_id' => $sub->parent_id,
     ])->values();
     $audienceByMainSlug = $mainCategories->mapWithKeys(fn ($main) => [$main->id => $main->slug])->all();
+    $serviceCategorySlugs = $serviceCategories->mapWithKeys(fn ($category) => [(string) $category->id => $category->slug])->all();
+    $selectedCategoryId = (string) old('category_id', $portfolio->category_id ?? '');
 @endphp
 
-<div class="jb-form-grid">
+<div
+    class="jb-form-grid"
+    x-data="{
+        categoryId: @js($selectedCategoryId),
+        categorySlugs: @js($serviceCategorySlugs),
+        get productType() {
+            return this.categorySlugs[String(this.categoryId)] || '';
+        },
+        get hideProductPricing() {
+            return ['rented-dress', 'rented-jewellery'].includes(this.productType);
+        },
+        get showVariants() {
+            return this.productType === 'rented-dress';
+        }
+    }"
+>
     <x-admin.form-select label="Vendor" name="vendor_id" :required="true">
         <option value="">Select vendor</option>
         @foreach ($vendors as $vendor)
@@ -28,12 +45,16 @@
         @endforeach
     </x-admin.form-select>
 
-    <x-admin.form-select label="Product type" name="category_id" :required="true">
-        <option value="">Select type</option>
-        @foreach ($serviceCategories as $category)
-            <option value="{{ $category->id }}" @selected(old('category_id', $portfolio->category_id) == $category->id)>{{ $category->name }}</option>
-        @endforeach
-    </x-admin.form-select>
+    <div>
+        <label for="category_id" class="jb-label">Product type <span class="text-rose-600">*</span></label>
+        <select id="category_id" name="category_id" class="jb-select" required x-model="categoryId">
+            <option value="">Select type</option>
+            @foreach ($serviceCategories as $category)
+                <option value="{{ $category->id }}">{{ $category->name }}</option>
+            @endforeach
+        </select>
+        @error('category_id')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+    </div>
 
     <div
         class="sm:col-span-2"
@@ -105,9 +126,43 @@
 
     @include('admin.partials.form-input', ['label' => 'Title', 'name' => 'title', 'value' => old('title', $portfolio->title), 'required' => true])
 
-    @include('admin.partials.form-input', ['label' => 'Price per day (₹)', 'name' => 'price_per_day', 'type' => 'number', 'value' => old('price_per_day', $portfolio->price_per_day), 'required' => $isCreate, 'step' => '0.01', 'nonNegative' => true])
+    <div x-show="!hideProductPricing" x-cloak>
+        <label for="price_per_day" class="jb-label">Price per day (₹) @if($isCreate)<span class="text-rose-600">*</span>@endif</label>
+        <input
+            id="price_per_day"
+            type="number"
+            name="price_per_day"
+            value="{{ old('price_per_day', $portfolio->price_per_day) }}"
+            class="jb-input"
+            min="0"
+            step="0.01"
+            x-bind:required="!hideProductPricing && {{ $isCreate ? 'true' : 'false' }}"
+            x-bind:disabled="hideProductPricing"
+        >
+        @error('price_per_day')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+    </div>
 
-    @include('admin.partials.form-input', ['label' => 'Advance amount (₹)', 'name' => 'advance_amount', 'type' => 'number', 'value' => old('advance_amount', $portfolio->advance_amount), 'step' => '0.01', 'nonNegative' => true])
+    <div x-show="!hideProductPricing" x-cloak>
+        <label for="advance_amount" class="jb-label">Advance amount (₹)</label>
+        <input
+            id="advance_amount"
+            type="number"
+            name="advance_amount"
+            value="{{ old('advance_amount', $portfolio->advance_amount) }}"
+            class="jb-input"
+            min="0"
+            step="0.01"
+            x-bind:disabled="hideProductPricing"
+        >
+        @error('advance_amount')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+    </div>
+
+    <template x-if="hideProductPricing">
+        <div>
+            <input type="hidden" name="price_per_day" value="">
+            <input type="hidden" name="advance_amount" value="">
+        </div>
+    </template>
 
     <div class="sm:col-span-2">
         <label for="description" class="jb-label">Description</label>
@@ -231,6 +286,8 @@
         @error('gallery_videos.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>
 
-    @include('admin.portfolio.partials.variants')
+    <div class="sm:col-span-2" x-show="showVariants" x-cloak x-bind:data-variants-enabled="showVariants ? '1' : '0'">
+        @include('admin.portfolio.partials.variants')
+    </div>
     @include('admin.portfolio.partials.damage-deductions')
 </div>

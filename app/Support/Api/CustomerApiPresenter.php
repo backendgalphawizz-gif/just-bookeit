@@ -313,7 +313,7 @@ class CustomerApiPresenter
                 : url($path);
         };
 
-        $galleryMediaUrls = collect($item->galleryMediaUrls())
+        $galleryImageUrls = collect($item->galleryImageUrls())
             ->map(fn ($path) => $absoluteUrl($path))
             ->filter()
             ->unique()
@@ -323,6 +323,7 @@ class CustomerApiPresenter
         $videoUrls = collect($item->galleryVideoUrls())
             ->map(fn ($path) => $absoluteUrl($path))
             ->filter()
+            ->unique()
             ->values()
             ->all();
 
@@ -331,7 +332,7 @@ class CustomerApiPresenter
             'title' => $item->title,
             'description' => $item->description,
             'image_url' => $item->displayImageUrl() ? url($item->displayImageUrl()) : null,
-            'gallery_image_urls' => $galleryMediaUrls,
+            'gallery_image_urls' => $galleryImageUrls,
             'video_urls' => $videoUrls,
             'gallery_videos' => $item->images
                 ->filter(fn ($media) => $media->isVideo())
@@ -367,6 +368,7 @@ class CustomerApiPresenter
             'id' => $variant->id,
             'size' => $variant->size,
             'color' => $variant->color,
+            'color_code' => \App\Support\ProductOptionCatalog::hexForName($variant->color),
             'price' => (float) $variant->price,
             'advance_amount' => $variant->advance_amount !== null ? (float) $variant->advance_amount : null,
             'quantity' => $variant->quantity !== null ? (int) $variant->quantity : null,

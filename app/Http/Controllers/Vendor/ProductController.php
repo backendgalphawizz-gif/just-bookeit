@@ -388,14 +388,16 @@ class ProductController extends VendorController
         $videoRule = VendorValidationRules::productVideoUploadRules();
         $mediaRequired = $creating && $type === 'rented-jewellery';
 
+        $mediaLimit = VendorValidationRules::maxProductMediaFiles($type);
+
         return [
             'image' => [$imageRule, ...$fileRule],
-            'gallery_images' => ['nullable', 'array', 'max:10'],
+            'gallery_images' => ['nullable', 'array', 'max:'.$mediaLimit],
             'gallery_images.*' => $fileRule,
-            'gallery_videos' => ['nullable', 'array', 'max:5'],
+            'gallery_videos' => ['nullable', 'array', 'max:'.$mediaLimit],
             'gallery_videos.*' => $videoRule,
-            'media_files' => [$mediaRequired ? 'required' : 'nullable', 'array', 'max:15'],
-            'media_files.*' => ['file', 'max:'.VendorValidationRules::MAX_VIDEO_KB],
+            'media_files' => [$mediaRequired ? 'required' : 'nullable', 'array', 'max:'.$mediaLimit],
+            'media_files.*' => VendorValidationRules::productMixedMediaUploadRules(),
             'colors.*.image' => ['nullable', ...$fileRule],
             'variants.*.image' => ['nullable', ...$fileRule],
             'sizes' => ['nullable', 'array'],

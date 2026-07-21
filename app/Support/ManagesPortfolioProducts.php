@@ -250,6 +250,12 @@ trait ManagesPortfolioProducts
     {
         $this->expandRentalSizeColorVariants($request);
 
+        foreach (['price_per_day', 'advance_amount'] as $field) {
+            if ($request->input($field) === '') {
+                $request->merge([$field => null]);
+            }
+        }
+
         if (is_array($request->input('variants'))) {
             // Keep original keys so uploaded variants[N][image] files stay aligned.
             $variants = array_filter($request->input('variants'), function ($variant): bool {
