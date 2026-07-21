@@ -80,8 +80,9 @@ class PortfolioController extends AdminController
         $this->authorizeAdmin('create');
 
         $this->normalizeProductFormInput($request);
+        $typeSlug = $this->resolveServiceCategorySlug($request);
         $data = $request->validate(
-            AdminValidationRules::portfolioItem(true),
+            AdminValidationRules::portfolioItem(true, $typeSlug),
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
@@ -93,6 +94,7 @@ class PortfolioController extends AdminController
         );
 
         $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
+        $isRental = in_array($typeSlug, ['rented-dress', 'rented-jewellery'], true);
 
         $product = PortfolioItem::query()->create([
             'vendor_id' => $data['vendor_id'],
@@ -100,8 +102,8 @@ class PortfolioController extends AdminController
             'subcategory_id' => $data['subcategory_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $data['price_per_day'],
-            'advance_amount' => $data['advance_amount'] ?? null,
+            'price_per_day' => $isRental ? null : ($data['price_per_day'] ?? null),
+            'advance_amount' => $isRental ? null : ($data['advance_amount'] ?? null),
             'audience' => $data['audience'],
             'image_url' => $imagePath,
             'status' => $data['status'],
@@ -111,8 +113,11 @@ class PortfolioController extends AdminController
 
         $this->storeProductGalleryImages($request, $product, $request->file('image'));
         $this->storeProductGalleryVideos($request, $product);
-        $this->syncProductVariants($request, $product, $request->input('variants', $data['variants'] ?? []));
-        $this->propagateVariantColorImages($product);
+        if ($typeSlug === 'rented-dress') {
+            $this->syncProductVariants($request, $product, $request->input('variants', $data['variants'] ?? []));
+            $this->propagateVariantColorImages($product);
+            $product->refreshDressPricingFromVariants();
+        }
         $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
 
         return redirect()
@@ -141,9 +146,11 @@ class PortfolioController extends AdminController
         $this->authorizeAdmin('edit');
 
         $this->normalizeProductFormInput($request);
+        $typeSlug = $this->resolveServiceCategorySlug($request);
+        $isRental = in_array($typeSlug, ['rented-dress', 'rented-jewellery'], true);
 
         $data = $request->validate(
-            AdminValidationRules::portfolioItem(false),
+            AdminValidationRules::portfolioItem(false, $typeSlug),
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
@@ -160,8 +167,10 @@ class PortfolioController extends AdminController
             'subcategory_id' => $data['subcategory_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $data['price_per_day'] ?? $portfolio->price_per_day,
-            'advance_amount' => array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $portfolio->advance_amount,
+            'price_per_day' => $isRental ? null : ($data['price_per_day'] ?? $portfolio->price_per_day),
+            'advance_amount' => $isRental
+                ? null
+                : (array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $portfolio->advance_amount),
             'audience' => $data['audience'],
             'status' => $data['status'],
             'rejection_reason' => $data['status'] === 'rejected' ? ($data['rejection_reason'] ?? null) : null,
@@ -183,8 +192,17 @@ class PortfolioController extends AdminController
 
         $this->storeProductGalleryImages($request, $portfolio);
         $this->storeProductGalleryVideos($request, $portfolio);
-        $this->syncProductVariants($request, $portfolio, $request->input('variants', $data['variants'] ?? []), true);
-        $this->propagateVariantColorImages($portfolio);
+        if ($typeSlug === 'rented-dress') {
+            $this->syncProductVariants($request, $portfolio, $request->input('variants', $data['variants'] ?? []), true);
+            $this->propagateVariantColorImages($portfolio);
+            $portfolio->refreshDressPricingFromVariants();
+        } elseif ($portfolio->variants()->exists()) {
+            // Switching away from rental dress clears variant rows.
+            foreach ($portfolio->variants as $existing) {
+                StoresUploadedFiles::delete($existing->image_path);
+            }
+            $portfolio->variants()->delete();
+        }
         $this->syncProductDamageDeductions($portfolio, $data['damage_deductions'] ?? [], true);
 
         return redirect()
@@ -282,5 +300,15 @@ class PortfolioController extends AdminController
         }
 
         return $slugs[0] ?? 'fashion-designer';
+    }
+
+    protected function resolveServiceCategorySlug(Request $request): ?string
+    {
+        $categoryId = $request->integer('category_id');
+        if ($categoryId <= 0) {
+            return null;
+        }
+
+        return Category::query()->whereKey($categoryId)->value('slug');
     }
 }

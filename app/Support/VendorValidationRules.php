@@ -13,6 +13,9 @@ class VendorValidationRules
     /** Max video upload size in kilobytes (100 MB). */
     public const MAX_VIDEO_KB = 102400;
 
+    /** Max product gallery media files (images and/or videos) for rental items. */
+    public const MAX_PRODUCT_MEDIA_FILES = 5;
+
     /** @var list<string> */
     public const VIDEO_MIMES = [
         'mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'mpg', 'm4v', 'wmv', 'flv', 'ogv', 'ts', 'm2ts',
@@ -343,17 +346,37 @@ class VendorValidationRules
     }
 
     /** @return array<string, int> */
-    public static function productUploadLimits(): array
+    public static function productUploadLimits(?string $type = null): array
     {
+        $mediaLimit = self::maxProductMediaFiles($type);
+
         return [
             'image' => 1,
             'product_image' => 1,
-            'gallery_images' => 10,
-            'images' => 10,
-            'videos' => 5,
-            'gallery_videos' => 5,
-            'product_videos' => 5,
+            'gallery_images' => $mediaLimit,
+            'images' => $mediaLimit,
+            'media_files' => $mediaLimit,
+            'videos' => $mediaLimit,
+            'gallery_videos' => $mediaLimit,
+            'product_videos' => $mediaLimit,
             'variant_images' => 50,
+        ];
+    }
+
+    public static function maxProductMediaFiles(?string $type = null): int
+    {
+        return in_array($type, ['rented-dress', 'rented-jewellery'], true)
+            ? self::MAX_PRODUCT_MEDIA_FILES
+            : 10;
+    }
+
+    /** @return list<string> */
+    public static function productMixedMediaUploadRules(): array
+    {
+        return [
+            'file',
+            'max:'.self::MAX_VIDEO_KB,
+            'mimes:'.implode(',', array_merge(['jpeg', 'jpg', 'png', 'webp', 'svg'], self::VIDEO_MIMES)),
         ];
     }
 
@@ -374,10 +397,16 @@ class VendorValidationRules
         return in_array($key, ['videos', 'gallery_videos', 'product_videos'], true);
     }
 
-    /** gallery_images / images accept both images and videos. */
+    /** gallery_images / images / media_files accept both images and videos. */
     public static function isMixedMediaUploadKey(string $key): bool
     {
-        return in_array($key, ['gallery_images', 'images'], true);
+        return in_array($key, ['gallery_images', 'images', 'media_files'], true);
+    }
+
+    /** @return list<string> */
+    public static function productMediaUploadKeys(): array
+    {
+        return ['image', 'product_image', 'gallery_images', 'images', 'media_files'];
     }
 
     public static function portfolioUpload(): array

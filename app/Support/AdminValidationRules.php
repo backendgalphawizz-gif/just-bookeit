@@ -552,11 +552,12 @@ class AdminValidationRules
         ];
     }
 
-    public static function portfolioItem(bool $creating = false): array
+    public static function portfolioItem(bool $creating = false, ?string $typeSlug = null): array
     {
-        $priceRule = $creating ? 'required' : 'nullable';
+        $isRental = in_array($typeSlug, ['rented-dress', 'rented-jewellery'], true);
+        $priceRule = $isRental ? 'nullable' : ($creating ? 'required' : 'nullable');
 
-        return [
+        $rules = [
             'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             ...\App\Support\SubcategoryCatalog::subcategoryIdRules(true),
@@ -573,8 +574,8 @@ class AdminValidationRules
             'gallery_videos' => ['nullable', 'array', 'max:'.VendorValidationRules::productUploadLimits()['gallery_videos']],
             'gallery_videos.*' => VendorValidationRules::productVideoUploadRules(),
             'variants' => ['nullable', 'array', 'max:50'],
-            'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.self::REGEX_TITLE],
-            'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
+            'variants.*.size' => ['nullable', 'required_without:variants.*.color', 'string', 'max:50', 'regex:'.self::REGEX_TITLE],
+            'variants.*.color' => ['nullable', 'required_without:variants.*.size', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
             'variants.*.advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'variants.*.quantity' => ['nullable', 'integer', 'min:0', 'max:99999'],
@@ -587,6 +588,13 @@ class AdminValidationRules
             'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],
         ];
+
+        if ($typeSlug === 'rented-dress') {
+            $rules['variants'] = [$creating ? 'required' : 'sometimes', 'array', 'min:1', 'max:50'];
+            $rules['variants.*.price'] = ['required', 'numeric', 'min:0', 'max:9999999'];
+        }
+
+        return $rules;
     }
 
     public static function settingsRefundRules(): array

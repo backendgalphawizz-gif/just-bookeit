@@ -21,11 +21,11 @@
     }
 @endphp
 
-<div class="sm:col-span-2" data-product-variants>
+<div class="" data-product-variants>
     <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-            <label class="jb-label">Size / color variants</label>
-            <p class="mt-1 text-sm text-slate-500">Optional. Same as vendor app — size, color, price, advance, quantity, and optional image per variant.</p>
+            <label class="jb-label">Variants <span class="text-rose-600">*</span></label>
+            <p class="mt-1 text-sm text-slate-500">Required for rental dress — size and/or color, price, advance, quantity, and optional image per variant.</p>
         </div>
         <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm" data-product-variants-add>+ Add variant</button>
     </div>
@@ -114,6 +114,30 @@
         const list = root.querySelector('[data-product-variants-list]');
         const template = root.querySelector('[data-product-variants-template]');
         const addBtn = root.querySelector('[data-product-variants-add]');
+        const form = root.closest('form');
+
+        const variantsEnabled = () => {
+            const host = root.closest('[data-variants-enabled]');
+            return !host || host.getAttribute('data-variants-enabled') !== '0';
+        };
+
+        const setInputsEnabled = (enabled) => {
+            root.querySelectorAll('input, select, textarea, button').forEach((el) => {
+                if (el.hasAttribute('data-product-variants-add') || el.hasAttribute('data-product-variants-remove')) {
+                    el.disabled = !enabled;
+                    return;
+                }
+                if (el.type === 'hidden' && el.name && el.name.includes('stored_image_path')) {
+                    el.disabled = !enabled;
+                    return;
+                }
+                if (el.name && el.name.startsWith('variants[')) {
+                    el.disabled = !enabled;
+                }
+            });
+        };
+
+        const syncEnabledState = () => setInputsEnabled(variantsEnabled());
 
         const reindexRows = () => {
             list.querySelectorAll('[data-product-variants-row]').forEach((row, index) => {
@@ -140,6 +164,7 @@
         list.querySelectorAll('[data-product-variants-row]').forEach(bindRemove);
 
         addBtn?.addEventListener('click', () => {
+            if (!variantsEnabled()) return;
             const index = list.querySelectorAll('[data-product-variants-row]').length;
             const html = template.innerHTML.replaceAll('__INDEX__', String(index));
             const wrapper = document.createElement('div');
@@ -147,7 +172,23 @@
             const row = wrapper.firstElementChild;
             list.appendChild(row);
             bindRemove(row);
+            syncEnabledState();
             row.querySelector('input')?.focus();
         });
+
+        const categorySelect = form?.querySelector('#category_id');
+        categorySelect?.addEventListener('change', () => {
+            // Alpine updates data-variants-enabled on next tick.
+            setTimeout(syncEnabledState, 0);
+        });
+
+        // Observe Alpine attribute changes.
+        const host = root.closest('[data-variants-enabled]') || root.parentElement;
+        if (host) {
+            const observer = new MutationObserver(syncEnabledState);
+            observer.observe(host, { attributes: true, attributeFilter: ['data-variants-enabled'] });
+        }
+
+        syncEnabledState();
     })();
 </script>

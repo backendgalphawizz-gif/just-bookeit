@@ -153,7 +153,8 @@
                                     title="Video"
                                     aria-label="Show video {{ $index + 1 }}"
                                 >
-                                    <span>Video</span>
+                                    <video src="{{ url($thumb['url']) }}" muted playsinline preload="metadata"></video>
+                                    <span class="vp-product-view-thumb-video-label">Video</span>
                                 </button>
                             @else
                                 <button
@@ -335,6 +336,7 @@
                                 aria-label="Show image {{ $index + 1 }}"
                             >
                                 @if (($thumb['type'] ?? '') === 'video')
+                                    <video src="{{ url($thumb['url']) }}" muted playsinline preload="metadata" class="vp-product-view-gallery-img"></video>
                                     <span class="vp-product-view-gallery-video">Video</span>
                                 @else
                                     <img src="{{ url($thumb['url']) }}" alt="" class="vp-product-view-gallery-img">

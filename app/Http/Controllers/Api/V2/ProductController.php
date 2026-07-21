@@ -394,7 +394,12 @@ class ProductController extends VendorApiController
 
     protected function validateProductUploads(Request $request): void
     {
-        foreach (VendorValidationRules::productUploadLimits() as $key => $maxCount) {
+        $type = $request->string('type')->toString();
+        if ($type === '' && $request->route('product') instanceof PortfolioItem) {
+            $type = $request->route('product')->category?->slug ?? '';
+        }
+
+        foreach (VendorValidationRules::productUploadLimits($type) as $key => $maxCount) {
             if (! $request->hasFile($key)) {
                 continue;
             }
@@ -433,10 +438,10 @@ class ProductController extends VendorApiController
                     ]);
                 }
 
-                // gallery_images / images: images and videos allowed.
+                // Mixed media keys: images and videos allowed.
                 if ($isMixedGallery && ! $isVideo && ! $isImage) {
                     throw ValidationException::withMessages([
-                        $key => ['Only image or video files are allowed in gallery_images.'],
+                        $key => ['Only image or video files are allowed.'],
                     ]);
                 }
 
@@ -451,6 +456,24 @@ class ProductController extends VendorApiController
                     VendorValidationRules::attributes()
                 )->validate();
             }
+        }
+
+        if (in_array($type, ['rented-dress', 'rented-jewellery'], true)) {
+            $this->assertCombinedProductMediaLimit($request, VendorValidationRules::MAX_PRODUCT_MEDIA_FILES);
+        }
+    }
+
+    protected function assertCombinedProductMediaLimit(Request $request, int $max): void
+    {
+        $total = 0;
+        foreach (VendorValidationRules::productMediaUploadKeys() as $key) {
+            $total += count($this->uploadedFiles($request, $key));
+        }
+
+        if ($total > $max) {
+            throw ValidationException::withMessages([
+                'gallery_images' => ["You may upload at most {$max} image or video files."],
+            ]);
         }
     }
 
