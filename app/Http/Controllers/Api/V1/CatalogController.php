@@ -80,7 +80,7 @@ class CatalogController extends ApiController
             ->where('is_listing_active', true)
             ->whereNotNull('city')
             ->where('city', '!=', '')
-            ->whereHas('portfolioItems', fn ($portfolio) => $portfolio->where('status', 'approved'))
+            ->withApprovedProducts()
             ->orderBy('city')
             ->distinct()
             ->pluck('city')

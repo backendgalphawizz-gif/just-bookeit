@@ -33,6 +33,7 @@ class HomeController extends WebController
         $featuredDesigners = Vendor::query()
             ->active()
             ->where('is_listing_active', true)
+            ->withApprovedProducts()
             ->orderByDesc('rating')
             ->limit(7)
             ->get();

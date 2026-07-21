@@ -22,7 +22,7 @@ class DesignerController extends ApiController
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ], VendorProximityFilter::validationRules()));
 
-        $query = Vendor::query()->active()->where('is_listing_active', true);
+        $query = Vendor::query()->active()->where('is_listing_active', true)->withApprovedProducts();
 
         $coords = VendorProximityFilter::coordinatesFromRequest($request);
 
@@ -61,6 +61,10 @@ class DesignerController extends ApiController
     public function show(Vendor $designer): JsonResponse
     {
         abort_unless($designer->status === 'active' && $designer->is_listing_active, 404);
+        abort_unless(
+            $designer->portfolioItems()->where('status', 'approved')->exists(),
+            404
+        );
 
         $products = $designer->portfolioItems()
             ->with(['vendor', 'category', 'subcategory.parent', 'variants'])

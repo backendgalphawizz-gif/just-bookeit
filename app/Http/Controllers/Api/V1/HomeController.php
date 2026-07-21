@@ -57,6 +57,7 @@ class HomeController extends ApiController
         $featuredDesignersQuery = Vendor::query()
             ->active()
             ->where('is_listing_active', true)
+            ->withApprovedProducts()
             ->orderByDesc('rating')
             ->limit(7);
 

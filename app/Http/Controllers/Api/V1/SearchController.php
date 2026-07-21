@@ -39,6 +39,7 @@ class SearchController extends ApiController
         $designersQuery = Vendor::query()
             ->active()
             ->where('is_listing_active', true)
+            ->withApprovedProducts()
             ->where(function ($q) use ($term) {
                 $q->where('brand_name', 'like', $term)
                     ->orWhere('shop_name', 'like', $term)

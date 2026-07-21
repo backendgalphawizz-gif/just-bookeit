@@ -170,6 +170,12 @@ class Vendor extends Authenticatable
         return $query->where('status', 'active');
     }
 
+    /** Vendors that have at least one admin-approved product (portfolio item). */
+    public function scopeWithApprovedProducts($query)
+    {
+        return $query->whereHas('portfolioItems', fn ($portfolio) => $portfolio->where('status', 'approved'));
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
