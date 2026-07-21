@@ -296,7 +296,6 @@
         const section = root.querySelector('[data-vp-dress-variants]');
         if (!section) return;
 
-        const toggle = section.querySelector('[data-vp-dress-variants-toggle]');
         const composer = section.querySelector('[data-vp-dress-variant-composer]');
         const list = section.querySelector('[data-vp-dress-variant-list]');
         const template = section.querySelector('[data-vp-dress-variant-template]');
@@ -304,14 +303,23 @@
         const sizeEl = section.querySelector('[data-vp-variant-size]');
         const colorEl = section.querySelector('[data-vp-variant-color]');
         const priceEl = section.querySelector('[data-vp-variant-price]');
+        const advanceEl = section.querySelector('[data-vp-variant-advance]');
+        const quantityEl = section.querySelector('[data-vp-variant-quantity]');
         const fileEl = section.querySelector('[data-vp-variant-file]');
         const filePreview = section.querySelector('[data-vp-variant-file-preview]');
         const fileEmpty = section.querySelector('[data-vp-variant-file-empty]');
-        const colorCss = {
-            black: '#111111', white: '#ffffff', red: '#e11d48', blue: '#2563eb',
-            green: '#16a34a', pink: '#ec4899', gold: '#ca8a04', silver: '#a8a29e',
-            maroon: '#9f1239', ivory: '#fffff0', 'navy blue': '#1e3a8a', 'rose gold': '#b76e79',
-        };
+        const colorCss = (() => {
+            try {
+                const raw = section.getAttribute('data-vp-color-css');
+                const parsed = raw ? JSON.parse(raw) : null;
+                if (parsed && typeof parsed === 'object') return parsed;
+            } catch (_) {}
+            return {
+                black: '#111111', white: '#ffffff', red: '#e11d48', blue: '#2563eb',
+                green: '#16a34a', pink: '#ec4899', gold: '#ca8a04', silver: '#a8a29e',
+                maroon: '#9f1239', ivory: '#fffff0', 'navy blue': '#1e3a8a', 'rose gold': '#b76e79',
+            };
+        })();
 
         let editingRow = null;
         let draftObjectUrl = null;
@@ -330,6 +338,8 @@
             if (sizeEl) sizeEl.value = '';
             if (colorEl) colorEl.value = '';
             if (priceEl) priceEl.value = '';
+            if (advanceEl) advanceEl.value = '';
+            if (quantityEl) quantityEl.value = '';
             if (fileEl) fileEl.value = '';
             if (draftObjectUrl) {
                 URL.revokeObjectURL(draftObjectUrl);
@@ -351,10 +361,12 @@
             if (addBtn) addBtn.textContent = 'Add Variant';
         };
 
-        const updateCardLabels = (row, size, color, price) => {
+        const updateCardLabels = (row, size, color, price, advance, quantity) => {
             const sizeLabel = row.querySelector('[data-vp-variant-size-label]');
             const colorLabel = row.querySelector('[data-vp-variant-color-label]');
             const priceLabel = row.querySelector('[data-vp-variant-price-label]');
+            const advanceLabel = row.querySelector('[data-vp-variant-advance-label]');
+            const quantityLabel = row.querySelector('[data-vp-variant-quantity-label]');
             if (sizeLabel) sizeLabel.textContent = (size || '—').toUpperCase();
             if (colorLabel) {
                 colorLabel.textContent = (color || '—').toUpperCase();
@@ -363,6 +375,13 @@
             if (priceLabel) {
                 const amount = Number(price || 0);
                 priceLabel.textContent = '₹' + (Number.isFinite(amount) ? amount.toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '0');
+            }
+            if (advanceLabel) {
+                const amount = Number(advance || 0);
+                advanceLabel.textContent = '₹' + (Number.isFinite(amount) ? amount.toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '0');
+            }
+            if (quantityLabel) {
+                quantityLabel.textContent = quantity !== '' && quantity !== null && quantity !== undefined ? String(quantity) : '—';
             }
         };
 
@@ -407,17 +426,9 @@
             const imageInput = row.querySelector('[data-vp-variant-image-input]');
             const base64Input = row.querySelector('[data-vp-variant-image-base64]');
             const storedInput = row.querySelector('[data-vp-variant-stored-path]');
-            const assigned = assignFileToInput(imageInput, file);
 
-            // Prefer real file upload. Only fall back to base64 when DataTransfer fails
-            // (sending both often exceeds post_max_size and drops the update).
-            if (assigned) {
-                if (base64Input) base64Input.value = '';
-                if (storedInput) storedInput.value = '';
-                setCardThumb(row, URL.createObjectURL(file));
-                return Promise.resolve(true);
-            }
-
+            // Encode to base64 for reliable multi-variant submits. Programmatic file
+            // inputs often fail for the 2nd+ variant on multipart POST.
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -426,8 +437,10 @@
                         resolve(false);
                         return;
                     }
+
                     if (base64Input) base64Input.value = dataUrl;
                     if (storedInput) storedInput.value = '';
+                    if (imageInput) imageInput.value = '';
                     setCardThumb(row, dataUrl);
                     resolve(true);
                 };
@@ -454,10 +467,12 @@
 
             row.querySelector('[data-vp-dress-variant-edit]')?.addEventListener('click', () => {
                 editingRow = row;
-                composer.hidden = false;
+                if (composer) composer.hidden = false;
                 if (sizeEl) sizeEl.value = row.querySelector('[data-vp-variant-size-input]')?.value || '';
                 if (colorEl) colorEl.value = row.querySelector('[data-vp-variant-color-input]')?.value || '';
                 if (priceEl) priceEl.value = row.querySelector('[data-vp-variant-price-input]')?.value || '';
+                if (advanceEl) advanceEl.value = row.querySelector('[data-vp-variant-advance-input]')?.value || '';
+                if (quantityEl) quantityEl.value = row.querySelector('[data-vp-variant-quantity-input]')?.value || '';
                 if (fileEl) fileEl.value = '';
                 const thumb = row.querySelector('[data-vp-variant-thumb]');
                 if (thumb && thumb.getAttribute('src') && !thumb.hidden) {
@@ -482,7 +497,7 @@
                     }
                 }
                 if (addBtn) addBtn.textContent = 'Update Variant';
-                composer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                composer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             });
         };
 
@@ -495,13 +510,6 @@
             bindRow(row);
         });
         reindex();
-
-        toggle?.addEventListener('click', () => {
-            composer.hidden = !composer.hidden;
-            if (!composer.hidden) {
-                resetComposer();
-            }
-        });
 
         fileEl?.addEventListener('change', () => {
             const file = fileEl.files?.[0];
@@ -537,10 +545,12 @@
             const size = (sizeEl?.value || '').trim();
             const color = (colorEl?.value || '').trim();
             const price = (priceEl?.value || '').trim();
+            const advance = (advanceEl?.value || '').trim();
+            const quantity = (quantityEl?.value || '').trim();
             const file = fileEl?.files?.[0] || null;
 
-            if (!size || !color) {
-                window.alert('Please select size and color.');
+            if (!size && !color) {
+                window.alert('Please select size or color (at least one).');
                 return;
             }
 
@@ -561,15 +571,18 @@
             const sizeInput = row.querySelector('[data-vp-variant-size-input]');
             const colorInput = row.querySelector('[data-vp-variant-color-input]');
             const priceInput = row.querySelector('[data-vp-variant-price-input]');
+            const advanceInput = row.querySelector('[data-vp-variant-advance-input]');
+            const quantityInput = row.querySelector('[data-vp-variant-quantity-input]');
             if (sizeInput) sizeInput.value = size;
             if (colorInput) colorInput.value = color;
             if (priceInput) priceInput.value = price || '0';
-            updateCardLabels(row, size, color, price || '0');
+            if (advanceInput) advanceInput.value = advance;
+            if (quantityInput) quantityInput.value = quantity;
+            updateCardLabels(row, size, color, price || '0', advance || '0', quantity);
 
             const finish = () => {
                 reindex();
                 resetComposer();
-                composer.hidden = false;
             };
 
             if (file) {
@@ -597,10 +610,6 @@
                 window.alert('Please wait for the variant image to finish attaching.');
             }
         });
-
-        if (list.querySelectorAll('[data-vp-dress-variant-row]').length > 0) {
-            composer.hidden = false;
-        }
     })();
 })();
 </script>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SystemController;
+use App\Http\Controllers\Api\ProductOptionController;
 use App\Http\Controllers\Api\V1\AddressController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CartController;
@@ -45,6 +46,8 @@ Route::get('system/clear-cache', [SystemController::class, 'clearCache'])->name(
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('config', [ConfigController::class, 'index'])->name('config');
+    Route::get('product-sizes', [ProductOptionController::class, 'sizes'])->name('product-sizes');
+    Route::get('product-colors', [ProductOptionController::class, 'colors'])->name('product-colors');
 
     Route::get('home', [HomeController::class, 'index'])->name('home');
     Route::get('categories', [CategoryController::class, 'index'])->name('categories');
@@ -142,6 +145,8 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
     });
 
     Route::get('config', [VendorConfigController::class, 'index'])->name('config');
+    Route::get('product-sizes', [ProductOptionController::class, 'sizes'])->name('product-sizes');
+    Route::get('product-colors', [ProductOptionController::class, 'colors'])->name('product-colors');
     Route::get('categories', [VendorCategoryController::class, 'index'])->name('categories');
     Route::get('categories/{category}/subcategories', [VendorCategoryController::class, 'subcategories'])->name('categories.subcategories');
 

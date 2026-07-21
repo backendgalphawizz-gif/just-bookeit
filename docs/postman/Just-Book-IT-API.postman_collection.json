@@ -3319,13 +3319,13 @@
 											"key": "price_per_day",
 											"value": "1500",
 											"type": "text",
-											"description": "Product price per day (required)"
+											"description": "Omit for rented-dress — set price on each variant instead. Required for jewellery/designer."
 										},
 										{
 											"key": "advance_amount",
 											"value": "500",
 											"type": "text",
-											"description": "Optional advance/booking amount"
+											"description": "Omit for rented-dress — set advance_amount on each variant instead."
 										},
 										{
 											"key": "subcategory_id",
@@ -3359,9 +3359,9 @@
 										},
 										{
 											"key": "variants",
-											"value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200},{\"size\":\"L\",\"color\":\"Blue\",\"price\":1100}]",
+											"value": "[{\"size\":\"XL\",\"color\":\"Pink\",\"price\":1200,\"advance_amount\":500,\"quantity\":2},{\"size\":\"L\",\"color\":\"Blue\",\"price\":1100,\"advance_amount\":400,\"quantity\":1}]",
 											"type": "text",
-											"description": "JSON array — size, color, price per variant (no image in JSON when using variant_images)"
+											"description": "JSON array — size, color, price, optional advance_amount & quantity per variant (no image in JSON when using variant_images)"
 										},
 										{
 											"key": "variant_images",
@@ -3385,7 +3385,7 @@
 									]
 								},
 								"url": "{{base_url}}/v2/products",
-								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image` (or at least one image in `gallery_images`). Send multiple `gallery_images` with both images and videos in the same field. Optional separate `videos` / `gallery_videos` keys still work. Send `variants` as JSON (size, color, price). Upload variant photos index-wise via `variant_images`."
+								"description": "Create product for a service type. Set `type` to rented-dress, fashion-designer, or rented-jewellery. Requires `subcategory_id` and primary `image` (or at least one image in `gallery_images`). Send multiple `gallery_images` with both images and videos in the same field. Optional separate `videos` / `gallery_videos` keys still work. Send `variants` as JSON (size, color, price, optional advance_amount, quantity). Upload variant photos index-wise via `variant_images`."
 							}
 						},
 						{
@@ -3534,9 +3534,9 @@
 										},
 										{
 											"key": "variants",
-											"value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400}]",
+											"value": "[{\"size\":\"L\",\"color\":\"Maroon\",\"price\":1400,\"advance_amount\":500,\"quantity\":2}]",
 											"type": "text",
-											"description": "JSON array — replaces all variants (size, color, price). Use variant_images for photos by index."
+											"description": "JSON array — replaces all variants (size, color, price, optional advance_amount & quantity). Use variant_images for photos by index."
 										},
 										{
 											"key": "variant_images",

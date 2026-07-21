@@ -24,13 +24,7 @@
     $galleryVideos = $item->images->filter(fn ($image) => $image->isVideo() && $image->mediaUrl());
     $variants = $isRentalDress ? $item->availableVariants() : collect();
     $availableSizes = $variants->pluck('size')->filter()->map(fn ($s) => trim((string) $s))->unique()->values();
-    $colorCssMap = [
-        'black' => '#111111', 'white' => '#ffffff', 'red' => '#e11d48', 'blue' => '#2563eb',
-        'navy' => '#1e3a8a', 'navy blue' => '#1e3a8a', 'green' => '#16a34a', 'yellow' => '#eab308',
-        'orange' => '#ea580c', 'pink' => '#ec4899', 'purple' => '#9333ea', 'brown' => '#92400e',
-        'grey' => '#6b7280', 'gray' => '#6b7280', 'gold' => '#ca8a04', 'silver' => '#a8a29e',
-        'maroon' => '#9f1239', 'ivory' => '#fffff0', 'rose gold' => '#b76e79',
-    ];
+    $colorCssMap = \App\Support\ProductOptionCatalog::colorCssMap();
     $resolveColorCss = function (string $name) use ($colorCssMap): string {
         $key = strtolower(trim($name));
 
@@ -47,6 +41,7 @@
                     'name' => $color,
                     'css' => $resolveColorCss($color),
                     'image_url' => $withImage?->imageUrl(),
+                    'image_path' => $withImage?->image_path,
                 ];
             })
             ->values()
@@ -75,7 +70,7 @@
         }
 
         $seenMediaPaths[$key] = true;
-        $mediaThumbs->push(['type' => $type, 'url' => $url]);
+        $mediaThumbs->push(['type' => $type, 'url' => $url, 'path' => $key]);
     };
 
     foreach ($galleryImages as $image) {
@@ -90,6 +85,13 @@
                 ? $item->image_url
                 : \App\Support\StoresUploadedFiles::url($item->image_url)
         );
+    }
+
+    // Variant color images belong in the product gallery, not inside color swatches.
+    if ($isRentalDress) {
+        foreach ($variants as $variant) {
+            $pushMediaThumb('image', $variant->image_path, $variant->imageUrl());
+        }
     }
 
     if ($mediaThumbs->isEmpty() && $heroImageUrl) {
@@ -186,16 +188,18 @@
                         <div class="vp-product-view-meta-label">{{ $priceLabel }}</div>
                         <div class="vp-product-view-meta-value">₹{{ number_format($sellingPrice, 0) }}/day</div>
                     </div>
-                    <div>
-                        <div class="vp-product-view-meta-label">Advance Amount</div>
-                        <div class="vp-product-view-meta-value">
-                            @if ($item->advance_amount !== null)
-                                ₹{{ number_format((float) $item->advance_amount, 0) }}
-                            @else
-                                —
-                            @endif
+                    @unless ($isRentalDress)
+                        <div>
+                            <div class="vp-product-view-meta-label">Advance Amount</div>
+                            <div class="vp-product-view-meta-value">
+                                @if ($item->advance_amount !== null)
+                                    ₹{{ number_format((float) $item->advance_amount, 0) }}
+                                @else
+                                    —
+                                @endif
+                            </div>
                         </div>
-                    </div>
+                    @endunless
                     <div>
                         <div class="vp-product-view-meta-label">Rating</div>
                         <div class="vp-product-view-meta-value vp-product-view-rating vp-product-view-rating--gold">
@@ -212,22 +216,19 @@
                             @foreach ($availableColors as $color)
                                 <button
                                     type="button"
-                                    class="vp-product-view-color-card{{ filled($color['image_url']) ? '' : ' vp-product-view-color-card--swatch-only' }}"
+                                    class="vp-product-view-color-card vp-product-view-color-card--swatch-only"
                                     role="listitem"
                                     title="{{ $color['name'] }}"
                                     aria-label="{{ $color['name'] }}"
+                                    data-vp-color-swatch
                                     @if (filled($color['image_url']))
                                         data-vp-color-image="{{ url($color['image_url']) }}"
                                     @endif
                                 >
-                                    @if (filled($color['image_url']))
-                                        <img src="{{ url($color['image_url']) }}" alt="{{ $color['name'] }}" class="vp-product-view-color-card-img">
-                                    @else
-                                        <span
-                                            class="vp-product-view-swatch{{ in_array(strtolower($color['css']), ['#ffffff', '#fffff0'], true) ? ' vp-product-view-swatch--light' : '' }}"
-                                            style="background-color: {{ $color['css'] }};"
-                                        ></span>
-                                    @endif
+                                    <span
+                                        class="vp-product-view-swatch{{ in_array(strtolower($color['css']), ['#ffffff', '#fffff0', '#fff'], true) ? ' vp-product-view-swatch--light' : '' }}"
+                                        style="background-color: {{ $color['css'] }};"
+                                    ></span>
                                     <span class="vp-product-view-color-card-name">{{ $color['name'] }}</span>
                                 </button>
                             @endforeach
@@ -252,63 +253,6 @@
                 </div>
             </div>
         </div>
-        @push('scripts')
-            <script>
-                (function () {
-                    const setHero = (url, type) => {
-                        let hero = document.querySelector('[data-vp-product-hero]');
-                        if (!hero || !url) return;
-
-                        if (type === 'video') {
-                            if (hero.tagName !== 'VIDEO') {
-                                const video = document.createElement('video');
-                                video.src = url;
-                                video.controls = true;
-                                video.playsInline = true;
-                                video.className = 'vp-product-view-hero';
-                                video.setAttribute('data-vp-product-hero', '');
-                                hero.replaceWith(video);
-                            } else {
-                                hero.src = url;
-                            }
-                            return;
-                        }
-
-                        if (hero.tagName === 'IMG') {
-                            hero.src = url;
-                            return;
-                        }
-
-                        const img = document.createElement('img');
-                        img.src = url;
-                        img.alt = @json($item->title);
-                        img.className = 'vp-product-view-hero panel-lightbox-trigger';
-                        img.setAttribute('data-vp-product-hero', '');
-                        hero.replaceWith(img);
-                    };
-
-                    document.querySelectorAll('[data-vp-thumb-url]').forEach((button) => {
-                        button.addEventListener('click', () => {
-                            const url = button.getAttribute('data-vp-thumb-url');
-                            const type = button.getAttribute('data-vp-thumb-type') || 'image';
-                            setHero(url, type);
-                            document.querySelectorAll('[data-vp-product-thumbs] .vp-product-view-thumb.is-active')
-                                .forEach((el) => el.classList.remove('is-active'));
-                            button.classList.add('is-active');
-                        });
-                    });
-
-                    document.querySelectorAll('[data-vp-color-image]').forEach((button) => {
-                        button.addEventListener('click', () => {
-                            const url = button.getAttribute('data-vp-color-image');
-                            setHero(url, 'image');
-                            document.querySelectorAll('.vp-product-view-color-card.is-active').forEach((el) => el.classList.remove('is-active'));
-                            button.classList.add('is-active');
-                        });
-                    });
-                })();
-            </script>
-        @endpush
     @else
         <div class="vp-product-view-body">
             <div class="vp-product-view-media">
@@ -403,54 +347,131 @@
                 @endif
             </div>
         </div>
-        @push('scripts')
-            <script>
-                (function () {
-                    const setHero = (url, type) => {
-                        let hero = document.querySelector('[data-vp-product-hero]');
-                        if (!hero || !url) return;
-
-                        if (type === 'video') {
-                            if (hero.tagName !== 'VIDEO') {
-                                const video = document.createElement('video');
-                                video.src = url;
-                                video.controls = true;
-                                video.playsInline = true;
-                                video.className = 'vp-product-view-hero';
-                                video.setAttribute('data-vp-product-hero', '');
-                                hero.replaceWith(video);
-                            } else {
-                                hero.src = url;
-                            }
-                            return;
-                        }
-
-                        if (hero.tagName === 'IMG') {
-                            hero.src = url;
-                            return;
-                        }
-
-                        const img = document.createElement('img');
-                        img.src = url;
-                        img.alt = @json($item->title);
-                        img.className = 'vp-product-view-hero panel-lightbox-trigger';
-                        img.setAttribute('data-vp-product-hero', '');
-                        hero.replaceWith(img);
-                    };
-
-                    document.querySelectorAll('[data-vp-gallery-url]').forEach((button) => {
-                        button.addEventListener('click', () => {
-                            const url = button.getAttribute('data-vp-gallery-url');
-                            const type = button.getAttribute('data-vp-gallery-type') || 'image';
-                            setHero(url, type);
-                            document.querySelectorAll('[data-vp-design-gallery] .vp-product-view-gallery-btn.is-active')
-                                .forEach((el) => el.classList.remove('is-active'));
-                            button.classList.add('is-active');
-                        });
-                    });
-                })();
-            </script>
-        @endpush
     @endif
 </div>
 @endsection
+
+@push('scripts')
+@if ($isRentalDress)
+<script>
+(function () {
+    const setHero = (url, type) => {
+        let hero = document.querySelector('[data-vp-product-hero]');
+        if (!hero || !url) return;
+
+        if (type === 'video') {
+            if (hero.tagName !== 'VIDEO') {
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.playsInline = true;
+                video.className = 'vp-product-view-hero';
+                video.setAttribute('data-vp-product-hero', '');
+                hero.replaceWith(video);
+            } else {
+                hero.src = url;
+            }
+            return;
+        }
+
+        if (hero.tagName === 'IMG') {
+            hero.src = url;
+            return;
+        }
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = @json($item->title);
+        img.className = 'vp-product-view-hero panel-lightbox-trigger';
+        img.setAttribute('data-vp-product-hero', '');
+        hero.replaceWith(img);
+    };
+
+    const markThumbActive = (url) => {
+        const thumbs = document.querySelectorAll('[data-vp-product-thumbs] .vp-product-view-thumb');
+        thumbs.forEach((el) => el.classList.remove('is-active'));
+        if (!url) return;
+        thumbs.forEach((el) => {
+            if (el.getAttribute('data-vp-thumb-url') === url) {
+                el.classList.add('is-active');
+            }
+        });
+    };
+
+    document.querySelectorAll('[data-vp-thumb-url]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const url = button.getAttribute('data-vp-thumb-url');
+            const type = button.getAttribute('data-vp-thumb-type') || 'image';
+            setHero(url, type);
+            document.querySelectorAll('[data-vp-product-thumbs] .vp-product-view-thumb.is-active')
+                .forEach((el) => el.classList.remove('is-active'));
+            button.classList.add('is-active');
+            document.querySelectorAll('.vp-product-view-color-card.is-active')
+                .forEach((el) => el.classList.remove('is-active'));
+        });
+    });
+
+    document.querySelectorAll('[data-vp-color-swatch]').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.vp-product-view-color-card.is-active')
+                .forEach((el) => el.classList.remove('is-active'));
+            button.classList.add('is-active');
+
+            const url = button.getAttribute('data-vp-color-image');
+            if (!url) return;
+
+            setHero(url, 'image');
+            markThumbActive(url);
+        });
+    });
+})();
+</script>
+@elseif ($isRental === false)
+<script>
+(function () {
+    const setHero = (url, type) => {
+        let hero = document.querySelector('[data-vp-product-hero]');
+        if (!hero || !url) return;
+
+        if (type === 'video') {
+            if (hero.tagName !== 'VIDEO') {
+                const video = document.createElement('video');
+                video.src = url;
+                video.controls = true;
+                video.playsInline = true;
+                video.className = 'vp-product-view-hero';
+                video.setAttribute('data-vp-product-hero', '');
+                hero.replaceWith(video);
+            } else {
+                hero.src = url;
+            }
+            return;
+        }
+
+        if (hero.tagName === 'IMG') {
+            hero.src = url;
+            return;
+        }
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = @json($item->title);
+        img.className = 'vp-product-view-hero panel-lightbox-trigger';
+        img.setAttribute('data-vp-product-hero', '');
+        hero.replaceWith(img);
+    };
+
+    document.querySelectorAll('[data-vp-gallery-url]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const url = button.getAttribute('data-vp-gallery-url');
+            const type = button.getAttribute('data-vp-gallery-type') || 'image';
+            setHero(url, type);
+            document.querySelectorAll('[data-vp-design-gallery] .vp-product-view-gallery-btn.is-active')
+                .forEach((el) => el.classList.remove('is-active'));
+            button.classList.add('is-active');
+        });
+    });
+})();
+</script>
+@endif
+@endpush

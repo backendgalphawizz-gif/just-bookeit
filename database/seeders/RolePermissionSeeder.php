@@ -26,6 +26,8 @@ class RolePermissionSeeder extends Seeder
             'commissions' => 'Commission Management',
             'banners' => 'Banner & CMS',
             'faqs' => 'FAQ Management',
+            'sizes' => 'Product Sizes',
+            'colors' => 'Product Colors',
             'contact_messages' => 'Contact Messages',
             'notifications' => 'Notifications',
             'reports' => 'Reports & Analytics',
@@ -65,7 +67,7 @@ class RolePermissionSeeder extends Seeder
         $this->attachPermissions($vendorAdmin, ['dashboard', 'vendors', 'drivers', 'portfolio', 'categories', 'orders'], edit: true, create: true);
 
         $moderator = Role::query()->where('slug', 'content_moderator')->first();
-        $this->attachPermissions($moderator, ['dashboard', 'portfolio', 'banners', 'categories', 'faqs'], edit: true, create: true);
+        $this->attachPermissions($moderator, ['dashboard', 'portfolio', 'banners', 'categories', 'faqs', 'sizes', 'colors'], edit: true, create: true);
 
         $super = Role::query()->where('slug', 'super_admin')->first();
         if ($super) {

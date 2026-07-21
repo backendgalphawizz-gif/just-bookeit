@@ -86,7 +86,7 @@ class ProductController extends VendorApiController
         $this->validateProductUploads($request);
         ProductVariantUpload::validateImages($request);
         $data = $this->validateVendor($request, array_merge(
-            VendorValidationRules::product(true),
+            VendorValidationRules::product(true, $type),
             VendorValidationRules::productTypeRules()
         ));
 
@@ -116,8 +116,8 @@ class ProductController extends VendorApiController
             'subcategory_id' => $subcategory->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $data['price_per_day'],
-            'advance_amount' => $this->resolveAdvanceAmount($request),
+            'price_per_day' => $type === 'rented-dress' ? null : ($data['price_per_day'] ?? null),
+            'advance_amount' => $type === 'rented-dress' ? null : $this->resolveAdvanceAmount($request),
             'audience' => SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $data['audience'] ?? 'women',
             'image_url' => $imagePath,
             'status' => 'pending',
@@ -127,6 +127,7 @@ class ProductController extends VendorApiController
         $this->storeGalleryVideos($request, $product);
         $this->syncVariants($request, $product, $data['variants'] ?? []);
         $this->syncDamageDeductions($product, $data['damage_deductions'] ?? []);
+        $product->refreshDressPricingFromVariants();
 
         return $this->success([
             'product' => VendorApiPresenter::productDetail($product->load(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions'])),
@@ -143,8 +144,13 @@ class ProductController extends VendorApiController
 
         $this->validateProductUploads($request);
         ProductVariantUpload::validateImages($request);
+
+        $productType = $request->filled('type')
+            ? $request->string('type')->toString()
+            : ($product->category?->slug ?? 'rented-dress');
+
         $data = $this->validateVendor($request, array_merge(
-            VendorValidationRules::product(false),
+            VendorValidationRules::product(false, $productType),
             VendorValidationRules::productTypeRules()
         ));
 
@@ -158,6 +164,7 @@ class ProductController extends VendorApiController
         if ($request->filled('type')) {
             $category = Category::query()->where('slug', $request->string('type'))->firstOrFail();
             $updates['category_id'] = $category->id;
+            $productType = $category->slug;
         }
 
         if (array_key_exists('subcategory_id', $data)) {
@@ -179,12 +186,14 @@ class ProductController extends VendorApiController
             $updates['audience'] = $data['audience'];
         }
 
-        if (array_key_exists('price_per_day', $data)) {
-            $updates['price_per_day'] = $data['price_per_day'];
-        }
+        if ($productType !== 'rented-dress') {
+            if (array_key_exists('price_per_day', $data)) {
+                $updates['price_per_day'] = $data['price_per_day'];
+            }
 
-        if ($request->has('advance_amount')) {
-            $updates['advance_amount'] = $this->resolveAdvanceAmount($request);
+            if ($request->has('advance_amount')) {
+                $updates['advance_amount'] = $this->resolveAdvanceAmount($request);
+            }
         }
 
         if (array_key_exists('damage_deductions', $data)) {
@@ -212,8 +221,11 @@ class ProductController extends VendorApiController
         $this->storeGalleryImages($request, $product);
         $this->storeGalleryVideos($request, $product);
 
-        if (array_key_exists('variants', $data)) {
-            $this->syncVariants($request, $product, $data['variants'] ?? [], true);
+        if (array_key_exists('variants', $data) || $productType === 'rented-dress') {
+            if (array_key_exists('variants', $data)) {
+                $this->syncVariants($request, $product, $data['variants'] ?? [], true);
+            }
+            $product->refreshDressPricingFromVariants();
         }
 
         if (array_key_exists('damage_deductions', $data)) {
@@ -634,6 +646,12 @@ class ProductController extends VendorApiController
                 'size' => (string) ($variant['size'] ?? ''),
                 'color' => (string) ($variant['color'] ?? ''),
                 'price' => (float) ($variant['price'] ?? 0),
+                'advance_amount' => array_key_exists('advance_amount', $variant) && $variant['advance_amount'] !== null && $variant['advance_amount'] !== ''
+                    ? (float) $variant['advance_amount']
+                    : null,
+                'quantity' => array_key_exists('quantity', $variant) && $variant['quantity'] !== null && $variant['quantity'] !== ''
+                    ? max(0, (int) $variant['quantity'])
+                    : null,
                 'image_path' => $imagePath,
                 'sort_order' => $index + 1,
             ]);

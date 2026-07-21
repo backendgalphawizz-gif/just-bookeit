@@ -13,6 +13,8 @@ class PortfolioItemVariant extends Model
         'size',
         'color',
         'price',
+        'advance_amount',
+        'quantity',
         'image_path',
         'sort_order',
     ];
@@ -21,6 +23,8 @@ class PortfolioItemVariant extends Model
     {
         return [
             'price' => 'decimal:2',
+            'advance_amount' => 'decimal:2',
+            'quantity' => 'integer',
         ];
     }
 

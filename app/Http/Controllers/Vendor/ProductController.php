@@ -88,7 +88,7 @@ class ProductController extends VendorController
 
         $this->normalizeProductFormInput($request);
         $data = $this->validateVendor($request, array_merge(
-            VendorValidationRules::product(true),
+            VendorValidationRules::product(true, $type),
             $this->productUploadRules(true, $type)
         ));
 
@@ -142,8 +142,10 @@ class ProductController extends VendorController
             'subcategory_id' => $subcategory->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $data['price_per_day'],
-            'advance_amount' => array_key_exists('advance_amount', $data) ? $data['advance_amount'] : null,
+            'price_per_day' => $type === 'rented-dress' ? null : ($data['price_per_day'] ?? null),
+            'advance_amount' => $type === 'rented-dress'
+                ? null
+                : (array_key_exists('advance_amount', $data) ? $data['advance_amount'] : null),
             'audience' => SubcategoryCatalog::audienceFromSubcategory($subcategory) ?? $data['audience'] ?? 'women',
             'image_url' => $imagePath,
             'status' => 'pending',
@@ -210,7 +212,7 @@ class ProductController extends VendorController
 
         $this->normalizeProductFormInput($request);
         $data = $this->validateVendor($request, array_merge(
-            VendorValidationRules::product(false),
+            VendorValidationRules::product(false, $type),
             $this->productUploadRules(false, $type)
         ));
 
@@ -229,13 +231,16 @@ class ProductController extends VendorController
         $updates = [
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $data['price_per_day'] ?? $product->price_per_day,
-            'advance_amount' => array_key_exists('advance_amount', $data)
-                ? $data['advance_amount']
-                : $product->advance_amount,
             'status' => 'pending',
             'rejection_reason' => null,
         ];
+
+        if ($type !== 'rented-dress') {
+            $updates['price_per_day'] = $data['price_per_day'] ?? $product->price_per_day;
+            $updates['advance_amount'] = array_key_exists('advance_amount', $data)
+                ? $data['advance_amount']
+                : $product->advance_amount;
+        }
 
         if (array_key_exists('subcategory_id', $data)) {
             $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id']);

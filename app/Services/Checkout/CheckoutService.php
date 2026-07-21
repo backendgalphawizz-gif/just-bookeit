@@ -220,9 +220,7 @@ class CheckoutService
                             'color' => $variant?->color ?? ($override['color'] ?? null),
                             'variant_id' => $variant?->id ?? ($override['portfolio_item_variant_id'] ?? null),
                             'advance_amount' => $line['advance_amount'] ?? (
-                                $portfolioItem->advance_amount !== null
-                                    ? round((float) $portfolioItem->advance_amount * $line['quantity'], 2)
-                                    : 0
+                                round($portfolioItem->advanceAmountFor($variant) * $line['quantity'], 2)
                             ),
                         ], CheckoutItemPayloadSupport::itemSnapshotExtras(
                             $override,
@@ -310,6 +308,7 @@ class CheckoutService
                         'requires_rental_period' => $requiresRentalPeriod,
                         'shipment_required' => false,
                         'daily_rate' => $portfolioItem->dailyRateFor($cartItem->variant),
+                        'variant' => $cartItem->variant,
                     ]);
 
                     $lineSubtotal = round((float) $pricing['subtotal'] * $cartItem->quantity, 2);

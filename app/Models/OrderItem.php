@@ -108,8 +108,13 @@ class OrderItem extends Model
             return round((float) $this->item_snapshot['advance_amount'], 2);
         }
 
-        $this->loadMissing('portfolioItem');
-        $unit = (float) ($this->portfolioItem?->advance_amount ?? 0);
+        $this->loadMissing(['portfolioItem.variants']);
+        $variant = null;
+        $variantId = $this->variantId();
+        if ($variantId && $this->portfolioItem) {
+            $variant = $this->portfolioItem->findVariant($variantId);
+        }
+        $unit = $this->portfolioItem?->advanceAmountFor($variant) ?? 0.0;
 
         return round($unit * max(1, (int) $this->quantity), 2);
     }

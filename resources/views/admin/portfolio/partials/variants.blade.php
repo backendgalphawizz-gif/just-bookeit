@@ -9,13 +9,15 @@
                 'size' => $v->size,
                 'color' => $v->color,
                 'price' => $v->price,
+                'advance_amount' => $v->advance_amount,
+                'quantity' => $v->quantity,
                 'image_url' => $v->imageUrl(),
                 'stored_image_path' => $v->image_path,
             ])->all()
             : [];
     }
     if ($variantRows === []) {
-        $variantRows = [['size' => '', 'color' => '', 'price' => '', 'image_url' => null, 'stored_image_path' => null]];
+        $variantRows = [['size' => '', 'color' => '', 'price' => '', 'advance_amount' => '', 'quantity' => '', 'image_url' => null, 'stored_image_path' => null]];
     }
 @endphp
 
@@ -23,14 +25,14 @@
     <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
             <label class="jb-label">Size / color variants</label>
-            <p class="mt-1 text-sm text-slate-500">Optional. Same as vendor app — size, color, price, and optional image per variant.</p>
+            <p class="mt-1 text-sm text-slate-500">Optional. Same as vendor app — size, color, price, advance, quantity, and optional image per variant.</p>
         </div>
         <button type="button" class="jb-btn jb-btn-secondary jb-btn-sm" data-product-variants-add>+ Add variant</button>
     </div>
 
     <div class="space-y-3" data-product-variants-list>
         @foreach ($variantRows as $index => $variant)
-            <div class="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8rem_minmax(0,10rem)_auto]" data-product-variants-row>
+            <div class="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_7rem_6rem_minmax(0,10rem)_auto]" data-product-variants-row>
                 <div>
                     <label class="jb-label">Size</label>
                     <input type="text" name="variants[{{ $index }}][size]" value="{{ $variant['size'] ?? '' }}" class="jb-input" placeholder="e.g. M, 32">
@@ -42,6 +44,14 @@
                 <div>
                     <label class="jb-label">Price (₹)</label>
                     <input type="number" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" class="jb-input" min="0" step="0.01" placeholder="0">
+                </div>
+                <div>
+                    <label class="jb-label">Advance (₹)</label>
+                    <input type="number" name="variants[{{ $index }}][advance_amount]" value="{{ $variant['advance_amount'] ?? '' }}" class="jb-input" min="0" step="0.01" placeholder="0">
+                </div>
+                <div>
+                    <label class="jb-label">Qty</label>
+                    <input type="number" name="variants[{{ $index }}][quantity]" value="{{ $variant['quantity'] ?? '' }}" class="jb-input" min="0" step="1" placeholder="1">
                 </div>
                 <div>
                     <label class="jb-label">Variant image</label>
@@ -63,7 +73,7 @@
     @error('variants.*.image')<p class="mt-2 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
 
     <template data-product-variants-template>
-        <div class="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_8rem_minmax(0,10rem)_auto]" data-product-variants-row>
+        <div class="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_7rem_7rem_6rem_minmax(0,10rem)_auto]" data-product-variants-row>
             <div>
                 <label class="jb-label">Size</label>
                 <input type="text" name="variants[__INDEX__][size]" class="jb-input" placeholder="e.g. M, 32">
@@ -75,6 +85,14 @@
             <div>
                 <label class="jb-label">Price (₹)</label>
                 <input type="number" name="variants[__INDEX__][price]" class="jb-input" min="0" step="0.01" placeholder="0">
+            </div>
+            <div>
+                <label class="jb-label">Advance (₹)</label>
+                <input type="number" name="variants[__INDEX__][advance_amount]" class="jb-input" min="0" step="0.01" placeholder="0">
+            </div>
+            <div>
+                <label class="jb-label">Qty</label>
+                <input type="number" name="variants[__INDEX__][quantity]" class="jb-input" min="0" step="1" placeholder="1">
             </div>
             <div>
                 <label class="jb-label">Variant image</label>

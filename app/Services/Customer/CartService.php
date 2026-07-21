@@ -71,10 +71,7 @@ class CartService
             return round($cartItem->unitDailyRate() * $cartItem->quantity, 2);
         }), 2);
         $advanceAmount = round($items->sum(function (CartItem $cartItem) {
-            $cartItem->loadMissing('portfolioItem');
-            $unitAdvance = (float) ($cartItem->portfolioItem?->advance_amount ?? 0);
-
-            return round($unitAdvance * $cartItem->quantity, 2);
+            return round($cartItem->unitAdvanceAmount() * $cartItem->quantity, 2);
         }), 2);
 
         $vendors = $items
@@ -85,10 +82,7 @@ class CartService
                     return round($cartItem->unitDailyRate() * $cartItem->quantity, 2);
                 }), 2);
                 $vendorAdvance = round($group->sum(function (CartItem $cartItem) {
-                    $cartItem->loadMissing('portfolioItem');
-                    $unitAdvance = (float) ($cartItem->portfolioItem?->advance_amount ?? 0);
-
-                    return round($unitAdvance * $cartItem->quantity, 2);
+                    return round($cartItem->unitAdvanceAmount() * $cartItem->quantity, 2);
                 }), 2);
                 $deliveryFee = BookingPricingService::shippingFee($shipmentRequired);
                 $taxPercent = BookingPricingService::gstPercent();
@@ -161,6 +155,10 @@ class CartService
 
             if (! $variant) {
                 throw new InvalidArgumentException('The selected variant is not available.');
+            }
+
+            if ($variant->quantity !== null && $quantity > (int) $variant->quantity) {
+                throw new InvalidArgumentException('Only '.$variant->quantity.' available for this size/color.');
             }
         } else {
             $variantId = null;

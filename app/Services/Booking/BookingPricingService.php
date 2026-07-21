@@ -107,11 +107,9 @@ class BookingPricingService
             return round(max(0, (float) $options['advance_amount']), 2);
         }
 
-        if ($item->advance_amount !== null) {
-            return round(max(0, (float) $item->advance_amount), 2);
-        }
+        $variant = $options['variant'] ?? null;
 
-        return 0.0;
+        return $item->advanceAmountFor($variant instanceof \App\Models\PortfolioItemVariant ? $variant : null);
     }
 
     public static function vendorPaymentSummary(Order $order, ?Vendor $vendor = null): array
