@@ -485,6 +485,38 @@
 			]
 		},
 		{
+			"name": "Earnings",
+			"item": [
+				{
+					"name": "Earnings Analytics (Year)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": {
+							"raw": "{{base_url}}/v2/earnings/analytics?year=2026",
+							"host": ["{{base_url}}"],
+							"path": ["v2", "earnings", "analytics"],
+							"query": [
+								{ "key": "year", "value": "2026", "description": "Calendar year filter (default: current year)" },
+								{ "key": "service_type", "value": "", "description": "Optional: fashion-designer | rented-dress | rented-jewellery", "disabled": true }
+							]
+						},
+						"description": "Vendor earning analytics by service type for a year. Uses paid bookings; amount is vendor_net_amount when set, otherwise order amount. Multi-item bookings are split by line item service type."
+					}
+				},
+				{
+					"name": "Earnings Analytics (Rented Dress only)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{v2_token}}", "type": "string" }] },
+						"method": "GET",
+						"header": [{ "key": "Accept", "value": "application/json" }],
+						"url": "{{base_url}}/v2/earnings/analytics?year=2026&service_type=rented-dress"
+					}
+				}
+			]
+		},
+		{
 			"name": "Profile & Settings",
 			"item": [
 				{
