@@ -48,4 +48,11 @@ class CartItem extends Model
 
         return $this->portfolioItem?->dailyRateFor($this->variant) ?? 0;
     }
+
+    public function unitAdvanceAmount(): float
+    {
+        $this->loadMissing(['portfolioItem', 'variant']);
+
+        return $this->portfolioItem?->advanceAmountFor($this->variant) ?? 0.0;
+    }
 }

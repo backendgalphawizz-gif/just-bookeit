@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\Category;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\LocationResolver;
+use App\Support\ProductOptionCatalog;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 
@@ -62,10 +63,10 @@ class ConfigController extends ApiController
                 ['key' => 'men', 'label' => 'Men'],
                 ['key' => 'kids', 'label' => 'Kids'],
             ],
-            'product_sizes' => ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-            'product_colors' => [
-                'Black', 'White', 'Red', 'Blue', 'Green', 'Pink', 'Gold', 'Silver', 'Maroon', 'Ivory', 'Navy Blue', 'Rose Gold',
-            ],
+            'product_sizes' => ProductOptionCatalog::sizeNames(),
+            'product_size_options' => ProductOptionCatalog::sizeApiItems(),
+            'product_colors' => ProductOptionCatalog::colorNames(),
+            'product_color_options' => ProductOptionCatalog::colorApiItems(),
             'portfolio_audiences' => [
                 ['key' => 'women', 'label' => 'Women'],
                 ['key' => 'men', 'label' => 'Men'],

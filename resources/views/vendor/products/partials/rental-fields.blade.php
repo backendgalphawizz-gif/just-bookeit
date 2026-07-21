@@ -1,19 +1,13 @@
 @php
     use App\Models\PlatformSetting;
+    use App\Support\ProductOptionCatalog;
     use App\Support\VendorValidationRules;
 
     $productImageMaxMb = (int) (VendorValidationRules::MAX_IMAGE_KB / 1024);
     $productVideoMaxMb = (int) (VendorValidationRules::MAX_VIDEO_KB / 1024);
-    $sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-    $colorOptions = [
-        'Black', 'White', 'Red', 'Blue', 'Green', 'Pink', 'Gold', 'Silver',
-        'Maroon', 'Ivory', 'Navy Blue', 'Rose Gold',
-    ];
-    $colorCssMap = [
-        'black' => '#111111', 'white' => '#ffffff', 'red' => '#e11d48', 'blue' => '#2563eb',
-        'green' => '#16a34a', 'pink' => '#ec4899', 'gold' => '#ca8a04', 'silver' => '#a8a29e',
-        'maroon' => '#9f1239', 'ivory' => '#fffff0', 'navy blue' => '#1e3a8a', 'rose gold' => '#b76e79',
-    ];
+    $sizeOptions = ProductOptionCatalog::sizeNames();
+    $colorOptions = ProductOptionCatalog::colorNames();
+    $colorCssMap = ProductOptionCatalog::colorCssMap();
 
     $variantRows = old('variants');
     if (! is_array($variantRows)) {
@@ -22,6 +16,8 @@
                 'size' => $v->size,
                 'color' => $v->color,
                 'price' => $v->price,
+                'advance_amount' => $v->advance_amount,
+                'quantity' => $v->quantity,
                 'image_url' => $v->imageUrl(),
                 'stored_image_path' => $v->image_path,
             ])->values()->all()
@@ -49,48 +45,6 @@
         ? $item->images->filter(fn ($img) => $img->mediaUrl())->values()
         : collect();
 @endphp
-
-{{-- Product Price + Advance Amount --}}
-<div class="vp-field vp-field--full">
-    <div class="vp-product-form-grid vp-product-form-grid--2">
-        <div class="vp-field">
-            <label class="vp-label" for="price_per_day">Product Price (per day) <span class="vp-required">*</span></label>
-            <div class="vp-currency-input @error('price_per_day') vp-currency-input--error @enderror">
-                <span class="vp-currency-prefix" aria-hidden="true">₹</span>
-                <input
-                    id="price_per_day"
-                    type="number"
-                    name="price_per_day"
-                    class="vp-input"
-                    value="{{ old('price_per_day', $item->price_per_day) }}"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                    {{ $isCreate ? 'required' : '' }}
-                >
-            </div>
-            @error('price_per_day')<p class="vp-field-error">{{ $message }}</p>@enderror
-        </div>
-
-        <div class="vp-field">
-            <label class="vp-label" for="advance_amount">Advance Amount</label>
-            <div class="vp-currency-input @error('advance_amount') vp-currency-input--error @enderror">
-                <span class="vp-currency-prefix" aria-hidden="true">₹</span>
-                <input
-                    id="advance_amount"
-                    type="number"
-                    name="advance_amount"
-                    class="vp-input"
-                    value="{{ old('advance_amount', $item->advance_amount) }}"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                >
-            </div>
-            @error('advance_amount')<p class="vp-field-error">{{ $message }}</p>@enderror
-        </div>
-    </div>
-</div>
 
 {{-- Description --}}
 <div class="vp-field vp-field--full">
@@ -122,12 +76,13 @@
 </div>
 
 {{-- Variants --}}
-<div class="vp-field vp-field--full" data-vp-dress-variants>
-    <button type="button" class="vp-dress-variants-toggle" data-vp-dress-variants-toggle>
-        Add Variants
-    </button>
+<div class="vp-field vp-field--full" data-vp-dress-variants data-vp-color-css='@json($colorCssMap)'>
+    <div class="vp-form-section-head" style="margin-bottom:.75rem;">
+        <label class="vp-label" style="margin:0;">Variants <span class="vp-required">*</span></label>
+        <p class="vp-field-hint" style="margin:0;">Add size and/or color (at least one), price, and stock for this dress.</p>
+    </div>
 
-    <div class="vp-dress-variant-composer" data-vp-dress-variant-composer hidden>
+    <div class="vp-dress-variant-composer" data-vp-dress-variant-composer>
         <div class="vp-product-form-grid vp-product-form-grid--3">
             <div class="vp-field">
                 <label class="vp-label">Size</label>
@@ -153,6 +108,17 @@
                     <span class="vp-currency-prefix" aria-hidden="true">₹</span>
                     <input type="number" class="vp-input" min="0" step="0.01" placeholder="0" data-vp-variant-price>
                 </div>
+            </div>
+            <div class="vp-field">
+                <label class="vp-label">Advance Amount</label>
+                <div class="vp-currency-input">
+                    <span class="vp-currency-prefix" aria-hidden="true">₹</span>
+                    <input type="number" class="vp-input" min="0" step="0.01" placeholder="0" data-vp-variant-advance>
+                </div>
+            </div>
+            <div class="vp-field">
+                <label class="vp-label">Quantity</label>
+                <input type="number" class="vp-input" min="0" step="1" placeholder="1" data-vp-variant-quantity>
             </div>
         </div>
 
@@ -194,6 +160,8 @@
                     <div>SIZE - <strong data-vp-variant-size-label>{{ strtoupper((string) ($variant['size'] ?? '—')) }}</strong></div>
                     <div>COLOR - <strong data-vp-variant-color-label style="color: {{ $colorCss }};">{{ strtoupper($colorName !== '' ? $colorName : '—') }}</strong></div>
                     <div>PRICE - <strong data-vp-variant-price-label>₹{{ number_format((float) ($variant['price'] ?? 0), 0) }}</strong></div>
+                    <div>ADVANCE - <strong data-vp-variant-advance-label>₹{{ number_format((float) ($variant['advance_amount'] ?? 0), 0) }}</strong></div>
+                    <div>QTY - <strong data-vp-variant-quantity-label>{{ $variant['quantity'] !== null && $variant['quantity'] !== '' ? (int) $variant['quantity'] : '—' }}</strong></div>
                 </div>
                 <div class="vp-dress-variant-card-actions">
                     <button type="button" class="vp-dress-variant-icon-btn" data-vp-dress-variant-edit title="Edit" aria-label="Edit variant">
@@ -206,6 +174,8 @@
                 <input type="hidden" name="variants[{{ $index }}][size]" value="{{ $variant['size'] ?? '' }}" data-vp-variant-size-input>
                 <input type="hidden" name="variants[{{ $index }}][color]" value="{{ $variant['color'] ?? '' }}" data-vp-variant-color-input>
                 <input type="hidden" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" data-vp-variant-price-input>
+                <input type="hidden" name="variants[{{ $index }}][advance_amount]" value="{{ $variant['advance_amount'] ?? '' }}" data-vp-variant-advance-input>
+                <input type="hidden" name="variants[{{ $index }}][quantity]" value="{{ $variant['quantity'] ?? '' }}" data-vp-variant-quantity-input>
                 <input type="hidden" name="variants[{{ $index }}][stored_image_path]" value="{{ $variant['stored_image_path'] ?? '' }}" data-vp-variant-stored-path>
                 <input type="hidden" name="variants[{{ $index }}][image_base64]" value="" data-vp-variant-image-base64>
                 <input type="file" name="variants[{{ $index }}][image]" accept="image/jpeg,image/jpg,image/png,image/webp" hidden data-vp-variant-image-input>
@@ -227,6 +197,8 @@
                 <div>SIZE - <strong data-vp-variant-size-label>—</strong></div>
                 <div>COLOR - <strong data-vp-variant-color-label>—</strong></div>
                 <div>PRICE - <strong data-vp-variant-price-label>₹0</strong></div>
+                <div>ADVANCE - <strong data-vp-variant-advance-label>₹0</strong></div>
+                <div>QTY - <strong data-vp-variant-quantity-label>—</strong></div>
             </div>
             <div class="vp-dress-variant-card-actions">
                 <button type="button" class="vp-dress-variant-icon-btn" data-vp-dress-variant-edit title="Edit" aria-label="Edit variant">
@@ -239,6 +211,8 @@
             <input type="hidden" name="variants[__INDEX__][size]" value="" data-vp-variant-size-input>
             <input type="hidden" name="variants[__INDEX__][color]" value="" data-vp-variant-color-input>
             <input type="hidden" name="variants[__INDEX__][price]" value="" data-vp-variant-price-input>
+            <input type="hidden" name="variants[__INDEX__][advance_amount]" value="" data-vp-variant-advance-input>
+            <input type="hidden" name="variants[__INDEX__][quantity]" value="" data-vp-variant-quantity-input>
             <input type="hidden" name="variants[__INDEX__][stored_image_path]" value="" data-vp-variant-stored-path>
             <input type="hidden" name="variants[__INDEX__][image_base64]" value="" data-vp-variant-image-base64>
             <input type="file" name="variants[__INDEX__][image]" accept="image/jpeg,image/jpg,image/png,image/webp" hidden data-vp-variant-image-input>

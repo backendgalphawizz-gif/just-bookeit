@@ -117,6 +117,19 @@ class PortfolioItem extends Model
         return (float) $this->rentalPriceAmount();
     }
 
+    public function advanceAmountFor(?PortfolioItemVariant $variant = null): float
+    {
+        if ($variant && $variant->advance_amount !== null) {
+            return round(max(0, (float) $variant->advance_amount), 2);
+        }
+
+        if ($this->advance_amount !== null) {
+            return round(max(0, (float) $this->advance_amount), 2);
+        }
+
+        return 0.0;
+    }
+
     public function rentalPriceLabelFor(?PortfolioItemVariant $variant = null): string
     {
         $amount = '₹'.number_format((int) round($this->dailyRateFor($variant)), 0);
@@ -243,6 +256,36 @@ class PortfolioItem extends Model
         }
 
         return 800 + (($this->id ?? 1) * 173) % 2700;
+    }
+
+    /**
+     * Rental dresses price/advance live on variants; mirror mins onto the product for listings.
+     */
+    public function refreshDressPricingFromVariants(): void
+    {
+        $this->loadMissing(['category', 'variants']);
+
+        if ($this->category?->slug !== 'rented-dress') {
+            return;
+        }
+
+        $variants = $this->variants;
+        if ($variants->isEmpty()) {
+            $this->forceFill([
+                'price_per_day' => null,
+                'advance_amount' => null,
+            ])->save();
+
+            return;
+        }
+
+        $minPrice = $variants->min('price');
+        $advances = $variants->pluck('advance_amount')->filter(fn ($value) => $value !== null);
+
+        $this->forceFill([
+            'price_per_day' => $minPrice !== null ? (float) $minPrice : null,
+            'advance_amount' => $advances->isNotEmpty() ? (float) $advances->min() : null,
+        ])->save();
     }
 
     public function isCatalogAvailable(): bool

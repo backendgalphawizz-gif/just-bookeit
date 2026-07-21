@@ -21,6 +21,8 @@ use App\Http\Controllers\Admin\PortfolioController;
 use App\Http\Controllers\Admin\VendorPortfolioController;
 use App\Http\Controllers\Admin\RefundController;
 use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\Admin\ProductColorController;
+use App\Http\Controllers\Admin\ProductSizeController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -68,6 +70,8 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::get('banners/{banner}/preview', [BannerController::class, 'preview'])->name('banners.preview');
             Route::resource('banners', BannerController::class)->except(['show']);
             Route::resource('faqs', FaqController::class)->except(['show']);
+            Route::resource('sizes', ProductSizeController::class)->except(['show']);
+            Route::resource('colors', ProductColorController::class)->except(['show']);
 
             Route::get('contact-messages', [ContactMessageController::class, 'index'])->name('contact-messages.index');
             Route::get('contact-messages/{contactMessage}', [ContactMessageController::class, 'show'])->name('contact-messages.show');

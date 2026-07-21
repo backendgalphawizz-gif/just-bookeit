@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             OrderDemoSeeder::class,
             PlatformSettingsSeeder::class,
             FaqSeeder::class,
+            ProductOptionSeeder::class,
         ]);
     }
 }

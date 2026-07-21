@@ -25,6 +25,8 @@ return [
             ['label' => 'Portfolio', 'route' => 'admin.vendor-portfolio.index', 'route_is' => 'admin.vendor-portfolio.*', 'permission' => 'portfolio', 'badge' => null, 'icon' => 'image'],
             ['label' => 'Banners & CMS', 'route' => 'admin.banners.index', 'route_is' => 'admin.banners.*', 'permission' => 'banners', 'badge' => null, 'icon' => 'banner'],
             ['label' => 'FAQs', 'route' => 'admin.faqs.index', 'route_is' => 'admin.faqs.*', 'permission' => 'faqs', 'badge' => null, 'icon' => 'grid'],
+            ['label' => 'Sizes', 'route' => 'admin.sizes.index', 'route_is' => 'admin.sizes.*', 'permission' => 'sizes', 'badge' => null, 'icon' => 'grid'],
+            ['label' => 'Colors', 'route' => 'admin.colors.index', 'route_is' => 'admin.colors.*', 'permission' => 'colors', 'badge' => null, 'icon' => 'grid'],
             ['label' => 'Contact messages', 'route' => 'admin.contact-messages.index', 'route_is' => 'admin.contact-messages.*', 'permission' => 'contact_messages', 'badge' => 'unread_contact_messages', 'icon' => 'mail'],
         ],
         'System' => [

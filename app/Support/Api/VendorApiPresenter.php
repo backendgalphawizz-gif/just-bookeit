@@ -924,6 +924,8 @@ class VendorApiPresenter
                 'size' => $variant->size,
                 'color' => $variant->color,
                 'price' => (float) $variant->price,
+                'advance_amount' => $variant->advance_amount !== null ? (float) $variant->advance_amount : null,
+                'quantity' => $variant->quantity !== null ? (int) $variant->quantity : null,
                 'image_url' => $variant->imageUrl(),
             ])->values()->all(),
             'damage_deductions' => $item->damageDeductions->map(fn ($rule) => [

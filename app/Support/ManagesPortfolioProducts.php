@@ -177,6 +177,12 @@ trait ManagesPortfolioProducts
                 'size' => (string) ($variant['size'] ?? ''),
                 'color' => (string) ($variant['color'] ?? ''),
                 'price' => (float) ($variant['price'] ?? 0),
+                'advance_amount' => array_key_exists('advance_amount', $variant) && $variant['advance_amount'] !== null && $variant['advance_amount'] !== ''
+                    ? (float) $variant['advance_amount']
+                    : null,
+                'quantity' => array_key_exists('quantity', $variant) && $variant['quantity'] !== null && $variant['quantity'] !== ''
+                    ? max(0, (int) $variant['quantity'])
+                    : null,
                 'image_path' => $imagePath,
                 'sort_order' => $sortOrder,
             ]);
@@ -190,6 +196,16 @@ trait ManagesPortfolioProducts
                 }
             }
         }
+
+        $this->syncDressPricingFromVariants($product);
+    }
+
+    /**
+     * Rental dresses use per-variant price/advance; keep product fields as display fallbacks.
+     */
+    protected function syncDressPricingFromVariants(PortfolioItem $product): void
+    {
+        $product->refreshDressPricingFromVariants();
     }
 
     /** @param list<array<string, mixed>> $rules */

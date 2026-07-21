@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Faq;
 use App\Models\PlatformSetting;
+use App\Support\ProductOptionCatalog;
 
 class PlatformConfigService
 {
@@ -31,6 +32,10 @@ class PlatformConfigService
             'branding' => [
                 'platform_name' => (string) PlatformSetting::get('platform_name', 'Just Book IT'),
             ],
+            'product_sizes' => ProductOptionCatalog::sizeNames(),
+            'product_size_options' => ProductOptionCatalog::sizeApiItems(),
+            'product_colors' => ProductOptionCatalog::colorNames(),
+            'product_color_options' => ProductOptionCatalog::colorApiItems(),
         ];
     }
 

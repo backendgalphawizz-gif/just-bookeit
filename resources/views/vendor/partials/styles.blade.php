@@ -2261,6 +2261,10 @@ img { max-width: 100%; display: block; }
 .vp-product-view-color-card--swatch-only {
     padding-top: .35rem;
 }
+.vp-product-view-color-card--swatch-only .vp-product-view-swatch {
+    width: 2.5rem;
+    height: 2.5rem;
+}
 .vp-product-view-color-card-name {
     font-size: .72rem;
     font-weight: 600;

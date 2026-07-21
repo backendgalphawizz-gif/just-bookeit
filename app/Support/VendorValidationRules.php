@@ -293,11 +293,14 @@ class VendorValidationRules
         return $normalized;
     }
 
-    public static function product(bool $creating): array
+    public static function product(bool $creating, ?string $type = null): array
     {
-        $priceRule = $creating ? 'required' : 'sometimes';
+        $isDress = $type === 'rented-dress';
+        $priceRule = $isDress
+            ? 'nullable'
+            : ($creating ? 'required' : 'sometimes');
 
-        return [
+        $rules = [
             'title' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'description' => ['nullable', 'string', 'max:5000', 'regex:'.AdminValidationRules::REGEX_TEXT],
             'price_per_day' => [$priceRule, 'numeric', 'min:0', 'max:9999999'],
@@ -308,15 +311,27 @@ class VendorValidationRules
             'main_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', 'main')],
             'shop_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', 'main')],
             'variants' => ['nullable', 'array', 'max:50'],
-            'variants.*.size' => ['required_with:variants', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE],
-            'variants.*.color' => ['required_with:variants', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            // Size and color: at least one required per variant; the other may be omitted.
+            'variants.*.size' => ['nullable', 'required_without:variants.*.color', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE],
+            'variants.*.color' => ['nullable', 'required_without:variants.*.size', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'variants.*.price' => ['required_with:variants', 'numeric', 'min:0', 'max:9999999'],
+            'variants.*.advance_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'variants.*.quantity' => ['nullable', 'integer', 'min:0', 'max:99999'],
             'variants.*.stored_image_path' => ['nullable', 'string', 'max:500'],
             'variants.*.image_base64' => ['nullable', 'string'],
             'damage_deductions' => ['nullable', 'array', 'max:20'],
             'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],
         ];
+
+        if ($isDress) {
+            $rules['variants'] = [$creating ? 'required' : 'sometimes', 'array', 'min:1', 'max:50'];
+            $rules['variants.*.size'] = ['nullable', 'required_without:variants.*.color', 'string', 'max:50', 'regex:'.AdminValidationRules::REGEX_TITLE];
+            $rules['variants.*.color'] = ['nullable', 'required_without:variants.*.size', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE];
+            $rules['variants.*.price'] = ['required', 'numeric', 'min:0', 'max:9999999'];
+        }
+
+        return $rules;
     }
 
     /** @return array<string, array<int, string>> */
