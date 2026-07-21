@@ -254,9 +254,6 @@ class CatalogFilter
         return null;
     }
 
-    /** Dress sub-categories are managed under Rented Dress but also used by Fashion Designer (filters UI only). */
-    public const DRESS_SERVICE_SLUG = 'rented-dress';
-
     /** @return list<int>|null Null means no service filter should be applied. */
     public static function productServiceCategoryIds(?int $serviceCategoryId): ?array
     {
@@ -272,23 +269,6 @@ class CatalogFilter
     {
         if ($serviceCategoryId === null) {
             return null;
-        }
-
-        $serviceCategory = Category::query()->find($serviceCategoryId);
-
-        if (! $serviceCategory?->isService()) {
-            return [$serviceCategoryId];
-        }
-
-        if ($serviceCategory->slug === 'fashion-designer') {
-            $ids = Category::query()
-                ->service()
-                ->active()
-                ->whereIn('slug', ['fashion-designer', self::DRESS_SERVICE_SLUG])
-                ->pluck('id')
-                ->all();
-
-            return $ids !== [] ? $ids : [$serviceCategoryId];
         }
 
         return [$serviceCategoryId];
