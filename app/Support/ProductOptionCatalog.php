@@ -92,6 +92,18 @@ class ProductOptionCatalog
         return $fallback;
     }
 
+    public static function hexForName(?string $name, bool $activeOnly = true): ?string
+    {
+        $key = strtolower(trim((string) $name));
+        if ($key === '') {
+            return null;
+        }
+
+        $map = self::colorCssMap($activeOnly);
+
+        return $map[$key] ?? null;
+    }
+
     /** @return list<array<string, mixed>> */
     public static function sizeApiItems(bool $activeOnly = true): array
     {

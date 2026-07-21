@@ -2,13 +2,15 @@
     use App\Support\VendorValidationRules;
 
     $productImageMaxMb = $productImageMaxMb ?? (int) (VendorValidationRules::MAX_IMAGE_KB / 1024);
+    $productVideoMaxMb = (int) (VendorValidationRules::MAX_VIDEO_KB / 1024);
     $mediaRequired = $mediaRequired ?? false;
-    $slotCount = 3;
+    $maxMediaFiles = VendorValidationRules::MAX_PRODUCT_MEDIA_FILES;
+    $slotCount = $maxMediaFiles;
     $slotMedia = ($existingMedia ?? collect())->values()->take($slotCount);
     $emptyIcon = '<span class="vp-dress-media-empty-icon" aria-hidden="true"><svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 6.75h.008v.008H3.75V6.75z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75h.008v.008h-.008V6.75z"/></svg></span>';
 @endphp
 
-<div class="vp-dress-media" data-vp-dress-media>
+<div class="vp-dress-media" data-vp-dress-media data-vp-max-media-files="{{ $maxMediaFiles }}">
     <label class="vp-dress-media-slot vp-dress-media-slot--upload">
         <input
             type="file"
@@ -17,6 +19,7 @@
             multiple
             hidden
             data-vp-dress-media-input
+            data-vp-max-media-files="{{ $maxMediaFiles }}"
             data-vp-max-file-bytes="{{ max(VendorValidationRules::MAX_IMAGE_KB, VendorValidationRules::MAX_VIDEO_KB) * 1024 }}"
             data-vp-file-label="Media file"
             {{ $mediaRequired ? 'required' : '' }}
@@ -27,7 +30,7 @@
             </svg>
         </span>
         <span class="vp-dress-media-upload-title">Click to upload or drag and drop</span>
-        <span class="vp-dress-media-upload-hint">SVG, PNG, JPG or MP4 (max. {{ $productImageMaxMb }}MB)</span>
+        <span class="vp-dress-media-upload-hint">Up to {{ $maxMediaFiles }} files — image or video (max. {{ $productImageMaxMb }}MB image / {{ $productVideoMaxMb }}MB video)</span>
     </label>
 
     @for ($i = 0; $i < $slotCount; $i++)
@@ -36,7 +39,12 @@
             <div class="vp-dress-media-slot has-file" data-vp-dress-media-preview data-existing="1">
                 <div data-vp-existing-media>
                     @if ($media->isVideo())
-                        <span class="vp-dress-media-video-badge">Video</span>
+                        <div class="vp-dress-media-video-preview">
+                            @if ($media->mediaUrl())
+                                <video src="{{ url($media->mediaUrl()) }}" muted playsinline preload="metadata"></video>
+                            @endif
+                            <span class="vp-dress-media-video-badge">Video</span>
+                        </div>
                     @else
                         <img src="{{ $media->imageUrl() }}" alt="" class="panel-lightbox-trigger">
                     @endif
@@ -59,7 +67,12 @@
         @foreach (($existingMedia ?? collect())->slice($slotCount) as $media)
             <div class="vp-dress-media-existing-item">
                 @if ($media->isVideo())
-                    <span class="vp-dress-media-video-badge">Video</span>
+                    <div class="vp-dress-media-video-preview">
+                        @if ($media->mediaUrl())
+                            <video src="{{ url($media->mediaUrl()) }}" muted playsinline preload="metadata"></video>
+                        @endif
+                        <span class="vp-dress-media-video-badge">Video</span>
+                    </div>
                 @elseif ($media->imageUrl())
                     <img src="{{ $media->imageUrl() }}" alt="" class="panel-lightbox-trigger">
                 @endif
