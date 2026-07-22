@@ -21,7 +21,7 @@
         <nav class="jbw-nav" aria-label="Main">
             <a href="{{ route('web.home') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.home')])>Home</a>
             <a href="{{ route('web.services.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.services.*')])>Services</a>
-            <a href="{{ route('web.catalog.index') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')])>Categories</a>
+            <button type="button" class="jbw-nav-link{{ request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*') ? ' is-active' : '' }}" onclick="openCategoryBrowse()">Categories</button>
 
             @if ($headerRegistered)
                 <a href="{{ $headerChatRedirect }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
@@ -134,7 +134,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
                 Services
             </a>
-            <a href="{{ route('web.catalog.index') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')]) x-on:click="mobileOpen=false">
+            <button type="button" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.catalog.*') && ! request()->routeIs('web.services.*')]) x-on:click="mobileOpen=false; openCategoryBrowse()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7" rx="1"></rect>
                     <rect x="14" y="3" width="7" height="7" rx="1"></rect>
@@ -142,7 +142,7 @@
                     <rect x="14" y="14" width="7" height="7" rx="1"></rect>
                 </svg>
                 Categories
-            </a>
+            </button>
 
             @if ($headerRegistered)
                 <a href="{{ route('web.cart.index') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.cart.*')]) x-on:click="mobileOpen=false">
