@@ -32,7 +32,7 @@ class BookingController extends WebController
         $categorySlug = CustomerBookingTab::categorySlug($tab);
 
         $standaloneQuery = Order::query()
-            ->with(['vendor', 'category'])
+            ->with(['vendor', 'category', 'orderItems', 'portfolioItem'])
             ->where('customer_id', $customer->id)
             ->whereNull('checkout_order_id');
 

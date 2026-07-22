@@ -1,20 +1,24 @@
 @extends('web.layouts.profile')
 
-@section('title', 'Addresses')
-@section('page_title', 'Address')
-@section('page_subtitle', 'View and manage your delivery addresses.')
+@section('title', 'Saved Addresses')
 
 @section('content')
+<div class="jbw-card jbw-profile-panel">
+    <div class="jbw-profile-panel-head">
+        <h2 class="jbw-profile-panel-title">Saved Addresses</h2>
+        <p class="jbw-profile-panel-sub">View and manage your delivery addresses.</p>
+    </div>
+
     <div class="jbw-address-grid">
         @forelse ($addresses as $address)
-            <div class="jbw-card jbw-address-card" style="margin-top: 0px;">
+            <div class="jbw-bh-card jbw-address-card">
                 <div style="display:flex;justify-content:space-between;gap:0.75rem;align-items:start">
                     <span class="jbw-address-tag">{{ $address->label }}</span>
                     @if ($address->is_default)
                         <span style="font-size:0.6875rem;font-weight:800;color:var(--c-primary)">DEFAULT</span>
                     @endif
                 </div>
-                <p style="margin:0.5rem 0 0;line-height:1.6;color:var(--jbw-muted)">
+                <p style="margin:0.5rem 0 0;line-height:1.6;color:var(--c-muted)">
                     {{ $address->name }}<br>
                     {{ $address->fullAddress() }}
                     @if ($address->mobile_number)<br>{{ $address->mobile_number }}@endif
@@ -26,9 +30,9 @@
                 </form>
             </div>
         @empty
-            <div class="jbw-card jbw-address-card">
+            <div class="jbw-bh-card jbw-address-card">
                 <span class="jbw-address-tag">PROFILE</span>
-                <p style="margin:0.5rem 0 0;line-height:1.6;color:var(--jbw-muted)">
+                <p style="margin:0.5rem 0 0;line-height:1.6;color:var(--c-muted)">
                     {{ $customer->name }}<br>
                     {{ $customer->city ?? 'Add your city in profile' }}<br>
                     India
@@ -37,8 +41,8 @@
         @endforelse
     </div>
 
-    <div class="jbw-card" style="margin-top:1.5rem">
-        <p class="jbw-filter-title" style="margin-bottom:1rem">Add new address</p>
+    <div class="jbw-bh-card" style="margin-top:1.25rem">
+        <p class="jbw-profile-panel-title" style="font-size:1rem;margin-bottom:1rem">Add new address</p>
         <form method="POST" action="{{ route('web.profile.addresses.store') }}" class="jbw-form-stack">
             @csrf
             <div class="jbw-measure-form-grid" style="grid-template-columns:repeat(2,1fr)">
@@ -86,4 +90,5 @@
             <button type="submit" class="jbw-btn jbw-btn--primary" style="margin-top:1rem">Save address</button>
         </form>
     </div>
+</div>
 @endsection

@@ -1,14 +1,12 @@
 @extends('web.layouts.profile')
 
 @section('title', 'Edit Profile')
-@section('page_title', 'Profile')
-@section('page_subtitle', 'Update your personal details and how we can reach you.')
 
 @section('content')
-    <div class="jbw-card jbw-profile-edit-card">
-        <div class="jbw-profile-edit-head">
-            <h2 class="jbw-profile-edit-title">Personal Information</h2>
-            <p class="jbw-profile-edit-hint">Keep your contact details up to date so designers and drivers can reach you.</p>
+    <div class="jbw-card jbw-profile-edit-card jbw-profile-panel">
+        <div class="jbw-profile-panel-head">
+            <h2 class="jbw-profile-panel-title">Edit Profile</h2>
+            <p class="jbw-profile-panel-sub">Update your personal details and how we can reach you.</p>
         </div>
 
         <form method="POST" action="{{ route('web.profile.update') }}" enctype="multipart/form-data" class="jbw-profile-edit-form">
