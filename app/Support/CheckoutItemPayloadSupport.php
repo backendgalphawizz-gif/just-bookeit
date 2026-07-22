@@ -419,12 +419,18 @@ class CheckoutItemPayloadSupport
     {
         $rental = self::rentalWindow($override, $checkoutData, $requiresRentalPeriod);
 
+        $measurementProfileId = $override['measurement_id']
+            ?? $override['measurement_profile_id']
+            ?? $checkoutData['measurement_id']
+            ?? $checkoutData['measurement_profile_id']
+            ?? null;
+
         return array_filter([
             'rental_start_date' => $rental['start'],
             'rental_end_date' => $rental['end'],
             'event_date' => $override['event_date'] ?? $checkoutData['event_date'] ?? null,
             'customer_notes' => filled($override['customer_notes'] ?? null) ? trim((string) $override['customer_notes']) : null,
-            'measurement_profile_id' => $override['measurement_id'] ?? $override['measurement_profile_id'] ?? null,
+            'measurement_profile_id' => is_numeric($measurementProfileId) ? (int) $measurementProfileId : null,
             'service_type' => $override['service_type'] ?? null,
             'reference_image_paths' => $override['reference_image_paths'] ?? null,
             'size' => $override['size'] ?? null,

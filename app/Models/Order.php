@@ -699,12 +699,10 @@ class Order extends Model
 
         return match ($this->status) {
             'new' => [
-                ['label' => 'Send to designer', 'url' => $route('pending_acceptance'), 'status' => 'pending_acceptance', 'variant' => 'primary'],
-                ['label' => 'Accept booking', 'url' => $route('accepted'), 'status' => 'accepted', 'variant' => 'success'],
+                // Bookings are auto-sent to the designer after COD / Razorpay payment.
                 ['label' => 'Cancel booking', 'url' => $route('cancelled'), 'status' => 'cancelled', 'variant' => 'danger', 'confirm' => 'Cancel this booking?'],
             ],
             'pending_acceptance' => [
-                ['label' => 'Designer accepted', 'url' => $route('accepted'), 'status' => 'accepted', 'variant' => 'success'],
                 ['label' => 'Cancel booking', 'url' => $route('cancelled'), 'status' => 'cancelled', 'variant' => 'danger', 'confirm' => 'Cancel this booking?'],
             ],
             'accepted' => [

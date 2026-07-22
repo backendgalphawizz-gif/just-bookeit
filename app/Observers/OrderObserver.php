@@ -19,8 +19,13 @@ class OrderObserver
     {
         $notifications = app(AppPushNotificationService::class);
 
-        if ($order->wasChanged('payment_status') && $order->payment_status === 'success') {
-            $notifications->orderPaymentSucceeded($order);
+        if ($order->wasChanged('payment_status') && in_array($order->payment_status, ['success', 'advance_paid'], true)) {
+            $previousPayment = (string) $order->getOriginal('payment_status');
+            if (! in_array($previousPayment, ['success', 'advance_paid'], true)) {
+                $notifications->orderPaymentSucceeded($order);
+                // COD / Razorpay payment auto-dispatches to the vendor (no admin "Send to designer").
+                $notifications->orderDispatchedToVendor($order);
+            }
         }
 
         if ($order->wasChanged('status')) {

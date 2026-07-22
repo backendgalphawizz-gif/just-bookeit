@@ -112,6 +112,11 @@ class CheckoutService
             throw new InvalidArgumentException('The selected measurement profile was not found.');
         }
 
+        if ($profile) {
+            // Ensure line-item snapshots keep the resolved profile id (even when only measurement_id was sent).
+            $data['measurement_profile_id'] = $profile->id;
+        }
+
         $measurements = BookingMeasurementSupport::normalizeFromProfileSelection($data, $profile);
 
         $vendorShipments = $this->normalizeVendorShipments($data['vendor_shipments'] ?? [], $cartItems);

@@ -117,7 +117,7 @@ class WebBookingService
                 'rental_start_date' => $data['rental_start_date'] ?? null,
                 'rental_end_date' => $data['rental_end_date'] ?? null,
                 'customer_notes' => $notes !== '' ? $notes : null,
-                'measurement_profile_id' => $profile instanceof CustomerMeasurement ? $profile->id : null,
+                'measurement_profile_id' => $profile instanceof CustomerMeasurement ? $profile->id : ($data['measurement_profile_id'] ?? $data['measurement_id'] ?? null),
                 'reference_image_paths' => $referencePaths !== [] ? $referencePaths : null,
             ], fn ($value) => $value !== null && $value !== '' && $value !== []),
         ]);
