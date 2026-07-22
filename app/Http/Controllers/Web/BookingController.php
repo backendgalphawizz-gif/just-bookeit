@@ -199,7 +199,7 @@ class BookingController extends WebController
             'rental_end_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:rental_start_date'],
             'event_date' => ['nullable', 'date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
-            'size' => ['nullable', 'string', 'max:10'],
+            'size' => ['nullable', 'string', 'max:50'],
             'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
             'measurement_profile_id' => ['nullable', 'integer'],

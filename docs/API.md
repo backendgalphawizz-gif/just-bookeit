@@ -124,7 +124,9 @@ Upload images in **Admin → Categories** when creating or editing a category.
 ```json
 {
   "portfolio_item_id": 1,
-  "size": "XL",
+  "size": "Free Size",
+  "color": "Maroon",
+  "portfolio_item_variant_id": 22,
   "measurement_type": "women",
   "customer_notes": "Add custom notes...",
   "delivery_address": "G-14 1st sabari nagar, sukhliya...",
@@ -140,6 +142,7 @@ Upload images in **Admin → Categories** when creating or editing a category.
 }
 ```
 
+`size` accepts any variant size string (max 50), e.g. `Free Size`, `One Size`, `XS`–`XXL`. Optional `color` and `portfolio_item_variant_id` are also accepted.
 Reference images: `reference_images[]` (max 5, jpeg/png/webp, 4MB each).
 
 **Multi-item cart checkout** (`multipart/form-data` when uploading images):

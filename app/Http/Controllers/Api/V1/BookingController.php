@@ -144,7 +144,10 @@ class BookingController extends ApiController
 
         $data = $request->validate(array_merge([
             'portfolio_item_id' => ['required', 'integer', 'exists:portfolio_items,id'],
-            'size' => ['nullable', 'string', 'max:10'],
+            // Accept any variant size/color string the app sends (matches portfolio_item_variants).
+            'size' => ['nullable', 'string', 'max:50'],
+            'color' => ['nullable', 'string', 'max:100'],
+            'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'delivery_address' => ['required', 'string', 'max:500'],
             'billing_address' => ['nullable', 'string', 'max:500'],
@@ -160,11 +163,19 @@ class BookingController extends ApiController
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
         $item = PortfolioItem::query()
-            ->with(['vendor', 'category'])
+            ->with(['vendor', 'category', 'variants'])
             ->findOrFail($data['portfolio_item_id']);
 
         abort_unless($item->status === 'approved', 422, 'This product is not available for booking.');
         abort_unless($item->vendor && $item->vendor->status === 'active', 422, 'Designer is not available.');
+
+        $variant = null;
+        if (! empty($data['portfolio_item_variant_id'])) {
+            $variant = $item->findVariant((int) $data['portfolio_item_variant_id']);
+            if (! $variant) {
+                return $this->error('The selected size/color variant is not available for this product.', 422);
+            }
+        }
 
         if ($item->requiresRentalPeriod() && (empty($data['rental_start_date']) || empty($data['rental_end_date']))) {
             return $this->error('Rental start and end dates are required for this product.', 422);
@@ -182,6 +193,7 @@ class BookingController extends ApiController
             'shipment_required' => $request->boolean('shipment_required', true),
             'rental_days' => BookingPricingService::rentalDays($rentalStart, $rentalEnd),
             'requires_rental_period' => $item->requiresRentalPeriod(),
+            'variant' => $variant,
         ]);
 
         $notes = trim((string) ($data['customer_notes'] ?? ''));
@@ -192,6 +204,13 @@ class BookingController extends ApiController
         }
 
         $measurements = BookingMeasurementSupport::normalizeFromProfileSelection($data, $profile);
+
+        $size = filled($data['size'] ?? null)
+            ? trim((string) $data['size'])
+            : ($variant?->size ?: null);
+        $color = filled($data['color'] ?? null)
+            ? trim((string) $data['color'])
+            : ($variant?->color ?: null);
 
         $order = Order::query()->create([
             'order_number' => CodeGenerator::orderNumber(),
@@ -204,7 +223,8 @@ class BookingController extends ApiController
             'item_title' => $item->title,
             'item_description' => $item->description,
             'item_image_path' => $item->image_url,
-            'size' => $data['size'] ?? null,
+            'size' => $size !== '' ? $size : null,
+            'color' => $color !== '' ? $color : null,
             'quantity' => 1,
             'rental_start_date' => $rentalStart,
             'rental_end_date' => $rentalEnd,
