@@ -71,7 +71,13 @@ class LocationController extends WebController
             if ($city) {
                 $payload = WebLocation::fromCity($city);
                 $source = 'gps';
+            } else {
+                $payload = WebLocation::fromGeoNames('My location');
+                $source = 'gps';
             }
+
+            $payload['latitude'] = (float) $data['latitude'];
+            $payload['longitude'] = (float) $data['longitude'];
         }
 
         $payload ??= WebLocation::payloadFromIp($request);
@@ -83,6 +89,7 @@ class LocationController extends WebController
             ], 422);
         }
 
+        $payload = WebLocation::ensureCoordinates($payload);
         WebLocation::put($request, $payload);
 
         $customer = Auth::guard('customer')->user();

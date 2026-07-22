@@ -149,6 +149,13 @@ class WebLocation
                 'India'
             );
 
+        if (isset($geo['latitude'], $geo['longitude'])) {
+            $payload['latitude'] = (float) $geo['latitude'];
+            $payload['longitude'] = (float) $geo['longitude'];
+        } else {
+            $payload = self::ensureCoordinates($payload);
+        }
+
         \Illuminate\Support\Facades\Cache::put($cacheKey, $payload, 900);
 
         return $payload;
@@ -315,10 +322,12 @@ class WebLocation
         return array_filter([
             'city' => (string) ($response->json('city') ?? ''),
             'region' => (string) ($response->json('regionName') ?? ''),
-        ]);
+            'latitude' => is_numeric($response->json('lat')) ? (float) $response->json('lat') : null,
+            'longitude' => is_numeric($response->json('lon')) ? (float) $response->json('lon') : null,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
-    /** @return array{city?: string, region?: string} */
+    /** @return array{city?: string, region?: string, latitude?: float, longitude?: float} */
     protected static function fetchIpWhoGeo(?string $ip): array
     {
         $url = $ip
@@ -340,7 +349,9 @@ class WebLocation
         return array_filter([
             'city' => (string) ($response->json('city') ?? ''),
             'region' => (string) ($response->json('region') ?? ''),
-        ]);
+            'latitude' => is_numeric($response->json('latitude')) ? (float) $response->json('latitude') : null,
+            'longitude' => is_numeric($response->json('longitude')) ? (float) $response->json('longitude') : null,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     /** @return list<string> */
@@ -440,25 +451,191 @@ class WebLocation
             $label .= ', '.$state->name;
         }
 
-        return [
+        return self::ensureCoordinates([
             'type' => 'city',
             'city_id' => $city->id,
             'city' => $city->name,
             'state' => $state?->name,
             'country' => $country?->name ?? 'India',
             'label' => $label,
-        ];
+        ]);
     }
 
     public static function fromAddress(CustomerAddress $address): array
     {
-        return [
+        return self::ensureCoordinates([
             'type' => 'address',
             'address_id' => $address->id,
             'city' => $address->city,
             'state' => $address->state,
             'country' => $address->country ?? 'India',
             'label' => self::addressLabel($address),
+        ]);
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float}|null
+     */
+    public static function coordinates(?array $stored): ?array
+    {
+        if (! is_array($stored)) {
+            return null;
+        }
+
+        $latitude = $stored['latitude'] ?? null;
+        $longitude = $stored['longitude'] ?? null;
+
+        if (! is_numeric($latitude) || ! is_numeric($longitude)) {
+            $stored = self::ensureCoordinates($stored);
+            $latitude = $stored['latitude'] ?? null;
+            $longitude = $stored['longitude'] ?? null;
+        }
+
+        if (! is_numeric($latitude) || ! is_numeric($longitude)) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $latitude,
+            'longitude' => (float) $longitude,
+        ];
+    }
+
+    /**
+     * Fill latitude/longitude on a location payload when missing (geocode city/address).
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public static function ensureCoordinates(array $payload): array
+    {
+        if (is_numeric($payload['latitude'] ?? null) && is_numeric($payload['longitude'] ?? null)) {
+            return $payload;
+        }
+
+        $query = trim(implode(', ', array_filter([
+            $payload['label'] ?? null,
+            $payload['city'] ?? null,
+            $payload['state'] ?? null,
+            $payload['country'] ?? 'India',
+        ])));
+
+        if ($query === '') {
+            return $payload;
+        }
+
+        $coords = self::geocodeQuery($query);
+        if ($coords === null && filled($payload['city'] ?? null)) {
+            $coords = self::geocodeQuery(trim(($payload['city'] ?? '').', India'));
+        }
+
+        if ($coords === null) {
+            return $payload;
+        }
+
+        $payload['latitude'] = $coords['latitude'];
+        $payload['longitude'] = $coords['longitude'];
+
+        return $payload;
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float}|null
+     */
+    public static function geocodeQuery(string $query): ?array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return null;
+        }
+
+        $cacheKey = 'web_location_geocode_v1:'.sha1(mb_strtolower($query));
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if (is_array($cached) && isset($cached['latitude'], $cached['longitude'])) {
+            return [
+                'latitude' => (float) $cached['latitude'],
+                'longitude' => (float) $cached['longitude'],
+            ];
+        }
+
+        $coords = self::geocodeWithGoogle($query) ?? self::geocodeWithNominatim($query);
+        if ($coords === null) {
+            \Illuminate\Support\Facades\Cache::put($cacheKey, [], 300);
+
+            return null;
+        }
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $coords, 86400);
+
+        return $coords;
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float}|null
+     */
+    protected static function geocodeWithGoogle(string $query): ?array
+    {
+        $key = config('services.google.maps_api_key');
+        if (! filled($key)) {
+            return null;
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(8)->get(
+                'https://maps.googleapis.com/maps/api/geocode/json',
+                ['address' => $query, 'key' => $key]
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! $response->ok()) {
+            return null;
+        }
+
+        $location = $response->json('results.0.geometry.location');
+        if (! is_array($location) || ! isset($location['lat'], $location['lng'])) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $location['lat'],
+            'longitude' => (float) $location['lng'],
+        ];
+    }
+
+    /**
+     * @return array{latitude: float, longitude: float}|null
+     */
+    protected static function geocodeWithNominatim(string $query): ?array
+    {
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(8)
+                ->withHeaders([
+                    'User-Agent' => 'JustBookIT/1.0 (web location geocode)',
+                    'Accept' => 'application/json',
+                ])
+                ->get('https://nominatim.openstreetmap.org/search', [
+                    'q' => $query,
+                    'format' => 'jsonv2',
+                    'limit' => 1,
+                ]);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! $response->ok()) {
+            return null;
+        }
+
+        $row = $response->json('0');
+        if (! is_array($row) || ! isset($row['lat'], $row['lon'])) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $row['lat'],
+            'longitude' => (float) $row['lon'],
         ];
     }
 

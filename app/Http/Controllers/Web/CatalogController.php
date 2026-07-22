@@ -141,12 +141,31 @@ class CatalogController extends WebController
             $query['vendor_id'] = $request->integer('vendor');
         }
 
-        if (! $request->filled('city')) {
+        // Prefer explicit lat/lng from the request; otherwise use header/session location.
+        // Products are filtered by vendor coordinates within the admin discovery radius.
+        if (! isset($query['latitude'], $query['longitude'])) {
             $location = WebLocation::get($request);
-            if (filled($location['city'] ?? null)) {
-                $query['city'] = $location['city'];
+            $coords = WebLocation::coordinates($location);
+
+            if ($coords !== null) {
+                $query['latitude'] = $coords['latitude'];
+                $query['longitude'] = $coords['longitude'];
+
+                // Persist resolved coordinates back into session for later requests.
+                if (is_array($location) && (
+                    ! isset($location['latitude'], $location['longitude'])
+                    || ! is_numeric($location['latitude'])
+                    || ! is_numeric($location['longitude'])
+                )) {
+                    $location['latitude'] = $coords['latitude'];
+                    $location['longitude'] = $coords['longitude'];
+                    WebLocation::put($request, $location);
+                }
             }
         }
+
+        // Sidebar city text filter remains optional and explicit.
+        // Do not overwrite it with session city — radius uses lat/lng instead.
 
         return $request->duplicate(query: $query);
     }
