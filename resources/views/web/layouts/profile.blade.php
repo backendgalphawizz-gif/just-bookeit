@@ -8,14 +8,7 @@
     <main class="jbw-main jbw-main--profile">
         <div class="jbw-container">
             <div class="jbw-page-head">
-                @if (! empty($showBack))
-                    <a href="{{ $backUrl ?? url()->previous() }}" class="jbw-back-link">← @yield('page_title', 'Profile')</a>
-                @else
-                    <h1 class="jbw-page-title">@yield('page_title', 'Profile')</h1>
-                @endif
-                @hasSection('page_subtitle')
-                    <p class="jbw-page-subtitle">@yield('page_subtitle')</p>
-                @endif
+                <h1 class="jbw-page-title">Profile</h1>
             </div>
             <div class="jbw-profile-shell">
                 @include('web.partials.profile-sidebar')

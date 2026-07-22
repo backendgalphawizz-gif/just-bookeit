@@ -135,12 +135,12 @@
                         <span class="jbw-vendor-chip-avatar jbw-designer-fallback">{{ strtoupper(substr($item->vendor->brand_name, 0, 1)) }}</span>
                     @endif
                     <div class="jbw-vendor-chip-body">
-                        <strong>
-                            {{ $item->vendor->brand_name }}
+                        <div class="jbw-vendor-chip-top">
+                            <strong>{{ $item->vendor->brand_name }}</strong>
                             @if ($vendorRating > 0)
                                 <span class="jbw-vendor-chip-rating"><span class="starcolor">★</span> {{ number_format($vendorRating, 1) }}</span>
                             @endif
-                        </strong>
+                        </div>
                         @if ($vendorLocation !== '')
                             <p class="jbw-vendor-chip-location">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
