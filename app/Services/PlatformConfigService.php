@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Faq;
 use App\Models\PlatformSetting;
+use App\Services\Payment\RazorpayService;
 use App\Support\Api\VendorProximityFilter;
 use App\Support\ProductOptionCatalog;
 
@@ -30,6 +31,7 @@ class PlatformConfigService
                 'currency' => (string) PlatformSetting::get('currency', 'INR'),
                 'discovery_radius_km' => VendorProximityFilter::radiusKm(),
             ],
+            'razorpay' => app(RazorpayService::class)->publicClientConfig(),
             'broadcasting' => \App\Support\BroadcastingConfig::clientConfig('/api/v1/broadcasting/auth'),
             'branding' => [
                 'platform_name' => (string) PlatformSetting::get('platform_name', 'Just Book IT'),

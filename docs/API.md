@@ -68,6 +68,7 @@ Auto-saved variables: `v1_token`, `v1_otp`, `v1_portfolio_item_id`, `v1_designer
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/v1/home` | Banners, services, shop categories, featured designers. `?city=` filters by vendor city. `?latitude=&longitude=` (or `lat`/`lng`) filters designers within the admin discovery radius (km). |
+| GET | `/v1/config` | App config: legal, features, branding, broadcasting, and `razorpay` (`enabled`, `key_id`, `currency`). Never returns the Razorpay secret. |
 | GET | `/v1/categories` | Filter shop + service together. `?category_id=` / `?parent_id=` / `?shop_category_id=` (Women/Men/Kids) **and** `?service_category_id=` / `?service=` (rented-dress, rented-jewellery, …). `?type=`, `?roots=1`. Each item includes `image_url` |
 
 **Examples**

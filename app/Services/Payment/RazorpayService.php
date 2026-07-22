@@ -28,6 +28,23 @@ class RazorpayService
     }
 
     /**
+     * Public checkout credentials for mobile / web clients.
+     * Never includes the key secret.
+     *
+     * @return array{enabled: bool, key_id: string|null, currency: string}
+     */
+    public function publicClientConfig(): array
+    {
+        $enabled = $this->enabled();
+
+        return [
+            'enabled' => $enabled,
+            'key_id' => $enabled ? $this->keyId() : null,
+            'currency' => $this->currency(),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $notes
      * @return array{id: string, amount: int, currency: string, receipt: string, status: string}
      */
