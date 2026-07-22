@@ -43,6 +43,7 @@ Route::middleware('customer.guest')->group(function () {
     Route::post('/login/otp', [LoginController::class, 'sendOtp'])->name('web.login.otp');
     Route::get('/verify-otp', [LoginController::class, 'showVerifyOtp'])->name('web.verify-otp');
     Route::post('/verify-otp', [LoginController::class, 'verifyOtp'])->name('web.verify-otp.submit');
+    Route::post('/otp/resend', [LoginController::class, 'resendOtp'])->name('web.otp.resend');
 });
 
 Route::get('/register/complete', [LoginController::class, 'showRegisterComplete'])->name('web.register.complete');
@@ -51,6 +52,7 @@ Route::post('/register/complete', [LoginController::class, 'register'])->name('w
 Route::post('/guest', [LoginController::class, 'guest'])->name('web.guest');
 
 Route::post('/location', [LocationController::class, 'update'])->name('web.location.update');
+Route::post('/location/detect', [LocationController::class, 'detect'])->name('web.location.detect');
 
 Route::middleware('customer.auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('web.logout');

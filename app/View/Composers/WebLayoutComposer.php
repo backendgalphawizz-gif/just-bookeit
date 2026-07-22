@@ -48,6 +48,9 @@ class WebLayoutComposer
                 ->sum('quantity');
         }
 
+        WebLocation::bootstrapFromCustomer($request);
+        WebLocation::bootstrapFromIp($request);
+
         $view->with([
             'webCustomer' => $customer,
             'webNavCategories' => Category::query()
@@ -80,6 +83,7 @@ class WebLayoutComposer
             ],
             'webLocationLabel' => WebLocation::label($request),
             'webLocationCurrent' => WebLocation::get($request),
+            'webLocationAutoDetect' => WebLocation::needsAutoDetect($request),
             'webLocationCities' => Cache::remember('web_location_cities', 3600, fn () => WebLocation::cityOptions()),
             'webLocationAddresses' => $addresses,
             'webNotificationUnread' => $webNotificationUnread,

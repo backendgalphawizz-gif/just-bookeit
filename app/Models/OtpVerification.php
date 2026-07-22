@@ -9,7 +9,7 @@ class OtpVerification extends Model
     protected $fillable = [
         'actor_type',
         'mobile',
-        'otp_hash',
+        'otp',
         'attempts',
         'expires_at',
         'verified_at',

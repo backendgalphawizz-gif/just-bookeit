@@ -13,6 +13,7 @@
     <script src="/js/web-image-fallback.js"></script>
     <script defer src="/js/web-form-draft.js"></script>
     <script defer src="/js/web-toast.js"></script>
+    <script defer src="/js/web-location-detect.js"></script>
     <script defer src="/js/chat-compose.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     @stack('scripts')

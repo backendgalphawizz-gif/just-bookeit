@@ -122,7 +122,34 @@
                 </article>
             @endif
         @empty
-            <p class="jbw-booking-list-empty">No bookings yet. <a href="{{ route('web.catalog.index') }}">Browse outfits</a></p>
+            @php
+                $emptyCopy = match (request('tab')) {
+                    'fashion_designer' => [
+                        'title' => 'No designer bookings yet',
+                        'text' => 'When you book a fashion designer, your orders will appear here with status updates and details.',
+                    ],
+                    'rental_dress' => [
+                        'title' => 'No dress rentals yet',
+                        'text' => 'Your rented outfits will show up here once you place a booking. Start exploring festive looks nearby.',
+                    ],
+                    'rental_jewellery' => [
+                        'title' => 'No jewellery rentals yet',
+                        'text' => 'Jewellery bookings will be listed here after checkout — browse pieces that complete your look.',
+                    ],
+                    default => [
+                        'title' => 'Your booking story starts here',
+                        'text' => 'No bookings yet. Discover designer outfits, dresses, and jewellery — your history will live in this space.',
+                    ],
+                };
+            @endphp
+            <div class="jbw-booking-empty">
+                <div class="jbw-booking-empty-art" aria-hidden="true">
+                    <img src="{{ asset('assets/frontend/empty-bookings.svg') }}" alt="" width="280" height="210">
+                </div>
+                <h2 class="jbw-booking-empty-title">{{ $emptyCopy['title'] }}</h2>
+                <p class="jbw-booking-empty-text">{{ $emptyCopy['text'] }}</p>
+                <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--sm">Browse outfits</a>
+            </div>
         @endforelse
 
         @if ($orders->hasPages())

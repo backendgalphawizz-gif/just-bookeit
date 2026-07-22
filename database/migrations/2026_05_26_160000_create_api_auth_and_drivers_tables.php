@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('actor_type', 20);
             $table->string('mobile', 20);
-            $table->string('otp_hash');
+            $table->string('otp');
             $table->unsignedTinyInteger('attempts')->default(0);
             $table->timestamp('expires_at');
             $table->timestamp('verified_at')->nullable();
