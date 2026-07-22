@@ -150,7 +150,7 @@
             <div class="jbw-product-grid">
                 @foreach ($related as $rel)
                     @php $rf = $fashionFallbacks[$rel->id % count($fashionFallbacks)]; @endphp
-                    <a href="{{ route('web.catalog.show', $rel) }}" class="jbw-product-card">
+                    <a href="{{ route('web.catalog.show', $rel) }}" @class(['jbw-product-card', 'is-rental' => $rel->requiresRentalPeriod()])>
                         <div class="jbw-product-card-img"><img src="{{ $rel->displayImageUrl() ?: $rf }}" alt="{{ $rel->title }}" loading="lazy"></div>
                         <div class="jbw-product-card-body">
                             <p class="jbw-product-title">{{ $rel->title }}</p>

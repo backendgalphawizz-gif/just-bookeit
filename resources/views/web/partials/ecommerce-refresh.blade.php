@@ -396,6 +396,10 @@ body {
 }
 
 .jbw-product-card-img::after {
+    content: none;
+}
+
+.jbw-product-card.is-rental .jbw-product-card-img::after {
     content: 'Rent';
     position: absolute;
     top: 0.75rem;

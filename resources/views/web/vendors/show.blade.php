@@ -39,7 +39,7 @@
     <h2 class="jbw-section-title" style="font-size:1.25rem;margin-bottom:1rem">Portfolio</h2>
     <div class="jbw-product-grid">
         @forelse ($portfolio as $item)
-            <a href="{{ route('web.catalog.show', $item) }}" class="jbw-product-card">
+            <a href="{{ route('web.catalog.show', $item) }}" @class(['jbw-product-card', 'is-rental' => $item->requiresRentalPeriod()])>
                 <div class="jbw-product-card-img">
                     <img src="{{ $item->displayImageUrl() ?: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80' }}" alt="{{ $item->title }}" loading="lazy">
                 </div>
