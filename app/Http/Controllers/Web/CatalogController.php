@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Models\Category;
 use App\Models\PortfolioItem;
 use App\Support\Api\CatalogFilter;
+use App\Support\ProductOptionCatalog;
 use App\Support\WebLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,14 +63,11 @@ class CatalogController extends WebController
         $filterRequest = $this->catalogFilterRequest($request, $browseMode);
 
         $query = PortfolioItem::query()
-            ->with(['vendor', 'category', 'subcategory.parent']);
+            ->with(['vendor', 'category', 'subcategory.parent', 'variants']);
 
         CatalogFilter::applyToQuery($query, $filterRequest, $browseMode);
 
-        if ($request->filled('designer')) {
-            $term = '%'.$request->string('designer').'%';
-            $query->whereHas('vendor', fn ($vendor) => $vendor->where('brand_name', 'like', $term));
-        } elseif ($request->filled('search')) {
+        if ($request->filled('search') && ! $request->filled('designer')) {
             $term = '%'.$request->string('search').'%';
             $query->where(function ($q) use ($term) {
                 $q->where('title', 'like', $term)
@@ -102,6 +100,8 @@ class CatalogController extends WebController
             ->orderBy('name')
             ->get();
 
+        $filterSizes = ProductOptionCatalog::sizeNames(true);
+        $filterColors = ProductOptionCatalog::colorApiItems(true);
         $appliedFilters = CatalogFilter::applied($filterRequest, $browseMode);
 
         return view('web.catalog.index', compact(
@@ -109,6 +109,8 @@ class CatalogController extends WebController
             'mainCategories',
             'subcategories',
             'serviceCategories',
+            'filterSizes',
+            'filterColors',
             'appliedFilters',
             'browseMode',
         ));
@@ -119,21 +121,15 @@ class CatalogController extends WebController
         $query = $request->query();
         $query['browse'] = $browseMode;
 
-        if ($browseMode === CatalogFilter::BROWSE_CATEGORIES) {
-            unset($query['service'], $query['service_id']);
-        } else {
-            unset($query['category'], $query['category_id'], $query['subcategory'], $query['subcategory_id']);
-        }
-
-        if ($browseMode === CatalogFilter::BROWSE_CATEGORIES && $request->filled('category') && ! isset($query['category_id'])) {
+        if ($request->filled('category') && ! isset($query['category_id'])) {
             $query['category_id'] = $request->integer('category');
         }
 
-        if ($browseMode === CatalogFilter::BROWSE_CATEGORIES && $request->filled('subcategory') && ! isset($query['subcategory_id'])) {
+        if ($request->filled('subcategory') && ! isset($query['subcategory_id'])) {
             $query['subcategory_id'] = $request->integer('subcategory');
         }
 
-        if ($browseMode === CatalogFilter::BROWSE_SERVICES && $request->filled('service') && is_numeric($request->input('service')) && ! isset($query['service_id'])) {
+        if ($request->filled('service') && is_numeric($request->input('service')) && ! isset($query['service_id'])) {
             $query['service_id'] = $request->integer('service');
         }
 
