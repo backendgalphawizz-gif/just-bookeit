@@ -7,24 +7,30 @@ use App\Models\PortfolioItem;
 use App\Support\Api\CatalogFilter;
 use App\Support\ProductOptionCatalog;
 use App\Support\WebLocation;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CatalogController extends WebController
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request): View
     {
-        if ($request->filled('service') && ! $request->filled('category') && ! $request->filled('subcategory')) {
-            return redirect()->route('web.services.index', $request->only(['service', 'designer', 'city', 'search']));
-        }
-
         return $this->renderBrowse($request, CatalogFilter::BROWSE_CATEGORIES);
     }
 
     public function services(Request $request): View
     {
-        return $this->renderBrowse($request, CatalogFilter::BROWSE_SERVICES);
+        if ($request->filled('category') || $request->filled('subcategory')) {
+            return $this->renderBrowse($request, CatalogFilter::BROWSE_SERVICES);
+        }
+
+        $serviceCategories = Category::query()
+            ->active()
+            ->service()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('web.services.index', compact('serviceCategories'));
     }
 
     public function show(PortfolioItem $item): View

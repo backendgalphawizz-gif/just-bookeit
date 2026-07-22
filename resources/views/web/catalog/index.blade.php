@@ -76,7 +76,7 @@
 
 <div class="jbw-container jbw-page-shell jbw-catalog-page">
     <div class="jbw-catalog-page-head">
-        <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('web.home') }}" class="jbw-catalog-back" aria-label="Go back">
+        <a href="{{ route('web.home') }}" class="jbw-catalog-back" aria-label="Go to home">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
         </a>
         <h1 class="jbw-catalog-page-title">{{ $pageTitle }}</h1>
@@ -316,9 +316,6 @@
                         $variantColors = $item->variants
                             ? $item->variants->pluck('color')->filter()->unique()->take(4)->values()
                             : collect();
-                        if ($variantColors->isEmpty()) {
-                            $variantColors = collect(['Black', 'Green', 'Red'])->take(2 + ($item->id % 2));
-                        }
                         $unavailable = ! $item->isCatalogAvailable()
                             || ($item->variants && $item->variants->isNotEmpty() && $item->variants->every(fn ($v) => (int) ($v->quantity ?? 0) <= 0));
                     @endphp
@@ -350,12 +347,14 @@
                             </div>
                             <p class="jbw-product-title textlimit">{{ $item->title }}</p>
                             <p class="jbw-product-price">{{ $item->rentalPriceLabel() }}</p>
-                            <div class="jbw-product-colors">
-                                @foreach ($variantColors as $colorName)
-                                    @php $hex = \App\Support\ProductOptionCatalog::hexForName($colorName) ?: '#c4c4c4'; @endphp
-                                    <span class="jbw-product-color-dot" style="background: {{ $hex }}" title="{{ $colorName }}"></span>
-                                @endforeach
-                            </div>
+                            @if ($variantColors->isNotEmpty())
+                                <div class="jbw-product-colors">
+                                    @foreach ($variantColors as $colorName)
+                                        @php $hex = \App\Support\ProductOptionCatalog::hexForName($colorName) ?: '#c4c4c4'; @endphp
+                                        <span class="jbw-product-color-dot" style="background: {{ $hex }}" title="{{ $colorName }}"></span>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     </a>
                 @empty

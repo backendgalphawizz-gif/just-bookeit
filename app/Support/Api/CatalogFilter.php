@@ -399,12 +399,26 @@ class CatalogFilter
 
         self::applyVendorCity($query, $city);
         VendorProximityFilter::applyToCatalogQuery($query, $request);
+        self::applyVendorIdFilter($query, $request);
         self::applyDesignerFilter($query, $request);
         self::applyPriceFilter($query, $request);
         self::applySizeColorFilter($query, $request);
         self::applyRatingFilter($query, $request);
 
         return $query;
+    }
+
+    public static function applyVendorIdFilter(Builder $query, Request $request): Builder
+    {
+        $vendorId = $request->filled('vendor_id')
+            ? $request->integer('vendor_id')
+            : ($request->filled('vendor') ? $request->integer('vendor') : null);
+
+        if (! $vendorId) {
+            return $query;
+        }
+
+        return $query->where('vendor_id', $vendorId);
     }
 
     public static function applyRatingFilter(Builder $query, Request $request): Builder

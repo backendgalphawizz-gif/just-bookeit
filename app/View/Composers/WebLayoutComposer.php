@@ -60,6 +60,15 @@ class WebLayoutComposer
                 ->orderBy('name')
                 ->limit(8)
                 ->get(),
+            'webBrowseCategories' => Category::query()
+                ->active()
+                ->main()
+                ->with(['subcategories' => fn ($query) => $query
+                    ->active()
+                    ->orderBy('sort_order')
+                    ->orderBy('name')])
+                ->orderBy('sort_order')
+                ->get(),
             'webServiceCategories' => Category::query()
                 ->active()
                 ->service()

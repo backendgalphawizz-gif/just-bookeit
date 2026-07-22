@@ -22,7 +22,7 @@
         <p class="jbw-page-subtitle" style="margin-top: 0rem;">Review your selection and submit your rental request</p>
     </div>
 
-    <form method="POST" action="{{ route('web.bookings.store', $item) }}" class="jbw-booking-layout" id="booking-overview-form" data-preview-url="{{ route('web.bookings.preview', $item) }}" data-draft-key="booking-draft-{{ $item->id }}" @if (old()) data-has-old="1" @endif>
+    <form method="POST" action="{{ route('web.bookings.store', $item) }}" enctype="multipart/form-data" class="jbw-booking-layout" id="booking-overview-form" data-preview-url="{{ route('web.bookings.preview', $item) }}" data-draft-key="booking-draft-{{ $item->id }}" @if (old()) data-has-old="1" @endif>
         @csrf
 
         <div class="jbw-booking-main">
@@ -193,9 +193,31 @@
                 </div>
             @endif
 
-            <div class="jbw-overview-card">
+            <div class="jbw-overview-card" id="jbw-notes-refs-card">
                 <p class="jbw-overview-label">Additional notes</p>
-                <textarea name="customer_notes" class="jbw-textarea" placeholder="Fitting instructions, event details, or customisation notes..." style="min-height:6rem">{{ old('customer_notes') }}</textarea>
+                <textarea name="customer_notes" class="jbw-textarea jbw-notes-textarea" placeholder="Any specific requirements or fitting instructions..." style="min-height:6rem">{{ old('customer_notes') }}</textarea>
+
+                <div class="jbw-ref-images" data-ref-images data-max="5">
+                    <div class="jbw-ref-images-head">
+                        <p class="jbw-overview-label" style="margin:0">Reference images</p>
+                        <span class="jbw-ref-images-hint">You can upload maximum 5 images</span>
+                    </div>
+                    <div class="jbw-ref-images-grid" data-ref-grid>
+                        <label class="jbw-ref-add" data-ref-add>
+                            <input type="file" name="reference_images[]" accept="image/png,image/jpeg,image/jpg,image/webp" multiple hidden data-ref-input>
+                            <span class="jbw-ref-add-icon" aria-hidden="true">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                    <circle cx="12" cy="13" r="4"/>
+                                    <path d="M19 8v0"/>
+                                </svg>
+                                <span class="jbw-ref-add-plus">+</span>
+                            </span>
+                        </label>
+                    </div>
+                    @error('reference_images')<p class="jbw-field-error">{{ $message }}</p>@enderror
+                    @error('reference_images.*')<p class="jbw-field-error">{{ $message }}</p>@enderror
+                </div>
             </div>
         </div>
 
@@ -229,6 +251,17 @@
             </div>
         </div>
     </form>
+
+    <aside class="jbw-booking-rail" aria-label="Booking sections">
+        <button type="button" class="jbw-booking-rail-btn" data-scroll-to="jbw-notes-refs-card" title="Notes &amp; reference images" aria-label="Notes and reference images">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+        </button>
+    </aside>
 </div>
 @endsection
 
@@ -252,7 +285,9 @@
             body.append('_token', csrf);
             const start = form.querySelector('#rental_start_date')?.value;
             const end = form.querySelector('#rental_end_date')?.value;
-            const variant = form.querySelector('input[name="portfolio_item_variant_id"]:checked')?.value;
+            const variant = form.querySelector('#jbw-variant-id')?.value
+                || form.querySelector('input[name="portfolio_item_variant_id"]:checked')?.value
+                || form.querySelector('input[name="portfolio_item_variant_id"]')?.value;
             if (start) body.append('rental_start_date', start);
             if (end) body.append('rental_end_date', end);
             if (variant) body.append('portfolio_item_variant_id', variant);
@@ -308,39 +343,20 @@
     });
 
     form.querySelectorAll('input[name="portfolio_item_variant_id"]').forEach((input) => {
-        input.addEventListener('change', () => {
-            const priceEl = document.getElementById('jbw-overview-price');
-            const imgEl = document.getElementById('jbw-overview-img');
-            const variantEl = document.getElementById('jbw-overview-variant');
+        input.addEventListener('change', refreshPreview);
+    });
 
-            if (priceEl && input.dataset.label) {
-                priceEl.textContent = input.dataset.label;
-            }
+    const picker = document.getElementById('jbw-variant-picker');
+    picker?.addEventListener('jbw:variant-changed', (event) => {
+        const { label, image, variantLabel } = event.detail || {};
+        const priceEl = document.getElementById('jbw-overview-price');
+        const imgEl = document.getElementById('jbw-overview-img');
+        const variantEl = document.getElementById('jbw-overview-variant');
 
-            if (imgEl && input.dataset.image) {
-                imgEl.src = input.dataset.image;
-            } else if (imgEl) {
-                const picker = document.getElementById('jbw-variant-picker');
-                if (picker?.dataset.baseImage) {
-                    imgEl.src = picker.dataset.baseImage;
-                }
-            }
-
-            const picker = document.getElementById('jbw-variant-picker');
-            picker?.querySelectorAll('.jbw-variant-chip').forEach((chip) => chip.classList.remove('is-selected'));
-            input.closest('.jbw-variant-chip')?.classList.add('is-selected');
-
-            if (variantEl) {
-                if (!input.value) {
-                    variantEl.textContent = 'Base item';
-                } else {
-                    const chipText = input.closest('.jbw-variant-chip')?.querySelector('strong')?.textContent?.trim();
-                    if (chipText) variantEl.textContent = chipText;
-                }
-            }
-
-            refreshPreview();
-        });
+        if (priceEl && label) priceEl.textContent = label;
+        if (imgEl && image) imgEl.src = image;
+        if (variantEl) variantEl.textContent = variantLabel || 'Base item';
+        refreshPreview();
     });
 })();
 </script>
@@ -408,6 +424,92 @@
         if (labelEl) {
             labelEl.textContent = next ? 'Hide measurement details' : 'View all measurement details';
         }
+    });
+})();
+
+(function () {
+    document.querySelectorAll('[data-scroll-to]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-scroll-to');
+            var target = id ? document.getElementById(id) : null;
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            target.classList.add('is-highlight');
+            document.querySelectorAll('.jbw-booking-rail-btn').forEach(function (b) {
+                b.classList.toggle('is-active', b === btn);
+            });
+            setTimeout(function () { target.classList.remove('is-highlight'); }, 1200);
+        });
+    });
+})();
+
+(function () {
+    var root = document.querySelector('[data-ref-images]');
+    if (!root) return;
+
+    var max = Number(root.getAttribute('data-max') || 5);
+    var grid = root.querySelector('[data-ref-grid]');
+    var addBtn = root.querySelector('[data-ref-add]');
+    var input = root.querySelector('[data-ref-input]');
+    if (!grid || !addBtn || !input) return;
+
+    var files = [];
+    var activeIndex = 0;
+
+    function syncInput() {
+        var dt = new DataTransfer();
+        files.forEach(function (file) { dt.items.add(file); });
+        input.files = dt.files;
+        addBtn.classList.toggle('is-hidden', files.length >= max);
+    }
+
+    function render() {
+        grid.querySelectorAll('[data-ref-thumb]').forEach(function (el) { el.remove(); });
+
+        files.forEach(function (file, index) {
+            var thumb = document.createElement('div');
+            thumb.className = 'jbw-ref-thumb' + (index === activeIndex ? ' is-active' : '');
+            thumb.setAttribute('data-ref-thumb', String(index));
+
+            var img = document.createElement('img');
+            img.alt = file.name || ('Reference ' + (index + 1));
+            img.src = URL.createObjectURL(file);
+            thumb.appendChild(img);
+
+            var remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'jbw-ref-thumb-remove';
+            remove.setAttribute('aria-label', 'Remove image');
+            remove.textContent = '×';
+            remove.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                files.splice(index, 1);
+                if (activeIndex >= files.length) activeIndex = Math.max(0, files.length - 1);
+                syncInput();
+                render();
+            });
+            thumb.appendChild(remove);
+
+            thumb.addEventListener('click', function () {
+                activeIndex = index;
+                render();
+            });
+
+            grid.insertBefore(thumb, addBtn);
+        });
+    }
+
+    input.addEventListener('change', function () {
+        var incoming = Array.from(input.files || []);
+        incoming.forEach(function (file) {
+            if (files.length >= max) return;
+            if (!file.type || file.type.indexOf('image/') !== 0) return;
+            files.push(file);
+        });
+        activeIndex = Math.max(0, files.length - 1);
+        syncInput();
+        render();
     });
 })();
 </script>

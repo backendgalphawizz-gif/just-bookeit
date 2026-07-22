@@ -36,6 +36,7 @@ Route::post('/contact', [ContactController::class, 'store'])->name('web.contact.
 Route::get('/faq', [FaqController::class, 'index'])->name('web.faq');
 
 Route::get('/designers/{vendor}', [VendorController::class, 'show'])->name('web.vendors.show');
+Route::get('/designers/{vendor}/portfolio', [VendorController::class, 'portfolio'])->name('web.vendors.portfolio');
 
 Route::middleware('customer.guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLogin'])->name('web.login');

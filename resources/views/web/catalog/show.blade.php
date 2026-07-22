@@ -13,15 +13,27 @@
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=85',
     ];
     $fallbackImg = $fashionFallbacks[$item->id % count($fashionFallbacks)];
+    $pageHeading = match ($item->serviceCategorySlug()) {
+        'rented-dress' => 'Dress Detail',
+        'rented-jewellery' => 'Jewellery Detail',
+        'fashion-designer' => 'Designer Detail',
+        default => 'Product Detail',
+    };
+    $vendorRating = round((float) ($item->vendor?->rating ?? 0), 1);
+    $description = trim((string) ($item->description ?: 'Premium designer outfit available for rent. Perfect for special occasions, weddings, and events.'));
+    $vendorLocation = collect([
+        $item->vendor?->address ? \Illuminate\Support\Str::before($item->vendor->address, ',') : null,
+        $item->vendor?->city,
+    ])->filter()->unique()->implode(', ');
 @endphp
 
-<div class="jbw-container jbw-page-shell">
-    <nav class="jbw-breadcrumb" aria-label="Breadcrumb">
-        <a href="{{ route('web.catalog.index') }}" class="jbw-breadcrumb-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-            Back
+<div class="jbw-container jbw-page-shell jbw-product-detail-page">
+    <div class="jbw-catalog-page-head jbw-detail-page-head">
+        <a href="{{ route('web.catalog.index') }}" class="jbw-catalog-back" aria-label="Back to catalog">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
         </a>
-    </nav>
+        <h1 class="jbw-catalog-page-title">{{ $pageHeading }}</h1>
+    </div>
 
     @php
         $galleryMedia = $item->galleryMediaItems();
@@ -91,17 +103,29 @@
 
         {{-- Info --}}
         <div class="jbw-detail-info">
-            <p class="jbw-product-brand">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
-            <h1 class="jbw-product-detail-title ">{{ $item->title }}</h1>
+            <div class="jbw-detail-title-row">
+                <h2 class="jbw-product-detail-title">{{ $item->title }}</h2>
+                @if ($vendorRating > 0)
+                    <span class="jbw-detail-rating-pill" aria-label="Rating {{ number_format($vendorRating, 1) }}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        {{ number_format($vendorRating, 1) }}
+                    </span>
+                @endif
+            </div>
+
             <p class="jbw-detail-price" id="jbw-detail-price">{{ $item->rentalPriceLabel() }}</p>
 
             @include('web.catalog.partials.variant-picker', ['item' => $item, 'baseImageUrl' => $galleryUrls[0] ?? null])
 
-            @if($item->description)
-                <p class="jbw-detail-desc">{{ $item->description }}</p>
-            @else
-                <p class="jbw-detail-desc">Premium designer outfit available for rent. Perfect for special occasions, weddings, and events.</p>
-            @endif
+            <div class="jbw-detail-desc-wrap" data-desc-wrap>
+                <p class="jbw-detail-desc" data-desc-text>{{ $description }}</p>
+                <button type="button" class="jbw-read-more" data-read-more hidden>
+                    <span data-read-more-label>Read More</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+            </div>
 
             @if ($item->vendor)
                 <a href="{{ route('web.vendors.show', $item->vendor) }}" class="jbw-vendor-chip">
@@ -110,35 +134,70 @@
                     @else
                         <span class="jbw-vendor-chip-avatar jbw-designer-fallback">{{ strtoupper(substr($item->vendor->brand_name, 0, 1)) }}</span>
                     @endif
-                    <div>
-                        <strong style="font-size:0.9375rem">{{ $item->vendor->brand_name }} <font class="starcolor">★</font> {{ number_format($item->vendor->rating ?? 4.5, 1) }}</strong>
-                        <p style="margin:0.125rem 0 0;font-size:0.8125rem;color:var(--c-muted)">
-                            <!-- <font class="starcolor">★</font> {{ number_format($item->vendor->rating ?? 4.5, 1) }} -->
-                            @if($item->vendor->city) <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
-</svg> {{ $item->vendor->city }} @endif
-                        </p>
+                    <div class="jbw-vendor-chip-body">
+                        <strong>
+                            {{ $item->vendor->brand_name }}
+                            @if ($vendorRating > 0)
+                                <span class="jbw-vendor-chip-rating"><span class="starcolor">★</span> {{ number_format($vendorRating, 1) }}</span>
+                            @endif
+                        </strong>
+                        @if ($vendorLocation !== '')
+                            <p class="jbw-vendor-chip-location">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/>
+                                </svg>
+                                {{ $vendorLocation }}
+                            </p>
+                        @endif
                     </div>
-                    <svg style="margin-left:auto;color:var(--c-muted)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    <svg class="jbw-vendor-chip-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
                 </a>
             @endif
 
             <div class="jbw-detail-actions" id="jbw-detail-actions">
-
                 @auth('customer')
                     @if ($webCustomer->is_guest)
-                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Create account to book</a>
+                        @if ($item->vendor)
+                            <a href="{{ route('web.register', ['redirect' => route('web.chat.start', $item->vendor)]) }}" class="jbw-detail-action-btn jbw-detail-action-btn--outline">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Chat
+                            </a>
+                        @endif
+                        <a href="{{ route('web.register', ['redirect' => route('web.catalog.show', $item)]) }}" class="jbw-detail-action-btn jbw-detail-action-btn--outline">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            Add to Cart
+                        </a>
+                        <a href="{{ route('web.register', ['redirect' => route('web.bookings.overview', $item)]) }}" class="jbw-detail-action-btn jbw-detail-action-btn--primary" id="jbw-book-now-link">BOOK NOW</a>
                     @else
+                        @if ($item->vendor)
+                            <a href="{{ route('web.chat.start', $item->vendor) }}" class="jbw-detail-action-btn jbw-detail-action-btn--outline">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Chat
+                            </a>
+                        @endif
                         <form method="POST" action="{{ route('web.cart.store') }}" id="jbw-add-to-cart-form" class="jbw-detail-action-form">
                             @csrf
                             <input type="hidden" name="portfolio_item_id" value="{{ $item->id }}">
                             <input type="hidden" name="redirect" value="{{ route('web.catalog.show', $item) }}">
-                            <button type="submit" class="buttonheight jbw-btn jbw-btn--outline jbw-btn--lg" id="jbw-add-to-cart-btn">Add to cart</button>
+                            <button type="submit" class="jbw-detail-action-btn jbw-detail-action-btn--outline" id="jbw-add-to-cart-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                Add to Cart
+                            </button>
                         </form>
-                        <a href="{{ route('web.bookings.overview', $item) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg" id="jbw-book-now-link">Book now</a>
+                        <a href="{{ route('web.bookings.overview', $item) }}" class="jbw-detail-action-btn jbw-detail-action-btn--primary" id="jbw-book-now-link">BOOK NOW</a>
                     @endif
                 @else
-                    <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="buttonheight jbw-btn jbw-btn--primary jbw-btn--lg">Sign in to book</a>
+                    @if ($item->vendor)
+                        <a href="{{ route('web.login', ['redirect' => route('web.chat.start', $item->vendor)]) }}" class="jbw-detail-action-btn jbw-detail-action-btn--outline">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            Chat
+                        </a>
+                    @endif
+                    <a href="{{ route('web.login', ['redirect' => route('web.catalog.show', $item)]) }}" class="jbw-detail-action-btn jbw-detail-action-btn--outline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                        Add to Cart
+                    </a>
+                    <a href="{{ route('web.login', ['redirect' => route('web.bookings.overview', $item)]) }}" class="jbw-detail-action-btn jbw-detail-action-btn--primary" id="jbw-book-now-link">BOOK NOW</a>
                 @endauth
             </div>
         </div>
@@ -161,6 +220,7 @@
             </div>
         </section>
     @endif
+
     <section class="jbw-section jbw-reviews-block" style="padding-top: 0;">
         <h2 class="jbw-product-detail-title">Customer Reviews</h2>
 
@@ -276,7 +336,6 @@
             btn.addEventListener('click', () => activateThumb(btn));
         });
 
-        // Keep the initially selected thumb visible in the horizontal strip.
         const initialActive = gallery.querySelector('.jbw-gallery-thumb.is-active');
         if (initialActive && thumbsStrip) {
             requestAnimationFrame(() => {
@@ -285,68 +344,75 @@
         }
     }
 
-    const picker = document.getElementById('jbw-variant-picker');
-    if (!picker) return;
+    // Read more
+    const descWrap = document.querySelector('[data-desc-wrap]');
+    if (descWrap) {
+        const descText = descWrap.querySelector('[data-desc-text]');
+        const readBtn = descWrap.querySelector('[data-read-more]');
+        const readLabel = descWrap.querySelector('[data-read-more-label]');
+        const full = (descText?.textContent || '').trim();
+        const limit = 160;
 
+        if (descText && readBtn && full.length > limit) {
+            let expanded = false;
+            const collapsed = full.slice(0, limit).replace(/\s+\S*$/, '') + '…';
+            descText.textContent = collapsed;
+            readBtn.hidden = false;
+
+            readBtn.addEventListener('click', () => {
+                expanded = !expanded;
+                descText.textContent = expanded ? full : collapsed;
+                if (readLabel) readLabel.textContent = expanded ? 'Read Less' : 'Read More';
+                readBtn.classList.toggle('is-expanded', expanded);
+            });
+        }
+    }
+
+    const picker = document.getElementById('jbw-variant-picker');
     const priceEl = document.getElementById('jbw-detail-price');
     const cartForm = document.getElementById('jbw-add-to-cart-form');
     const bookLink = document.getElementById('jbw-book-now-link');
     const bookBase = @json(route('web.bookings.overview', $item));
-    const inputs = picker.querySelectorAll('.jbw-variant-input');
 
-    const applyVariant = (input, { syncGallery = true } = {}) => {
-        if (!input) return;
+    if (picker) {
+        picker.addEventListener('jbw:variant-changed', (event) => {
+            const { id, label, image, syncGallery } = event.detail || {};
 
-        picker.querySelectorAll('.jbw-variant-chip').forEach((chip) => chip.classList.remove('is-selected'));
-        input.closest('.jbw-variant-chip')?.classList.add('is-selected');
-        input.checked = true;
-
-        if (priceEl && input.dataset.label) {
-            priceEl.textContent = input.dataset.label;
-        }
-
-        // Only swap the main image when the chosen variant has its own photo.
-        // Gallery browsing must not change / clear the selected variant.
-        if (syncGallery && input.dataset.image) {
-            window.jbwShowProductGalleryImage(input.dataset.image);
-            gallery?.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => {
-                const isMatch = thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === input.dataset.image;
-                thumb.classList.toggle('is-active', isMatch);
-                if (isMatch && typeof thumb.scrollIntoView === 'function') {
-                    thumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                }
-            });
-        }
-
-        if (cartForm) {
-            const hidden = cartForm.querySelector('input[name="portfolio_item_variant_id"]');
-            if (input.value) {
-                let field = hidden;
-                if (!field) {
-                    field = document.createElement('input');
-                    field.type = 'hidden';
-                    field.name = 'portfolio_item_variant_id';
-                    cartForm.appendChild(field);
-                }
-                field.value = input.value;
-            } else if (hidden) {
-                hidden.remove();
+            if (priceEl && label) {
+                priceEl.textContent = label;
             }
-        }
 
-        if (bookLink) {
-            bookLink.href = input.value
-                ? bookBase + '?variant=' + encodeURIComponent(input.value)
-                : bookBase;
-        }
-    };
+            if (syncGallery && image && typeof window.jbwShowProductGalleryImage === 'function') {
+                window.jbwShowProductGalleryImage(image);
+                gallery?.querySelectorAll('.jbw-gallery-thumb').forEach((thumb) => {
+                    const isMatch = thumb.dataset.galleryType === 'image' && thumb.dataset.galleryUrl === image;
+                    thumb.classList.toggle('is-active', isMatch);
+                });
+            }
 
-    inputs.forEach((input) => {
-        input.addEventListener('change', () => applyVariant(input, { syncGallery: true }));
-    });
+            if (cartForm) {
+                const hidden = cartForm.querySelector('input[name="portfolio_item_variant_id"]');
+                if (id) {
+                    let field = hidden;
+                    if (!field) {
+                        field = document.createElement('input');
+                        field.type = 'hidden';
+                        field.name = 'portfolio_item_variant_id';
+                        cartForm.appendChild(field);
+                    }
+                    field.value = String(id);
+                } else if (hidden) {
+                    hidden.remove();
+                }
+            }
 
-    const checked = picker.querySelector('.jbw-variant-input:checked');
-    if (checked) applyVariant(checked, { syncGallery: !!checked.dataset.image });
+            if (bookLink) {
+                bookLink.href = id
+                    ? bookBase + '?variant=' + encodeURIComponent(id)
+                    : bookBase;
+            }
+        });
+    }
 })();
 </script>
 @endpush
