@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\ApiController;
+use App\Services\Payment\RazorpayService;
 use App\Services\PlatformConfigService;
 use Illuminate\Http\JsonResponse;
 
@@ -14,6 +15,11 @@ class ConfigController extends ApiController
 
     public function index(): JsonResponse
     {
-        return $this->success($this->config->fullConfig());
+        $data = $this->config->fullConfig();
+
+        // Always expose public Razorpay credentials for the customer app.
+        $data['razorpay'] = app(RazorpayService::class)->publicClientConfig();
+
+        return $this->success($data);
     }
 }
