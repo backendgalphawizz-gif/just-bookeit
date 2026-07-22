@@ -37,7 +37,9 @@ class BookingPricingService
     {
         $item->loadMissing('category');
         $requiresRentalPeriod = (bool) ($options['requires_rental_period'] ?? $item->requiresRentalPeriod());
-        $dailyRate = (float) ($options['daily_rate'] ?? $item->rentalPriceAmount());
+        $variant = $options['variant'] ?? null;
+        $variantModel = $variant instanceof \App\Models\PortfolioItemVariant ? $variant : null;
+        $dailyRate = (float) ($options['daily_rate'] ?? $item->dailyRateFor($variantModel));
 
         $rentalDays = array_key_exists('rental_days', $options)
             ? ($options['rental_days'] !== null ? max(1, (int) $options['rental_days']) : null)
