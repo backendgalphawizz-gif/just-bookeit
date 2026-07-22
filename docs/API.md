@@ -100,10 +100,11 @@ Upload images in **Admin → Categories** when creating or editing a category.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/v1/search` | `?q=` — catalog items + designers. Optional `?city=` or `?latitude=&longitude=` (admin radius). |
-| GET | `/v1/catalog` | `?search=`, `?category_id=`, `?vendor_id=`, `?service=`, `?city=`, `?latitude=&longitude=`, `?page=`, `?per_page=` |
+| GET | `/v1/catalog` | Product list with Apply Filter params. `?service=rented-dress`, `?category_id=` / `?audience=women`, `?min_price=` `?max_price=`, `?designer=` / `?designer_name=`, `?location=` / `?city=`, `?size=` / `?sizes[]=`, `?color=` / `?colors[]=` / `?color_hex=`, `?subcategory_id=`, `?vendor_id=`, `?page=` |
 | GET | `/v1/catalog/{id}` | Product detail, reviews, related items |
 | GET | `/v1/designers` | `?search=`, `?featured=1`, `?city=`, `?latitude=&longitude=`, `?page=` |
 | GET | `/v1/designers/{id}` | Designer profile + portfolio |
+| GET | `/v1/portfolio` | Vendor product images. Required `?vendor_id=`. Optional `?service_category_id=` / `?service=`, `?category_id=` / `?shop_category_id=`, `?subcategory_id=` / `?sub_category_id=`, `?audience=women\|men\|kids`, `?page=` |
 
 **Location radius:** Admin → Settings → **Discovery radius** sets `discovery_radius_km` (default 25). When the app sends `latitude` + `longitude`, Home / Catalog / Designers / Search only return vendors (and their products) within that km. Vendors must have latitude/longitude saved. Without lat/lng, `city` filtering still works as before. Radius is also exposed on `GET /v1/config` as `features.discovery_radius_km`.
 

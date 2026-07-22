@@ -94,6 +94,12 @@ class CatalogController extends ApiController
                 'subcategories' => $subcategories->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'services' => $services->map(fn ($category) => CustomerApiPresenter::category($category))->values()->all(),
                 'cities' => $cities,
+                'sizes' => \App\Support\ProductOptionCatalog::sizeApiItems(),
+                'colors' => \App\Support\ProductOptionCatalog::colorApiItems(),
+                'price_range' => [
+                    'min' => 0,
+                    'max' => 50000,
+                ],
                 'applied' => CatalogFilter::applied($request, $browseMode),
             ],
         ]);

@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MeasurementController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\PortfolioController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SupportTicketController;
@@ -57,6 +58,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('catalog/{item}', [CatalogController::class, 'show'])->name('catalog.show');
     Route::get('designers', [DesignerController::class, 'index'])->name('designers.index');
     Route::get('designers/{designer}', [DesignerController::class, 'show'])->name('designers.show');
+    Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
     Route::get('locations/countries', [LocationController::class, 'countries'])->name('locations.countries');
     Route::get('locations/states', [LocationController::class, 'states'])->name('locations.states');
     Route::get('locations/cities', [LocationController::class, 'cities'])->name('locations.cities');

@@ -74,7 +74,7 @@ class CatalogFilter
         ]));
     }
 
-    /** @return array<string, array<int, string>> */
+    /** @return array<string, array<int, string|\Illuminate\Validation\Rules\In>> */
     public static function validationRules(): array
     {
         return [
@@ -83,10 +83,24 @@ class CatalogFilter
             'shop_category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'service' => ['nullable', 'string', Rule::in(self::acceptedServices())],
             'service_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'service_category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
             'subcategory_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('type', Category::TYPE_SUB)],
             'subcategory' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
+            'location' => ['nullable', 'string', 'max:100'],
+            'designer' => ['nullable', 'string', 'max:100'],
+            'designer_name' => ['nullable', 'string', 'max:100'],
+            'min_price' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'max_price' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'size' => ['nullable', 'string', 'max:50'],
+            'sizes' => ['nullable', 'array', 'max:20'],
+            'sizes.*' => ['string', 'max:50'],
+            'color' => ['nullable', 'string', 'max:100'],
+            'colors' => ['nullable', 'array', 'max:20'],
+            'colors.*' => ['string', 'max:100'],
+            'color_hex' => ['nullable', 'string', 'max:20'],
             'browse' => ['nullable', 'string', Rule::in([self::BROWSE_CATEGORIES, self::BROWSE_SERVICES])],
             ...VendorProximityFilter::validationRules(),
         ];
@@ -138,6 +152,12 @@ class CatalogFilter
     {
         if ($request->filled('shop_category_id')) {
             $category = Category::query()->find($request->integer('shop_category_id'));
+
+            return ($category && $category->isMain()) ? $category->id : null;
+        }
+
+        if ($request->filled('parent_id')) {
+            $category = Category::query()->find($request->integer('parent_id'));
 
             return ($category && $category->isMain()) ? $category->id : null;
         }
@@ -298,8 +318,7 @@ class CatalogFilter
                 $query->whereHas('category', fn (Builder $category) => $category->where('type', Category::TYPE_SERVICE));
             }
 
-            self::applyVendorCity($query, $request->string('city')->toString());
-            VendorProximityFilter::applyToCatalogQuery($query, $request);
+            self::applyUserListingFilters($query, $request);
 
             return $query;
         }
@@ -327,10 +346,141 @@ class CatalogFilter
             $query->whereNotNull('subcategory_id');
         }
 
-        self::applyVendorCity($query, $request->string('city')->toString());
-        VendorProximityFilter::applyToCatalogQuery($query, $request);
+        self::applyUserListingFilters($query, $request);
 
         return $query;
+    }
+
+    /**
+     * Apply Filter sheet params: location, designer, price, size, color.
+     */
+    public static function applyUserListingFilters(Builder $query, Request $request): Builder
+    {
+        $city = trim($request->string('city')->toString());
+        if ($city === '') {
+            $city = trim($request->string('location')->toString());
+        }
+
+        self::applyVendorCity($query, $city);
+        VendorProximityFilter::applyToCatalogQuery($query, $request);
+        self::applyDesignerFilter($query, $request);
+        self::applyPriceFilter($query, $request);
+        self::applySizeColorFilter($query, $request);
+
+        return $query;
+    }
+
+    public static function applyDesignerFilter(Builder $query, Request $request): Builder
+    {
+        $designer = trim($request->string('designer')->toString());
+        if ($designer === '') {
+            $designer = trim($request->string('designer_name')->toString());
+        }
+
+        if ($designer === '') {
+            return $query;
+        }
+
+        $term = '%'.$designer.'%';
+
+        return $query->whereHas('vendor', function (Builder $vendor) use ($term) {
+            $vendor->where(function (Builder $inner) use ($term) {
+                $inner->where('brand_name', 'like', $term)
+                    ->orWhere('shop_name', 'like', $term)
+                    ->orWhere('owner_name', 'like', $term);
+            });
+        });
+    }
+
+    public static function applyPriceFilter(Builder $query, Request $request): Builder
+    {
+        $min = $request->filled('min_price') ? (float) $request->input('min_price') : null;
+        $max = $request->filled('max_price') ? (float) $request->input('max_price') : null;
+
+        if ($min === null && $max === null) {
+            return $query;
+        }
+
+        if ($min !== null && $max !== null && $min > $max) {
+            [$min, $max] = [$max, $min];
+        }
+
+        return $query->where(function (Builder $outer) use ($min, $max) {
+            $outer->whereHas('variants', function (Builder $variant) use ($min, $max) {
+                if ($min !== null) {
+                    $variant->where('price', '>=', $min);
+                }
+                if ($max !== null) {
+                    $variant->where('price', '<=', $max);
+                }
+            })->orWhere(function (Builder $item) use ($min, $max) {
+                if ($min !== null) {
+                    $item->where('price_per_day', '>=', $min);
+                }
+                if ($max !== null) {
+                    $item->where('price_per_day', '<=', $max);
+                }
+            });
+        });
+    }
+
+    public static function applySizeColorFilter(Builder $query, Request $request): Builder
+    {
+        $sizes = self::requestStringList($request, 'size', 'sizes');
+        $colors = self::requestStringList($request, 'color', 'colors');
+
+        if ($request->filled('color_hex')) {
+            $hex = strtoupper(ltrim(trim($request->string('color_hex')->toString()), '#'));
+            foreach (\App\Support\ProductOptionCatalog::colorCssMap() as $name => $mappedHex) {
+                if (strtoupper(ltrim($mappedHex, '#')) === $hex) {
+                    $colors[] = $name;
+                }
+            }
+            $colors = array_values(array_unique($colors));
+        }
+
+        if ($sizes === [] && $colors === []) {
+            return $query;
+        }
+
+        return $query->whereHas('variants', function (Builder $variant) use ($sizes, $colors) {
+            if ($sizes !== []) {
+                $variant->where(function (Builder $sizeQuery) use ($sizes) {
+                    foreach ($sizes as $size) {
+                        $sizeQuery->orWhereRaw('LOWER(TRIM(size)) = ?', [strtolower($size)]);
+                    }
+                });
+            }
+
+            if ($colors !== []) {
+                $variant->where(function (Builder $colorQuery) use ($colors) {
+                    foreach ($colors as $color) {
+                        $colorQuery->orWhereRaw('LOWER(TRIM(color)) = ?', [strtolower($color)]);
+                    }
+                });
+            }
+        });
+    }
+
+    /** @return list<string> */
+    protected static function requestStringList(Request $request, string $singleKey, string $arrayKey): array
+    {
+        $values = [];
+
+        if ($request->filled($singleKey)) {
+            $values[] = trim($request->string($singleKey)->toString());
+        }
+
+        if ($request->filled($arrayKey)) {
+            foreach ((array) $request->input($arrayKey, []) as $value) {
+                $trimmed = trim((string) $value);
+                if ($trimmed !== '') {
+                    $values[] = $trimmed;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($values, fn ($value) => $value !== '')));
     }
 
     public static function applyVendorCity(Builder $query, ?string $city): Builder
@@ -372,14 +522,35 @@ class CatalogFilter
         $mainCategory = $mainCategoryId ? Category::query()->find($mainCategoryId) : null;
 
         $city = trim($request->string('city')->toString());
+        if ($city === '') {
+            $city = trim($request->string('location')->toString());
+        }
+
+        $designer = trim($request->string('designer')->toString());
+        if ($designer === '') {
+            $designer = trim($request->string('designer_name')->toString());
+        }
+
         $browse = $request->filled('browse')
             ? $request->string('browse')->toString()
             : $browseMode;
+
+        $sizes = self::requestStringList($request, 'size', 'sizes');
+        $colors = self::requestStringList($request, 'color', 'colors');
 
         return array_filter([
             'browse' => in_array($browse, [self::BROWSE_CATEGORIES, self::BROWSE_SERVICES], true) ? $browse : null,
             'audience' => $audience,
             'city' => $city !== '' ? $city : null,
+            'location' => $city !== '' ? $city : null,
+            'designer' => $designer !== '' ? $designer : null,
+            'min_price' => $request->filled('min_price') ? (float) $request->input('min_price') : null,
+            'max_price' => $request->filled('max_price') ? (float) $request->input('max_price') : null,
+            'size' => $sizes[0] ?? null,
+            'sizes' => $sizes !== [] ? $sizes : null,
+            'color' => $colors[0] ?? null,
+            'colors' => $colors !== [] ? $colors : null,
+            'color_hex' => $request->filled('color_hex') ? $request->string('color_hex')->toString() : null,
             'vendor_id' => $request->filled('vendor_id') ? $request->integer('vendor_id') : null,
             ...VendorProximityFilter::appliedMeta($request),
             'service' => $serviceCategory ? [
