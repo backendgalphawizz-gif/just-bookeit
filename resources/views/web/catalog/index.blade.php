@@ -322,7 +322,12 @@
                         $unavailable = ! $item->isCatalogAvailable()
                             || ($item->variants && $item->variants->isNotEmpty() && $item->variants->every(fn ($v) => (int) ($v->quantity ?? 0) <= 0));
                     @endphp
-                    <a href="{{ route('web.catalog.show', $item) }}" @class(['jbw-product-card', 'jbw-product-card--listing', 'is-unavailable' => $unavailable])>
+                    <a href="{{ route('web.catalog.show', $item) }}" @class([
+                        'jbw-product-card',
+                        'jbw-product-card--listing',
+                        'is-unavailable' => $unavailable,
+                        'is-rental' => $item->requiresRentalPeriod(),
+                    ])>
                         <div class="jbw-product-card-img">
                             <img
                                 src="{{ $item->displayImageUrl() ?: $fallback }}"

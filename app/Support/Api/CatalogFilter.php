@@ -171,6 +171,16 @@ class CatalogFilter
             }
         }
 
+        // Web URLs use ?category={id}
+        if ($request->filled('category')) {
+            $raw = trim($request->string('category')->toString());
+            if ($raw !== '' && ctype_digit($raw)) {
+                $category = Category::query()->find((int) $raw);
+
+                return ($category && $category->isMain()) ? $category->id : null;
+            }
+        }
+
         return null;
     }
 
@@ -183,7 +193,16 @@ class CatalogFilter
         }
 
         if ($request->filled('subcategory')) {
-            $slug = strtolower(trim($request->string('subcategory')->toString()));
+            $raw = trim($request->string('subcategory')->toString());
+
+            // Web URLs use ?subcategory={id}
+            if ($raw !== '' && ctype_digit($raw)) {
+                $subcategory = Category::query()->find((int) $raw);
+
+                return ($subcategory && $subcategory->isSub()) ? $subcategory->id : null;
+            }
+
+            $slug = strtolower($raw);
 
             if ($slug !== '') {
                 $mainCategoryId = self::resolveMainCategoryId($request);
@@ -262,7 +281,16 @@ class CatalogFilter
         }
 
         if ($request->filled('service')) {
-            $slug = self::normalizeServiceSlug($request->string('service')->toString());
+            $raw = trim($request->string('service')->toString());
+
+            // Accept numeric service category IDs from web URLs (?service=4).
+            if ($raw !== '' && ctype_digit($raw)) {
+                $category = Category::query()->find((int) $raw);
+
+                return ($category && $category->isService()) ? $category->id : null;
+            }
+
+            $slug = self::normalizeServiceSlug($raw);
 
             if ($slug !== null) {
                 return Category::query()
