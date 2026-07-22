@@ -73,21 +73,27 @@ class VendorProximityFilter
     {
         $radiusKm ??= self::radiusKm();
 
-        $query->whereNotNull('latitude')
-            ->whereNotNull('longitude');
-
         // Haversine distance in km (Earth radius ≈ 6371).
         $distanceSql = '(6371 * acos(least(1, greatest(-1,
             cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?))
             + sin(radians(?)) * sin(radians(latitude))
         ))))';
 
-        return $query->whereRaw("{$distanceSql} <= ?", [
-            $latitude,
-            $longitude,
-            $latitude,
-            $radiusKm,
-        ]);
+        // Keep vendors without coordinates visible; only radius-filter those that have GPS.
+        return $query->where(function (Builder $outer) use ($distanceSql, $latitude, $longitude, $radiusKm) {
+            $outer->where(function (Builder $missing) {
+                $missing->whereNull('latitude')->orWhereNull('longitude');
+            })->orWhere(function (Builder $located) use ($distanceSql, $latitude, $longitude, $radiusKm) {
+                $located->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->whereRaw("{$distanceSql} <= ?", [
+                        $latitude,
+                        $longitude,
+                        $latitude,
+                        $radiusKm,
+                    ]);
+            });
+        });
     }
 
     public static function applyFromRequest(Builder $vendorQuery, Request $request): Builder

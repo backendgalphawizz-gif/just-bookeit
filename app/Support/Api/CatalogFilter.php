@@ -101,6 +101,7 @@ class CatalogFilter
             'colors' => ['nullable', 'array', 'max:20'],
             'colors.*' => ['string', 'max:100'],
             'color_hex' => ['nullable', 'string', 'max:20'],
+            'min_rating' => ['nullable', 'numeric', 'min:1', 'max:5'],
             'browse' => ['nullable', 'string', Rule::in([self::BROWSE_CATEGORIES, self::BROWSE_SERVICES])],
             ...VendorProximityFilter::validationRules(),
         ];
@@ -318,15 +319,10 @@ class CatalogFilter
                 $query->whereHas('category', fn (Builder $category) => $category->where('type', Category::TYPE_SERVICE));
             }
 
+            self::applyAudienceAndSubcategoryFilters($query, $request);
             self::applyUserListingFilters($query, $request);
 
             return $query;
-        }
-
-        $audience = self::resolveAudience($request);
-
-        if ($audience !== null) {
-            $query->where('audience', $audience);
         }
 
         $serviceCategoryId = self::resolveServiceCategoryId($request);
@@ -336,17 +332,29 @@ class CatalogFilter
             $query->whereIn('category_id', $serviceCategoryIds);
         }
 
+        self::applyAudienceAndSubcategoryFilters($query, $request, requireSubcategory: true);
+        self::applyUserListingFilters($query, $request);
+
+        return $query;
+    }
+
+    public static function applyAudienceAndSubcategoryFilters(Builder $query, Request $request, bool $requireSubcategory = false): Builder
+    {
+        $audience = self::resolveAudience($request);
+
+        if ($audience !== null) {
+            $query->where('audience', $audience);
+        }
+
         $subcategoryId = self::resolveSubcategoryId($request);
 
         if ($subcategoryId !== null) {
             $query->where('subcategory_id', $subcategoryId);
         } elseif (($mainCategoryId = self::resolveMainCategoryId($request)) !== null) {
             $query->whereHas('subcategory', fn (Builder $sub) => $sub->where('parent_id', $mainCategoryId));
-        } else {
+        } elseif ($requireSubcategory) {
             $query->whereNotNull('subcategory_id');
         }
-
-        self::applyUserListingFilters($query, $request);
 
         return $query;
     }
@@ -366,8 +374,23 @@ class CatalogFilter
         self::applyDesignerFilter($query, $request);
         self::applyPriceFilter($query, $request);
         self::applySizeColorFilter($query, $request);
+        self::applyRatingFilter($query, $request);
 
         return $query;
+    }
+
+    public static function applyRatingFilter(Builder $query, Request $request): Builder
+    {
+        if (! $request->filled('min_rating')) {
+            return $query;
+        }
+
+        $minRating = (float) $request->input('min_rating');
+        if ($minRating <= 0) {
+            return $query;
+        }
+
+        return $query->whereHas('vendor', fn (Builder $vendor) => $vendor->where('rating', '>=', $minRating));
     }
 
     public static function applyDesignerFilter(Builder $query, Request $request): Builder

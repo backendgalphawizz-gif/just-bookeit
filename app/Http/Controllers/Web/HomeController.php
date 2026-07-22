@@ -27,6 +27,10 @@ class HomeController extends WebController
         $shopCategories = Category::query()
             ->active()
             ->main()
+            ->with(['subcategories' => fn ($query) => $query
+                ->active()
+                ->orderBy('sort_order')
+                ->orderBy('name')])
             ->orderBy('sort_order')
             ->get();
 
