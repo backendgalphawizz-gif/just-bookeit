@@ -68,7 +68,18 @@ Auto-saved variables: `v1_token`, `v1_otp`, `v1_portfolio_item_id`, `v1_designer
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/v1/home` | Banners, services, shop categories, featured designers. `?city=` filters by vendor city. `?latitude=&longitude=` (or `lat`/`lng`) filters designers within the admin discovery radius (km). |
-| GET | `/v1/categories` | `?type=service`, `?roots=1`, `?parent_id=` — each category includes `image_url` |
+| GET | `/v1/categories` | Filter shop + service together. `?category_id=` / `?parent_id=` / `?shop_category_id=` (Women/Men/Kids) **and** `?service_category_id=` / `?service=` (rented-dress, rented-jewellery, …). `?type=`, `?roots=1`. Each item includes `image_url` |
+
+**Examples**
+
+```http
+GET /v1/categories?category_id=2&service_category_id=6
+GET /v1/categories?parent_id=2&service=rented-jewellery
+GET /v1/categories?roots=1&service_category_id=5
+```
+
+Combined shop + service filters return **subcategories** that match both (e.g. Women’s jewellery: Necklace, Ring).
+
 
 **`GET /v1/categories?roots=1`** returns shop categories and services separately:
 

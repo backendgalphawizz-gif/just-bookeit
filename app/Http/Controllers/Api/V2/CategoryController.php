@@ -252,10 +252,6 @@ class CategoryController extends ApiController
             'service_name' => $serviceCategory->name,
         ];
 
-        if ($serviceCategory->slug === 'fashion-designer') {
-            $applied['includes_dress_subcategories'] = true;
-        }
-
         return $applied;
     }
 }
