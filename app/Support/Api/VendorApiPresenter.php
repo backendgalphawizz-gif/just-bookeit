@@ -254,6 +254,8 @@ class VendorApiPresenter
             ).($order->rentalDurationDays() ? '/day' : ''),
             'line_amount' => (float) $order->amount,
             'line_amount_label' => '₹'.number_format((float) $order->amount, 0),
+            'advance_amount' => self::orderAdvanceAmount($order),
+            'advance_amount_label' => '₹'.number_format(self::orderAdvanceAmount($order), 0),
             'status' => $itemStatus,
             'status_label' => match ($itemStatus) {
                 \App\Models\OrderItem::STATUS_PENDING => 'Pending acceptance',
@@ -278,8 +280,8 @@ class VendorApiPresenter
             'custom_notes' => $notes,
             'service_type' => null,
             'reference_image_urls' => $referenceUrls,
-            'measurement_profile_id' => null,
-            'measurements' => null,
+            'measurement_profile_id' => self::resolveOrderMeasurementProfileId($order),
+            'measurements' => self::orderMeasurements($order),
         ];
     }
 
@@ -331,7 +333,8 @@ class VendorApiPresenter
             'event_date' => $order->event_date?->format('Y-m-d'),
             'event_date_label' => $order->event_date?->format('jS M Y'),
             'security_deposit' => $order->security_deposit !== null ? (float) $order->security_deposit : null,
-            'advance_amount' => $order->security_deposit !== null ? (float) $order->security_deposit : null,
+            'advance_amount' => self::orderAdvanceAmount($order),
+            'measurement_profile_id' => self::resolveOrderMeasurementProfileId($order),
             'measurements' => self::orderMeasurements($order),
             'payment_summary' => self::bookingPaymentSummaryPayload($order),
             'damage' => self::bookingDamage($order),
@@ -400,6 +403,8 @@ class VendorApiPresenter
             'unit_price_label' => '₹'.number_format((float) $item->unit_price, 0).'/day',
             'line_amount' => (float) $item->line_amount,
             'line_amount_label' => '₹'.number_format((float) $item->line_amount, 0),
+            'advance_amount' => $item->advanceAmount(),
+            'advance_amount_label' => '₹'.number_format($item->advanceAmount(), 0),
             'status' => $item->status,
             'status_label' => $item->statusLabel(),
             'cancellation_reason' => $item->cancellation_reason,
@@ -416,7 +421,8 @@ class VendorApiPresenter
             'custom_notes' => $item->customerNotes(),
             'service_type' => $item->serviceType(),
             'reference_image_urls' => $item->referenceImageUrls(),
-            'measurement_profile_id' => $item->measurementProfileId(),
+            'measurement_profile_id' => $item->measurementProfileId()
+                ?? (($item->order ?? null) ? self::resolveOrderMeasurementProfileId($item->order) : null),
             'measurements' => self::orderItemMeasurements($item),
         ];
     }
@@ -470,6 +476,8 @@ class VendorApiPresenter
             'unit_price_label' => '₹'.number_format((float) $item->unit_price, 0).'/day',
             'line_amount' => (float) $item->line_amount,
             'line_amount_label' => '₹'.number_format((float) $item->line_amount, 0),
+            'advance_amount' => $item->advanceAmount(),
+            'advance_amount_label' => '₹'.number_format($item->advanceAmount(), 0),
             'status' => $item->status,
             'status_label' => $item->statusLabel(),
             'cancellation_reason' => $item->cancellation_reason,
@@ -487,7 +495,8 @@ class VendorApiPresenter
             'service_type' => $item->serviceType(),
             'reference_image_urls' => $referenceUrls,
             'reference_images' => self::referenceImagesPayload($referenceUrls),
-            'measurement_profile_id' => $item->measurementProfileId(),
+            'measurement_profile_id' => $item->measurementProfileId()
+                ?? ($order ? self::resolveOrderMeasurementProfileId($order) : null),
             'measurements' => self::orderItemMeasurements($item),
             'customer' => $order ? [
                 ...self::bookingCustomer($order),
@@ -534,6 +543,8 @@ class VendorApiPresenter
             'unit_price_label' => '₹'.number_format((float) $order->amount, 0),
             'line_amount' => (float) $order->amount,
             'line_amount_label' => '₹'.number_format((float) $order->amount, 0),
+            'advance_amount' => self::orderAdvanceAmount($order),
+            'advance_amount_label' => '₹'.number_format(self::orderAdvanceAmount($order), 0),
             'status' => in_array($order->status, ['new', 'pending_acceptance'], true)
                 ? \App\Models\OrderItem::STATUS_PENDING
                 : (in_array($order->status, ['cancelled', 'refunded'], true)
@@ -555,7 +566,7 @@ class VendorApiPresenter
             'service_type' => null,
             'reference_image_urls' => $referenceUrls,
             'reference_images' => self::referenceImagesPayload($referenceUrls),
-            'measurement_profile_id' => null,
+            'measurement_profile_id' => self::resolveOrderMeasurementProfileId($order),
             'measurements' => self::orderMeasurements($order),
             'customer' => [
                 ...self::bookingCustomer($order),
@@ -593,7 +604,7 @@ class VendorApiPresenter
     protected static function bookingPaymentSummaryPayload(Order $order): array
     {
         $summary = BookingPricingService::vendorPaymentSummary($order, $order->vendor);
-        $advance = $order->security_deposit !== null ? (float) $order->security_deposit : 0.0;
+        $advance = self::orderAdvanceAmount($order);
 
         return [
             ...$summary,
@@ -614,13 +625,14 @@ class VendorApiPresenter
     {
         $subtotal = round((float) $item->line_amount, 2);
         $gstPercent = BookingPricingService::gstPercent();
+        $itemAdvance = round((float) $item->advanceAmount(), 2);
 
         if (! $order) {
             $taxAmount = round($subtotal * ($gstPercent / 100), 2);
 
             return [
                 'subtotal' => $subtotal,
-                'advance_amount' => 0.0,
+                'advance_amount' => $itemAdvance,
                 'shipping_fee' => 0.0,
                 'shipping_and_handling' => 0.0,
                 'tax_percent' => $gstPercent,
@@ -628,7 +640,7 @@ class VendorApiPresenter
                 'total_amount' => round($subtotal + $taxAmount, 2),
                 'currency' => (string) \App\Models\PlatformSetting::get('currency', 'INR'),
                 'subtotal_label' => '₹'.number_format($subtotal, 0),
-                'advance_amount_label' => '₹0',
+                'advance_amount_label' => '₹'.number_format($itemAdvance, 0),
                 'shipping_fee_label' => '₹0',
                 'shipping_and_handling_label' => '₹0',
                 'tax_amount_label' => '₹'.number_format($taxAmount, 0),
@@ -642,14 +654,14 @@ class VendorApiPresenter
         $activeSubtotal = max(0.01, (float) $active->sum(fn ($row) => (float) $row->line_amount));
         $share = $subtotal / $activeSubtotal;
 
-        // Single-item booking: show full order fees. Multi-item: prorate shipping/advance/tax.
+        // Single-item booking: show full order fees. Multi-item: prorate shipping/tax; advance stays per item.
         $isSingle = $active->count() <= 1;
         $shipping = $isSingle
             ? (float) ($order->delivery_fee ?? 0)
             : round((float) ($order->delivery_fee ?? 0) * $share, 2);
         $advance = $isSingle
-            ? (float) ($order->security_deposit ?? 0)
-            : round((float) ($order->security_deposit ?? 0) * $share, 2);
+            ? self::orderAdvanceAmount($order)
+            : $itemAdvance;
         $taxAmount = $isSingle
             ? (float) ($order->tax_amount ?? round($subtotal * ($gstPercent / 100), 2))
             : round($subtotal * ($gstPercent / 100), 2);
@@ -674,26 +686,112 @@ class VendorApiPresenter
         ];
     }
 
+    protected static function orderAdvanceAmount(Order $order): float
+    {
+        $order->loadMissing('orderItems');
+
+        if ($order->advance_amount !== null) {
+            return round((float) $order->advance_amount, 2);
+        }
+
+        if ($order->orderItems->isNotEmpty()) {
+            return round($order->orderItems
+                ->where('status', '!=', \App\Models\OrderItem::STATUS_CANCELLED)
+                ->sum(fn (\App\Models\OrderItem $item) => $item->advanceAmount()), 2);
+        }
+
+        if ($order->security_deposit !== null) {
+            return round((float) $order->security_deposit, 2);
+        }
+
+        return 0.0;
+    }
+
     /** @return array<string, mixed>|null */
     protected static function orderItemMeasurements(\App\Models\OrderItem $item): ?array
     {
-        $profileId = $item->measurementProfileId();
-        if (! $profileId) {
-            return null;
+        $order = $item->order ?? $item->order()->with(['customer.measurements', 'checkoutOrder'])->first();
+        $profileId = $item->measurementProfileId() ?? ($order ? self::resolveOrderMeasurementProfileId($order) : null);
+
+        if ($profileId) {
+            $customer = $order?->customer;
+            $profile = $customer?->measurements()->whereKey($profileId)->first();
+
+            if ($profile) {
+                $detail = CustomerApiPresenter::measurementDetail($profile);
+                unset($detail['id']);
+
+                // Prefer values frozen on the order when present (in case profile changed later).
+                if ($order) {
+                    $orderValues = self::orderMeasurements($order);
+                    foreach (['height_cm', 'chest_cm', 'waist_cm', 'measurement_type', 'size', 'extra_measurements', 'sections', 'section_names'] as $key) {
+                        if (($orderValues[$key] ?? null) !== null && ($orderValues[$key] ?? null) !== []) {
+                            $detail[$key] = $orderValues[$key];
+                        }
+                    }
+                    foreach ($orderValues as $key => $value) {
+                        if (in_array($key, ['name', 'created_at'], true)) {
+                            continue;
+                        }
+                        if (($detail[$key] ?? null) === null && $value !== null && $value !== '') {
+                            $detail[$key] = $value;
+                        }
+                    }
+                    if (($detail['name'] ?? null) === null && ($orderValues['name'] ?? null) !== null) {
+                        $detail['name'] = $orderValues['name'];
+                    }
+                }
+
+                return $detail;
+            }
         }
 
-        $order = $item->order ?? $item->order()->first();
-        $customer = $order?->customer;
-        $profile = $customer?->measurements()->whereKey($profileId)->first();
+        // Fallback: measurements copied onto the order/checkout at booking time.
+        if ($order) {
+            $measurements = self::orderMeasurements($order);
+            $hasValues = collect($measurements)
+                ->except(['sections', 'section_names', 'extra_measurements', 'name', 'created_at', 'measurement_type', 'size'])
+                ->filter(fn ($value) => $value !== null && $value !== '')
+                ->isNotEmpty();
 
-        if (! $profile) {
-            return null;
+            return $hasValues || filled($measurements['measurement_type'] ?? null) ? $measurements : null;
         }
 
-        $detail = CustomerApiPresenter::measurementDetail($profile);
-        unset($detail['id']);
+        return null;
+    }
 
-        return $detail;
+    protected static function resolveOrderMeasurementProfileId(Order $order): ?int
+    {
+        $order->loadMissing(['orderItems', 'customer.measurements']);
+
+        foreach ($order->orderItems as $item) {
+            $id = $item->measurementProfileId();
+            if ($id) {
+                return $id;
+            }
+        }
+
+        // Older bookings stored values on the order but omitted profile id in the snapshot.
+        if (
+            $order->measurement_type
+            || $order->measure_extra
+            || $order->measure_height_cm !== null
+            || $order->measure_chest_cm !== null
+            || $order->measure_waist_cm !== null
+            || ($order->checkoutOrder && (
+                $order->checkoutOrder->measurement_type
+                || $order->checkoutOrder->measure_extra
+                || $order->checkoutOrder->measure_height_cm !== null
+                || $order->checkoutOrder->measure_chest_cm !== null
+                || $order->checkoutOrder->measure_waist_cm !== null
+            ))
+        ) {
+            $id = $order->customer?->measurements()->latest('id')->value('id');
+
+            return $id ? (int) $id : null;
+        }
+
+        return null;
     }
 
     /** @return array<string, string|null> */

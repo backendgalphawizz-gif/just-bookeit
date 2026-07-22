@@ -145,6 +145,10 @@ Upload images in **Admin → Categories** when creating or editing a category.
 `size` accepts any variant size string (max 50), e.g. `Free Size`, `One Size`, `XS`–`XXL`. Optional `color` and `portfolio_item_variant_id` are also accepted.
 Reference images: `reference_images[]` (max 5, jpeg/png/webp, 4MB each).
 
+Optional `payment_method`:
+- `cod` — confirms the booking immediately and **sends it straight to the vendor** (no admin “Send to designer” step). Requires COD enabled in admin settings.
+- Razorpay / online — create booking first, then `POST /v1/payment/.../pay`. After payment succeeds, the booking is auto-sent to the vendor.
+
 **Multi-item cart checkout** (`multipart/form-data` when uploading images):
 
 | Field | Notes |

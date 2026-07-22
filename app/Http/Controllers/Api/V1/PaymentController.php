@@ -156,8 +156,8 @@ class PaymentController extends ApiController
                 'remaining_amount' => (float) $after['remaining_amount'],
             ],
         ], in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
-            ? 'Advance paid successfully. Remaining amount is due on booking completion.'
-            : 'Payment successful.');
+            ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
+            : 'Payment successful. Booking sent to the designer.');
     }
 
     public function checkoutSummary(Request $request, CheckoutOrder $checkoutOrder): JsonResponse
@@ -277,8 +277,8 @@ class PaymentController extends ApiController
                 'remaining_amount' => (float) $after['remaining_amount'],
             ],
         ], in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
-            ? 'Advance paid successfully. Remaining amount is due on booking completion.'
-            : 'Payment successful.');
+            ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
+            : 'Payment successful. Booking sent to the designer.');
     }
 
     /**

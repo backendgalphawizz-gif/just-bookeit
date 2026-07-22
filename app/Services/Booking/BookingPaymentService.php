@@ -132,7 +132,10 @@ class BookingPaymentService
             'payment_status' => $nextStatus,
             'payment_method' => $paymentMethod,
             'paid_at' => now(),
-            'status' => $order->status === 'new' ? 'pending_acceptance' : $order->status,
+            // Auto-dispatch to vendor after COD or Razorpay — no admin "Send to designer" step.
+            'status' => in_array($order->status, ['new', 'pending_acceptance'], true)
+                ? 'pending_acceptance'
+                : $order->status,
         ]);
 
         $order = $order->fresh(['vendor', 'category', 'orderItems.portfolioItem', 'portfolioItem']);
@@ -169,7 +172,9 @@ class BookingPaymentService
                 'payment_status' => $nextStatus,
                 'payment_method' => $paymentMethod,
                 'paid_at' => now(),
-                'status' => $checkout->status === 'new' ? 'pending_acceptance' : $checkout->status,
+                'status' => in_array($checkout->status, ['new', 'pending_acceptance'], true)
+                    ? 'pending_acceptance'
+                    : $checkout->status,
             ]);
 
             $allocated = 0.0;
@@ -200,7 +205,10 @@ class BookingPaymentService
                     'payment_status' => $subStatus,
                     'payment_method' => $paymentMethod,
                     'paid_at' => now(),
-                    'status' => $subOrder->status === 'new' ? 'pending_acceptance' : $subOrder->status,
+                    // Each vendor sub-order is sent directly for designer acceptance.
+                    'status' => in_array($subOrder->status, ['new', 'pending_acceptance'], true)
+                        ? 'pending_acceptance'
+                        : $subOrder->status,
                 ]);
 
                 if ($subStatus === self::STATUS_SUCCESS) {

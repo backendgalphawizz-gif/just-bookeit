@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderReview;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
+use App\Services\Booking\BookingPaymentService;
 use App\Services\Booking\BookingPricingService;
 use App\Services\Checkout\CheckoutService;
 use App\Services\Customer\CartService;
@@ -18,16 +19,20 @@ use App\Support\Api\CustomerBookingTab;
 use App\Support\BookingMeasurementSupport;
 use App\Support\CheckoutItemPayloadSupport;
 use App\Support\CodeGenerator;
+use App\Support\RazorpayPaymentSupport;
 use App\Support\StoresUploadedFiles;
+use App\Models\PlatformSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use InvalidArgumentException;
 
 class BookingController extends ApiController
 {
     public function __construct(
         protected CartService $cart,
-        protected CheckoutService $checkout
+        protected CheckoutService $checkout,
+        protected BookingPaymentService $payments
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -160,6 +165,8 @@ class BookingController extends ApiController
             'measurement_id' => ['nullable', 'string'],
             'reference_images' => ['nullable', 'array', 'max:5'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            // Optional: COD can be confirmed at place-order time and sent straight to the vendor.
+            'payment_method' => ['nullable', 'string', RazorpayPaymentSupport::allowedMethodRule()],
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
         $item = PortfolioItem::query()
@@ -269,10 +276,27 @@ class BookingController extends ApiController
 
         $order->load(['vendor', 'category', 'customer']);
 
+        $paymentSummary = BookingPricingService::fromOrder($order);
+        $message = 'Booking created. Proceed to payment.';
+
+        if (($data['payment_method'] ?? null) === 'cod') {
+            if (! (bool) PlatformSetting::get('enable_cod', false)) {
+                return $this->error('Cash on delivery is not available.', 422);
+            }
+
+            try {
+                $order = $this->payments->payOrder($order, 'cod');
+                $paymentSummary = $this->payments->summaryForOrder($order);
+                $message = 'Booking placed with cash on delivery. Sent to the designer.';
+            } catch (InvalidArgumentException $e) {
+                return $this->error($e->getMessage(), 422);
+            }
+        }
+
         return $this->success([
-            'booking' => CustomerApiPresenter::bookingDetail($order),
-            'payment_summary' => BookingPricingService::fromOrder($order),
-        ], 'Booking created. Proceed to payment.', 201);
+            'booking' => CustomerApiPresenter::bookingDetail($order->fresh(['vendor', 'category', 'customer', 'dispute', 'review', 'orderItems'])),
+            'payment_summary' => $paymentSummary,
+        ], $message, 201);
     }
 
     protected function storeMultiItemCheckout(Request $request, Customer $customer): JsonResponse
@@ -300,6 +324,7 @@ class BookingController extends ApiController
             'items_json' => ['nullable'], // JSON string or already-decoded array
             'cart_items' => ['nullable'],
             'line_items' => ['nullable'],
+            'payment_method' => ['nullable', 'string', RazorpayPaymentSupport::allowedMethodRule()],
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
         if (! $request->filled('items') && ! $request->filled('items_json') && ! $request->filled('cart_items') && ! $request->filled('line_items')) {
@@ -323,11 +348,26 @@ class BookingController extends ApiController
 
         try {
             $checkout = $this->checkout->createFromCart($customer, $data, $request);
+            $message = 'Checkout created. Proceed to payment.';
+
+            if (($data['payment_method'] ?? null) === 'cod') {
+                if (! (bool) PlatformSetting::get('enable_cod', false)) {
+                    return $this->error('Cash on delivery is not available.', 422);
+                }
+
+                $checkout = $this->payments->payCheckout($checkout, 'cod');
+                $message = 'Order placed with cash on delivery. Sent to the designers.';
+            }
 
             return $this->success([
-                'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout),
+                'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout->fresh([
+                    'subOrders.vendor',
+                    'subOrders.category',
+                    'subOrders.orderItems',
+                ])),
                 'booking_type' => 'multi_vendor_checkout',
-            ], 'Checkout created. Proceed to payment.', 200);
+                'payment_summary' => $this->payments->summaryForCheckout($checkout),
+            ], $message, 200);
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 422);
         }

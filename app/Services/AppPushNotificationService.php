@@ -18,6 +18,12 @@ class AppPushNotificationService
 
     public function orderCreated(Order $order): void
     {
+        // Vendor is notified only after payment (COD / Razorpay) when the booking
+        // is auto-dispatched for acceptance — not while payment is still pending.
+    }
+
+    public function orderDispatchedToVendor(Order $order): void
+    {
         $order->loadMissing(['customer', 'vendor']);
 
         if (! $order->vendor) {
@@ -29,8 +35,8 @@ class AppPushNotificationService
         $this->safeSend(fn () => $this->push->sendToVendor(
             $order->vendor,
             'New booking received',
-            "{$customerName} placed order {$order->order_number} for {$order->item_title}.",
-            $this->orderPayload($order)
+            "{$customerName} placed order {$order->order_number} for {$order->item_title}. Please accept or reject.",
+            $this->orderPayload($order, ['status' => $order->status])
         ));
     }
 
@@ -43,15 +49,6 @@ class AppPushNotificationService
                 $order->customer,
                 'Payment successful',
                 "Payment for order {$order->order_number} was completed successfully.",
-                $this->orderPayload($order)
-            ));
-        }
-
-        if ($order->vendor) {
-            $this->safeSend(fn () => $this->push->sendToVendor(
-                $order->vendor,
-                'Payment received',
-                "Payment confirmed for order {$order->order_number}.",
                 $this->orderPayload($order)
             ));
         }
