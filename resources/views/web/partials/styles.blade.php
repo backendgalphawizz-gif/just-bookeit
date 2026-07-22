@@ -2041,12 +2041,20 @@ a { color: inherit; }
     display: none;
 }
 .service-card {
-    min-width: 240px;
-    width: clamp(220px, 26vw, 280px);
+    flex: 0 0 clamp(220px, 28vw, 300px);
+    min-width: clamp(220px, 28vw, 300px);
+    width: clamp(220px, 28vw, 300px);
     flex-shrink: 0;
     text-decoration: none;
     color: inherit;
     display: block;
+}
+
+/* Keep service tiles the same footprint as shop-by-category tiles */
+.service-card .jbw-tile {
+    aspect-ratio: 4 / 4;
+    min-height: 0;
+    width: 100%;
 }
 
 /* When the slider has only a few items, center them and disable scroll behavior on
@@ -2054,15 +2062,16 @@ a { color: inherit; }
 @media (min-width: 720px) {
     .service-slider.slider-is-few,
     .category-slider.slider-is-few {
-        justify-content: start;
+        justify-content: center;
         overflow-x: visible;
         flex-wrap: wrap;
         row-gap: 1.5rem;
     }
     .service-slider.slider-is-few .service-card,
     .category-slider.slider-is-few .category-card {
-        width: clamp(220px, 22vw, 260px);
-        flex: 0 0 auto;
+        width: clamp(220px, 28vw, 300px);
+        min-width: clamp(220px, 28vw, 300px);
+        flex: 0 0 clamp(220px, 28vw, 300px);
     }
 }
 
@@ -2294,6 +2303,16 @@ a { color: inherit; }
 
 .designers-header > div {
     text-align: left;
+}
+
+.designers-header.is-centered {
+    justify-content: center;
+    text-align: center;
+}
+
+.designers-header.is-centered > div {
+    text-align: center;
+    width: 100%;
 }
 
 .designer-nav {

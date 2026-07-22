@@ -139,16 +139,16 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
 </section>
 @php
     $servicesCount = $services->count();
-    $servicesFewClass = $servicesCount > 0 && $servicesCount <= 4 ? ' slider-is-few' : '';
+    $servicesFewClass = ($servicesCount === 0 || $servicesCount <= 4) ? ' slider-is-few' : '';
 @endphp
 <section class="jbw-section-band">
     <div class="jbw-container">
-        <div class="jbw-section-head designers-header">
+        <div class="jbw-section-head designers-header{{ ($servicesCount === 0 || $servicesCount <= 4) ? ' is-centered' : '' }}">
             <div>
                 <span class="jbw-eyebrow">What we offer</span>
                 <h2 class="jbw-section-title">Our services</h2>
             </div>
-            @if ($servicesCount === 0 || $servicesCount > 4)
+            @if ($servicesCount > 4)
             <div class="designer-nav">
                 <button class="designer-arrow prev" onclick="slideServices(-1)" aria-label="Previous">&#10094;</button>
                 <button class="designer-arrow next" onclick="slideServices(1)" aria-label="Next">&#10095;</button>
@@ -164,7 +164,7 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
                          style="cursor: pointer;"
                          onclick="openGenderModal('{{ route('web.services.index', ['service' => $service->id]) }}')">
 
-                        <div class="jbw-tile">
+                        <div class="jbw-tile jbw-tile--category">
                             <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}"
                                  alt="{{ $service->name }}">
                         </div>
@@ -179,7 +179,7 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
                              role="button" tabindex="0"
                              style="cursor: pointer;"
                              onclick="openGenderModal('{{ route('web.services.index') }}')">
-                            <div class="jbw-tile">
+                            <div class="jbw-tile jbw-tile--category">
                                 <img src="{{ $serviceFallbacks[$i] }}" alt="{{ $svc[0] }}">
                             </div>
 
@@ -221,16 +221,16 @@ $genderModalCategories = $shopCategories->keyBy(fn ($category) => strtolower($ca
 {{-- ── Shop by category ──────────────────────────────────────────── --}}
 @php
     $categoriesCount = $shopCategories->count();
-    $categoriesFewClass = $categoriesCount > 0 && $categoriesCount <= 4 ? ' slider-is-few' : '';
+    $categoriesFewClass = ($categoriesCount === 0 || $categoriesCount <= 4) ? ' slider-is-few' : '';
 @endphp
 <section class="jbw-section-band">
     <div class="jbw-container">
-        <div class="jbw-section-head designers-header">
+        <div class="jbw-section-head designers-header{{ ($categoriesCount === 0 || $categoriesCount <= 4) ? ' is-centered' : '' }}">
             <div>
                 <span class="jbw-eyebrow">Collections</span>
                 <h2 class="jbw-section-title">Shop by category</h2>
             </div>
-            @if ($categoriesCount === 0 || $categoriesCount > 4)
+            @if ($categoriesCount > 4)
             <div class="designer-nav">
                 <button class="designer-arrow prev" onclick="slideCategories(-1)" aria-label="Previous">
                     &#10094;
