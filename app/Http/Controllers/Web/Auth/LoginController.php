@@ -8,6 +8,7 @@ use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\StoresUploadedFiles;
+use App\Support\WebLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -73,9 +74,56 @@ class LoginController extends WebController
             return redirect()->route('web.login')->with('error', 'Start by entering your mobile number.');
         }
 
+        $otpSession = $request->session()->get('web_otp');
+        $cooldown = $this->otpResendCooldownSeconds();
+        $elapsed = now()->timestamp - (int) ($otpSession['sent_at'] ?? 0);
+
         return view('web.auth.verify-otp', [
-            'otpSession' => $request->session()->get('web_otp'),
+            'otpSession' => $otpSession,
+            'resendIn' => max(0, $cooldown - $elapsed),
         ]);
+    }
+
+    public function resendOtp(Request $request): RedirectResponse
+    {
+        $otpSession = $request->session()->get('web_otp');
+
+        if (! $otpSession) {
+            return redirect()->route('web.login')->with('error', 'Session expired. Enter your mobile number again.');
+        }
+
+        $cooldown = $this->otpResendCooldownSeconds();
+        $elapsed = now()->timestamp - (int) ($otpSession['sent_at'] ?? 0);
+
+        if ($elapsed < $cooldown) {
+            $wait = $cooldown - $elapsed;
+
+            return back()->with('error', 'Please wait '.$wait.' seconds before resending OTP.');
+        }
+
+        try {
+            $payload = $this->otp->send(
+                OtpService::ACTOR_CUSTOMER,
+                $otpSession['mobile'],
+                $otpSession['type']
+            );
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return back()->withErrors($exception->errors());
+        }
+
+        $request->session()->put('web_otp', [
+            'mobile' => $payload['mobile'],
+            'type' => $otpSession['type'],
+            'sent_at' => now()->timestamp,
+        ]);
+
+        if (config('app.debug') && isset($payload['otp'])) {
+            $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
+        }
+
+        return redirect()
+            ->route('web.verify-otp')
+            ->with('success', 'A new OTP has been sent to your mobile number.');
     }
 
     public function verifyOtp(Request $request): RedirectResponse
@@ -110,6 +158,7 @@ class LoginController extends WebController
             Auth::guard('customer')->login($customer, true);
             $request->session()->forget('web_otp');
             $request->session()->regenerate();
+            WebLocation::bootstrapFromIp($request);
 
             return redirect()->intended(route('web.home'))->with('success', 'Welcome back!');
         }
@@ -184,6 +233,7 @@ class LoginController extends WebController
         Auth::guard('customer')->login($customer, true);
         $request->session()->forget('web_register');
         $request->session()->regenerate();
+        WebLocation::bootstrapFromIp($request);
 
         return redirect()
             ->intended(route('web.profile.measurements.create'))
@@ -224,5 +274,10 @@ class LoginController extends WebController
         $request->session()->regenerateToken();
 
         return redirect()->route('web.home')->with('success', 'Logged out successfully.');
+    }
+
+    protected function otpResendCooldownSeconds(): int
+    {
+        return max(1, (int) config('api.otp_resend_cooldown_seconds', 48));
     }
 }

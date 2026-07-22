@@ -3222,6 +3222,46 @@ a { color: inherit; }
     margin: 0;
 }
 
+.jbw-booking-empty {
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    padding: clamp(2rem, 5vw, 3.25rem) 1.25rem;
+    text-align: center;
+    border: 1px dashed #eadfd8;
+    border-radius: 1.25rem;
+    background:
+        radial-gradient(circle at top right, rgb(242 81 35 / 0.06), transparent 42%),
+        linear-gradient(180deg, #fffaf7 0%, #ffffff 70%);
+}
+
+.jbw-booking-empty-art {
+    width: min(100%, 17.5rem);
+    margin-bottom: 0.25rem;
+}
+
+.jbw-booking-empty-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.jbw-booking-empty-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.jbw-booking-empty-text {
+    margin: 0 auto 0.5rem;
+    max-width: 28rem;
+    color: var(--c-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+}
+
 .jbw-booking-list-pagination {
     margin-top: 0.5rem;
 }
@@ -4010,9 +4050,31 @@ a { color: inherit; }
 .jbw-auth-footer a { color: var(--c-primary); font-weight: 700; text-decoration: none; }
 .jbw-auth-footer a:hover { text-decoration: underline; }
 
-.jbw-auth-resend { text-align: center; margin-top: 1.25rem; font-size: 0.875rem; color: #9ca3af; }
-.jbw-auth-resend a { color: #6b7280; text-decoration: none; margin-right: 0.375rem; }
-.jbw-auth-timer { color: var(--c-primary); font-weight: 700; }
+.jbw-auth-resend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+    color: #9ca3af;
+}
+.jbw-auth-resend-btn {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--c-primary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.jbw-auth-resend-btn.is-disabled,
+.jbw-auth-resend-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.jbw-auth-timer { color: var(--c-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .jbw-otp-row {
     display: flex; justify-content: center; align-items: center;

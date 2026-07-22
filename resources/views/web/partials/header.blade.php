@@ -26,12 +26,6 @@
             @if ($headerRegistered)
                 <a href="{{ $headerChatRedirect }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
             @endif
-            @if ($headerLoggedIn && ! $headerRegistered)
-                <a href="{{ route('web.register', ['redirect' => $headerChatRedirect]) }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
-            @endif
-            @if (! $headerLoggedIn)
-                <a href="{{ route('web.login', ['redirect' => $headerChatRedirect]) }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.chat.*')])>Chat</a>
-            @endif
 
             <a href="{{ route('web.contact') }}" @class(['jbw-nav-link', 'is-active' => request()->routeIs('web.contact')])>Contact Us</a>
         </nav>
@@ -48,7 +42,9 @@
                         </svg>
                     </button>
                 </form>
-                @include('web.partials.notification-picker')
+                @if ($headerRegistered)
+                    @include('web.partials.notification-picker')
+                @endif
 
                 @if ($headerRegistered)
                     <a href="{{ route('web.cart.index') }}" class="jbw-icon-btn jbw-header-cart-btn" aria-label="Cart" style="position:relative">
@@ -128,16 +124,6 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
                     {{ $headerNotificationLabel }}
                 </button>
-            @elseif ($headerLoggedIn)
-                <a href="{{ route('web.register', ['redirect' => route('web.notifications.index')]) }}" class="jbw-mnav-link" x-on:click="mobileOpen=false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
-                    Notifications
-                </a>
-            @else
-                <a href="{{ route('web.login', ['redirect' => route('web.notifications.index')]) }}" class="jbw-mnav-link" x-on:click="mobileOpen=false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
-                    Notifications
-                </a>
             @endif
 
             <a href="{{ route('web.home') }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.home')]) x-on:click="mobileOpen=false">
@@ -168,20 +154,6 @@
                     My bookings
                 </a>
                 <a href="{{ $headerChatRedirect }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.chat.*')]) x-on:click="mobileOpen=false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    Chat
-                </a>
-            @endif
-
-            @if ($headerLoggedIn && ! $headerRegistered)
-                <a href="{{ route('web.register', ['redirect' => $headerChatRedirect]) }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.chat.*')]) x-on:click="mobileOpen=false">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    Chat
-                </a>
-            @endif
-
-            @if (! $headerLoggedIn)
-                <a href="{{ route('web.login', ['redirect' => $headerChatRedirect]) }}" @class(['jbw-mnav-link', 'is-active' => request()->routeIs('web.chat.*')]) x-on:click="mobileOpen=false">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     Chat
                 </a>

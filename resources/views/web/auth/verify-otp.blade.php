@@ -17,27 +17,46 @@
             </button>
         </form>
 
-        <p class="jbw-auth-resend">
-            <a  href="{{ $otpSession['type'] === 'register' ? route('web.register') : route('web.login') }}" id="resend-link">Request new code</a>
-            <span id="resend-timer" class="jbw-auth-timer">00:48</span>
-        </p>
-      <a href="{{ route('web.login') }}" class="jbw-auth-footer textmanage">
-    <p> <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2"
-         stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"></path>
-        <path d="M12 19L5 12L12 5"></path>
-    </svg> Back to Login</p>
-</a>
+        <div class="jbw-auth-resend">
+            <form method="POST" action="{{ route('web.otp.resend') }}" id="resend-form">
+                @csrf
+                <button
+                    type="submit"
+                    class="jbw-auth-resend-btn"
+                    id="resend-btn"
+                    @if (($resendIn ?? 0) > 0) disabled @endif
+                >
+                    Resend OTP
+                </button>
+            </form>
+            <span id="resend-timer" class="jbw-auth-timer" @if (($resendIn ?? 0) <= 0) hidden @endif>
+                {{ sprintf('%02d:%02d', intdiv((int) ($resendIn ?? 0), 60), ((int) ($resendIn ?? 0)) % 60) }}
+            </span>
+        </div>
 
-<a href="{{ url('/') }}" class="jbw-auth-footer textmanage">
-    <p> <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2"
-         stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"></path>
-        <path d="M12 19L5 12L12 5"></path>
-    </svg> Go To Home </p>
-</a>
+        <a href="{{ route('web.login') }}" class="jbw-auth-footer textmanage">
+            <p>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19L5 12L12 5"></path>
+                </svg>
+                Back to Login
+            </p>
+        </a>
+
+        <a href="{{ url('/') }}" class="jbw-auth-footer textmanage">
+            <p>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <path d="M12 19L5 12L12 5"></path>
+                </svg>
+                Go To Home
+            </p>
+        </a>
     </x-web.auth-shell>
 
     <script>
@@ -45,9 +64,9 @@
             const boxes = Array.from(document.querySelectorAll('[data-otp-box]'));
             const hidden = document.getElementById('otp-combined');
             const form = document.getElementById('otp-form');
+            const resendBtn = document.getElementById('resend-btn');
             const timerEl = document.getElementById('resend-timer');
-            const resendLink = document.getElementById('resend-link');
-            let seconds = 48;
+            let seconds = {{ (int) ($resendIn ?? 0) }};
 
             boxes.forEach((box, index) => {
                 box.addEventListener('input', () => {
@@ -71,17 +90,24 @@
                 }
             });
 
+            if (!resendBtn || !timerEl || seconds <= 0) {
+                return;
+            }
+
+            resendBtn.disabled = true;
+            resendBtn.classList.add('is-disabled');
+
             const tick = setInterval(() => {
                 seconds = Math.max(0, seconds - 1);
                 timerEl.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+
                 if (seconds === 0) {
                     clearInterval(tick);
-                    resendLink.style.pointerEvents = 'auto';
-                    resendLink.style.opacity = '1';
+                    resendBtn.disabled = false;
+                    resendBtn.classList.remove('is-disabled');
+                    timerEl.hidden = true;
                 }
             }, 1000);
-            resendLink.style.pointerEvents = 'none';
-            resendLink.style.opacity = '0.5';
         })();
     </script>
 @endsection

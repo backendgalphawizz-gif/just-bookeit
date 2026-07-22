@@ -7,7 +7,6 @@ use App\Models\Driver;
 use App\Models\OtpVerification;
 use App\Models\Vendor;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -58,8 +57,8 @@ class OtpService
         OtpVerification::query()->create([
             'actor_type' => $actorType,
             'mobile' => $mobile,
-            'otp_hash' => Hash::make($otp),
-            'expires_at' => now()->addMinutes((int) config('api.otp_ttl_minutes', 5)),
+            'otp' => $otp,
+            'expires_at' => now('Asia/Kolkata')->addMinutes((int) config('api.otp_ttl_minutes', 5)),
         ]);
 
         $isRegistered = $this->isRegistered($actorType, $mobile);
@@ -97,7 +96,7 @@ class OtpService
             ->latest('id')
             ->first();
 
-        if (! $record || $record->expires_at->isPast()) {
+        if (! $record || $record->expires_at->timezone('Asia/Kolkata')->isPast()) {
             throw ValidationException::withMessages(['otp' => ['OTP expired. Request a new code.']]);
         }
 
@@ -105,12 +104,12 @@ class OtpService
             throw ValidationException::withMessages(['otp' => ['Too many attempts. Request a new OTP.']]);
         }
 
-        if (! Hash::check($otp, $record->otp_hash)) {
+        if (! hash_equals((string) $record->otp, (string) $otp)) {
             $record->increment('attempts');
             throw ValidationException::withMessages(['otp' => ['Invalid OTP.']]);
         }
 
-        $record->update(['verified_at' => now()]);
+        $record->update(['verified_at' => now('Asia/Kolkata')]);
 
         if ($type === self::TYPE_LOGIN) {
             $actor = $this->findActor($actorType, $mobile);

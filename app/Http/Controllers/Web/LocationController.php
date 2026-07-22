@@ -6,6 +6,7 @@ use App\Models\City;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Support\WebLocation;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,5 +50,52 @@ class LocationController extends WebController
         }
 
         return back()->with('success', 'Location updated.');
+    }
+
+    public function detect(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+        ]);
+
+        $payload = null;
+        $source = 'ip';
+
+        if (isset($data['latitude'], $data['longitude'])) {
+            $city = WebLocation::resolveCityFromCoordinates(
+                (float) $data['latitude'],
+                (float) $data['longitude']
+            );
+
+            if ($city) {
+                $payload = WebLocation::fromCity($city);
+                $source = 'gps';
+            }
+        }
+
+        $payload ??= WebLocation::payloadFromIp($request);
+
+        if (! $payload) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Could not detect your city. Please choose one from the list.',
+            ], 422);
+        }
+
+        WebLocation::put($request, $payload);
+
+        $customer = Auth::guard('customer')->user();
+        if ($customer instanceof Customer && ! $customer->is_guest && filled($payload['city'] ?? null)) {
+            $customer->update(['city' => $payload['city']]);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'label' => $payload['label'],
+            'city_id' => $payload['city_id'] ?? null,
+            'city' => $payload['city'] ?? null,
+            'source' => $source,
+        ]);
     }
 }
