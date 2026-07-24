@@ -4588,6 +4588,39 @@ a { color: inherit; }
 .jbw-booking-track-label { font-weight: 700; font-size: 0.875rem; margin: 0; }
 .jbw-booking-track-time { font-size: 0.75rem; color: var(--c-muted); margin: 0.125rem 0 0; }
 .jbw-booking-track-content { min-width: 0; padding-top: 0.1rem; }
+.jbw-item-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+.jbw-item-track + .jbw-item-track {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--c-border, #e2e8f0);
+}
+.jbw-item-track-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+.jbw-item-track-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+.jbw-item-track-status {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    text-align: right;
+}
+.jbw-item-track-driver {
+    margin: 0 0 0.65rem;
+    font-size: 0.75rem;
+    color: var(--c-muted);
+}
 
 .jbw-payment-lines { display: grid; gap: 0.5rem; font-size: 0.875rem; }
 .jbw-payment-lines div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }

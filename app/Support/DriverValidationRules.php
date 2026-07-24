@@ -25,7 +25,7 @@ class DriverValidationRules
     public static function deliveryComplete(): array
     {
         return [
-            'delivery_otp' => ['required', 'digits:4'],
+            'item_id' => ['nullable', 'integer', 'min:1'],
             'delivery_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }

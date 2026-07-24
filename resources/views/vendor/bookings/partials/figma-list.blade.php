@@ -4,18 +4,14 @@
     $tabs = [
         '' => 'All',
         'new' => 'New',
-        'accepted' => 'Accepted',
-        'in_progress' => 'In transit',
-        'delivered' => 'Delivered',
-        'returned' => 'Returned',
+        'pending' => 'Pending',
+        'complete' => 'Complete',
     ];
     $statusFilterOptions = [
         '' => 'Status',
         'new' => 'New',
-        'accepted' => 'Accepted',
-        'in_progress' => 'In transit',
-        'delivered' => 'Delivered',
-        'returned' => 'Returned',
+        'pending' => 'Pending',
+        'complete' => 'Complete',
         'cancelled' => 'Cancelled',
     ];
     $listRoute = $listRoute ?? route('vendor.bookings.index');
@@ -124,13 +120,12 @@
             <tbody>
                 @forelse ($orders as $order)
                     @php
-                        $statusSelectClass = match ($order->status) {
-                            'new', 'pending_acceptance' => 'vp-status-select--new',
-                            'accepted' => 'vp-status-select--accepted',
-                            'in_progress', 're_intransit' => 'vp-status-select--transit',
-                            'delivered', 're_delivered' => 'vp-status-select--done',
-                            'returned' => 'vp-status-select--returned',
-                            'cancelled' => 'vp-status-select--cancelled',
+                        $listStatus = \App\Support\Api\VendorBookingListStatus::resolve($order);
+                        $statusSelectClass = match ($listStatus['status']) {
+                            'new' => 'vp-status-select--new',
+                            'processing', 'pending' => 'vp-status-select--accepted',
+                            'complete' => 'vp-status-select--done',
+                            'cancelled' => 'vp-status-select--rejected',
                             default => 'vp-status-select--accepted',
                         };
                         $serviceMeta = '—';
@@ -192,11 +187,11 @@
                             </div>
                         </td>
                         <td>
-                            <span class="vp-status-pill {{ $statusSelectClass }}">{{ $order->statusLabel() }}</span>
+                            <span class="vp-status-pill {{ $statusSelectClass }}">{{ $listStatus['status_label'] }}</span>
                         </td>
                         <td>
                             <div class="vp-actions vp-actions--bookings">
-                                @if (in_array($order->status, ['new', 'pending_acceptance'], true))
+                                @if ($listStatus['status'] === 'new')
                                     <form method="POST" action="{{ route('vendor.bookings.accept', $order) }}">@csrf
                                         <button type="submit" class="vp-btn vp-btn--primary vp-btn--sm">Accept</button>
                                     </form>

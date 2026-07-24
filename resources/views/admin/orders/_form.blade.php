@@ -98,6 +98,7 @@
 
 <p class="jb-form-section-title sm:col-span-2">Damage & return</p>
 @include('admin.partials.form-input', ['label' => 'Damage note', 'name' => 'damage_note', 'value' => old('damage_note', $order?->damage_note), 'placeholder' => 'e.g. Missing parts'])
+@include('admin.partials.form-input', ['label' => 'Damage amount (₹)', 'name' => 'damage_amount', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'value' => old('damage_amount', $order?->damage_amount)])
 @include('admin.partials.form-input', ['label' => 'Damage deduction (%)', 'name' => 'damage_deduct_percent', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('damage_deduct_percent', $order?->damage_deduct_percent)])
 
 <p class="jb-form-section-title sm:col-span-2">Images</p>

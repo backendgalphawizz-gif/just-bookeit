@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\OrderDispatchSupport;
+use App\Support\OrderItemStatusSupport;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,7 +12,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
-    public const IN_PROGRESS_STATUSES = ['accepted', 'in_progress', 're_intransit', 'rework', 'pending_acceptance'];
+    public const IN_PROGRESS_STATUSES = [
+        'accepted',
+        'in_progress',
+        'rental_active',
+        're_intransit',
+        'rework',
+        'pending_acceptance',
+    ];
 
     public const STATUSES = [
         'new',
@@ -19,10 +27,12 @@ class Order extends Model
         'accepted',
         'in_progress',
         'delivered',
-        'returned',
+        'rental_active',
         'rework',
         're_intransit',
+        'returned',
         're_delivered',
+        'completed',
         'cancelled',
         'refunded',
     ];
@@ -32,12 +42,14 @@ class Order extends Model
         'new' => 'New',
         'pending_acceptance' => 'Pending acceptance',
         'accepted' => 'Accepted',
-        'in_progress' => 'In progress',
+        'in_progress' => 'In Transit',
         'delivered' => 'Delivered',
-        'returned' => 'Returned',
-        'rework' => 'Rework',
-        're_intransit' => 'Re-in transit',
+        'rental_active' => 'Rental Active',
+        'rework' => 'Rework Requested',
+        're_intransit' => 'Return In Transit',
+        'returned' => 'Returned to Vendor',
         're_delivered' => 'Re-delivered',
+        'completed' => 'Completed',
         'cancelled' => 'Cancelled',
         'refunded' => 'Refunded',
     ];
@@ -89,6 +101,7 @@ class Order extends Model
         'cancellation_reason',
         'admin_notes',
         'damage_note',
+        'damage_amount',
         'damage_deduct_percent',
         'measure_height_cm',
         'measure_chest_cm',
@@ -126,6 +139,7 @@ class Order extends Model
             'amount_paid' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'tax_amount' => 'decimal:2',
+            'damage_amount' => 'decimal:2',
             'damage_deduct_percent' => 'decimal:2',
             'quantity' => 'integer',
             'measure_height_cm' => 'integer',
@@ -159,14 +173,20 @@ class Order extends Model
                 OrderDispatchSupport::prepareForTransit($order);
             }
 
+            // Admin/system driver assignment is treated as accepted — no separate driver accept step.
             if ($order->isDirty('driver_id') && ! $order->isDirty('driver_delivery_status')) {
-                $order->driver_delivery_status = null;
-                $order->driver_assigned_at = null;
-                $order->driver_pickup_at = null;
-                $order->driver_scheduled_for = null;
-                $order->driver_rescheduled_at = null;
-
-                if ($order->driver_id !== null) {
+                if ($order->driver_id === null) {
+                    $order->driver_delivery_status = null;
+                    $order->driver_assigned_at = null;
+                    $order->driver_pickup_at = null;
+                    $order->driver_scheduled_for = null;
+                    $order->driver_rescheduled_at = null;
+                } else {
+                    $order->driver_delivery_status = self::DRIVER_STATUS_ACCEPTED;
+                    $order->driver_assigned_at = $order->driver_assigned_at ?? now();
+                    $order->driver_pickup_at = null;
+                    $order->driver_scheduled_for = null;
+                    $order->driver_rescheduled_at = null;
                     $order->driver_rejection_reason = null;
                 }
             }
@@ -349,6 +369,26 @@ class Order extends Model
 
     public function damageDeduction(): float
     {
+        $this->loadMissing('orderItems');
+
+        if ($this->orderItems->isNotEmpty()) {
+            $hasItemDamage = $this->orderItems->contains(
+                fn (OrderItem $item) => $item->hasDamageRecord()
+            );
+
+            if ($hasItemDamage) {
+                return round(
+                    (float) $this->orderItems->sum(fn (OrderItem $item) => $item->damageDeduction()),
+                    2
+                );
+            }
+        }
+
+        // Prefer exact amount recorded by the vendor (never recompute from percent).
+        if ($this->damage_amount !== null) {
+            return round((float) $this->damage_amount, 2);
+        }
+
         if (! $this->damage_deduct_percent) {
             return 0;
         }
@@ -642,17 +682,64 @@ class Order extends Model
         ];
     }
 
-    /** @return array<int, array{label: string, time: ?string, state: string}> */
-    public function trackBookingSteps(): array
+    /**
+     * Status used for the booking-level tracking timeline.
+     * Uses the furthest (most advanced) active item so mixed bookings do not
+     * stay stuck on a stale booking.status or an earlier dispatch leg
+     * (e.g. one item In Transit must not hide another on Return In Transit).
+     * Prefer per-item trackSteps() when rendering multi-item bookings.
+     */
+    public function statusForTracking(): string
     {
+        $this->loadMissing('orderItems');
+        $active = $this->orderItems->where('status', '!=', OrderItem::STATUS_CANCELLED)->values();
+
+        if ($active->isEmpty()) {
+            return $this->status;
+        }
+
+        $best = $this->status;
+        $bestRank = OrderItemStatusSupport::STATUS_RANK[$best] ?? -1;
+
+        foreach ($active as $item) {
+            $trackStatus = $item->status;
+            // Premature "returned" (no return pickup yet) still tracks as Return In Transit.
+            if ($trackStatus === 'returned' && blank($item->driver_pickup_at)) {
+                $trackStatus = 're_intransit';
+            }
+
+            $rank = OrderItemStatusSupport::STATUS_RANK[$trackStatus] ?? -1;
+            if ($rank > $bestRank) {
+                $bestRank = $rank;
+                $best = $trackStatus;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * @param  string|null  $forStatus  Override status (e.g. line-item status for item-wise tracking).
+     * @param  bool|null  $asRental  Override rental vs designer track (per line item). Null = booking isRental().
+     * @return array<int, array{label: string, time: ?string, state: string}>
+     */
+    public function trackBookingSteps(?string $forStatus = null, ?bool $asRental = null): array
+    {
+        $status = $forStatus ?? $this->statusForTracking();
+        $isRental = $asRental ?? $this->isRental();
+
         $steps = [
-            ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'delivered'], 'label' => 'Booking placed', 'min' => 'new'],
-            ['keys' => ['pending_acceptance', 'accepted', 'in_progress', 'delivered'], 'label' => 'Accepted by designer', 'min' => 'pending_acceptance'],
-            ['keys' => ['in_progress', 'delivered'], 'label' => 'In progress', 'min' => 'in_progress'],
-            ['keys' => ['delivered'], 'label' => 'Delivered', 'min' => 'delivered'],
+            ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'delivered', 'rental_active', 'rework', 're_intransit', 'returned', 're_delivered', 'completed'], 'label' => 'Booking placed', 'min' => 'new'],
+            ['keys' => ['accepted', 'in_progress', 'delivered', 'rental_active', 'rework', 're_intransit', 'returned', 're_delivered', 'completed'], 'label' => 'Accepted', 'min' => 'accepted'],
+            ['keys' => ['in_progress', 'delivered', 'rental_active', 'rework', 're_intransit', 'returned', 're_delivered', 'completed'], 'label' => 'In Transit', 'min' => 'in_progress'],
+            ['keys' => ['delivered', 'rental_active', 'rework', 're_intransit', 'returned', 're_delivered', 'completed'], 'label' => 'Delivered', 'min' => 'delivered'],
+            ['keys' => ['rental_active', 'rework', 're_intransit', 'returned', 're_delivered', 'completed'], 'label' => 'Rental Active', 'min' => 'rental_active'],
+            ['keys' => ['re_intransit', 'returned', 're_delivered', 'completed'], 'label' => 'Return In Transit', 'min' => 're_intransit'],
+            ['keys' => ['returned', 're_delivered', 'completed'], 'label' => 'Returned to Vendor', 'min' => 'returned'],
+            ['keys' => ['completed'], 'label' => 'Completed', 'min' => 'completed'],
         ];
 
-        if (in_array($this->status, ['cancelled', 'refunded'], true)) {
+        if (in_array($status, ['cancelled', 'refunded'], true)) {
             return array_map(fn (array $step): array => [
                 'label' => $step['label'],
                 'time' => null,
@@ -660,28 +747,54 @@ class Order extends Model
             ], $steps);
         }
 
-        $rank = array_flip(self::STATUSES);
-        $current = $rank[$this->status] ?? 0;
+        if ($isRental) {
+            // Rental: Delivered → Rental Active → Return In Transit → Returned → Completed
+            // No Rework / Re-delivered on this track.
+            $steps = array_values(array_filter(
+                $steps,
+                fn (array $step) => ! in_array($step['min'], ['rework', 're_delivered'], true)
+            ));
+        } else {
+            // Fashion designer: Delivered → Completed, with Rework / Re-delivered branch.
+            // No Rental Active / Return In Transit / Returned.
+            $steps = array_values(array_filter(
+                $steps,
+                fn (array $step) => ! in_array($step['min'], ['rental_active', 're_intransit', 'returned'], true)
+            ));
+            $steps[] = ['keys' => ['rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Rework', 'min' => 'rework'];
+            $steps[] = ['keys' => ['re_delivered', 'completed'], 'label' => 'Re-delivered', 'min' => 're_delivered'];
+            $steps[] = ['keys' => ['completed'], 'label' => 'Completed', 'min' => 'completed'];
+            // Dedupe completed
+            $seen = [];
+            $steps = array_values(array_filter($steps, function (array $step) use (&$seen) {
+                if (isset($seen[$step['label']])) {
+                    return false;
+                }
+                $seen[$step['label']] = true;
 
+                return true;
+            }));
+        }
+
+        $rank = array_flip(self::STATUSES);
+        // Treat pending acceptance as still on the first step so the timeline has a clear current marker.
+        $current = $rank[$status === 'pending_acceptance' ? 'new' : $status] ?? 0;
+
+        // Designer "delivered" is current until completed; rental "delivered" is current until rental_active.
         return array_map(function (array $step) use ($rank, $current): array {
             $minRank = $rank[$step['min']] ?? 0;
-            $maxRank = max(array_map(fn ($k) => $rank[$k] ?? 0, $step['keys']));
 
-            if ($current >= $maxRank) {
+            if ($current > $minRank) {
                 $state = 'done';
-            } elseif ($current >= $minRank) {
+            } elseif ($current === $minRank) {
                 $state = 'current';
             } else {
                 $state = 'upcoming';
             }
 
             $time = null;
-            if ($state === 'done' && $step['min'] === 'new') {
-                $time = $this->created_at->format('M d, H:i');
-            } elseif ($state === 'current') {
-                $time = 'In progress';
-            } elseif ($state === 'done') {
-                $time = 'Completed';
+            if ($step['min'] === 'new' && $this->created_at) {
+                $time = $this->created_at->format('M d, Y · H:i');
             }
 
             return [
@@ -699,37 +812,43 @@ class Order extends Model
 
         return match ($this->status) {
             'new' => [
-                // Bookings are auto-sent to the designer after COD / Razorpay payment.
                 ['label' => 'Cancel booking', 'url' => $route('cancelled'), 'status' => 'cancelled', 'variant' => 'danger', 'confirm' => 'Cancel this booking?'],
             ],
             'pending_acceptance' => [
                 ['label' => 'Cancel booking', 'url' => $route('cancelled'), 'status' => 'cancelled', 'variant' => 'danger', 'confirm' => 'Cancel this booking?'],
             ],
             'accepted' => [
-                ['label' => 'Start preparing outfit', 'url' => $route('in_progress'), 'status' => 'in_progress', 'variant' => 'primary'],
+                ['label' => 'Mark In Transit', 'url' => $route('in_progress'), 'status' => 'in_progress', 'variant' => 'primary'],
                 ['label' => 'Cancel booking', 'url' => $route('cancelled'), 'status' => 'cancelled', 'variant' => 'danger', 'confirm' => 'Cancel this booking?'],
             ],
             'in_progress' => [
-                ['label' => 'Mark delivered', 'url' => $route('delivered'), 'status' => 'delivered', 'variant' => 'success'],
+                ['label' => 'Mark Delivered', 'url' => $route('delivered'), 'status' => 'delivered', 'variant' => 'success'],
             ],
             'delivered' => $this->isRental()
                 ? [
-                    ['label' => 'Start return pickup', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
-                    ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'primary'],
+                    ['label' => 'Mark Rental Active', 'url' => $route('rental_active'), 'status' => 'rental_active', 'variant' => 'primary'],
+                    ['label' => 'Start Return Pickup', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'outline'],
                 ]
                 : [
-                    ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'primary'],
-                    ['label' => 'Send for rework', 'url' => $route('rework'), 'status' => 'rework', 'variant' => 'primary'],
+                    ['label' => 'Mark Completed', 'url' => $route('completed'), 'status' => 'completed', 'variant' => 'success'],
+                    ['label' => 'Send for Rework', 'url' => $route('rework'), 'status' => 'rework', 'variant' => 'primary'],
                 ],
+            'rental_active' => [
+                ['label' => 'Start Return Pickup', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
+                ['label' => 'Send for Rework', 'url' => $route('rework'), 'status' => 'rework', 'variant' => 'outline'],
+            ],
             're_intransit' => $this->isRental()
                 ? [
-                    ['label' => 'Mark returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'success'],
+                    ['label' => 'Mark Returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'success'],
                 ]
                 : [
-                    ['label' => 'Mark re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'success'],
+                    ['label' => 'Mark Re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'success'],
                 ],
             'rework' => [
-                ['label' => 'Dispatch rework', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
+                ['label' => 'Dispatch Rework (Return In Transit)', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],
+            ],
+            'returned', 're_delivered' => [
+                ['label' => 'Mark Completed', 'url' => $route('completed'), 'status' => 'completed', 'variant' => 'success'],
             ],
             default => [],
         };

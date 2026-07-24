@@ -319,6 +319,7 @@ class AdminValidationRules
             'customer_notes' => ['nullable', 'string', 'max:2000', 'regex:'.self::REGEX_TEXT],
             'admin_notes' => ['nullable', 'string', 'max:2000', 'regex:'.self::REGEX_TEXT],
             'damage_note' => ['nullable', 'string', 'max:255'],
+            'damage_amount' => ['nullable', 'numeric', 'min:0'],
             'damage_deduct_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'measure_height_cm' => ['nullable', 'integer', 'min:50', 'max:250'],
             'measure_chest_cm' => ['nullable', 'integer', 'min:50', 'max:200'],

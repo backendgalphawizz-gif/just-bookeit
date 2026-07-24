@@ -119,6 +119,7 @@ class BookingPricingService
         $subtotal = $order->subtotal();
         $shippingFee = (float) ($order->delivery_fee ?? 0);
         $taxAmount = (float) ($order->tax_amount ?? 0);
+        $damageDeduction = round((float) $order->damageDeduction(), 2);
         $totalAmount = $order->grandTotal();
         $commissionPercent = self::commissionPercent($vendor);
         $platformFee = round($subtotal * ($commissionPercent / 100), 2);
@@ -129,6 +130,11 @@ class BookingPricingService
         return [
             'subtotal' => $subtotal,
             'shipping_fee' => $shippingFee,
+            'damage_deduction' => $damageDeduction,
+            'damage_note' => $order->damage_note,
+            'damage_deduct_percent' => $order->damage_deduct_percent !== null
+                ? (float) $order->damage_deduct_percent
+                : null,
             'platform_fee' => $platformFee,
             'platform_fee_percent' => $commissionPercent,
             'tax_amount' => $taxAmount,

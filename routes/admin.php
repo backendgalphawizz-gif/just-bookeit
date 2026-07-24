@@ -122,6 +122,8 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
 
             Route::post('orders/{order}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
             Route::post('orders/{order}/manage', [OrderController::class, 'manage'])->name('orders.manage');
+            Route::post('orders/{order}/items/{item}/assign-driver', [OrderController::class, 'assignItemDriver'])
+                ->name('orders.items.assign-driver');
             Route::post('customers/{customer}/activate', [CustomerController::class, 'activate'])->name('customers.activate');
             Route::post('customers/{customer}/inactivate', [CustomerController::class, 'inactivate'])->name('customers.inactivate');
             Route::post('refunds/{refund}/approve', [RefundController::class, 'approve'])->name('refunds.approve');

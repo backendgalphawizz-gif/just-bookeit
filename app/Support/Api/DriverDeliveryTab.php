@@ -52,14 +52,36 @@ class DriverDeliveryTab
         return ['in_progress', 're_intransit'];
     }
 
+    /**
+     * Booking is dispatch-ready when the order itself is In Transit / Return In Transit,
+     * or when any line item is (item-wise flow while booking rollup may still be pending).
+     */
+    public static function whereDispatchReady(Builder $query): Builder
+    {
+        $statuses = self::activeDeliveryStatuses();
+
+        return $query->where(function (Builder $builder) use ($statuses) {
+            $builder->whereIn('status', $statuses)
+                ->orWhereHas('orderItems', fn (Builder $items) => $items->whereIn('status', $statuses));
+        });
+    }
+
+    /** Assigned at booking level or on any in-transit line item. */
+    public static function whereAssignedToDriver(Builder $query, Driver $driver): Builder
+    {
+        return $query->where(function (Builder $builder) use ($driver) {
+            $builder->where('driver_id', $driver->id)
+                ->orWhereHas('orderItems', fn (Builder $items) => $items->where('driver_id', $driver->id));
+        });
+    }
+
     public static function applyToQuery(Builder $query, Driver $driver, ?string $tab): Builder
     {
         $dispatchStatuses = self::activeDeliveryStatuses();
         $normalizedTab = self::normalizeTab($tab);
 
         return match ($normalizedTab) {
-            self::TAB_NEW => $query
-                ->whereIn('status', $dispatchStatuses)
+            self::TAB_NEW => self::whereDispatchReady($query)
                 ->where(function (Builder $builder) use ($driver) {
                     $skipped = DriverDeliverySkip::query()
                         ->where('driver_id', $driver->id)
@@ -68,38 +90,57 @@ class DriverDeliveryTab
                     $builder
                         ->where(function (Builder $pool) use ($skipped) {
                             $pool->whereNull('driver_id')
-                                ->whereNotIn('id', $skipped);
+                                ->whereNotIn('id', $skipped)
+                                ->whereDoesntHave('orderItems', fn (Builder $items) => $items
+                                    ->whereIn('status', self::activeDeliveryStatuses())
+                                    ->whereNotNull('driver_id'));
                         })
                         ->orWhere(function (Builder $assigned) use ($driver) {
-                            $assigned->where('driver_id', $driver->id)
-                                ->whereNull('driver_delivery_status');
+                            $assigned->whereNull('driver_delivery_status')
+                                ->where(function (Builder $owned) use ($driver) {
+                                    $owned->where('driver_id', $driver->id)
+                                        ->orWhereHas('orderItems', fn (Builder $items) => $items
+                                            ->where('driver_id', $driver->id)
+                                            ->whereIn('status', self::activeDeliveryStatuses()));
+                                });
                         });
                 }),
-            self::TAB_IN_PROGRESS => $query
-                ->where('driver_id', $driver->id)
-                ->where('status', 'in_progress')
+            self::TAB_IN_PROGRESS => self::whereAssignedToDriver($query, $driver)
+                ->where(function (Builder $builder) {
+                    $builder->where('status', 'in_progress')
+                        ->orWhereHas('orderItems', fn (Builder $items) => $items->where('status', 'in_progress'));
+                })
                 ->whereNull('driver_delivery_status'),
-            self::TAB_ACCEPTED => $query
-                ->where('driver_id', $driver->id)
-                ->whereIn('status', $dispatchStatuses)
+            self::TAB_ACCEPTED => self::whereAssignedToDriver(self::whereDispatchReady($query), $driver)
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_ACCEPTED),
-            self::TAB_PICKUP => $query
-                ->where('driver_id', $driver->id)
-                ->whereIn('status', $dispatchStatuses)
+            self::TAB_PICKUP => self::whereAssignedToDriver(self::whereDispatchReady($query), $driver)
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_PICKED_UP),
-            self::TAB_DISPATCHED => $query
-                ->where('driver_id', $driver->id)
-                ->whereIn('status', $dispatchStatuses)
+            self::TAB_DISPATCHED => self::whereAssignedToDriver(self::whereDispatchReady($query), $driver)
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_OUT_FOR_DELIVERY),
-            self::TAB_DELIVERED => $query
-                ->where('driver_id', $driver->id)
-                ->whereIn('status', ['delivered', 're_delivered']),
-            self::TAB_CANCELLED => $query
-                ->where('driver_id', $driver->id)
-                ->where('status', 'cancelled'),
-            self::TAB_RESCHEDULED => $query
-                ->where('driver_id', $driver->id)
-                ->whereIn('status', $dispatchStatuses)
+            self::TAB_DELIVERED => self::whereAssignedToDriver($query, $driver)
+                ->where(function (Builder $builder) use ($driver) {
+                    $done = ['delivered', 'returned', 're_delivered', 'completed'];
+
+                    // Legacy booking-level: booking itself delivered.
+                    $builder->where(function (Builder $legacy) use ($done) {
+                        $legacy->whereIn('status', $done)
+                            ->whereDoesntHave('orderItems', fn (Builder $items) => $items->whereNotNull('driver_id'));
+                    })->orWhere(function (Builder $itemWise) use ($driver, $done) {
+                        // Item-wise: this driver has items, and none of their active items are still open.
+                        $itemWise->whereHas('orderItems', fn (Builder $items) => $items
+                            ->where('driver_id', $driver->id)
+                            ->whereIn('status', $done))
+                            ->whereDoesntHave('orderItems', fn (Builder $items) => $items
+                                ->where('driver_id', $driver->id)
+                                ->whereNotIn('status', [...$done, 'cancelled']));
+                    });
+                }),
+            self::TAB_CANCELLED => self::whereAssignedToDriver($query, $driver)
+                ->where(function (Builder $builder) {
+                    $builder->where('status', 'cancelled')
+                        ->orWhereHas('orderItems', fn (Builder $items) => $items->where('status', 'cancelled'));
+                }),
+            self::TAB_RESCHEDULED => self::whereAssignedToDriver(self::whereDispatchReady($query), $driver)
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_RESCHEDULED),
             default => $query->where(function (Builder $builder) use ($driver, $dispatchStatuses) {
                 $skipped = DriverDeliverySkip::query()
@@ -107,22 +148,37 @@ class DriverDeliveryTab
                     ->select('order_id');
 
                 $builder->where(function (Builder $available) use ($driver, $dispatchStatuses, $skipped) {
-                    $available->whereIn('status', $dispatchStatuses)
-                        ->where(function (Builder $open) use ($driver, $skipped) {
-                            $open->whereNull('driver_id')
-                                ->whereNotIn('id', $skipped)
-                                ->orWhere(function (Builder $assigned) use ($driver) {
-                                    $assigned->where('driver_id', $driver->id)
-                                        ->whereNull('driver_delivery_status');
-                                });
-                        });
+                    $available->where(function (Builder $ready) use ($dispatchStatuses) {
+                        $ready->whereIn('status', $dispatchStatuses)
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items->whereIn('status', $dispatchStatuses));
+                    })->where(function (Builder $open) use ($driver, $skipped) {
+                        $open->whereNull('driver_id')
+                            ->whereNotIn('id', $skipped)
+                            ->orWhere(function (Builder $assigned) use ($driver) {
+                                $assigned->where('driver_id', $driver->id)
+                                    ->whereNull('driver_delivery_status');
+                            })
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items
+                                ->where('driver_id', $driver->id)
+                                ->whereIn('status', self::activeDeliveryStatuses()));
+                    });
                 })->orWhere(function (Builder $owned) use ($driver, $dispatchStatuses) {
-                    $owned->where('driver_id', $driver->id)
-                        ->whereIn('status', $dispatchStatuses)
-                        ->whereNotNull('driver_delivery_status');
+                    $owned->where(function (Builder $assigned) use ($driver) {
+                        $assigned->where('driver_id', $driver->id)
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items->where('driver_id', $driver->id));
+                    })->where(function (Builder $ready) use ($dispatchStatuses) {
+                        $ready->whereIn('status', $dispatchStatuses)
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items->whereIn('status', $dispatchStatuses));
+                    })->whereNotNull('driver_delivery_status');
                 })->orWhere(function (Builder $completed) use ($driver) {
-                    $completed->where('driver_id', $driver->id)
-                        ->whereIn('status', ['delivered', 're_delivered', 'cancelled']);
+                    $completed->where(function (Builder $assigned) use ($driver) {
+                        $assigned->where('driver_id', $driver->id)
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items->where('driver_id', $driver->id));
+                    })->where(function (Builder $done) {
+                        $done->whereIn('status', ['delivered', 're_delivered', 'cancelled'])
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items
+                                ->whereIn('status', ['delivered', 're_delivered', 'cancelled']));
+                    });
                 });
             }),
         };

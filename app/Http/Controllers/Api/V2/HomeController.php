@@ -26,9 +26,8 @@ class HomeController extends VendorApiController
 
         $newBookings = Order::query()
             ->where('vendor_id', $vendor->id)
-            ->paymentConfirmed()
-            ->whereIn('status', ['new', 'pending_acceptance'])
-            ->with(['customer', 'category'])
+            ->tap(fn ($q) => \App\Support\Api\VendorBookingListStatus::applyTabFilter($q, 'new'))
+            ->with(['customer', 'category', 'orderItems', 'checkoutOrder'])
             ->latest('created_at')
             ->limit(5)
             ->get();
@@ -61,7 +60,7 @@ class HomeController extends VendorApiController
                     ->all(),
             ],
             'new_bookings' => $newBookings
-                ->map(fn (Order $order) => VendorApiPresenter::bookingSummary($order))
+                ->map(fn (Order $order) => VendorApiPresenter::bookingListSummary($order))
                 ->values()
                 ->all(),
             'promo_banner' => VendorApiPresenter::promoBanner($promoBanner),

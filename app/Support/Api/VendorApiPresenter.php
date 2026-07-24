@@ -16,6 +16,8 @@ use App\Services\Booking\BookingPricingService;
 use App\Support\BookingMeasurementSupport;
 use App\Support\ChatDateTime;
 use App\Support\OrderDispatchSupport;
+use App\Support\OrderItemDriverDeliverySupport;
+use App\Support\OrderItemStatusSupport;
 use App\Support\ProductOptionCatalog;
 use App\Support\Api\VendorBookingStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -159,15 +161,28 @@ class VendorApiPresenter
         ];
     }
 
-    public static function bookingSummary(Order $order): array
+    /**
+     * @param  list<string>|null  $itemStatusFilter
+     */
+    public static function bookingSummary(Order $order, ?array $itemStatusFilter = null): array
     {
-        $order->loadMissing(['customer', 'category', 'orderItems', 'checkoutOrder']);
+        $order->loadMissing(['customer', 'category', 'orderItems.driver', 'checkoutOrder']);
         $rentedPeriod = self::bookingRentedPeriod($order);
-        $items = $order->orderItems;
-        $itemsCount = $items->isNotEmpty() ? $items->count() : 1;
-        $pendingItems = $items->isNotEmpty()
-            ? $items->where('status', \App\Models\OrderItem::STATUS_PENDING)->count()
+        $allItems = $order->orderItems;
+        $items = $allItems;
+        if ($itemStatusFilter !== null && $allItems->isNotEmpty()) {
+            $items = $allItems->whereIn('status', $itemStatusFilter)->values();
+        }
+        $itemsCount = $allItems->isNotEmpty() ? $allItems->count() : 1;
+        $pendingItems = $allItems->isNotEmpty()
+            ? $allItems->where('status', \App\Models\OrderItem::STATUS_PENDING)->count()
             : (in_array($order->status, ['new', 'pending_acceptance'], true) ? 1 : 0);
+
+        $lineItems = $items->isNotEmpty()
+            ? $items->map(fn ($item) => self::orderLineItem($item))->values()->all()
+            : ($allItems->isEmpty()
+                ? [self::syntheticLineItemSummary($order)]
+                : []);
 
         return [
             'id' => $order->id,
@@ -187,9 +202,9 @@ class VendorApiPresenter
             'category' => $order->category?->name,
             'order_type' => $order->order_type === 'rental' ? 'Rental' : 'Sale',
             'order_type_raw' => $order->order_type,
-            'status' => VendorBookingStatus::toApi($order->status),
-            'status_raw' => $order->status,
-            'status_label' => $order->statusLabel(),
+            ...BookingStatusPresenter::forBooking($order, vendorAliases: true),
+            'fulfillment_state' => self::bookingFulfillmentState($order)['fulfillment_state'],
+            'is_pending' => self::bookingFulfillmentState($order)['is_pending'],
             'payment_status' => $order->payment_status,
             ...self::bookingScheduleFields($order),
             'size' => $order->size,
@@ -197,6 +212,8 @@ class VendorApiPresenter
             'quantity' => (int) ($order->quantity ?? 1),
             'items_count' => $itemsCount,
             'pending_items_count' => $pendingItems,
+            'filtered_items_count' => $items->count(),
+            'filtered_by_item_status' => $itemStatusFilter,
             'rental_start_date' => $rentedPeriod['start_date'] ?? null,
             'rental_end_date' => $rentedPeriod['end_date'] ?? null,
             'rental_start_date_label' => $rentedPeriod['start_date_label'] ?? null,
@@ -208,9 +225,36 @@ class VendorApiPresenter
             'reject_reason' => $order->cancellation_reason,
             'can_accept' => in_array($order->status, ['new', 'pending_acceptance'], true) || $pendingItems > 0,
             'can_reject' => in_array($order->status, ['new', 'pending_acceptance'], true) || $pendingItems > 0,
-            'line_items' => $items->isNotEmpty()
-                ? $items->map(fn ($item) => self::orderLineItem($item))->values()->all()
-                : [self::syntheticLineItemSummary($order)],
+            'payment_confirmed' => $order->isPaymentConfirmed(),
+            'line_items' => $lineItems,
+        ];
+    }
+
+    /**
+     * Vendor booking list card — simplified status only (new / pending / complete).
+     * Does not change item statuses or booking lifecycle used on detail / driver.
+     *
+     * @param  list<string>|null  $itemStatusFilter
+     */
+    public static function bookingListSummary(Order $order, ?array $itemStatusFilter = null): array
+    {
+        $payload = self::bookingSummary($order, $itemStatusFilter);
+        $list = VendorBookingListStatus::resolve($order);
+
+        return [
+            ...$payload,
+            // Primary badge fields for vendor app (new / pending / complete).
+            'status' => $list['status'],
+            'status_label' => $list['status_label'],
+            'booking_status' => $list['status'],
+            'booking_status_label' => $list['status_label'],
+            // Same simplified value — app was reading lifecycle_status and showing IN TRANSIT / New.
+            'lifecycle_status' => $list['status'],
+            'lifecycle_status_label' => $list['status_label'],
+            // Real DB lifecycle kept separately (not for list badge).
+            'status_raw' => $order->status,
+            'fulfillment_status' => VendorBookingStatus::toApi($order->status),
+            'fulfillment_status_label' => $order->statusLabel(),
         ];
     }
 
@@ -219,6 +263,46 @@ class VendorApiPresenter
      *
      * @return array<string, mixed>
      */
+    /**
+     * @return array{status: string, fulfillment_state: string, is_pending: bool}
+     */
+    public static function bookingFulfillmentState(Order $order): array
+    {
+        $order->loadMissing('orderItems');
+
+        return OrderItemStatusSupport::resolveBookingFromItems($order->orderItems, $order);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected static function orderItemStatusFields(\App\Models\OrderItem $item, ?Order $order = null): array
+    {
+        $order ??= $item->relationLoaded('order') ? $item->order : $item->order()->first();
+
+        return [
+            ...BookingStatusPresenter::forItem($item, $order),
+            'cancellation_reason' => $item->cancellation_reason,
+            'can_accept' => $item->canAccept(),
+            'can_reject' => $item->canReject(),
+            'can_update_status' => $item->canUpdateStatus(),
+            'awaiting_vendor_rework' => $item->status === 'rework',
+            'can_dispatch_rework' => $item->status === 'rework',
+            'can_mark_returned' => OrderItemStatusSupport::isRentalItem($item, $order) && (
+                OrderItemStatusSupport::canTransitionTo($item, 're_intransit', $order)
+                || OrderItemStatusSupport::canTransitionTo($item, 'returned', $order)
+            ),
+            'product_return_type' => OrderItemStatusSupport::isRentalItem($item, $order)
+                ? 'rental_product_return'
+                : null,
+            'allowed_next_statuses' => collect(OrderItemStatusSupport::allowedNextStatuses($item, $order))
+                ->map(fn (string $status) => VendorBookingStatus::toApi($status))
+                ->values()
+                ->all(),
+            'responded_at' => $item->responded_at?->toIso8601String(),
+        ];
+    }
+
     protected static function syntheticLineItemSummary(Order $order): array
     {
         $itemStatus = in_array($order->status, ['new', 'pending_acceptance'], true)
@@ -285,7 +369,10 @@ class VendorApiPresenter
         ];
     }
 
-    public static function bookingDetail(Order $order): array
+    /**
+     * @param  list<string>|null  $itemStatusFilter
+     */
+    public static function bookingDetail(Order $order, ?array $itemStatusFilter = null): array
     {
         $order->loadMissing([
             'customer.measurements',
@@ -293,36 +380,86 @@ class VendorApiPresenter
             'driver',
             'vendor',
             'review.customer',
-            'orderItems',
+            'orderItems.driver',
+            'orderItems.portfolioItem.damageDeductions',
+            'portfolioItem.damageDeductions',
             'checkoutOrder',
             'refunds',
         ]);
 
         $orderItems = $order->orderItems;
-        $lineItems = $orderItems->isNotEmpty()
-            ? $orderItems->map(fn ($item) => self::orderLineItemDetail($item, $order))->values()->all()
-            : [self::syntheticLineItemDetail($order)];
+        $filteredItems = $orderItems;
+        if ($itemStatusFilter !== null && $orderItems->isNotEmpty()) {
+            $filteredItems = $orderItems->whereIn('status', $itemStatusFilter)->values();
+        }
+
+        $lineItems = $filteredItems->isNotEmpty()
+            ? $filteredItems->map(fn ($item) => self::orderLineItemDetail($item, $order))->values()->all()
+            : ($orderItems->isEmpty()
+                ? [self::syntheticLineItemDetail($order)]
+                : []);
+        // List aliases stay slim (no damage.rules / tracking / measurements) so rules appear once on line_items.
+        $itemSummaries = $filteredItems->isNotEmpty()
+            ? $filteredItems->map(fn ($item) => self::orderLineItem($item))->values()->all()
+            : $lineItems;
         $isMultiItem = $orderItems->count() > 1;
         $itemsPendingAcceptance = $orderItems->where('status', \App\Models\OrderItem::STATUS_PENDING)->count();
         $itemsAccepted = $orderItems->where('status', \App\Models\OrderItem::STATUS_ACCEPTED)->count();
         $itemsCancelled = $orderItems->where('status', \App\Models\OrderItem::STATUS_CANCELLED)->count();
+        $itemsCompleted = $orderItems->where('status', 'completed')->count();
+        $itemsWithDriver = $orderItems->whereNotNull('driver_id')->count();
+        $fulfillment = self::bookingFulfillmentState($order);
+        $legAddresses = OrderDispatchSupport::addressesForLeg(
+            $order,
+            $order->status === 're_intransit'
+                || OrderDispatchSupport::isReturnLegForItems($orderItems)
+        );
+        $listStatus = VendorBookingListStatus::resolve($order);
 
         return [
-            ...self::bookingSummary($order),
+            ...self::bookingSummary($order, $itemStatusFilter),
+            // Vendor app/panel booking badge: derive from items (new / pending / complete).
+            'status' => $listStatus['status'],
+            'status_label' => $listStatus['status_label'],
+            'booking_status' => $listStatus['status'],
+            'booking_status_label' => $listStatus['status_label'],
+            'lifecycle_status' => $listStatus['status'],
+            'lifecycle_status_label' => $listStatus['status_label'],
+            'status_raw' => $order->status,
+            'fulfillment_status' => VendorBookingStatus::toApi($order->status),
+            'fulfillment_status_label' => $order->statusLabel(),
             'is_multi_item' => $isMultiItem,
             'line_items_count' => max(1, $orderItems->count()),
+            'filtered_items_count' => $filteredItems->count(),
+            'filtered_by_item_status' => $itemStatusFilter,
+            'has_item_drivers' => $itemsWithDriver > 0,
+            'items_with_driver_count' => $itemsWithDriver,
+            'fulfillment_state' => $fulfillment['fulfillment_state'],
+            'is_pending' => $fulfillment['is_pending'],
             'items_status_breakdown' => [
                 'pending' => $itemsPendingAcceptance,
                 'accepted' => $itemsAccepted,
+                'in_progress' => $orderItems->where('status', 'in_progress')->count(),
+                'delivered' => $orderItems->where('status', 'delivered')->count(),
+                'rental_active' => $orderItems->where('status', 'rental_active')->count(),
+                'rework' => $orderItems->where('status', 'rework')->count(),
+                're_intransit' => $orderItems->where('status', 're_intransit')->count(),
+                'returned' => $orderItems->where('status', 'returned')->count(),
+                're_delivered' => $orderItems->where('status', 're_delivered')->count(),
+                'completed' => $itemsCompleted,
                 'cancelled' => $itemsCancelled,
             ],
             'product' => self::bookingProduct($order),
             'category_detail' => $order->category ? CustomerApiPresenter::category($order->category) : null,
             'customer' => self::bookingCustomer($order),
             'billing_address' => $order->billing_address,
-            'delivery_address' => $order->delivery_address,
+            'delivery_address' => $legAddresses['delivery_address'],
             'shipping_address' => self::bookingShippingAddress($order),
-            'pickup_address' => $order->pickup_address,
+            'pickup_address' => $legAddresses['pickup_address'],
+            'is_return_leg' => $legAddresses['is_return_leg'],
+            'delivery_leg' => $legAddresses['leg'],
+            'awaiting_vendor_rework' => $order->status === 'rework',
+            'can_dispatch_rework' => $order->status === 'rework',
             'city' => $order->city,
             'pincode' => $order->pincode,
             'customer_notes' => $order->customer_notes,
@@ -345,6 +482,8 @@ class VendorApiPresenter
                 'id' => $order->driver->id,
                 'name' => $order->driver->name,
                 'mobile' => $order->driver->mobile,
+                'vehicle_no' => $order->driver->vehicle_no,
+                'profile_image_url' => $order->driver->profileImageUrl(),
                 'delivery_status' => $order->driver_delivery_status,
                 'assigned_at' => $order->driver_assigned_at?->toIso8601String(),
                 'assigned_at_label' => $order->driver_assigned_at?->format('d M Y, g:i A'),
@@ -355,9 +494,9 @@ class VendorApiPresenter
             ] : null,
             'customer_review' => self::bookingCustomerReview($order),
             'review' => self::bookingCustomerReview($order),
-            'order_items' => $lineItems,
+            'order_items' => $itemSummaries,
             'line_items' => $lineItems,
-            'items' => $lineItems,
+            'items' => $itemSummaries,
             'checkout' => $order->checkoutOrder ? [
                 'id' => $order->checkoutOrder->id,
                 'order_number' => $order->checkoutOrder->order_number,
@@ -405,12 +544,7 @@ class VendorApiPresenter
             'line_amount_label' => '₹'.number_format((float) $item->line_amount, 0),
             'advance_amount' => $item->advanceAmount(),
             'advance_amount_label' => '₹'.number_format($item->advanceAmount(), 0),
-            'status' => $item->status,
-            'status_label' => $item->statusLabel(),
-            'cancellation_reason' => $item->cancellation_reason,
-            'can_accept' => $item->canAccept(),
-            'can_reject' => $item->canReject(),
-            'responded_at' => $item->responded_at?->toIso8601String(),
+            ...self::orderItemStatusFields($item),
             'rental_start_date' => $rentalStart,
             'rental_end_date' => $rentalEnd,
             'rental_start_date_label' => $startCarbon?->format('jS M, Y'),
@@ -424,6 +558,9 @@ class VendorApiPresenter
             'measurement_profile_id' => $item->measurementProfileId()
                 ?? (($item->order ?? null) ? self::resolveOrderMeasurementProfileId($item->order) : null),
             'measurements' => self::orderItemMeasurements($item),
+            'tracking_steps' => $item->trackSteps(),
+            ...self::orderItemLegAddressFields($item),
+            ...self::orderItemDriverFields($item),
         ];
     }
 
@@ -436,6 +573,7 @@ class VendorApiPresenter
     {
         $order ??= $item->order ?? $item->order()->with('customer')->first();
         $order?->loadMissing('customer');
+        $item->loadMissing('driver');
 
         $rentalStart = $item->rentalStartDate();
         $rentalEnd = $item->rentalEndDate();
@@ -478,12 +616,7 @@ class VendorApiPresenter
             'line_amount_label' => '₹'.number_format((float) $item->line_amount, 0),
             'advance_amount' => $item->advanceAmount(),
             'advance_amount_label' => '₹'.number_format($item->advanceAmount(), 0),
-            'status' => $item->status,
-            'status_label' => $item->statusLabel(),
-            'cancellation_reason' => $item->cancellation_reason,
-            'can_accept' => $item->canAccept(),
-            'can_reject' => $item->canReject(),
-            'responded_at' => $item->responded_at?->toIso8601String(),
+            ...self::orderItemStatusFields($item, $order),
             'rental_start_date' => $rentalStart,
             'rental_end_date' => $rentalEnd,
             'rental_start_date_label' => $startCarbon?->format('jS M, Y'),
@@ -511,6 +644,83 @@ class VendorApiPresenter
             'location' => $location,
             'shipping_address' => $shippingAddress,
             'payment_summary' => self::itemPaymentSummaryPayload($item, $order),
+            'tracking_steps' => $item->trackSteps(),
+            ...self::orderItemDamageFields($item),
+            ...self::orderItemLegAddressFields($item, $order),
+            ...self::orderItemDriverFields($item),
+        ];
+    }
+
+    /**
+     * Pickup/delivery for this item only.
+     * Return In Transit (and premature returned) swap customer ↔ vendor; outbound does not.
+     *
+     * @return array{
+     *     pickup_address: ?string,
+     *     delivery_address: ?string,
+     *     is_return_leg: bool,
+     *     delivery_leg: 'outbound'|'return'
+     * }
+     */
+    protected static function orderItemLegAddressFields(\App\Models\OrderItem $item, ?Order $order = null): array
+    {
+        $order ??= $item->order ?? $item->order()->first();
+        $isReturnLeg = OrderDispatchSupport::isReturnLegItem($item);
+        $addresses = $order
+            ? OrderDispatchSupport::addressesForLeg($order, $isReturnLeg)
+            : [
+                'pickup_address' => null,
+                'delivery_address' => null,
+                'is_return_leg' => $isReturnLeg,
+                'leg' => $isReturnLeg ? 'return' : 'outbound',
+            ];
+
+        return [
+            'pickup_address' => $addresses['pickup_address'],
+            'delivery_address' => $addresses['delivery_address'],
+            'is_return_leg' => $addresses['is_return_leg'],
+            'delivery_leg' => $addresses['leg'],
+        ];
+    }
+
+    /**
+     * Driver assignment fields for a line item (admin assigns per item).
+     *
+     * @return array{has_driver: bool, driver_assigned: bool, driver: ?array<string, mixed>}
+     */
+    protected static function orderItemDriverFields(\App\Models\OrderItem $item): array
+    {
+        $item->loadMissing(['driver', 'order']);
+        $order = $item->order;
+        $driverDelivery = OrderItemDriverDeliverySupport::effectiveDriverDeliveryStatus($item, $order);
+        $hasDriver = ($item->driver_id !== null && $item->driver !== null)
+            || ($order?->driver_id !== null && $driverDelivery !== null);
+
+        $driver = $item->driver ?: $order?->driver;
+
+        return [
+            'has_driver' => $hasDriver && $driver !== null,
+            'driver_assigned' => $hasDriver && $driver !== null,
+            'is_picked_up' => $item->isPickedUp(),
+            'driver' => ($hasDriver && $driver) ? [
+                'id' => $driver->id,
+                'name' => $driver->name,
+                'mobile' => $driver->mobile,
+                'vehicle_no' => $driver->vehicle_no,
+                'profile_image_url' => $driver->profileImageUrl(),
+                'delivery_status' => $driverDelivery,
+                'delivery_status_label' => match ($driverDelivery) {
+                    Order::DRIVER_STATUS_ACCEPTED => 'Accepted',
+                    Order::DRIVER_STATUS_PICKED_UP => 'Picked up',
+                    Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'Out for delivery',
+                    Order::DRIVER_STATUS_RESCHEDULED => 'Rescheduled',
+                    default => null,
+                },
+                'assigned_at' => ($item->driver_assigned_at ?: $order?->driver_assigned_at)?->toIso8601String(),
+                'assigned_at_label' => ($item->driver_assigned_at ?: $order?->driver_assigned_at)?->format('d M Y, g:i A'),
+                'pickup_at' => ($item->driver_pickup_at ?: $order?->driver_pickup_at)?->toIso8601String(),
+                'pickup_at_label' => ($item->driver_pickup_at ?: $order?->driver_pickup_at)?->format('d M Y, g:i A'),
+            ] : null,
         ];
     }
 
@@ -581,6 +791,18 @@ class VendorApiPresenter
             'location' => $location,
             'shipping_address' => $shippingAddress,
             'payment_summary' => self::bookingPaymentSummaryPayload($order),
+            'tracking_steps' => $order->trackBookingSteps(),
+            'has_driver' => $order->driver_id !== null,
+            'driver_assigned' => $order->driver_id !== null,
+            'driver' => $order->driver ? [
+                'id' => $order->driver->id,
+                'name' => $order->driver->name,
+                'mobile' => $order->driver->mobile,
+                'vehicle_no' => $order->driver->vehicle_no,
+                'profile_image_url' => $order->driver->profileImageUrl(),
+                'assigned_at' => $order->driver_assigned_at?->toIso8601String(),
+                'assigned_at_label' => $order->driver_assigned_at?->format('d M Y, g:i A'),
+            ] : null,
         ];
     }
 
@@ -605,6 +827,7 @@ class VendorApiPresenter
     {
         $summary = BookingPricingService::vendorPaymentSummary($order, $order->vendor);
         $advance = self::orderAdvanceAmount($order);
+        $damage = (float) ($summary['damage_deduction'] ?? 0);
 
         return [
             ...$summary,
@@ -614,6 +837,7 @@ class VendorApiPresenter
             'advance_amount_label' => '₹'.number_format($advance, 0),
             'shipping_fee_label' => '₹'.number_format((float) $summary['shipping_fee'], 0),
             'shipping_and_handling_label' => '₹'.number_format((float) $summary['shipping_fee'], 0),
+            'damage_deduction_label' => $damage > 0 ? '− ₹'.number_format($damage, 2) : '₹0',
             'tax_amount_label' => '₹'.number_format((float) $summary['tax_amount'], 0),
             'tax_label' => 'Tax (GST '.(int) $summary['tax_percent'].'%)',
             'total_amount_label' => '₹'.number_format((float) $summary['total_amount'], 0),
@@ -665,13 +889,19 @@ class VendorApiPresenter
         $taxAmount = $isSingle
             ? (float) ($order->tax_amount ?? round($subtotal * ($gstPercent / 100), 2))
             : round($subtotal * ($gstPercent / 100), 2);
-        $totalAmount = round($subtotal + $shipping + $taxAmount, 2);
+        $damage = round((float) $item->damageDeduction(), 2);
+        $totalAmount = round(max(0, $subtotal + $shipping + $taxAmount - $damage), 2);
 
         return [
             'subtotal' => $subtotal,
             'advance_amount' => $advance,
             'shipping_fee' => $shipping,
             'shipping_and_handling' => $shipping,
+            'damage_deduction' => $damage,
+            'damage_note' => $item->damage_note,
+            'damage_deduct_percent' => $item->damage_deduct_percent !== null
+                ? (float) $item->damage_deduct_percent
+                : null,
             'tax_percent' => $gstPercent,
             'tax_amount' => $taxAmount,
             'total_amount' => $totalAmount,
@@ -680,6 +910,7 @@ class VendorApiPresenter
             'advance_amount_label' => '₹'.number_format($advance, 0),
             'shipping_fee_label' => '₹'.number_format($shipping, 0),
             'shipping_and_handling_label' => '₹'.number_format($shipping, 0),
+            'damage_deduction_label' => $damage > 0 ? '− ₹'.number_format($damage, 2) : '₹0',
             'tax_amount_label' => '₹'.number_format($taxAmount, 0),
             'tax_label' => 'Tax (GST '.(int) $gstPercent.'%)',
             'total_amount_label' => '₹'.number_format($totalAmount, 0),
@@ -845,18 +1076,89 @@ class VendorApiPresenter
     /** @return array<string, mixed> */
     protected static function bookingDamage(Order $order): array
     {
+        $order->loadMissing('orderItems');
+        // Applied damage only. Product rules live once on each line item under damage.rules.
+        $itemDamages = $order->orderItems
+            ->filter(fn ($item) => $item->hasDamageRecord())
+            ->map(fn ($item) => [
+                'item_id' => $item->id,
+                'title' => $item->title(),
+                'note' => $item->damage_note,
+                'amount' => $item->damage_amount !== null ? (float) $item->damage_amount : $item->damageDeduction(),
+                'deduct_percent' => $item->damage_deduct_percent !== null
+                    ? (float) $item->damage_deduct_percent
+                    : null,
+                'deduction_amount' => $item->damageDeduction(),
+            ])
+            ->values()
+            ->all();
+
         return [
             'note' => $order->damage_note,
+            'amount' => $order->damage_amount !== null ? (float) $order->damage_amount : $order->damageDeduction(),
             'deduct_percent' => $order->damage_deduct_percent !== null
                 ? (float) $order->damage_deduct_percent
                 : null,
             'deduction_amount' => $order->damageDeduction(),
+            'items' => $itemDamages,
         ];
+    }
+
+    /**
+     * Applied damage on this line item + product damage rules (vendor-created).
+     *
+     * @return array{
+     *     damage: array{
+     *         note: ?string,
+     *         deduct_percent: ?float,
+     *         deduction_amount: float,
+     *         amount: float,
+     *         rules: list<array{id: int, damage_type: string, label: string, percent: float}>
+     *     }
+     * }
+     */
+    protected static function orderItemDamageFields(\App\Models\OrderItem $item): array
+    {
+        return [
+            'damage' => [
+                'note' => $item->damage_note,
+                'amount' => $item->damage_amount !== null ? (float) $item->damage_amount : $item->damageDeduction(),
+                'deduct_percent' => $item->damage_deduct_percent !== null
+                    ? (float) $item->damage_deduct_percent
+                    : null,
+                'deduction_amount' => $item->damageDeduction(),
+                'rules' => self::damageDeductionRulesForOrderItem($item),
+            ],
+        ];
+    }
+
+    /**
+     * @return list<array{id: int, damage_type: string, label: string, percent: float}>
+     */
+    protected static function damageDeductionRulesForOrderItem(\App\Models\OrderItem $item): array
+    {
+        $item->loadMissing('portfolioItem.damageDeductions');
+        $rules = $item->portfolioItem?->damageDeductions;
+
+        if ($rules === null || $rules->isEmpty()) {
+            return [];
+        }
+
+        return $rules
+            ->sortBy('sort_order')
+            ->values()
+            ->map(fn ($rule) => [
+                'id' => (int) $rule->id,
+                'damage_type' => (string) $rule->damage_type,
+                'label' => (string) $rule->damage_type,
+                'percent' => (float) $rule->percent,
+            ])
+            ->all();
     }
 
     protected static function bookingDeliveryOtp(Order $order): ?string
     {
-        if (! in_array($order->status, ['accepted', 'in_progress', 're_intransit', 'delivered', 're_delivered'], true)) {
+        if (! in_array($order->status, ['accepted', 'in_progress', 'rental_active', 're_intransit', 'delivered', 're_delivered', 'rework'], true)) {
             return null;
         }
 

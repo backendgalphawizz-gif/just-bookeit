@@ -46,7 +46,7 @@ class OrderObserver
             }
         }
 
-        if ($order->wasChanged('status') && $order->status === 'delivered') {
+        if ($order->wasChanged('status') && in_array($order->status, ['delivered', 'rental_active'], true)) {
             if ($order->isRental()) {
                 app(RentalPeriodService::class)->activateOnDelivery($order->fresh());
             }

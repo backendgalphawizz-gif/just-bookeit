@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\CheckoutOrder;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderReview;
 use App\Models\PortfolioItem;
 use App\Models\Vendor;
@@ -14,8 +15,9 @@ use App\Services\Booking\BookingPricingService;
 use App\Services\Checkout\CheckoutService;
 use App\Services\Customer\CartService;
 use App\Support\Api\CustomerApiPresenter;
-use App\Support\OrderDispatchSupport;
 use App\Support\Api\CustomerBookingTab;
+use App\Support\Api\VendorBookingStatus;
+use App\Support\OrderDispatchSupport;
 use App\Support\BookingMeasurementSupport;
 use App\Support\CheckoutItemPayloadSupport;
 use App\Support\CodeGenerator;
@@ -42,17 +44,21 @@ class BookingController extends ApiController
 
         $request->validate([
             'tab' => CustomerBookingTab::validationRule(),
+            'status' => ['nullable', 'string', 'max:50'],
+            'item_status' => ['nullable', 'string', 'max:50'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:50'],
         ]);
 
         $tab = $request->input('tab');
         $categorySlug = CustomerBookingTab::categorySlug($tab);
+        $bookingStatuses = $this->normalizeStatusFilter($request->input('status'));
+        $itemStatuses = $this->normalizeStatusFilter($request->input('item_status'));
         $perPage = $request->integer('per_page', 10);
         $page = max(1, $request->integer('page', 1));
 
         $standaloneQuery = Order::query()
-            ->with(['vendor', 'category', 'customer', 'dispute', 'review', 'orderItems'])
+            ->with(['vendor', 'category', 'customer', 'dispute', 'review', 'driver', 'orderItems.driver'])
             ->where('customer_id', $customer->id)
             ->whereNull('checkout_order_id');
 
@@ -60,10 +66,27 @@ class BookingController extends ApiController
             $standaloneQuery = CustomerBookingTab::applyToQuery($standaloneQuery, $tab);
         }
 
+        if ($bookingStatuses !== null) {
+            $standaloneQuery->whereIn('status', $bookingStatuses);
+        }
+
+        if ($itemStatuses !== null) {
+            $standaloneQuery->where(function ($q) use ($itemStatuses) {
+                $q->whereHas('orderItems', fn ($items) => $items->whereIn('status', $itemStatuses))
+                    // Legacy bookings without line items: fall back to order status.
+                    ->orWhere(function ($legacy) use ($itemStatuses) {
+                        $legacy->whereDoesntHave('orderItems')
+                            ->whereIn('status', $itemStatuses);
+                    });
+            });
+        }
+
         $checkoutQuery = CheckoutOrder::query()
             ->with([
                 'subOrders.vendor',
                 'subOrders.category',
+                'subOrders.driver',
+                'subOrders.orderItems.driver',
                 'subOrders.orderItems.portfolioItem.category',
             ])
             ->where('customer_id', $customer->id);
@@ -72,15 +95,33 @@ class BookingController extends ApiController
             $checkoutQuery->whereHas('subOrders.category', fn ($q) => $q->where('slug', $categorySlug));
         }
 
+        if ($bookingStatuses !== null) {
+            $checkoutQuery->where(function ($q) use ($bookingStatuses) {
+                $q->whereIn('status', $bookingStatuses)
+                    ->orWhereHas('subOrders', fn ($sub) => $sub->whereIn('status', $bookingStatuses));
+            });
+        }
+
+        if ($itemStatuses !== null) {
+            $checkoutQuery->whereHas('subOrders.orderItems', fn ($items) => $items->whereIn('status', $itemStatuses));
+        }
+
         $entries = $standaloneQuery->get()
             ->map(fn (Order $order) => [
                 'sort_at' => $order->created_at,
-                'payload' => CustomerApiPresenter::bookingDetail($order),
+                'payload' => CustomerApiPresenter::bookingDetail(
+                    $order,
+                    itemStatusFilter: $itemStatuses
+                ),
             ])
             ->concat(
                 $checkoutQuery->get()->map(fn (CheckoutOrder $checkout) => [
                     'sort_at' => $checkout->created_at,
-                    'payload' => CustomerApiPresenter::checkoutOrderSummary($checkout),
+                    'payload' => CustomerApiPresenter::checkoutOrderSummary(
+                        $checkout,
+                        itemStatusFilter: $itemStatuses,
+                        bookingStatusFilter: $bookingStatuses
+                    ),
                 ])
             )
             ->sortByDesc(fn (array $row) => $row['sort_at']?->timestamp ?? 0)
@@ -100,6 +141,31 @@ class BookingController extends ApiController
         );
     }
 
+    /**
+     * Normalize API status aliases into DB status list (or null if empty/invalid).
+     *
+     * @return list<string>|null
+     */
+    protected function normalizeStatusFilter(mixed $raw): ?array
+    {
+        if ($raw === null || trim((string) $raw) === '') {
+            return null;
+        }
+
+        $key = strtolower(trim((string) $raw));
+        $fromTab = VendorBookingStatus::statusesForTab($key);
+        if ($fromTab !== null) {
+            return $fromTab;
+        }
+
+        $normalized = VendorBookingStatus::normalizeInput($key);
+        if (in_array($normalized, Order::STATUSES, true) || in_array($normalized, \App\Models\OrderItem::STATUSES, true)) {
+            return [$normalized];
+        }
+
+        return null;
+    }
+
     public function show(Request $request, string $booking): JsonResponse
     {
         /** @var Customer $customer */
@@ -115,7 +181,18 @@ class BookingController extends ApiController
         $order = $this->findCustomerOrder($customer->id, $booking);
         abort_unless($order, 404, 'Booking not found.');
 
-        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'review', 'orderItems']);
+        $order->load([
+            'customer.measurements',
+            'vendor',
+            'driver',
+            'category',
+            'dispute',
+            'review.customer',
+            'orderItems.driver',
+            'checkoutOrder',
+            'refunds',
+            'refund.histories',
+        ]);
 
         return $this->success(CustomerApiPresenter::bookingDetail($order));
     }
@@ -379,7 +456,7 @@ class BookingController extends ApiController
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
-        if (! in_array($booking->status, ['new', 'pending_acceptance'], true)) {
+        if (! in_array($booking->status, ['new', 'pending_acceptance', 'accepted'], true)) {
             return $this->error('This booking can no longer be cancelled.', 422);
         }
 
@@ -397,13 +474,100 @@ class BookingController extends ApiController
         ], 'Booking cancelled.');
     }
 
+    /**
+     * Diagram: User receives order → rental_active (rentals) or acknowledge delivery (designer).
+     */
+    public function confirmReceived(Request $request, Order $booking): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+        abort_unless($booking->customer_id === $customer->id, 403);
+
+        try {
+            $updated = app(\App\Services\Booking\BookingLifecycleService::class)->confirmReceived($booking);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        return $this->success([
+            'booking' => CustomerApiPresenter::bookingDetail($updated->load(['vendor', 'category', 'dispute', 'review', 'driver'])),
+        ], $updated->status === 'rental_active'
+            ? 'Order received. Rental is now active.'
+            : 'Order received.');
+    }
+
+    /**
+     * Request pickup so rented dress/jewellery is returned to the vendor.
+     * This is product return — not a dispute.
+     */
+    public function requestReturn(Request $request, Order $booking): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+        abort_unless($booking->customer_id === $customer->id, 403);
+
+        $data = $request->validate([
+            'item_id' => ['nullable', 'integer', 'exists:order_items,id'],
+        ]);
+
+        $item = null;
+        if (! empty($data['item_id'])) {
+            $item = OrderItem::query()->findOrFail($data['item_id']);
+        }
+
+        try {
+            $updated = app(\App\Services\Booking\BookingLifecycleService::class)
+                ->requestReturn($booking, $item);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        return $this->success([
+            'booking' => CustomerApiPresenter::bookingDetail($updated->load([
+                'vendor',
+                'category',
+                'dispute',
+                'review',
+                'driver',
+                'orderItems.driver',
+            ])),
+            'return_type' => 'rental_product_return',
+            'return_note' => 'Product return to vendor (rented dress/jewellery). This is not a dispute.',
+        ], 'Return pickup requested for rented product(s). Awaiting driver assignment.');
+    }
+
+    /**
+     * Diagram: Need rework (designer fitting / issue during rental).
+     */
+    public function requestRework(Request $request, Order $booking): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+        abort_unless($booking->customer_id === $customer->id, 403);
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+        ]);
+
+        try {
+            $updated = app(\App\Services\Booking\BookingLifecycleService::class)
+                ->requestRework($booking, $data['reason'] ?? null);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        return $this->success([
+            'booking' => CustomerApiPresenter::bookingDetail($updated->load(['vendor', 'category', 'dispute', 'review', 'driver'])),
+        ], 'Rework requested.');
+    }
+
     public function review(Request $request, Order $booking): JsonResponse
     {
         /** @var Customer $customer */
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
-        if ($booking->status !== 'delivered') {
+        if (! in_array($booking->status, ['delivered', 'rental_active', 'returned', 're_delivered', 'completed'], true)) {
             return $this->error('You can review this booking after it is delivered.', 422);
         }
 

@@ -213,7 +213,19 @@
                                         @if ($lineItem->advanceAmount() > 0)
                                             <span class="jb-booking-product-meta"> · Advance ₹{{ number_format($lineItem->advanceAmount(), 0) }}</span>
                                         @endif
+                                        @if ($lineItem->damageDeduction() > 0)
+                                            <span class="jb-booking-product-meta" style="color:#b91c1c;font-weight:650"> · Damage −₹{{ number_format($lineItem->damageDeduction(), 2) }}</span>
+                                        @endif
                                     </p>
+                                    @if (filled($lineItem->damage_note) || $lineItem->damage_amount !== null || $lineItem->damage_deduct_percent !== null)
+                                        <p class="jb-booking-product-meta" style="color:#b91c1c">
+                                            Damage:
+                                            {{ $lineItem->damage_note ?: 'Deduction applied' }}
+                                            @if ($lineItem->damage_deduct_percent !== null)
+                                                ({{ rtrim(rtrim(number_format((float) $lineItem->damage_deduct_percent, 2), '0'), '.') }}%)
+                                            @endif
+                                        </p>
+                                    @endif
                                     @if ($lineRefs !== [])
                                         <div class="jb-booking-ref-grid" style="margin-top:0.5rem">
                                             @foreach ($lineRefs as $url)
@@ -253,6 +265,19 @@
 
                     <div class="jb-booking-billing" style="margin-top:1rem;padding-top:0.85rem;border-top:1px solid var(--jb-border,#e2e8f0)">
                         <div class="jb-booking-billing-row"><span class="jb-booking-billing-label">Subtotal</span><span class="jb-booking-billing-value">₹{{ number_format((float) $subOrder->amount, 2) }}</span></div>
+                        @if ($subOrder->damageDeduction() > 0)
+                            <div class="jb-booking-billing-row jb-booking-billing-row--damage">
+                                <span class="jb-booking-billing-label">
+                                    Damage deduction
+                                    @if ($subOrder->damage_note)
+                                        <span style="display:block;font-weight:500;color:var(--jb-muted,#64748b);font-size:0.75rem">{{ $subOrder->damage_note }}@if($subOrder->damage_deduct_percent !== null) ({{ rtrim(rtrim(number_format((float) $subOrder->damage_deduct_percent, 2), '0'), '.') }}%)@endif</span>
+                                    @elseif ($subOrder->damage_deduct_percent !== null)
+                                        <span style="display:block;font-weight:500;color:var(--jb-muted,#64748b);font-size:0.75rem">{{ rtrim(rtrim(number_format((float) $subOrder->damage_deduct_percent, 2), '0'), '.') }}%</span>
+                                    @endif
+                                </span>
+                                <span class="jb-booking-billing-value">− ₹{{ number_format($subOrder->damageDeduction(), 2) }}</span>
+                            </div>
+                        @endif
                         <div class="jb-booking-billing-row"><span class="jb-booking-billing-label">Delivery</span><span class="jb-booking-billing-value">₹{{ number_format((float) $subOrder->delivery_fee, 2) }}</span></div>
                         <div class="jb-booking-billing-row"><span class="jb-booking-billing-label">Tax</span><span class="jb-booking-billing-value">₹{{ number_format((float) $subOrder->tax_amount, 2) }}</span></div>
                         @if ((float) ($subOrder->advance_amount ?? 0) > 0)
@@ -310,11 +335,24 @@
         <div class="jb-booking-sidebar">
             <div class="jb-booking-card jb-booking-card--accent">
                 <h3 class="jb-booking-card-title">Payment summary</h3>
+                @php
+                    $checkoutDamage = (float) $checkout->subOrders->sum(fn ($s) => $s->damageDeduction());
+                    // Prefer sum of sub-order grand totals when damage is applied (parent grand_total may be pre-damage).
+                    $checkoutAdjustedTotal = $checkoutDamage > 0
+                        ? (float) $checkout->subOrders->sum(fn ($s) => $s->grandTotal())
+                        : (float) $checkout->grand_total;
+                @endphp
                 <div class="jb-booking-billing">
                     <div class="jb-booking-billing-row">
                         <span class="jb-booking-billing-label">Subtotal</span>
                         <span class="jb-booking-billing-value">₹{{ number_format((float) $checkout->amount, 2) }}</span>
                     </div>
+                    @if ($checkoutDamage > 0)
+                        <div class="jb-booking-billing-row jb-booking-billing-row--damage">
+                            <span class="jb-booking-billing-label">Damage deduction</span>
+                            <span class="jb-booking-billing-value">− ₹{{ number_format($checkoutDamage, 2) }}</span>
+                        </div>
+                    @endif
                     <div class="jb-booking-billing-row">
                         <span class="jb-booking-billing-label">Delivery</span>
                         <span class="jb-booking-billing-value">₹{{ number_format((float) $checkout->delivery_fee, 2) }}</span>
@@ -343,7 +381,7 @@
                     @endif
                     <div class="jb-booking-billing-row jb-booking-billing-row--total">
                         <span class="jb-booking-billing-label">Grand total</span>
-                        <strong class="jb-booking-billing-value">₹{{ number_format((float) $checkout->grand_total, 2) }}</strong>
+                        <strong class="jb-booking-billing-value">₹{{ number_format($checkoutAdjustedTotal, 2) }}</strong>
                     </div>
                     @if (($paymentSummary['payable_now'] ?? 0) > 0)
                         <div class="jb-booking-billing-row jb-booking-billing-row--accent">

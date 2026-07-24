@@ -1874,6 +1874,46 @@
         gap: 0;
     }
 
+    .jb-item-tracks {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .jb-item-track + .jb-item-track {
+        padding-top: 1.25rem;
+        border-top: 1px solid rgb(226 232 240);
+    }
+
+    .jb-item-track-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .jb-item-track-title {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: rgb(15 23 42);
+    }
+
+    .jb-item-track-status {
+        margin: 0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--jb-primary, #be123c);
+        white-space: nowrap;
+    }
+
+    .jb-item-track-driver {
+        margin: 0 0 0.75rem;
+        font-size: 0.75rem;
+        color: rgb(100 116 139);
+    }
+
     .jb-booking-track-step {
         display: flex;
         gap: 0.75rem;
@@ -2007,6 +2047,11 @@
         text-align: right;
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
+    }
+
+    .jb-booking-billing-row--damage .jb-booking-billing-label,
+    .jb-booking-billing-row--damage .jb-booking-billing-value {
+        color: #b91c1c;
     }
 
     .jb-booking-billing-row--total {

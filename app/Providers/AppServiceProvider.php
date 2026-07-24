@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\ChatMessage;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Observers\ChatMessageObserver;
 use App\Observers\OrderObserver;
 use App\Support\AdminListOrder;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -68,6 +70,24 @@ class AppServiceProvider extends ServiceProvider
 
         Order::observe(OrderObserver::class);
         ChatMessage::observe(ChatMessageObserver::class);
+
+        // Driver delivery routes: accept booking id OR line-item id (resolves to parent booking).
+        // When an item id is used, stash it so pickup/dispatch only updates that item.
+        Route::bind('delivery', function (string $value): Order {
+            $order = Order::query()->find($value);
+            if ($order) {
+                return $order;
+            }
+
+            $item = OrderItem::query()->find($value);
+            if ($item) {
+                request()->attributes->set('delivery_item_id', (int) $item->id);
+
+                return Order::query()->findOrFail($item->order_id);
+            }
+
+            abort(404, 'Delivery not found.');
+        });
 
         View::composer('admin.layouts.app', AdminLayoutComposer::class);
         View::composer(['admin.layouts.guest', 'admin.auth.login'], GuestLayoutComposer::class);

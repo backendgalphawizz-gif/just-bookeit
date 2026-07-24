@@ -194,19 +194,48 @@
             <div class="jbw-booking-sidebar-sticky">
                 <div class="jbw-overview-card">
                     <p class="jbw-overview-label">Track booking</p>
-                    <ol class="jbw-booking-track">
-                        @foreach ($order->trackBookingSteps() as $step)
-                            <li class="jbw-booking-track-step jbw-booking-track-step--{{ $step['state'] }}">
-                                <span class="jbw-booking-track-marker" aria-hidden="true"></span>
-                                <div class="jbw-booking-track-content">
-                                    <p class="jbw-booking-track-label">{{ $step['label'] }}</p>
-                                    @if ($step['time'])
-                                        <p class="jbw-booking-track-time">{{ $step['time'] }}</p>
+                    @if ($order->orderItems->isNotEmpty())
+                        <div class="jbw-item-tracks">
+                            @foreach ($order->orderItems as $lineItem)
+                                <div class="jbw-item-track">
+                                    <div class="jbw-item-track-head">
+                                        <p class="jbw-item-track-title">{{ $lineItem->title() }}</p>
+                                        <p class="jbw-item-track-status">{{ $lineItem->statusLabel() }}</p>
+                                    </div>
+                                    @if ($lineItem->driver)
+                                        <p class="jbw-item-track-driver">Driver: {{ $lineItem->driver->name }}</p>
                                     @endif
+                                    <ol class="jbw-booking-track">
+                                        @foreach ($lineItem->trackSteps() as $step)
+                                            <li class="jbw-booking-track-step jbw-booking-track-step--{{ $step['state'] }}">
+                                                <span class="jbw-booking-track-marker" aria-hidden="true"></span>
+                                                <div class="jbw-booking-track-content">
+                                                    <p class="jbw-booking-track-label">{{ $step['label'] }}</p>
+                                                    @if ($step['time'])
+                                                        <p class="jbw-booking-track-time">{{ $step['time'] }}</p>
+                                                    @endif
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ol>
                                 </div>
-                            </li>
-                        @endforeach
-                    </ol>
+                            @endforeach
+                        </div>
+                    @else
+                        <ol class="jbw-booking-track">
+                            @foreach ($order->trackBookingSteps() as $step)
+                                <li class="jbw-booking-track-step jbw-booking-track-step--{{ $step['state'] }}">
+                                    <span class="jbw-booking-track-marker" aria-hidden="true"></span>
+                                    <div class="jbw-booking-track-content">
+                                        <p class="jbw-booking-track-label">{{ $step['label'] }}</p>
+                                        @if ($step['time'])
+                                            <p class="jbw-booking-track-time">{{ $step['time'] }}</p>
+                                        @endif
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ol>
+                    @endif
                 </div>
 
                 <div @class(['jbw-overview-card', 'jbw-booking-payment-card--pending' => in_array($order->payment_status, ['pending', 'advance_paid'], true)])>

@@ -7,6 +7,7 @@ use App\Models\CheckoutOrder;
 use App\Models\Customer;
 use App\Models\Driver;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Vendor;
 use App\Http\Requests\Admin\OrderRequest;
 use App\Support\AdminCityScope;
@@ -14,6 +15,7 @@ use App\Support\AppliesListDateFilter;
 use App\Support\CodeGenerator;
 use App\Services\Vendor\VendorWalletService;
 use App\Support\StoresUploadedFiles;
+use App\Support\OrderDispatchSupport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -134,7 +136,17 @@ class OrderController extends AdminController
 
     public function show(Order $order): View
     {
-        $order->load(['customer', 'vendor', 'driver', 'category', 'refund', 'dispute', 'checkoutOrder', 'orderItems.portfolioItem']);
+        $order->load([
+            'customer',
+            'vendor',
+            'driver',
+            'category',
+            'refund',
+            'dispute',
+            'checkoutOrder',
+            'orderItems.portfolioItem',
+            'orderItems.driver',
+        ]);
 
         return view('admin.orders.show', [
             'order' => $order,
@@ -182,8 +194,16 @@ class OrderController extends AdminController
 
         $previousPaymentStatus = $order->payment_status;
 
-        $order->update(['status' => $data['status']]);
-        $this->applyStatusSideEffects($order, $data['status']);
+        try {
+            if ($data['status'] !== $order->status) {
+                app(\App\Services\Checkout\VendorBookingItemService::class)
+                    ->setActiveItemsStatus($order->fresh(['orderItems']), $data['status']);
+            }
+        } catch (\InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        $this->applyStatusSideEffects($order->fresh(), $data['status']);
         $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
         return back()->with('success', $this->statusUpdateMessage($order->fresh(), $data['status']));
@@ -201,12 +221,128 @@ class OrderController extends AdminController
         ]);
 
         $previousPaymentStatus = $order->payment_status;
+        $statusChanged = $data['status'] !== $order->status;
 
-        $order->update($data);
-        $this->applyStatusSideEffects($order, $data['status'], $data['payment_status']);
+        // Admin may still override status for ops, but prefer the lifecycle graph.
+        if ($statusChanged && ! OrderDispatchSupport::canTransitionTo($order, $data['status'])) {
+            return back()->with('error', 'Invalid status transition from '.$order->status.' to '.$data['status'].'.');
+        }
+
+        // Driver can only be assigned when booking status is In Transit or Return In Transit.
+        // Check the submitted status so admin can set "In Transit" + driver in one save.
+        $assigningOrChangingDriver = filled($data['driver_id'])
+            && (int) $data['driver_id'] !== (int) ($order->driver_id ?? 0);
+
+        if ($assigningOrChangingDriver && ! OrderDispatchSupport::isDispatchStatus($data['status'])) {
+            return back()
+                ->withInput()
+                ->with('error', 'Assign a driver only after the booking is In Transit (or Return In Transit). First set Order status to In Transit, then assign the driver.');
+        }
+
+        if ($statusChanged && $data['status'] === 're_intransit') {
+            OrderDispatchSupport::resetDriverAssignment($order);
+        } elseif ($statusChanged && $data['status'] === 'rework') {
+            OrderDispatchSupport::resetDriverAssignment($order);
+        } elseif ($statusChanged && $data['status'] === 'in_progress') {
+            OrderDispatchSupport::prepareForTransit($order);
+        }
+
+        // When assigning a driver for a dispatch leg, set delivery sub-status.
+        if (filled($data['driver_id']) && (int) $data['driver_id'] !== (int) $order->driver_id) {
+            $data['driver_delivery_status'] = Order::DRIVER_STATUS_ACCEPTED;
+            $data['driver_assigned_at'] = now();
+            $data['driver_rejection_reason'] = null;
+            if (blank($order->delivery_otp)) {
+                $data['delivery_otp'] = Order::generateDeliveryOtpValue();
+            }
+        }
+
+        $order->fill(collect($data)->except(['status'])->all());
+        $order->save();
+
+        if ($statusChanged) {
+            app(\App\Services\Checkout\VendorBookingItemService::class)
+                ->setActiveItemsStatus($order->fresh(['orderItems']), $data['status']);
+        }
+
+        $this->applyStatusSideEffects($order->fresh(), $data['status'], $data['payment_status']);
         $this->syncWalletOnPaymentSuccess($order->fresh(), $previousPaymentStatus);
 
         return back()->with('success', $this->manageSuccessMessage($order->fresh(), $data));
+    }
+
+    /**
+     * Assign / clear a driver for a single line item (only when that item is In Transit).
+     */
+    public function assignItemDriver(Request $request, Order $order, OrderItem $item): RedirectResponse
+    {
+        $this->authorizeAdmin('edit');
+
+        abort_unless((int) $item->order_id === (int) $order->id, 404);
+
+        $data = $request->validate([
+            'driver_id' => ['nullable', 'exists:drivers,id'],
+        ]);
+
+        if (! $item->canAssignDriver()) {
+            return back()->with(
+                'error',
+                'Assign a driver for "'.$item->title().'" only when its status is In Transit or Return In Transit.'
+            );
+        }
+
+        // Vendor marked "returned" early — reopen as Return In Transit so admin can assign pickup driver.
+        if ($item->status === 'returned') {
+            $item->update(['status' => 're_intransit']);
+            $item->refresh();
+        }
+
+        $driverId = $data['driver_id'] ?? null;
+        $previousItemDriverId = $item->driver_id;
+
+        $item->update([
+            'driver_id' => $driverId ?: null,
+            'driver_assigned_at' => $driverId ? now() : null,
+            'driver_delivery_status' => $driverId ? Order::DRIVER_STATUS_ACCEPTED : null,
+            'driver_pickup_at' => null,
+        ]);
+
+        // Keep booking-level driver in sync with the latest in-transit item assignment.
+        // Admin assignment = already accepted (driver skips accept and can pickup).
+        if ($driverId) {
+            $order->update([
+                'driver_id' => $driverId,
+                'driver_delivery_status' => Order::DRIVER_STATUS_ACCEPTED,
+                'driver_assigned_at' => $order->driver_assigned_at ?: now(),
+                'driver_rejection_reason' => null,
+                'delivery_otp' => $order->delivery_otp ?: Order::generateDeliveryOtpValue(),
+            ]);
+        } elseif ($previousItemDriverId && (int) $order->driver_id === (int) $previousItemDriverId) {
+            // Cleared the same driver from this item — drop booking driver if no other items keep them.
+            $stillAssigned = $order->orderItems()
+                ->where('driver_id', $previousItemDriverId)
+                ->where('id', '!=', $item->id)
+                ->exists();
+
+            if (! $stillAssigned) {
+                $order->update([
+                    'driver_id' => null,
+                    'driver_delivery_status' => null,
+                    'driver_assigned_at' => null,
+                    'driver_pickup_at' => null,
+                ]);
+            }
+        }
+
+        $message = $driverId
+            ? (
+                $item->status === 're_intransit'
+                    ? 'Return driver assigned to "'.$item->title().'" (pickup from customer → deliver to vendor).'
+                    : 'Driver assigned to item "'.$item->title().'".'
+            )
+            : 'Driver cleared from item "'.$item->title().'".';
+
+        return back()->with('success', $message);
     }
 
     protected function syncWalletOnPaymentSuccess(Order $order, string $previousPaymentStatus): void

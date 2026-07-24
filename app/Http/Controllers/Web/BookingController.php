@@ -90,7 +90,7 @@ class BookingController extends WebController
             return redirect()->route('web.bookings.checkout.show', $order->checkout_order_id);
         }
 
-        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'orderItems.portfolioItem', 'portfolioItem']);
+        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'orderItems.portfolioItem', 'orderItems.driver', 'portfolioItem']);
         $paymentSummary = $this->payments->summaryForOrder($order);
 
         return view('web.bookings.show', compact('order', 'paymentSummary'));

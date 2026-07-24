@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('order_items', function (Blueprint $table) {
+            if (! Schema::hasColumn('order_items', 'driver_delivery_status')) {
+                $table->string('driver_delivery_status', 40)->nullable()->after('driver_assigned_at');
+            }
+            if (! Schema::hasColumn('order_items', 'driver_pickup_at')) {
+                $table->timestamp('driver_pickup_at')->nullable()->after('driver_delivery_status');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('order_items', function (Blueprint $table) {
+            if (Schema::hasColumn('order_items', 'driver_pickup_at')) {
+                $table->dropColumn('driver_pickup_at');
+            }
+            if (Schema::hasColumn('order_items', 'driver_delivery_status')) {
+                $table->dropColumn('driver_delivery_status');
+            }
+        });
+    }
+};

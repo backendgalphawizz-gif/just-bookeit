@@ -84,6 +84,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
         Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+        Route::post('bookings/{booking}/confirm-received', [BookingController::class, 'confirmReceived'])->name('bookings.confirm-received');
+        Route::post('bookings/{booking}/request-return', [BookingController::class, 'requestReturn'])->name('bookings.request-return');
+        Route::post('bookings/{booking}/request-rework', [BookingController::class, 'requestRework'])->name('bookings.request-rework');
         Route::post('bookings/{booking}/review', [BookingController::class, 'review'])->name('bookings.review');
         Route::post('bookings/{booking}/dispute', [DisputeController::class, 'store'])->name('bookings.dispute.store');
         Route::get('bookings/{booking}/dispute', [DisputeController::class, 'show'])->name('bookings.dispute.show');
@@ -177,6 +180,8 @@ Route::prefix('v2')->name('api.v2.')->group(function () {
         Route::post('bookings/{booking}/reject', [VendorBookingController::class, 'reject'])->name('bookings.reject');
         Route::post('bookings/{booking}/items/{item}/accept', [VendorBookingController::class, 'acceptItem'])->name('bookings.items.accept');
         Route::post('bookings/{booking}/items/{item}/reject', [VendorBookingController::class, 'rejectItem'])->name('bookings.items.reject');
+        Route::post('bookings/{booking}/items/{item}/status', [VendorBookingController::class, 'updateItemStatus'])->name('bookings.items.status');
+        Route::post('bookings/{booking}/items/{item}/damage', [VendorBookingController::class, 'updateItemDamage'])->name('bookings.items.damage');
         Route::post('bookings/{booking}/status', [VendorBookingController::class, 'updateStatus'])->name('bookings.status');
         Route::post('bookings/{booking}/damage', [VendorBookingController::class, 'updateDamage'])->name('bookings.damage');
 
@@ -247,6 +252,17 @@ Route::prefix('v3')->name('api.v3.')->group(function () {
         Route::post('deliveries/{delivery}/delivered', [DriverDeliveryController::class, 'delivered'])->name('deliveries.delivered');
         Route::post('deliveries/{delivery}/deliver', [DriverDeliveryController::class, 'deliver'])->name('deliveries.deliver');
         Route::post('deliveries/{delivery}/rescheduled', [DriverDeliveryController::class, 'rescheduled'])->name('deliveries.rescheduled');
+
+        // Alias: some clients call /v3/bookings/{id} for the same delivery detail payload.
+        Route::get('bookings/{delivery}', [DriverDeliveryController::class, 'show'])->name('bookings.show');
+        Route::post('bookings/{delivery}/pickup', [DriverDeliveryController::class, 'pickup'])->name('bookings.pickup');
+        Route::post('bookings/{delivery}/dispatch', [DriverDeliveryController::class, 'dispatch'])->name('bookings.dispatch');
+        Route::post('bookings/{delivery}/out-for-delivery', [DriverDeliveryController::class, 'outForDelivery'])->name('bookings.out-for-delivery');
+        Route::post('bookings/{delivery}/deliver', [DriverDeliveryController::class, 'deliver'])->name('bookings.deliver');
+        Route::post('bookings/{delivery}/delivered', [DriverDeliveryController::class, 'delivered'])->name('bookings.delivered');
+        Route::post('bookings/{delivery}/accept', [DriverDeliveryController::class, 'accept'])->name('bookings.accept');
+        Route::post('bookings/{delivery}/reject', [DriverDeliveryController::class, 'reject'])->name('bookings.reject');
+        Route::post('bookings/{delivery}/rescheduled', [DriverDeliveryController::class, 'rescheduled'])->name('bookings.rescheduled');
 
         Route::get('payments', [DriverPaymentController::class, 'index'])->name('payments.index');
         Route::post('payments/withdraw', [DriverPaymentController::class, 'withdraw'])->name('payments.withdraw');

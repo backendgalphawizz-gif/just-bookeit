@@ -74,14 +74,14 @@ class Dispute extends Model
             'rented-dress' => [
                 'Wrong size or fit',
                 'Dress condition issue',
-                'Late pickup or return',
+                'Late pickup of rental item',
                 'Security deposit dispute',
                 'Delivery problem',
             ],
             'rented-jewellery' => [
                 'Missing jewellery piece',
                 'Damage or wear claim',
-                'Late return',
+                'Delayed return of rental item to vendor',
                 'Deposit refund issue',
                 'Delivery problem',
             ],

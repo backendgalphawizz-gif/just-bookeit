@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Support\Api\VendorBookingStatus;
 use App\Support\SubcategoryCatalog;
 use Illuminate\Validation\Rule;
 
@@ -200,7 +201,24 @@ class VendorValidationRules
     public static function bookingDamage(): array
     {
         return [
+            'item_id' => ['nullable', 'integer', 'min:1'],
+            'note' => ['nullable', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TEXT],
             'damage_note' => ['nullable', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TEXT],
+            'damage_amount' => ['nullable', 'numeric', 'min:0'],
+            'damage_deduct_amount' => ['nullable', 'numeric', 'min:0'],
+            'damage_deduct_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function bookingItemStatus(): array
+    {
+        return [
+            'status' => ['required', 'string', Rule::in(VendorBookingStatus::acceptedInputStatuses())],
+            'note' => ['nullable', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TEXT],
+            'damage_note' => ['nullable', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TEXT],
+            'damage_amount' => ['nullable', 'numeric', 'min:0'],
+            'damage_deduct_amount' => ['nullable', 'numeric', 'min:0'],
             'damage_deduct_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ];
     }

@@ -57,15 +57,77 @@
                                         </div>
                                     @endif
                                 </div>
-                                <div class="jb-booking-product-info">
+                                <div class="jb-booking-product-info" style="flex:1;min-width:0">
                                     <p class="jb-booking-product-name">{{ $lineItem->title() }}</p>
                                     <p class="jb-booking-product-meta">
                                         @if ($lineItem->categoryName()){{ $lineItem->categoryName() }}@endif
                                         @if ($variantLabel){{ $lineItem->categoryName() ? ' · ' : '' }}{{ $variantLabel }}@endif
                                         @if ($lineItem->status){{ ($lineItem->categoryName() || $variantLabel) ? ' · ' : '' }}{{ $lineItem->statusLabel() }}@endif
                                     </p>
-                                    <p class="jb-booking-product-price">₹{{ number_format((float) $lineItem->line_amount, 0) }}</p>
+                                    <p class="jb-booking-product-price">
+                                        ₹{{ number_format((float) $lineItem->line_amount, 0) }}
+                                        @if ($lineItem->damageDeduction() > 0)
+                                            <span class="jb-booking-product-meta" style="color:#b91c1c;font-weight:650"> · Damage −₹{{ number_format($lineItem->damageDeduction(), 2) }}</span>
+                                        @endif
+                                    </p>
+                                    @if (filled($lineItem->damage_note) || $lineItem->damage_amount !== null || $lineItem->damage_deduct_percent !== null)
+                                        <p class="jb-booking-product-meta" style="color:#b91c1c">
+                                            Damage: {{ $lineItem->damage_note ?: 'Deduction applied' }}
+                                            @if ($lineItem->damage_deduct_percent !== null)
+                                                ({{ rtrim(rtrim(number_format((float) $lineItem->damage_deduct_percent, 2), '0'), '.') }}%)
+                                            @endif
+                                        </p>
+                                    @endif
                                     <p class="jb-booking-product-qty">Qty — {{ (int) $lineItem->quantity }}</p>
+
+                                    @if (auth('admin')->user()->hasPermission('orders', 'edit'))
+                                        @php $itemCanAssign = $lineItem->canAssignDriver(); @endphp
+                                        <form method="POST"
+                                              action="{{ route('admin.orders.items.assign-driver', [$order, $lineItem]) }}"
+                                              class="jb-booking-item-driver"
+                                              style="margin-top:0.65rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center">
+                                            @csrf
+                                            <label class="jb-label" for="item_driver_{{ $lineItem->id }}" style="margin:0;font-size:0.75rem">
+                                                Driver
+                                            </label>
+                                            <select id="item_driver_{{ $lineItem->id }}"
+                                                    name="driver_id"
+                                                    class="jb-select"
+                                                    style="min-width:10rem;max-width:14rem"
+                                                    @disabled(! $itemCanAssign)>
+                                                <option value="">Unassigned</option>
+                                                @foreach ($drivers as $d)
+                                                    <option value="{{ $d->id }}" @selected((int) $lineItem->driver_id === (int) $d->id)>
+                                                        {{ $d->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @if ($itemCanAssign)
+                                                <x-admin.button variant="secondary" type="submit" size="sm">Save</x-admin.button>
+                                                @if (in_array($lineItem->status, ['re_intransit', 'returned'], true))
+                                                    @php
+                                                        $returnAddresses = \App\Support\OrderDispatchSupport::addressesForLeg($order, true);
+                                                    @endphp
+                                                    <span class="text-xs text-slate-600" style="flex-basis:100%">
+                                                        Return In Transit — pickup: {{ $returnAddresses['pickup_address'] ?: 'customer' }}
+                                                        → deliver: {{ $returnAddresses['delivery_address'] ?: 'vendor' }}
+                                                    </span>
+                                                @endif
+                                            @elseif ($lineItem->status === 'rework')
+                                                <span class="text-xs text-slate-500">Rework with vendor — assign driver after vendor sets Return In Transit</span>
+                                            @else
+                                                <span class="text-xs text-slate-500">Available when item is In Transit or Return In Transit</span>
+                                            @endif
+                                            @if ($lineItem->driver)
+                                                <span class="text-xs text-slate-600">
+                                                    Assigned: {{ $lineItem->driver->name }}
+                                                    @if ($lineItem->driver_assigned_at)
+                                                        · {{ $lineItem->driver_assigned_at->format('M d, H:i') }}
+                                                    @endif
+                                                </span>
+                                            @endif
+                                        </form>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -184,6 +246,18 @@
                 @if ($order->city || $order->pincode)
                     <p class="jb-booking-address-text">{{ $order->city }}@if($order->pincode), {{ $order->pincode }}@endif</p>
                 @endif
+                @if ($order->status === 're_intransit' || $order->orderItems->contains(fn ($i) => $i->status === 're_intransit'))
+                    @php $returnLeg = \App\Support\OrderDispatchSupport::addressesForLeg($order, true); @endphp
+                    <p class="jb-booking-address-text" style="margin-top:0.75rem;font-size:0.8125rem;color:var(--jb-muted,#64748b)">
+                        <strong>Return leg (Return In Transit items only):</strong> pickup from customer → deliver to vendor
+                    </p>
+                    <p class="jb-booking-address-text" style="font-size:0.8125rem">
+                        Pickup: {{ $returnLeg['pickup_address'] ?: '—' }}
+                    </p>
+                    <p class="jb-booking-address-text" style="font-size:0.8125rem">
+                        Deliver to: {{ $returnLeg['delivery_address'] ?: '—' }}
+                    </p>
+                @endif
             </div>
 
             {{-- Measurements --}}
@@ -239,26 +313,59 @@
 
         {{-- RIGHT SIDEBAR --}}
         <div class="jb-booking-sidebar">
-            {{-- Track booking (delivery) --}}
+            {{-- Track booking (delivery) — item-wise when line items exist --}}
             <div class="jb-booking-card">
                 <h3 class="jb-booking-card-title">{{ $order->isRental() ? 'Delivery tracking' : 'Track booking' }}</h3>
-                <ol class="jb-booking-track">
-                    @foreach ($order->trackBookingSteps() as $step)
-                        <li class="jb-booking-track-step jb-booking-track-step--{{ $step['state'] }}">
-                            <span class="jb-booking-track-marker" aria-hidden="true">
-                                @if ($step['state'] === 'done')
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                @if ($order->orderItems->isNotEmpty())
+                    <div class="jb-item-tracks">
+                        @foreach ($order->orderItems as $lineItem)
+                            <div class="jb-item-track">
+                                <div class="jb-item-track-head">
+                                    <p class="jb-item-track-title">{{ $lineItem->title() }}</p>
+                                    <p class="jb-item-track-status">{{ $lineItem->statusLabel() }}</p>
+                                </div>
+                                @if ($lineItem->driver)
+                                    <p class="jb-item-track-driver">Driver: {{ $lineItem->driver->name }}</p>
                                 @endif
-                            </span>
-                            <div class="jb-booking-track-body">
-                                <p class="jb-booking-track-label">{{ $step['label'] }}</p>
-                                @if ($step['time'])
-                                    <p class="jb-booking-track-time">{{ $step['time'] }}</p>
-                                @endif
+                                <ol class="jb-booking-track">
+                                    @foreach ($lineItem->trackSteps() as $step)
+                                        <li class="jb-booking-track-step jb-booking-track-step--{{ $step['state'] }}">
+                                            <span class="jb-booking-track-marker" aria-hidden="true">
+                                                @if ($step['state'] === 'done')
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                @endif
+                                            </span>
+                                            <div class="jb-booking-track-body">
+                                                <p class="jb-booking-track-label">{{ $step['label'] }}</p>
+                                                @if ($step['time'])
+                                                    <p class="jb-booking-track-time">{{ $step['time'] }}</p>
+                                                @endif
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ol>
                             </div>
-                        </li>
-                    @endforeach
-                </ol>
+                        @endforeach
+                    </div>
+                @else
+                    <ol class="jb-booking-track">
+                        @foreach ($order->trackBookingSteps() as $step)
+                            <li class="jb-booking-track-step jb-booking-track-step--{{ $step['state'] }}">
+                                <span class="jb-booking-track-marker" aria-hidden="true">
+                                    @if ($step['state'] === 'done')
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                    @endif
+                                </span>
+                                <div class="jb-booking-track-body">
+                                    <p class="jb-booking-track-label">{{ $step['label'] }}</p>
+                                    @if ($step['time'])
+                                        <p class="jb-booking-track-time">{{ $step['time'] }}</p>
+                                    @endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
             </div>
 
             {{-- Billing --}}
@@ -275,10 +382,23 @@
                 </div>
             @endif
 
-            @if ($order->damage_note || $order->damage_deduct_percent)
+            @if ($order->damageDeduction() > 0 || $order->damage_note || $order->orderItems->contains(fn ($i) => $i->hasDamageRecord()))
                 <div class="jb-booking-card">
                     <h3 class="jb-booking-card-title">Damage</h3>
-                    <p class="jb-booking-notes">{{ $order->damage_note ?? '—' }}@if($order->damage_deduct_percent) — {{ $order->damage_deduct_percent }}%@endif</p>
+                    @if ($order->orderItems->contains(fn ($i) => $i->hasDamageRecord()))
+                        @foreach ($order->orderItems->filter(fn ($i) => $i->hasDamageRecord()) as $damageItem)
+                            <p class="jb-booking-notes" style="{{ ! $loop->first ? 'margin-top:0.5rem' : '' }}">
+                                <strong>{{ $damageItem->title() }}:</strong>
+                                {{ $damageItem->damage_note ?? '—' }}
+                                — ₹{{ number_format($damageItem->damageDeduction(), 2) }}
+                                @if ($damageItem->damage_deduct_percent !== null)
+                                    ({{ $damageItem->damage_deduct_percent }}%)
+                                @endif
+                            </p>
+                        @endforeach
+                    @else
+                        <p class="jb-booking-notes">{{ $order->damage_note ?? '—' }} — ₹{{ number_format($order->damageDeduction(), 2) }}@if($order->damage_deduct_percent !== null) ({{ $order->damage_deduct_percent }}%)@endif</p>
+                    @endif
                 </div>
             @endif
 
@@ -289,7 +409,17 @@
                 <dl class="jb-booking-payment-lines">
                     <div><dt>Subtotal</dt><dd>₹{{ number_format($order->subtotal(), 0) }}</dd></div>
                     @if ($order->damageDeduction() > 0)
-                        <div class="jb-booking-payment-damage"><dt>Damage deduction</dt><dd>- ₹{{ number_format($order->damageDeduction(), 0) }}</dd></div>
+                        <div class="jb-booking-payment-damage">
+                            <dt>
+                                Damage deduction
+                                @if ($order->damage_note)
+                                    <span style="display:block;font-weight:500;color:var(--jb-muted,#64748b);font-size:0.75rem;margin-top:0.15rem">{{ $order->damage_note }}@if($order->damage_deduct_percent !== null) ({{ rtrim(rtrim(number_format((float) $order->damage_deduct_percent, 2), '0'), '.') }}%)@endif</span>
+                                @elseif ($order->damage_deduct_percent !== null)
+                                    <span style="display:block;font-weight:500;color:var(--jb-muted,#64748b);font-size:0.75rem;margin-top:0.15rem">{{ rtrim(rtrim(number_format((float) $order->damage_deduct_percent, 2), '0'), '.') }}%</span>
+                                @endif
+                            </dt>
+                            <dd>− ₹{{ number_format($order->damageDeduction(), 2) }}</dd>
+                        </div>
                     @endif
                     <div><dt>Shipping & handling</dt><dd>₹{{ number_format($order->delivery_fee ?? 0, 0) }}</dd></div>
                     <div><dt>Tax (GST)</dt><dd>₹{{ number_format($order->tax_amount ?? 0, 0) }}</dd></div>
@@ -365,13 +495,25 @@
                             </select>
                         </div>
                         <div>
+                            @php
+                                $canAssignDriver = \App\Support\OrderDispatchSupport::isDispatchStatus($order->status);
+                            @endphp
                             <label class="jb-label" for="driver_id">Assign driver</label>
-                            <select id="driver_id" name="driver_id" class="jb-select">
+                            <select id="driver_id" name="driver_id" class="jb-select"
+                                    data-dispatch-only="1"
+                                    @disabled(! $canAssignDriver)>
                                 <option value="">Unassigned</option>
                                 @foreach ($drivers as $d)
                                     <option value="{{ $d->id }}" @selected($order->driver_id == $d->id)>{{ $d->name }}</option>
                                 @endforeach
                             </select>
+                            <p class="text-xs text-slate-500 mt-1">
+                                Booking-level driver (legacy). For multi-item bookings, assign drivers under each product above — only items in <strong>In Transit</strong> can get a driver.
+                            </p>
+                            @unless ($canAssignDriver)
+                                {{-- Preserve current value while disabled; JS re-enables when status changes. --}}
+                                <input type="hidden" id="driver_id_fallback" name="driver_id" value="{{ $order->driver_id }}">
+                            @endunless
                         </div>
                         <div>
                             <label class="jb-label" for="admin_notes">Admin notes</label>
@@ -406,3 +548,27 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+    const statusEl = document.getElementById('status');
+    const driverEl = document.getElementById('driver_id');
+    const fallback = document.getElementById('driver_id_fallback');
+    if (!statusEl || !driverEl) return;
+
+    const dispatchStatuses = new Set(['in_progress', 're_intransit']);
+
+    const syncDriverSelect = () => {
+        const allowed = dispatchStatuses.has(statusEl.value);
+        driverEl.disabled = !allowed;
+        if (fallback) {
+            fallback.disabled = allowed; // when select enabled, don't submit hidden
+        }
+    };
+
+    statusEl.addEventListener('change', syncDriverSelect);
+    syncDriverSelect();
+})();
+</script>
+@endpush

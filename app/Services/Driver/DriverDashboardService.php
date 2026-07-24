@@ -13,24 +13,42 @@ class DriverDashboardService
 {
     public function stats(Driver $driver): array
     {
-        $base = Order::query()->where('driver_id', $driver->id);
+        $base = Order::query()->where(function (Builder $builder) use ($driver) {
+            $builder->where('driver_id', $driver->id)
+                ->orWhereHas('orderItems', fn (Builder $items) => $items->where('driver_id', $driver->id));
+        });
         $dispatchStatuses = DriverDeliveryTab::activeDeliveryStatuses();
 
         return [
             'total_earnings' => round((float) $driver->total_earnings, 2),
             'wallet_balance' => round((float) $driver->wallet_balance, 2),
             'assigned_deliveries' => (clone $base)
-                ->whereIn('status', $dispatchStatuses)
+                ->where(function (Builder $builder) use ($dispatchStatuses) {
+                    $builder->whereIn('status', $dispatchStatuses)
+                        ->orWhereHas('orderItems', fn (Builder $items) => $items->whereIn('status', $dispatchStatuses));
+                })
                 ->count(),
             'pending_deliveries' => Order::query()
-                ->whereIn('status', $dispatchStatuses)
+                ->where(function (Builder $builder) use ($dispatchStatuses) {
+                    $builder->whereIn('status', $dispatchStatuses)
+                        ->orWhereHas('orderItems', fn (Builder $items) => $items->whereIn('status', $dispatchStatuses));
+                })
                 ->whereNull('driver_id')
+                ->whereDoesntHave('orderItems', fn (Builder $items) => $items
+                    ->whereIn('status', $dispatchStatuses)
+                    ->whereNotNull('driver_id'))
                 ->count(),
             'completed_deliveries' => (clone $base)
-                ->whereIn('status', ['delivered', 're_delivered'])
+                ->where(function (Builder $builder) {
+                    $builder->whereIn('status', ['delivered', 're_delivered'])
+                        ->orWhereHas('orderItems', fn (Builder $items) => $items->whereIn('status', ['delivered', 're_delivered']));
+                })
                 ->count(),
             'cancelled_deliveries' => (clone $base)
-                ->where('status', 'cancelled')
+                ->where(function (Builder $builder) {
+                    $builder->where('status', 'cancelled')
+                        ->orWhereHas('orderItems', fn (Builder $items) => $items->where('status', 'cancelled'));
+                })
                 ->count(),
         ];
     }
@@ -109,11 +127,22 @@ class DriverDashboardService
     {
         $query = Order::query()
             ->with(['customer', 'vendor', 'category'])
-            ->where('driver_id', $driver->id)
+            ->where(function (Builder $builder) use ($driver) {
+                $builder->where('driver_id', $driver->id)
+                    ->orWhereHas('orderItems', fn (Builder $items) => $items->where('driver_id', $driver->id));
+            })
             ->where(function (Builder $builder) {
                 $builder->whereIn('status', DriverDeliveryTab::activeDeliveryStatuses())
                     ->orWhereIn('status', ['delivered', 're_delivered'])
-                    ->orWhere('status', 'cancelled');
+                    ->orWhere('status', 'cancelled')
+                    ->orWhereHas('orderItems', function (Builder $items) {
+                        $items->whereIn('status', [
+                            ...DriverDeliveryTab::activeDeliveryStatuses(),
+                            'delivered',
+                            're_delivered',
+                            'cancelled',
+                        ]);
+                    });
             });
 
         if ($request?->filled('search')) {

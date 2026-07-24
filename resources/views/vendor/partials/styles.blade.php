@@ -6757,6 +6757,39 @@ border-bottom: 0px !important;
     font-size: .75rem;
     color: var(--vp-muted);
 }
+.vp-item-tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+.vp-item-track + .vp-item-track {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--vp-border);
+}
+.vp-item-track-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+.vp-item-track-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+.vp-item-track-status {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--vp-primary, #ea580c);
+    text-align: right;
+}
+.vp-item-track-driver {
+    margin: 0 0 0.65rem;
+    font-size: 0.75rem;
+    color: var(--vp-muted);
+}
 .vp-booking-payment-lines {
     display: grid;
     gap: .5rem;
@@ -6770,6 +6803,7 @@ border-bottom: 0px !important;
 }
 .vp-booking-payment-lines dt { color: var(--vp-muted); font-weight: 600; }
 .vp-booking-payment-lines dd { margin: 0; font-weight: 700; }
+.vp-booking-payment-damage dt { color: #b91c1c; }
 .vp-booking-payment-damage dd { color: #b91c1c; }
 .vp-booking-payment-total {
     display: flex;
