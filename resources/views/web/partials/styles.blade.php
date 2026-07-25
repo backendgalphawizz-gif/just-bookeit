@@ -38,6 +38,10 @@
 
 /* ─── Reset ───────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
+html, body {
+    max-width: 100%;
+    overflow-x: clip;
+}
 [x-cloak] { display: none !important; }
 .hidden { display: none !important; }
 
@@ -3951,6 +3955,15 @@ a { color: inherit; }
         align-self: start;
     }
 }
+@media (max-width: 959px) {
+    .jbw-profile-layout {
+        grid-template-columns: 1fr;
+    }
+    .jbw-profile-sidebar {
+        position: static;
+        max-height: none;
+    }
+}
 /* When the sidebar is taller than the viewport, allow internal scroll only there */
 @media (min-width: 900px) and (max-height: 780px) {
     .jbw-profile-sidebar {
@@ -4511,10 +4524,72 @@ a { color: inherit; }
     letter-spacing: 0.04em;
 }
 .jbw-status--new       { background: #dbeafe; color: #1d4ed8; }
+.jbw-status--accepted  { background: #e0e7ff; color: #4338ca; }
 .jbw-status--in_progress{ background: #ffedd5; color: #c2410c; }
 .jbw-status--delivered { background: #dcfce7; color: #15803d; }
+.jbw-status--rental_active { background: #ccfbf1; color: #0f766e; }
+.jbw-status--rework    { background: #fce7f3; color: #be185d; }
+.jbw-status--re_intransit { background: #ffedd5; color: #9a3412; }
+.jbw-status--returned  { background: #e0f2fe; color: #0369a1; }
+.jbw-status--re_delivered { background: #dcfce7; color: #166534; }
+.jbw-status--completed { background: #d1fae5; color: #047857; }
 .jbw-status--cancelled { background: #fee2e2; color: #b91c1c; }
 .jbw-status--default   { background: #f1f5f9; color: #475569; }
+
+.jbw-booking-item-actions {
+    margin-top: 0.85rem;
+    display: grid;
+    gap: 0.75rem;
+}
+@media (max-width: 639px) {
+    .jbw-booking-item-actions .jbw-btn,
+    .jbw-booking-item-actions button,
+    .jbw-booking-item-actions .jbw-booking-action-form .jbw-btn {
+        width: 100%;
+        min-height: 44px;
+    }
+    .jbw-booking-item-actions .jbw-field textarea,
+    .jbw-booking-item-actions .jbw-field input,
+    .jbw-booking-item-actions .jbw-field select {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
+.jbw-booking-action-form .jbw-field { margin-bottom: 0.5rem; }
+.jbw-booking-action-hint {
+    margin: 0.35rem 0 0;
+    font-size: 0.75rem;
+    color: var(--c-muted, #64748b);
+    line-height: 1.4;
+}
+.jbw-booking-otp {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 0.75rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+.jbw-booking-otp-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #1d4ed8;
+}
+.jbw-booking-otp-code {
+    font-size: 1.35rem;
+    letter-spacing: 0.2em;
+    color: #1e3a8a;
+}
+.jbw-booking-otp-hint {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+.jbw-order-line-meta--damage {
+    color: #b91c1c !important;
+}
 
 @media (max-width: 639px) {
     .jbw-bh-item {
@@ -8189,11 +8264,20 @@ background: #AE2A0B;
     background: #f8f8f8;
     flex-shrink: 0;
 }
+.jbw-chat-compose-stack {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--c-surface, #fff);
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+}
 .jbw-chat-attach {
     display: grid;
     place-items: center;
     width: 2.25rem;
     height: 2.25rem;
+    min-width: 44px;
+    min-height: 44px;
     color: var(--c-muted);
     cursor: pointer;
 }

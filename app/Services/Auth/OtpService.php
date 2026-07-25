@@ -30,9 +30,10 @@ class OtpService
             $digits = substr($digits, 2);
         }
 
-        if (strlen($digits) !== 10) {
+        // Indian mobile: 10 digits starting 6–9 (same as customer web login).
+        if (! preg_match('/^[6-9]\d{9}$/', $digits)) {
             throw ValidationException::withMessages([
-                'mobile' => ['Enter a valid 10-digit mobile number.'],
+                'mobile' => ['Enter a valid 10-digit mobile number starting with 6–9.'],
             ]);
         }
 
@@ -72,7 +73,8 @@ class OtpService
             'message' => $type === self::TYPE_LOGIN
                 ? 'OTP sent for login.'
                 : 'OTP sent for registration.',
-            'otp' => $otp,
+            // Never expose OTP in production responses (SMS delivers it).
+            ...(config('app.debug') ? ['otp' => $otp] : []),
         ];
     }
 

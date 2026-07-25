@@ -6,6 +6,8 @@
         isset($quantity) ? 'Qty '.$quantity : null,
         $unitPrice ?? null,
     ])->filter()->implode(' · ');
+    $orderItem = $orderItem ?? null;
+    $order = $order ?? null;
 @endphp
 
 <article class="jbw-order-item-block">
@@ -16,13 +18,32 @@
             @if ($meta !== '')
                 <p class="jbw-order-line-meta">{{ $meta }}</p>
             @endif
+            @if ($orderItem && (float) ($orderItem->damage_amount ?? 0) > 0)
+                <p class="jbw-order-line-meta jbw-order-line-meta--damage">
+                    Damage deduction: ₹{{ number_format((float) $orderItem->damage_amount, 0) }}
+                    @if ($orderItem->damage_note)
+                        · {{ $orderItem->damage_note }}
+                    @endif
+                </p>
+            @endif
         </div>
         @if (!empty($lineTotal))
             <p class="jbw-order-line-price">{{ $lineTotal }}</p>
         @endif
     </div>
 
-    @if (!empty($order))
-        @include('web.partials.order-item-progress-inline', ['order' => $order, 'compact' => true])
+    @if ($order)
+        @include('web.partials.order-item-progress-inline', [
+            'order' => $order,
+            'orderItem' => $orderItem,
+            'compact' => true,
+        ])
+    @endif
+
+    @if ($order)
+        @include('web.partials.booking-item-actions', [
+            'order' => $order,
+            'orderItem' => $orderItem,
+        ])
     @endif
 </article>

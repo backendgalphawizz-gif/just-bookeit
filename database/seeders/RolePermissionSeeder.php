@@ -18,12 +18,9 @@ class RolePermissionSeeder extends Seeder
             'portfolio' => 'Product Moderation',
             'categories' => 'Category Management',
             'orders' => 'Booking & Orders',
-            'chat' => 'Chat & Communication',
-            'video_calls' => 'Video Call Monitoring',
             'payments' => 'Payment Management',
             'refunds' => 'Refund Management',
             'payouts' => 'Vendor Payouts',
-            'commissions' => 'Commission Management',
             'banners' => 'Banner & CMS',
             'faqs' => 'FAQ Management',
             'sizes' => 'Product Sizes',
@@ -43,6 +40,13 @@ class RolePermissionSeeder extends Seeder
             );
         }
 
+        // Remove unused modules that have no admin routes/menu entries.
+        $dead = Permission::query()->whereIn('slug', ['chat', 'video_calls', 'commissions'])->get();
+        foreach ($dead as $permission) {
+            $permission->roles()->detach();
+            $permission->delete();
+        }
+
         $roles = [
             ['name' => 'Super Admin', 'slug' => 'super_admin', 'description' => 'Full platform access'],
             ['name' => 'Support Admin', 'slug' => 'support_admin', 'description' => 'Customer support and disputes'],
@@ -56,12 +60,12 @@ class RolePermissionSeeder extends Seeder
         }
 
         $support = Role::query()->where('slug', 'support_admin')->first();
-        $supportPermissions = ['dashboard', 'customers', 'orders', 'chat', 'disputes', 'refunds', 'contact_messages'];
+        $supportPermissions = ['dashboard', 'customers', 'orders', 'disputes', 'refunds', 'contact_messages'];
 
         $this->attachPermissions($support, array_merge($supportPermissions, ['drivers']), edit: true, create: false);
 
         $finance = Role::query()->where('slug', 'finance_admin')->first();
-        $this->attachPermissions($finance, ['dashboard', 'payments', 'refunds', 'payouts', 'commissions', 'orders'], edit: true, create: true);
+        $this->attachPermissions($finance, ['dashboard', 'payments', 'refunds', 'payouts', 'settings', 'orders'], edit: true, create: true);
 
         $vendorAdmin = Role::query()->where('slug', 'vendor_management_admin')->first();
         $this->attachPermissions($vendorAdmin, ['dashboard', 'vendors', 'drivers', 'portfolio', 'categories', 'orders'], edit: true, create: true);

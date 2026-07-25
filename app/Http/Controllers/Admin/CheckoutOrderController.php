@@ -38,6 +38,8 @@ class CheckoutOrderController extends AdminController
 
     public function show(CheckoutOrder $checkoutOrder): View
     {
+        $this->authorizeCheckoutCity($checkoutOrder);
+
         $checkoutOrder->load([
             'customer',
             'subOrders.vendor',

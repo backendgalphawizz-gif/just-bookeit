@@ -71,6 +71,8 @@ class DriverController extends AdminController
 
     public function show(Driver $driver): View
     {
+        $this->authorizeDriverCity($driver);
+
         $driver->load([
             'orders' => fn ($q) => $q->latest()->limit(10),
             'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
@@ -81,11 +83,15 @@ class DriverController extends AdminController
 
     public function edit(Driver $driver): View
     {
+        $this->authorizeDriverCity($driver);
+
         return view('admin.drivers.edit', compact('driver'));
     }
 
     public function update(DriverRequest $request, Driver $driver): RedirectResponse
     {
+        $this->authorizeDriverCity($driver);
+
         $data = $this->driverData($request);
 
         if (($data['status'] ?? '') === 'rejected' && $driver->status !== 'rejected') {
@@ -120,6 +126,8 @@ class DriverController extends AdminController
 
     public function destroy(Driver $driver): RedirectResponse
     {
+        $this->authorizeDriverCity($driver);
+
         if ($driver->orders()->exists()) {
             return back()->with('error', 'This driver has assigned orders and cannot be deleted.');
         }

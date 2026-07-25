@@ -29,7 +29,10 @@ class RoleController extends AdminController
     public function create(): View
     {
         return view('admin.roles.create', [
-            'permissions' => Permission::query()->orderBy('name')->get(),
+            'permissions' => Permission::query()
+                ->whereNotIn('slug', ['chat', 'video_calls', 'commissions'])
+                ->orderBy('name')
+                ->get(),
             
             'rolePermissions' => [],
         ]);
@@ -49,7 +52,10 @@ class RoleController extends AdminController
 
         return view('admin.roles.edit', [
             'role' => $role,
-            'permissions' => Permission::query()->orderBy('name')->get(),
+            'permissions' => Permission::query()
+                ->whereNotIn('slug', ['chat', 'video_calls', 'commissions'])
+                ->orderBy('name')
+                ->get(),
             'rolePermissions' => $this->rolePermissionMap($role),
             'isSuperAdmin' => $role->slug === 'super_admin',
         ]);

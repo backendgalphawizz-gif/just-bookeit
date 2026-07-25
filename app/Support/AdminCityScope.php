@@ -65,6 +65,54 @@ class AdminCityScope
         return in_array($city, self::cities($admin), true);
     }
 
+    public static function adminCanAccessOrder(Order $order, ?Admin $admin = null): bool
+    {
+        if (self::isUnrestricted($admin)) {
+            return true;
+        }
+
+        $order->loadMissing('vendor');
+
+        return self::adminCanAccessCity($order->city, $admin)
+            || self::adminCanAccessCity($order->vendor?->city, $admin);
+    }
+
+    public static function adminCanAccessCheckout(CheckoutOrder $checkout, ?Admin $admin = null): bool
+    {
+        if (self::isUnrestricted($admin)) {
+            return true;
+        }
+
+        $checkout->loadMissing(['subOrders.vendor']);
+
+        if (self::adminCanAccessCity($checkout->city, $admin)) {
+            return true;
+        }
+
+        foreach ($checkout->subOrders as $subOrder) {
+            if (self::adminCanAccessOrder($subOrder, $admin)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function adminCanAccessVendor(Vendor $vendor, ?Admin $admin = null): bool
+    {
+        return self::adminCanAccessCity($vendor->city, $admin);
+    }
+
+    public static function adminCanAccessDriver(Driver $driver, ?Admin $admin = null): bool
+    {
+        return self::adminCanAccessCity($driver->city, $admin);
+    }
+
+    public static function adminCanAccessCustomer(Customer $customer, ?Admin $admin = null): bool
+    {
+        return self::adminCanAccessCity($customer->city, $admin);
+    }
+
     /** @param Builder<\Illuminate\Database\Eloquent\Model> $query */
     public static function scopeByCity(Builder $query, ?Admin $admin = null): Builder
     {

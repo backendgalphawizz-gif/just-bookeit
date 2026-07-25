@@ -1,23 +1,32 @@
 @php
-    $steps = $order->trackBookingSteps();
+    /** @var \App\Models\Order $order */
+    /** @var \App\Models\OrderItem|null $orderItem */
+    $orderItem = $orderItem ?? null;
+    $compact = ! empty($compact);
+
+    if ($orderItem) {
+        $steps = $orderItem->trackSteps();
+        $statusLabel = $orderItem->statusLabel();
+        $status = $orderItem->statusForDisplay($order);
+        $isRentalItem = \App\Support\OrderItemStatusSupport::isRentalItem($orderItem, $order);
+        $rental = $isRentalItem ? $order->rentalTrackingSummary() : null;
+    } else {
+        $steps = $order->trackBookingSteps();
+        $statusLabel = $order->statusLabel();
+        $status = $order->status;
+        $rental = $order->isRental() ? $order->rentalTrackingSummary() : null;
+    }
+
     $doneCount = collect($steps)->where('state', 'done')->count();
     $totalSteps = max(1, count($steps));
     $percent = (int) round(($doneCount / $totalSteps) * 100);
-    $rental = $order->rentalTrackingSummary();
-    $statusClass = match($order->status) {
-        'new', 'pending_acceptance' => 'new',
-        'in_progress', 'accepted' => 'in_progress',
-        'delivered' => 'delivered',
-        'cancelled', 'refunded' => 'cancelled',
-        default => 'default',
-    };
-    $compact = !empty($compact);
+    $statusClass = \App\Support\WebBookingStatus::badgeClass($status);
 @endphp
 
 <div class="jbw-order-item-progress{{ $compact ? ' jbw-order-item-progress--compact' : '' }}">
     <div class="jbw-order-item-progress-head">
         <span class="jbw-order-item-progress-label">Item status</span>
-        <span class="jbw-status jbw-status--{{ $statusClass }} jbw-status--sm">{{ $order->statusLabel() }}</span>
+        <span class="jbw-status jbw-status--{{ $statusClass }} jbw-status--sm">{{ $statusLabel }}</span>
     </div>
 
     <div class="jbw-order-item-progress-bar" role="progressbar" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100">
@@ -25,7 +34,7 @@
     </div>
 
     <ol class="jbw-order-item-steps">
-        @foreach ($steps as $index => $step)
+        @foreach ($steps as $step)
             <li class="jbw-order-item-step jbw-order-item-step--{{ $step['state'] }}{{ $loop->last ? ' is-last' : '' }}" title="{{ $step['label'] }}">
                 <span class="jbw-order-item-step-dot" aria-hidden="true">
                     @if ($step['state'] === 'done')
@@ -37,7 +46,7 @@
         @endforeach
     </ol>
 
-    @if ($rental && $order->status !== 'cancelled' && $order->status !== 'refunded')
+    @if ($rental && ! in_array($status, ['cancelled', 'refunded'], true))
         <div class="jbw-order-item-rental">
             <div class="jbw-order-item-rental-head">
                 <span>Rental</span>

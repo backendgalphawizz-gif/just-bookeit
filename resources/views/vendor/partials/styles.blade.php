@@ -1090,6 +1090,35 @@ img { max-width: 100%; display: block; }
 /* Table */
 .vp-table-wrap { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
 .vp-table { width: 100%; border-collapse: collapse; font-size: .875rem; min-width: 640px; table-layout: auto; }
+@media (max-width: 639px) {
+    .vp-bookings-page .vp-table-wrap,
+    .vp-page--bookings .vp-table-wrap {
+        margin: 0 -0.25rem;
+    }
+    .vp-bookings-page .vp-table,
+    .vp-page--bookings .vp-table {
+        min-width: 36rem;
+        font-size: 0.8125rem;
+    }
+    .vp-booking-detail form .vp-field,
+    .vp-booking-show form .vp-field,
+    .vp-form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    .vp-booking-detail select,
+    .vp-booking-detail input,
+    .vp-booking-detail textarea,
+    .vp-booking-show select,
+    .vp-booking-show input,
+    .vp-booking-show textarea {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        min-height: 44px;
+    }
+}
 .vp-table th {
     text-align: left; padding: .9rem 1.15rem; font-size: .68rem; text-transform: uppercase;
     letter-spacing: .05em; color: var(--vp-muted); border-bottom: 1px solid var(--vp-border); background: #fafbfc; white-space: nowrap;
@@ -3465,6 +3494,12 @@ img[data-vp-variant-thumb][hidden] {
     letter-spacing: -.03em;
     color: #1e293b;
     text-align: left !important;
+}
+@media (max-width: 360px) {
+    .vp-auth-card { padding: 1.25rem 1rem; }
+    .vp-auth-title { font-size: 1.4rem; line-height: 1.25; }
+    .vp-auth-brand { font-size: 0.95rem; }
+    .vp-auth-sub { margin-bottom: 1.25rem; }
 }
 .vp-auth-sub {
     color: #94a3b8;

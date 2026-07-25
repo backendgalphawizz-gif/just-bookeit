@@ -81,6 +81,9 @@ class DisputeController extends AdminController
     public function show(Dispute $dispute): View
     {
         $dispute->load(['order.customer', 'order.vendor', 'order.category', 'category', 'messages']);
+        if ($dispute->order) {
+            $this->authorizeOrderCity($dispute->order);
+        }
 
         $dispute->messages()
             ->where('sender_type', DisputeMessage::SENDER_CUSTOMER)
@@ -92,11 +95,21 @@ class DisputeController extends AdminController
 
     public function edit(Dispute $dispute): View
     {
+        $dispute->loadMissing('order.vendor');
+        if ($dispute->order) {
+            $this->authorizeOrderCity($dispute->order);
+        }
+
         return view('admin.disputes.edit', compact('dispute'));
     }
 
     public function update(DisputeUpdateRequest $request, Dispute $dispute): RedirectResponse
     {
+        $dispute->loadMissing('order.vendor');
+        if ($dispute->order) {
+            $this->authorizeOrderCity($dispute->order);
+        }
+
         $dispute->update($request->validated());
 
         return redirect()->route('admin.disputes.show', $dispute)->with('success', 'Dispute updated successfully.');
@@ -104,6 +117,11 @@ class DisputeController extends AdminController
 
     public function destroy(Dispute $dispute): RedirectResponse
     {
+        $dispute->loadMissing('order.vendor');
+        if ($dispute->order) {
+            $this->authorizeOrderCity($dispute->order);
+        }
+
         $dispute->delete();
 
         return redirect()->route('admin.disputes.index')->with('success', 'Dispute deleted successfully.');

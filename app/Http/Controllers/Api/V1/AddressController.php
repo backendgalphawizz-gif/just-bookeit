@@ -103,7 +103,7 @@ class AddressController extends ApiController
             'address_line' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'is_default' => ['nullable', 'boolean'],
         ]);
     }

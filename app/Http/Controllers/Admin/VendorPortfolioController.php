@@ -51,6 +51,8 @@ class VendorPortfolioController extends AdminController
 
     public function show(Request $request, Vendor $vendor): View
     {
+        $this->authorizeVendorCity($vendor);
+
         $this->validateListDateRange($request);
 
         $portfolioFilter = $this->portfolioImageFilter($request);

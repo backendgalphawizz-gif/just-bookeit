@@ -78,6 +78,8 @@ class VendorController extends AdminController
 
     public function show(Vendor $vendor): View
     {
+        $this->authorizeVendorCity($vendor);
+
         $vendor->load([
             'shopImages',
             'orders' => fn ($q) => $q->latest()->limit(10),
@@ -90,6 +92,8 @@ class VendorController extends AdminController
 
     public function edit(Vendor $vendor): View
     {
+        $this->authorizeVendorCity($vendor);
+
         $vendor->load('shopImages');
 
         return view('admin.vendors.edit', [
@@ -100,6 +104,8 @@ class VendorController extends AdminController
 
     public function update(VendorRequest $request, Vendor $vendor): RedirectResponse
     {
+        $this->authorizeVendorCity($vendor);
+
         $data = $request->vendorData();
 
         if ($data['status'] === 'active') {
@@ -129,6 +135,8 @@ class VendorController extends AdminController
 
     public function destroy(Vendor $vendor): RedirectResponse
     {
+        $this->authorizeVendorCity($vendor);
+
         if ($vendor->orders()->exists()) {
             return back()->with('error', 'This vendor has orders on record and cannot be deleted.');
         }

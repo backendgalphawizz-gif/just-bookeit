@@ -4,9 +4,11 @@ namespace App\Services\Booking;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Checkout\CheckoutRollupService;
 use App\Services\Checkout\VendorBookingItemService;
 use App\Support\FashionDesignerLifecycleSupport;
 use App\Support\OrderItemStatusSupport;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -16,8 +18,55 @@ use InvalidArgumentException;
 class BookingLifecycleService
 {
     public function __construct(
-        protected VendorBookingItemService $items
+        protected VendorBookingItemService $items,
+        protected CheckoutRollupService $rollup
     ) {}
+
+    /**
+     * Customer cancels early-stage booking (new / pending_acceptance / accepted).
+     * Cancels all open line items so list/detail stay consistent.
+     */
+    public function cancelByCustomer(Order $order, string $reason): Order
+    {
+        if (! in_array($order->status, ['new', 'pending_acceptance', 'accepted'], true)) {
+            throw new InvalidArgumentException('This booking can no longer be cancelled.');
+        }
+
+        return DB::transaction(function () use ($order, $reason) {
+            $order->loadMissing(['orderItems', 'checkoutOrder']);
+
+            foreach ($order->orderItems as $item) {
+                if ($item->status === OrderItem::STATUS_CANCELLED) {
+                    continue;
+                }
+
+                if (! in_array($item->status, [
+                    OrderItem::STATUS_PENDING,
+                    OrderItem::STATUS_ACCEPTED,
+                ], true)) {
+                    throw new InvalidArgumentException(
+                        'This booking can no longer be cancelled because an item has already progressed.'
+                    );
+                }
+
+                $item->update([
+                    'status' => OrderItem::STATUS_CANCELLED,
+                    'cancellation_reason' => $reason,
+                ]);
+            }
+
+            $order->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => $reason,
+            ]);
+
+            if ($order->checkout_order_id && $order->checkoutOrder) {
+                $this->rollup->sync($order->checkoutOrder);
+            }
+
+            return $order->fresh(['orderItems', 'checkoutOrder', 'vendor', 'category', 'dispute', 'review']);
+        });
+    }
 
     /**
      * User confirms they received the order (diagram: Receive Order).

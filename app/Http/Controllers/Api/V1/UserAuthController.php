@@ -182,7 +182,7 @@ class UserAuthController extends ApiController
             'city' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'country' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'mobile_no' => $mobileRules,
         ];
     }

@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Web;
 
 use App\Models\CheckoutOrder;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderReview;
 use App\Models\PortfolioItem;
+use App\Models\Vendor;
+use App\Services\Booking\BookingLifecycleService;
 use App\Services\Booking\BookingPaymentService;
 use App\Services\Booking\BookingPricingService;
 use App\Services\Web\WebBookingService;
@@ -17,12 +21,14 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use InvalidArgumentException;
 
 class BookingController extends WebController
 {
     public function __construct(
         protected WebBookingService $bookings,
-        protected BookingPaymentService $payments
+        protected BookingPaymentService $payments,
+        protected BookingLifecycleService $lifecycle
     ) {}
 
     public function index(Request $request): View
@@ -90,7 +96,18 @@ class BookingController extends WebController
             return redirect()->route('web.bookings.checkout.show', $order->checkout_order_id);
         }
 
-        $order->load(['customer', 'vendor', 'driver', 'category', 'dispute', 'orderItems.portfolioItem', 'orderItems.driver', 'portfolioItem']);
+        $order->load([
+            'customer',
+            'vendor',
+            'driver',
+            'category',
+            'dispute',
+            'reviews',
+            'orderItems.portfolioItem',
+            'orderItems.driver',
+            'orderItems.review',
+            'portfolioItem',
+        ]);
         $paymentSummary = $this->payments->summaryForOrder($order);
 
         return view('web.bookings.show', compact('order', 'paymentSummary'));
@@ -105,7 +122,10 @@ class BookingController extends WebController
             'subOrders.vendor',
             'subOrders.category',
             'subOrders.driver',
+            'subOrders.reviews',
             'subOrders.orderItems.portfolioItem',
+            'subOrders.orderItems.driver',
+            'subOrders.orderItems.review',
             'subOrders.portfolioItem',
             'refunds',
         ]);
@@ -194,7 +214,7 @@ class BookingController extends WebController
         $data = $request->validate(array_merge([
             'delivery_address' => ['required', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'rental_start_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:today'],
             'rental_end_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:rental_start_date'],
             'event_date' => ['nullable', 'date'],
@@ -251,21 +271,154 @@ class BookingController extends WebController
         $customer = Auth::guard('customer')->user();
         abort_unless($order->customer_id === $customer->id, 403);
 
-        if (! in_array($order->status, ['new', 'pending_acceptance'], true)) {
-            return back()->with('error', 'This booking can no longer be cancelled.');
-        }
-
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:5', 'max:500'],
         ]);
 
-        $order->update([
-            'status' => 'cancelled',
-            'cancellation_reason' => $data['reason'],
+        try {
+            $updated = $this->lifecycle->cancelByCustomer($order, $data['reason']);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return $this->redirectAfterLifecycle($updated)->with('success', 'Booking cancelled.');
+    }
+
+    public function confirmReceived(Order $order): RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($order->customer_id === $customer->id, 403);
+
+        try {
+            $updated = $this->lifecycle->confirmReceived($order);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        $message = $updated->status === 'rental_active'
+            ? 'Order received. Rental is now active.'
+            : 'Order received.';
+
+        return $this->redirectAfterLifecycle($updated)->with('success', $message);
+    }
+
+    public function requestReturn(Request $request, Order $order): RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($order->customer_id === $customer->id, 403);
+
+        $data = $request->validate([
+            'item_id' => ['nullable', 'integer', 'exists:order_items,id'],
         ]);
 
-        return redirect()
-            ->route('web.bookings.show', $order)
-            ->with('success', 'Booking cancelled.');
+        $item = null;
+        if (! empty($data['item_id'])) {
+            $item = OrderItem::query()->findOrFail($data['item_id']);
+        }
+
+        try {
+            $updated = $this->lifecycle->requestReturn($order, $item);
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return $this->redirectAfterLifecycle($updated)
+            ->with('success', 'Return pickup requested for rented product(s).');
+    }
+
+    public function requestRework(Request $request, Order $order): RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($order->customer_id === $customer->id, 403);
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+            'item_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        try {
+            $updated = $this->lifecycle->requestRework(
+                $order,
+                $data['reason'] ?? null,
+                isset($data['item_id']) ? (int) $data['item_id'] : null
+            );
+        } catch (InvalidArgumentException $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
+
+        return $this->redirectAfterLifecycle($updated)->with('success', 'Rework requested.');
+    }
+
+    public function review(Request $request, Order $order): RedirectResponse
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless($order->customer_id === $customer->id, 403);
+
+        $order->loadMissing(['orderItems', 'reviews']);
+        $requiresItem = $order->orderItems->isNotEmpty();
+
+        $data = $request->validate([
+            'item_id' => [$requiresItem ? 'required' : 'nullable', 'integer', 'min:1'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $item = null;
+        $vendorId = $order->vendor_id;
+
+        if (! empty($data['item_id'])) {
+            $item = $order->orderItems->firstWhere('id', (int) $data['item_id']);
+            if (! $item) {
+                return back()->with('error', 'Item not found on this booking.');
+            }
+
+            if (! in_array($item->status, OrderReview::reviewableStatuses(), true)) {
+                return back()->with('error', 'You can review this item after it is delivered.');
+            }
+
+            if ($item->review()->exists()) {
+                return back()->with('error', 'You have already reviewed this item.');
+            }
+
+            $vendorId = $item->vendor_id ?: $order->vendor_id;
+        } else {
+            if (! in_array($order->status, OrderReview::reviewableStatuses(), true)) {
+                return back()->with('error', 'You can review this booking after it is delivered.');
+            }
+
+            if ($order->reviews()->whereNull('order_item_id')->exists()) {
+                return back()->with('error', 'You have already reviewed this booking.');
+            }
+        }
+
+        if (! $vendorId) {
+            return back()->with('error', 'Vendor not found for this booking.');
+        }
+
+        OrderReview::query()->create([
+            'order_id' => $order->id,
+            'order_item_id' => $item?->id,
+            'customer_id' => $customer->id,
+            'vendor_id' => $vendorId,
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+        ]);
+
+        $average = OrderReview::query()->where('vendor_id', $vendorId)->avg('rating');
+        Vendor::query()->whereKey($vendorId)->update([
+            'rating' => round((float) $average, 2),
+        ]);
+
+        return $this->redirectAfterLifecycle($order)
+            ->with('success', $item ? 'Item review submitted.' : 'Review submitted.');
+    }
+
+    protected function redirectAfterLifecycle(Order $order): RedirectResponse
+    {
+        if ($order->checkout_order_id) {
+            return redirect()->route('web.bookings.checkout.show', $order->checkout_order_id);
+        }
+
+        return redirect()->route('web.bookings.show', $order);
     }
 }

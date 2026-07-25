@@ -80,7 +80,7 @@ class CheckoutController extends ApiController
             'delivery_address' => ['required', 'string', 'max:500'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'start_date' => ['nullable', 'date'],

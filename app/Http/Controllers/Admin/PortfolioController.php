@@ -128,6 +128,9 @@ class PortfolioController extends AdminController
     public function show(PortfolioItem $portfolio): View
     {
         $portfolio->load(['vendor', 'category', 'subcategory.parent', 'images', 'variants', 'damageDeductions']);
+        if ($portfolio->vendor) {
+            $this->authorizeVendorCity($portfolio->vendor);
+        }
 
         return view('admin.portfolio.show', compact('portfolio'));
     }
@@ -137,6 +140,9 @@ class PortfolioController extends AdminController
         $this->authorizeAdmin('edit');
 
         $portfolio->load(['vendor', 'category', 'subcategory.parent', 'images', 'variants', 'damageDeductions']);
+        if ($portfolio->vendor) {
+            $this->authorizeVendorCity($portfolio->vendor);
+        }
 
         return view('admin.portfolio.edit', $this->formViewData($portfolio));
     }
@@ -144,6 +150,10 @@ class PortfolioController extends AdminController
     public function update(Request $request, PortfolioItem $portfolio): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $portfolio->loadMissing('vendor');
+        if ($portfolio->vendor) {
+            $this->authorizeVendorCity($portfolio->vendor);
+        }
 
         $this->normalizeProductFormInput($request);
         $typeSlug = $this->resolveServiceCategorySlug($request);

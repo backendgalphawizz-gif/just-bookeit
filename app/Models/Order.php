@@ -205,7 +205,14 @@ class Order extends Model
 
     public function ensureDeliveryOtp(): ?string
     {
-        if (! in_array($this->status, ['in_progress', 're_intransit'], true)) {
+        $this->loadMissing('orderItems');
+
+        $bookingNeedsOtp = in_array($this->status, ['in_progress', 're_intransit'], true);
+        $itemNeedsOtp = $this->orderItems->contains(
+            fn (OrderItem $item) => in_array($item->status, ['in_progress', 're_intransit'], true)
+        );
+
+        if (! $bookingNeedsOtp && ! $itemNeedsOtp) {
             return null;
         }
 

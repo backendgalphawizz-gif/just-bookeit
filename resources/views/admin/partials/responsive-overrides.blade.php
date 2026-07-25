@@ -4029,4 +4029,70 @@
             border-top: 1px dashed rgb(0 0 0 / 0.08);
         }
     }
+
+    /* BUG-R06–R15: mobile/tablet hardening */
+    @media (max-width: 1023px) {
+        .jb-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.2s ease;
+            z-index: 40;
+        }
+        .jb-sidebar.is-open,
+        body.jb-sidebar-open .jb-sidebar {
+            transform: translateX(0);
+        }
+        .jb-main {
+            margin-left: 0 !important;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .jb-dashboard-grid,
+        .jb-stats-grid,
+        .jb-widget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+            gap: 0.75rem;
+        }
+        .jb-modal,
+        .jb-modal-dialog,
+        [class*="modal"] .jb-card {
+            max-width: calc(100vw - 1.5rem);
+            max-height: 90vh;
+            overflow: auto;
+        }
+        .jb-modal-body {
+            max-height: calc(90vh - 7rem);
+            overflow-y: auto;
+        }
+        .jb-orders-show select,
+        .jb-orders-show .jb-select,
+        .jb-detail-card select,
+        .jb-detail-card input,
+        .jb-detail-card textarea {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            min-height: 44px;
+        }
+        .jb-btn,
+        .jb-icon-btn,
+        button.jb-btn {
+            min-height: 44px;
+        }
+        .jb-icon-btn {
+            min-width: 44px;
+        }
+        .jb-table-wrap .jb-table {
+            min-width: 40rem;
+        }
+        .jb-card,
+        .jb-detail-card,
+        .jb-panel {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+    }
 </style>

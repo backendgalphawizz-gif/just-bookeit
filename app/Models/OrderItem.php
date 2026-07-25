@@ -127,13 +127,25 @@ class OrderItem extends Model
         }
 
         $isRental = \App\Support\OrderItemStatusSupport::isRentalItem($this, $order);
-        $trackStatus = $this->status;
-        // Premature returned (no return pickup yet) tracks as Return In Transit.
-        if ($trackStatus === 'returned' && blank($this->driver_pickup_at) && $isRental) {
-            $trackStatus = 're_intransit';
+
+        return $order->trackBookingSteps($this->statusForDisplay($order), $isRental);
+    }
+
+    /**
+     * Display/coerced status: premature rental "returned" (no return pickup) → re_intransit.
+     */
+    public function statusForDisplay(?Order $order = null): string
+    {
+        $order ??= $this->relationLoaded('order') ? $this->order : $this->order()->first();
+        $isRental = $order
+            ? \App\Support\OrderItemStatusSupport::isRentalItem($this, $order)
+            : false;
+
+        if ($this->status === 'returned' && blank($this->driver_pickup_at) && $isRental) {
+            return 're_intransit';
         }
 
-        return $order->trackBookingSteps($trackStatus, $isRental);
+        return (string) $this->status;
     }
 
     public function title(): string
@@ -357,24 +369,27 @@ class OrderItem extends Model
 
     public function statusLabel(): string
     {
+        $order = $this->relationLoaded('order') ? $this->order : null;
+        $displayStatus = $this->statusForDisplay($order);
+
         $driverStatus = $this->driver_delivery_status;
-        if (! $driverStatus && $this->relationLoaded('order') && $this->order) {
-            $driverStatus = \App\Support\OrderItemDriverDeliverySupport::effectiveDriverDeliveryStatus($this, $this->order);
+        if (! $driverStatus && $order) {
+            $driverStatus = \App\Support\OrderItemDriverDeliverySupport::effectiveDriverDeliveryStatus($this, $order);
         }
 
-        if ($this->status === 'in_progress' || ($this->status === 'accepted' && $driverStatus)) {
+        if ($displayStatus === 'in_progress' || ($displayStatus === 'accepted' && $driverStatus)) {
             return match ($driverStatus) {
                 Order::DRIVER_STATUS_PICKED_UP => 'Picked up',
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'Out for delivery',
-                Order::DRIVER_STATUS_ACCEPTED => $this->status === 'accepted'
+                Order::DRIVER_STATUS_ACCEPTED => $displayStatus === 'accepted'
                     ? 'Accepted · Driver assigned'
                     : 'In Transit · Driver assigned',
                 Order::DRIVER_STATUS_RESCHEDULED => 'Rescheduled',
-                default => self::STATUS_LABELS[$this->status] ?? 'In Transit',
+                default => self::STATUS_LABELS[$displayStatus] ?? 'In Transit',
             };
         }
 
-        if ($this->status === 're_intransit') {
+        if ($displayStatus === 're_intransit') {
             return match ($driverStatus) {
                 Order::DRIVER_STATUS_PICKED_UP => 'Return picked up',
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'Return out for delivery',
@@ -384,8 +399,8 @@ class OrderItem extends Model
             };
         }
 
-        return self::STATUS_LABELS[$this->status]
-            ?? ucfirst(str_replace('_', ' ', (string) $this->status));
+        return self::STATUS_LABELS[$displayStatus]
+            ?? ucfirst(str_replace('_', ' ', $displayStatus));
     }
 
     public function driverDeliveryStatusLabel(): ?string

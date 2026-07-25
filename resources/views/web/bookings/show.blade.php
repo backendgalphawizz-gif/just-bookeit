@@ -5,13 +5,7 @@
 @section('content')
 @php
     $fallbackImg = 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=400&q=80';
-    $statusClass = match ($order->status) {
-        'new', 'pending_acceptance' => 'new',
-        'in_progress', 'accepted' => 'in_progress',
-        'delivered' => 'delivered',
-        'cancelled', 'refunded' => 'cancelled',
-        default => 'default',
-    };
+    $statusClass = \App\Support\WebBookingStatus::badgeClass($order->status);
     $paymentClass = match ($order->payment_status) {
         'paid', 'success' => 'paid',
         'advance_paid' => 'pending',
@@ -205,6 +199,11 @@
                                     @if ($lineItem->driver)
                                         <p class="jbw-item-track-driver">Driver: {{ $lineItem->driver->name }}</p>
                                     @endif
+                                    @if ((float) ($lineItem->damage_amount ?? 0) > 0)
+                                        <p class="jbw-item-track-driver">Damage: ₹{{ number_format((float) $lineItem->damage_amount, 0) }}
+                                            @if ($lineItem->damage_note) · {{ $lineItem->damage_note }}@endif
+                                        </p>
+                                    @endif
                                     <ol class="jbw-booking-track">
                                         @foreach ($lineItem->trackSteps() as $step)
                                             <li class="jbw-booking-track-step jbw-booking-track-step--{{ $step['state'] }}">
@@ -218,9 +217,17 @@
                                             </li>
                                         @endforeach
                                     </ol>
+                                    @include('web.partials.booking-item-actions', [
+                                        'order' => $order,
+                                        'orderItem' => $lineItem,
+                                    ])
                                 </div>
                             @endforeach
                         </div>
+                        @include('web.partials.booking-item-actions', [
+                            'order' => $order,
+                            'orderItem' => null,
+                        ])
                     @else
                         <ol class="jbw-booking-track">
                             @foreach ($order->trackBookingSteps() as $step)
@@ -235,6 +242,10 @@
                                 </li>
                             @endforeach
                         </ol>
+                        @include('web.partials.booking-item-actions', [
+                            'order' => $order,
+                            'orderItem' => null,
+                        ])
                     @endif
                 </div>
 
@@ -337,10 +348,10 @@
                     @endif
                 </div>
 
-                @if (in_array($order->status, ['new', 'pending_acceptance'], true))
+                @if (in_array($order->status, ['new', 'pending_acceptance', 'accepted'], true))
                     <div class="jbw-overview-card jbw-booking-detail-cancel-card">
                         <p class="jbw-overview-label">Cancel booking</p>
-                        <p class="jbw-booking-detail-cancel-hint">You can cancel while the designer has not accepted yet.</p>
+                        <p class="jbw-booking-detail-cancel-hint">You can cancel while the designer has not started work yet.</p>
                         <form method="POST" action="{{ route('web.bookings.cancel', $order) }}" class="jbw-booking-detail-form">
                             @csrf
                             <div class="jbw-field">

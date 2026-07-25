@@ -55,6 +55,9 @@ class PayoutController extends AdminController
     public function show(VendorPayout $payout): View
     {
         $payout->load('vendor');
+        if ($payout->vendor) {
+            $this->authorizeVendorCity($payout->vendor);
+        }
 
         return view('admin.payouts.show', compact('payout'));
     }

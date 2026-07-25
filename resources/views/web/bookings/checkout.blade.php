@@ -8,13 +8,7 @@
 @php
     $fallbackImg = 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=300&q=80';
     $itemCount = $checkoutOrder->subOrders->sum(fn ($o) => max(1, $o->orderItems->count()));
-    $statusClass = match ($checkoutOrder->status) {
-        'new', 'pending_acceptance' => 'new',
-        'processing', 'partially_delivered' => 'in_progress',
-        'completed' => 'delivered',
-        'cancelled', 'refunded', 'partially_cancelled' => 'cancelled',
-        default => 'default',
-    };
+    $statusClass = \App\Support\WebBookingStatus::badgeClass($checkoutOrder->status);
     $paymentClass = match ($checkoutOrder->payment_status) {
         'success' => 'paid',
         'advance_paid' => 'pending',
@@ -109,13 +103,7 @@
 
                 @foreach ($checkoutOrder->subOrders as $subOrder)
                     @php
-                        $subStatusClass = match($subOrder->status) {
-                            'new', 'pending_acceptance' => 'new',
-                            'in_progress', 'accepted' => 'in_progress',
-                            'delivered' => 'delivered',
-                            'cancelled', 'refunded' => 'cancelled',
-                            default => 'default',
-                        };
+                        $subStatusClass = \App\Support\WebBookingStatus::badgeClass($subOrder->status);
                     @endphp
                     <article class="jbw-order-vendor-card">
                         <header class="jbw-order-vendor-card-head">
@@ -149,8 +137,13 @@
                                         'unitPrice' => '₹'.number_format($orderItem->unit_price, 0).'/day',
                                         'lineTotal' => '₹'.number_format($orderItem->line_amount, 0),
                                         'order' => $subOrder,
+                                        'orderItem' => $orderItem,
                                     ])
                                 @endforeach
+                                @include('web.partials.booking-item-actions', [
+                                    'order' => $subOrder,
+                                    'orderItem' => null,
+                                ])
                             @else
                                 @include('web.partials.order-item-block', [
                                     'image' => $subOrder->itemImageUrl(),
@@ -161,6 +154,7 @@
                                     'quantity' => $subOrder->quantity ?? 1,
                                     'lineTotal' => '₹'.number_format($subOrder->amount, 0),
                                     'order' => $subOrder,
+                                    'orderItem' => null,
                                 ])
                             @endif
                         </div>

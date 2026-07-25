@@ -26,4 +26,39 @@ abstract class AdminController extends Controller
             abort(403, 'You do not have access to records outside your assigned city.');
         }
     }
+
+    protected function authorizeOrderCity(\App\Models\Order $order): void
+    {
+        if (! \App\Support\AdminCityScope::adminCanAccessOrder($order)) {
+            abort(403, 'You do not have access to records outside your assigned city.');
+        }
+    }
+
+    protected function authorizeVendorCity(\App\Models\Vendor $vendor): void
+    {
+        if (! \App\Support\AdminCityScope::adminCanAccessVendor($vendor)) {
+            abort(403, 'You do not have access to records outside your assigned city.');
+        }
+    }
+
+    protected function authorizeDriverCity(\App\Models\Driver $driver): void
+    {
+        if (! \App\Support\AdminCityScope::adminCanAccessDriver($driver)) {
+            abort(403, 'You do not have access to records outside your assigned city.');
+        }
+    }
+
+    protected function authorizeCustomerCity(\App\Models\Customer $customer): void
+    {
+        if (! \App\Support\AdminCityScope::adminCanAccessCustomer($customer)) {
+            abort(403, 'You do not have access to records outside your assigned city.');
+        }
+    }
+
+    protected function authorizeCheckoutCity(\App\Models\CheckoutOrder $checkout): void
+    {
+        if (! \App\Support\AdminCityScope::adminCanAccessCheckout($checkout)) {
+            abort(403, 'You do not have access to records outside your assigned city.');
+        }
+    }
 }

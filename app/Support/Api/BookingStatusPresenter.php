@@ -30,9 +30,10 @@ class BookingStatusPresenter
         }
 
         $driverDelivery = OrderItemDriverDeliverySupport::effectiveDriverDeliveryStatus($item, $order);
-        $apiStatus = VendorBookingStatus::toApi($item->status);
+        $displayStatus = $item->statusForDisplay($order);
+        $apiStatus = VendorBookingStatus::toApi($displayStatus);
 
-        if (in_array($item->status, ['accepted', 'in_progress', 're_intransit'], true)) {
+        if (in_array($displayStatus, ['accepted', 'in_progress', 're_intransit'], true)) {
             $apiStatus = match ($driverDelivery) {
                 Order::DRIVER_STATUS_PICKED_UP => 'picked_up',
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'out_for_delivery',
@@ -43,7 +44,7 @@ class BookingStatusPresenter
 
         return [
             'status' => $apiStatus,
-            'status_raw' => $item->status,
+            'status_raw' => $displayStatus,
             'status_label' => $item->statusLabel(),
             'is_picked_up' => $item->isPickedUp(),
             'driver_delivery_status' => $driverDelivery,

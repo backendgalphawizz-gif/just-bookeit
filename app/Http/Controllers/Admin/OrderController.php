@@ -136,6 +136,8 @@ class OrderController extends AdminController
 
     public function show(Order $order): View
     {
+        $this->authorizeOrderCity($order);
+
         $order->load([
             'customer',
             'vendor',
@@ -150,12 +152,14 @@ class OrderController extends AdminController
 
         return view('admin.orders.show', [
             'order' => $order,
-            'drivers' => Driver::query()->where('status', 'active')->orderBy('name')->get(),
+            'drivers' => AdminCityScope::scopeDrivers(Driver::query())->where('status', 'active')->orderBy('name')->get(),
         ]);
     }
 
     public function edit(Order $order): View
     {
+        $this->authorizeOrderCity($order);
+
         return view('admin.orders.edit', [
             'order' => $order,
             'customers' => AdminCityScope::scopeCustomers(Customer::query())->orderBy('name')->get(),
@@ -167,6 +171,8 @@ class OrderController extends AdminController
 
     public function update(OrderRequest $request, Order $order): RedirectResponse
     {
+        $this->authorizeOrderCity($order);
+
         $data = $this->orderPayload($request);
         $order->update($data);
         $this->applyOrderUploads($request, $order);
@@ -177,6 +183,7 @@ class OrderController extends AdminController
 
     public function destroy(Order $order): RedirectResponse
     {
+        $this->authorizeOrderCity($order);
         $customerId = $order->customer_id;
         $order->delete();
         $this->syncCustomerOrderCount($customerId);
@@ -187,6 +194,7 @@ class OrderController extends AdminController
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $this->authorizeOrderCity($order);
 
         $data = $request->validate([
             'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
@@ -212,6 +220,7 @@ class OrderController extends AdminController
     public function manage(Request $request, Order $order): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $this->authorizeOrderCity($order);
 
         $data = $request->validate([
             'status' => ['required', Rule::in(Order::STATUSES)],
@@ -277,6 +286,7 @@ class OrderController extends AdminController
     public function assignItemDriver(Request $request, Order $order, OrderItem $item): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $this->authorizeOrderCity($order);
 
         abort_unless((int) $item->order_id === (int) $order->id, 404);
 

@@ -67,6 +67,9 @@ class WithdrawalController extends AdminController
     public function show(VendorWithdrawalRequest $withdrawal): View
     {
         $withdrawal->load(['vendor', 'reviewedByAdmin']);
+        if ($withdrawal->vendor) {
+            $this->authorizeVendorCity($withdrawal->vendor);
+        }
 
         return view('admin.withdrawals.show', [
             'withdrawal' => $withdrawal,

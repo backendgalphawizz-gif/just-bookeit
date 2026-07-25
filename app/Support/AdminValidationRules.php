@@ -38,6 +38,22 @@ class AdminValidationRules
 
     public const REGEX_VEHICLE_NO = '/^[A-Z0-9]{1,20}$/';
 
+    /** Indian PIN: 6 digits, first digit 1–9. */
+    public const REGEX_PINCODE = '/^[1-9][0-9]{5}$/';
+
+    /**
+     * @return list<string|\Illuminate\Validation\Rules\Regex>
+     */
+    public static function pincodeRules(bool $required = false): array
+    {
+        return [
+            $required ? 'required' : 'nullable',
+            'string',
+            'size:6',
+            'regex:'.self::REGEX_PINCODE,
+        ];
+    }
+
     public const REGEX_IFSC = '/^[A-Z]{4}0[A-Z0-9]{6}$/';
 
     public const REGEX_ACCOUNT_NUMBER = '/^[0-9]{1,20}$/';
@@ -207,7 +223,7 @@ class AdminValidationRules
             'state_other' => ['nullable', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'city_id' => ['nullable'],
             'city_other' => ['nullable', 'required_if:city_id,other', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => self::pincodeRules(),
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'account_name' => ['nullable', 'string', 'max:255', 'regex:'.self::REGEX_PERSON_NAME],
@@ -277,7 +293,7 @@ class AdminValidationRules
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'state' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
             'country' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => self::pincodeRules(),
             'country_id' => ['nullable', 'string'],
             'country_other' => ['nullable', 'string', 'max:100'],
             'state_id' => ['nullable', 'string'],
@@ -311,7 +327,7 @@ class AdminValidationRules
             'delivery_address' => ['nullable', 'string', 'max:1000', 'regex:'.self::REGEX_TEXT],
             'pickup_address' => ['nullable', 'string', 'max:1000', 'regex:'.self::REGEX_TEXT],
             'city' => ['nullable', 'string', 'max:100', 'regex:'.self::REGEX_CITY],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => self::pincodeRules(),
             'amount' => ['required', 'numeric', 'min:0'],
             'security_deposit' => ['nullable', 'numeric', 'min:0'],
             'delivery_fee' => ['nullable', 'numeric', 'min:0'],
@@ -338,7 +354,7 @@ class AdminValidationRules
         return [
             'order_id' => ['required', 'exists:orders,id'],
             'customer_id' => ['required', 'exists:customers,id'],
-            'amount' => ['required', 'numeric', 'min:0'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'reason' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
             'status' => ['required', 'in:requested,under_review,approved,rejected,processed'],
         ];
@@ -347,7 +363,7 @@ class AdminValidationRules
     public static function refundUpdate(): array
     {
         return [
-            'amount' => ['required', 'numeric', 'min:0'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'reason' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
             'status' => ['required', 'in:requested,under_review,approved,rejected,processed'],
         ];
@@ -864,7 +880,10 @@ class AdminValidationRules
             'refund_sale_window_days', 'refund_sale_return_days' => 'integer',
             'refund_rental_late_fee_per_day', 'damage_deduction_rules.*.max_percent',
             'refund_sale_restocking_percent' => 'decimal',
-            'amount', 'earnings', 'global_commission_percent', 'rating' => 'decimal',
+            'amount', 'earnings', 'global_commission_percent', 'rating',
+            'tax_amount', 'delivery_fee', 'security_deposit', 'damage_amount',
+            'damage_deduct_percent', 'price_per_day', 'advance_amount', 'commission',
+            'subtotal', 'discount_amount', 'platform_fee', 'vendor_earning' => 'decimal',
             'orders_completed' => 'integer',
             default => ($type === 'email' ? 'email' : ($type === 'url' ? 'url' : null)),
         };

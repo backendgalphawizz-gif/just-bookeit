@@ -24,22 +24,12 @@
         return $category?->name ?: ($fallback ?: 'Booking');
     };
 
-    $statusMeta = function (string $status): array {
-        $class = match ($status) {
-            'new', 'pending_acceptance' => 'pending',
-            'processing', 'partially_delivered', 'in_progress', 'accepted' => 'in_progress',
-            'completed', 'delivered' => 'delivered',
-            'cancelled', 'refunded', 'partially_cancelled' => 'cancelled',
-            default => 'default',
-        };
-
-        $label = match ($class) {
-            'pending' => 'Pending',
-            'in_progress' => 'In Progress',
-            'delivered' => 'Delivered',
-            'cancelled' => 'Cancelled',
-            default => str_replace('_', ' ', ucfirst($status)),
-        };
+    $statusMeta = function ($model): array {
+        $status = (string) $model->status;
+        $class = \App\Support\WebBookingStatus::historyBadgeClass($status);
+        $label = method_exists($model, 'statusLabel')
+            ? $model->statusLabel()
+            : \App\Models\Order::statusLabelFor($status);
 
         return [$class, $label];
     };
@@ -77,7 +67,7 @@
             @if ($entry['kind'] === 'checkout')
                 @php
                     $checkout = $entry['checkout'];
-                    [$statusClass, $statusLabel] = $statusMeta((string) $checkout->status);
+                    [$statusClass, $statusLabel] = $statusMeta($checkout);
                     $lines = collect($checkout->subOrders)->flatMap(fn ($sub) => $linesFromOrder($sub))->values()->all();
                     $bookId = $checkout->order_number;
                     $bookedAt = $checkout->created_at;
@@ -87,7 +77,7 @@
             @else
                 @php
                     $order = $entry['order'];
-                    [$statusClass, $statusLabel] = $statusMeta((string) $order->status);
+                    [$statusClass, $statusLabel] = $statusMeta($order);
                     $lines = $linesFromOrder($order);
                     $bookId = $order->order_number;
                     $bookedAt = $order->created_at;

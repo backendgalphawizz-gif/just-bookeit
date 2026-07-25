@@ -72,6 +72,8 @@ class CustomerController extends AdminController
 
     public function show(Request $request, Customer $customer): View
     {
+        $this->authorizeCustomerCity($customer);
+
         $customer->load([
             'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
         ]);
@@ -87,11 +89,15 @@ class CustomerController extends AdminController
 
     public function edit(Customer $customer): View
     {
+        $this->authorizeCustomerCity($customer);
+
         return view('admin.customers.edit', compact('customer'));
     }
 
     public function update(CustomerRequest $request, Customer $customer): RedirectResponse
     {
+        $this->authorizeCustomerCity($customer);
+
         $data = $request->customerData();
 
         $previousStatus = $customer->status;
@@ -129,6 +135,8 @@ class CustomerController extends AdminController
 
     public function destroy(Customer $customer): RedirectResponse
     {
+        $this->authorizeCustomerCity($customer);
+
         if ($customer->orders()->exists()) {
             return back()->with('error', 'This customer has orders on record and cannot be deleted.');
         }

@@ -64,6 +64,10 @@ Route::middleware(['customer.auth', 'customer.registered'])->group(function () {
     Route::get('/bookings/checkout/{checkoutOrder}', [BookingController::class, 'showCheckout'])->name('web.bookings.checkout.show');
     Route::get('/bookings/{order}', [BookingController::class, 'show'])->name('web.bookings.show');
     Route::post('/bookings/{order}/cancel', [BookingController::class, 'cancel'])->name('web.bookings.cancel');
+    Route::post('/bookings/{order}/confirm-received', [BookingController::class, 'confirmReceived'])->name('web.bookings.confirm-received');
+    Route::post('/bookings/{order}/request-return', [BookingController::class, 'requestReturn'])->name('web.bookings.request-return');
+    Route::post('/bookings/{order}/request-rework', [BookingController::class, 'requestRework'])->name('web.bookings.request-rework');
+    Route::post('/bookings/{order}/review', [BookingController::class, 'review'])->name('web.bookings.review');
     Route::post('/bookings/{order}/dispute', [DisputeController::class, 'store'])->name('web.bookings.dispute.store');
     Route::get('/bookings/{order}/dispute', [DisputeController::class, 'show'])->name('web.bookings.dispute.show');
     Route::post('/bookings/{order}/dispute/messages', [DisputeController::class, 'sendMessage'])->name('web.bookings.dispute.messages');

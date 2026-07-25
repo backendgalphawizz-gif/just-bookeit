@@ -234,7 +234,7 @@ class BookingController extends ApiController
             'delivery_address' => ['required', 'string', 'max:500'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'event_date' => ['nullable', 'date'],
@@ -382,7 +382,7 @@ class BookingController extends ApiController
             'delivery_address' => ['required', 'string', 'max:500'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'rental_start_date' => ['nullable', 'date'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
             'start_date' => ['nullable', 'date'],
@@ -456,21 +456,19 @@ class BookingController extends ApiController
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
-        if (! in_array($booking->status, ['new', 'pending_acceptance', 'accepted'], true)) {
-            return $this->error('This booking can no longer be cancelled.', 422);
-        }
-
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:5', 'max:500'],
         ]);
 
-        $booking->update([
-            'status' => 'cancelled',
-            'cancellation_reason' => $data['reason'],
-        ]);
+        try {
+            $updated = app(\App\Services\Booking\BookingLifecycleService::class)
+                ->cancelByCustomer($booking, $data['reason']);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
 
         return $this->success([
-            'booking' => CustomerApiPresenter::bookingDetail($booking->fresh(['vendor', 'category', 'dispute', 'review'])),
+            'booking' => CustomerApiPresenter::bookingDetail($updated->load(['vendor', 'category', 'dispute', 'review'])),
         ], 'Booking cancelled.');
     }
 
@@ -574,7 +572,7 @@ class BookingController extends ApiController
 
         $data = $request->validate([
             'item_id' => [$requiresItem ? 'required' : 'nullable', 'integer', 'min:1'],
-            'rating' => ['required', 'numeric', 'min:1', 'max:5'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 

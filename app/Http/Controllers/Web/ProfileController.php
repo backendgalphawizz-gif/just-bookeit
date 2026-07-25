@@ -209,7 +209,7 @@ class ProfileController extends WebController
             'road_area' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['required', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(true),
             'country' => ['nullable', 'string', 'max:100'],
             'is_default' => ['nullable', 'boolean'],
         ]);

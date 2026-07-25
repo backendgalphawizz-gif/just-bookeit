@@ -114,7 +114,7 @@ class CheckoutController extends WebController
             'delivery_address' => ['required', 'string', 'max:500'],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
-            'pincode' => ['nullable', 'string', 'max:10'],
+            'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             // Top-level dates are optional fallback; prefer per-item dates in items[].
             'rental_start_date' => ['nullable', 'date', 'after_or_equal:today'],
             'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],

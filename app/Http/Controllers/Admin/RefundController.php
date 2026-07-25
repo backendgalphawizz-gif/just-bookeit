@@ -77,17 +77,30 @@ class RefundController extends AdminController
     public function show(Refund $refund): View
     {
         $refund->load(['customer', 'order.vendor', 'order.category']);
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
 
         return view('admin.refunds.show', compact('refund'));
     }
 
     public function edit(Refund $refund): View
     {
+        $refund->loadMissing('order.vendor');
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
+
         return view('admin.refunds.edit', compact('refund'));
     }
 
     public function update(RefundUpdateRequest $request, Refund $refund): RedirectResponse
     {
+        $refund->loadMissing('order.vendor');
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
+
         $data = $request->validated();
         $previousStatus = $refund->status;
 
@@ -99,6 +112,11 @@ class RefundController extends AdminController
 
     public function destroy(Refund $refund): RedirectResponse
     {
+        $refund->loadMissing('order.vendor');
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
+
         $refund->delete();
 
         return redirect()->route('admin.refunds.index')->with('success', 'Refund deleted successfully.');
@@ -107,6 +125,10 @@ class RefundController extends AdminController
     public function approve(Refund $refund): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $refund->loadMissing('order.vendor');
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
 
         $previousStatus = $refund->status;
         $refund->update(['status' => 'approved']);
@@ -118,6 +140,10 @@ class RefundController extends AdminController
     public function reject(Refund $refund): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $refund->loadMissing('order.vendor');
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
 
         $previousStatus = $refund->status;
         $refund->update(['status' => 'rejected']);
@@ -129,6 +155,10 @@ class RefundController extends AdminController
     public function process(Refund $refund): RedirectResponse
     {
         $this->authorizeAdmin('edit');
+        $refund->loadMissing('order.vendor');
+        if ($refund->order) {
+            $this->authorizeOrderCity($refund->order);
+        }
 
         $previousStatus = $refund->status;
         $refund->update(['status' => 'processed']);
