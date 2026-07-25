@@ -8,6 +8,7 @@ use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
@@ -287,6 +288,12 @@ class Order extends Model
     {
         return $this->hasOne(OrderReview::class);
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(OrderReview::class);
+    }
+
 
     public function isCod(): bool
     {
@@ -794,7 +801,7 @@ class Order extends Model
             ));
         } else {
             // Fashion designer (customer / vendor apps + panels):
-            // Booking placed → Accepted → In Transit → Delivered → Rework → Return In Transit → Re-delivered → Completed
+            // Booking placed → Accepted → In Transit → Delivered → Rework → Return In Transit → Completed
             $steps = [
                 ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Booking placed', 'min' => 'new'],
                 ['keys' => ['accepted', 'in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Accepted', 'min' => 'accepted'],
@@ -802,8 +809,8 @@ class Order extends Model
                 ['keys' => ['delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Delivered', 'min' => 'delivered'],
                 ['keys' => ['rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Rework', 'min' => 'rework'],
                 ['keys' => ['re_intransit', 're_delivered', 'completed'], 'label' => 'Return In Transit', 'min' => 're_intransit'],
-                ['keys' => ['re_delivered', 'completed'], 'label' => 'Re-delivered', 'min' => 're_delivered'],
-                ['keys' => ['completed'], 'label' => 'Completed', 'min' => 'completed'],
+                // Re-delivered is not shown — it maps onto Completed for the designer timeline.
+                ['keys' => ['re_delivered', 'completed'], 'label' => 'Completed', 'min' => 're_delivered'],
             ];
         }
 
@@ -811,16 +818,19 @@ class Order extends Model
         // Treat pending acceptance as still on the first step so the timeline has a clear current marker.
         $current = $rank[$status === 'pending_acceptance' ? 'new' : $status] ?? 0;
         $isTerminal = in_array($status, ['completed', 'cancelled', 'refunded'], true);
+        // Fashion designer: delivery itself is finished — check Delivered (not leave it as open "current").
+        // Rework / return stay upcoming until those statuses happen; Completed checks when done.
+        // re_delivered is treated as Completed on this track (no separate Re-delivered step).
+        $designerDeliveryDone = ! $isRental && $status === 'delivered';
+        $designerCompleted = ! $isRental && in_array($status, ['re_delivered', 'completed'], true);
 
-        // Designer "delivered" is current until completed; rental "delivered" is current until rental_active.
-        return array_map(function (array $step) use ($rank, $current, $isTerminal): array {
+        return array_map(function (array $step) use ($rank, $current, $isTerminal, $designerDeliveryDone, $designerCompleted): array {
             $minRank = $rank[$step['min']] ?? 0;
 
             if ($current > $minRank) {
                 $state = 'done';
             } elseif ($current === $minRank) {
-                // Final status (e.g. Completed) should show a checkmark, not an open "current" circle.
-                $state = $isTerminal ? 'done' : 'current';
+                $state = ($isTerminal || $designerDeliveryDone || $designerCompleted) ? 'done' : 'current';
             } else {
                 $state = 'upcoming';
             }

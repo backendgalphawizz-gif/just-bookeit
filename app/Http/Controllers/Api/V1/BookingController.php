@@ -568,35 +568,72 @@ class BookingController extends ApiController
         $customer = $request->user();
         abort_unless($booking->customer_id === $customer->id, 403);
 
-        if (! in_array($booking->status, ['delivered', 'rental_active', 'returned', 're_delivered', 'completed'], true)) {
-            return $this->error('You can review this booking after it is delivered.', 422);
-        }
+        $booking->loadMissing(['orderItems', 'reviews']);
 
-        if ($booking->review()->exists()) {
-            return $this->error('You have already reviewed this booking.', 422);
-        }
-
-        abort_unless($booking->vendor_id, 422, 'Vendor not found for this booking.');
+        $requiresItem = $booking->orderItems->isNotEmpty();
 
         $data = $request->validate([
+            'item_id' => [$requiresItem ? 'required' : 'nullable', 'integer', 'min:1'],
             'rating' => ['required', 'numeric', 'min:1', 'max:5'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $item = null;
+        $vendorId = $booking->vendor_id;
+
+        if (! empty($data['item_id'])) {
+            $item = $booking->orderItems->firstWhere('id', (int) $data['item_id']);
+            if (! $item) {
+                return $this->error('Item not found on this booking.', 404);
+            }
+
+            if (! in_array($item->status, OrderReview::reviewableStatuses(), true)) {
+                return $this->error('You can review this item after it is delivered.', 422);
+            }
+
+            if ($item->review()->exists() || OrderReview::query()->where('order_item_id', $item->id)->exists()) {
+                return $this->error('You have already reviewed this item.', 422);
+            }
+
+            $vendorId = $item->vendor_id ?: $booking->vendor_id;
+        } else {
+            if (! in_array($booking->status, OrderReview::reviewableStatuses(), true)) {
+                return $this->error('You can review this booking after it is delivered.', 422);
+            }
+
+            if ($booking->reviews()->whereNull('order_item_id')->exists()) {
+                return $this->error('You have already reviewed this booking.', 422);
+            }
+        }
+
+        abort_unless($vendorId, 422, 'Vendor not found for this booking.');
+
         $review = OrderReview::query()->create([
             'order_id' => $booking->id,
+            'order_item_id' => $item?->id,
             'customer_id' => $customer->id,
-            'vendor_id' => $booking->vendor_id,
+            'vendor_id' => $vendorId,
             'rating' => $data['rating'],
             'comment' => $data['comment'] ?? null,
         ]);
 
-        $this->syncVendorRating($booking->vendor_id);
+        $this->syncVendorRating($vendorId);
+
+        $fresh = $booking->fresh([
+            'vendor',
+            'category',
+            'dispute',
+            'review',
+            'reviews.orderItem',
+            'orderItems.review',
+            'orderItems.portfolioItem.category',
+            'orderItems.driver',
+        ]);
 
         return $this->success([
-            'review' => CustomerApiPresenter::orderReview($review->load(['customer', 'order'])),
-            'booking' => CustomerApiPresenter::bookingDetail($booking->fresh(['vendor', 'category', 'dispute', 'review'])),
-        ], 'Review submitted.');
+            'review' => CustomerApiPresenter::orderReview($review->load(['customer', 'order', 'orderItem'])),
+            'booking' => CustomerApiPresenter::bookingDetail($fresh),
+        ], $item ? 'Item review submitted.' : 'Review submitted.');
     }
 
     public function addresses(Request $request): JsonResponse

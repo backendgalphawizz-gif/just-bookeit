@@ -248,11 +248,14 @@ class CustomerApiPresenter
 
     public static function orderReview(OrderReview $review): array
     {
-        $review->loadMissing(['customer', 'order']);
+        $review->loadMissing(['customer', 'order', 'orderItem']);
 
         return [
             'id' => $review->id,
             'order_id' => $review->order_id,
+            'item_id' => $review->order_item_id,
+            'order_item_id' => $review->order_item_id,
+            'item_title' => $review->orderItem?->title(),
             'booking_id' => $review->order?->order_number,
             'customer_name' => $review->customer?->name,
             'profile_image_url' => $review->customer?->profileImageUrl(),
@@ -624,8 +627,11 @@ class CustomerApiPresenter
             'driver',
             'dispute',
             'review.customer',
+            'reviews.customer',
+            'reviews.orderItem',
             'orderItems.driver',
             'orderItems.order',
+            'orderItems.review.customer',
             'refund.histories',
             'checkoutOrder',
             'refunds',
@@ -664,6 +670,8 @@ class CustomerApiPresenter
                     'tracking_type' => OrderItemStatusSupport::isRentalItem($model, $order)
                         ? 'rental'
                         : 'fashion_designer',
+                    'can_review' => in_array($model->status, OrderReview::reviewableStatuses(), true) && ! $model->review,
+                    'review' => $model->review ? self::orderReview($model->review) : null,
                     ...self::itemProductReturnFields($model, $order),
                     ...FashionDesignerLifecycleSupport::apiFields($model, $order),
                 ];
@@ -716,7 +724,7 @@ class CustomerApiPresenter
             ] : null,
             'can_raise_dispute' => ! $order->dispute,
             'dispute_subject_options' => \App\Models\Dispute::subjectOptionsForCategory($order->category),
-            'can_review' => in_array($order->status, ['delivered', 'rental_active', 'returned', 're_delivered', 'completed'], true) && ! $order->review,
+            'can_review' => self::bookingCanReview($order),
             'can_confirm_received' => $order->status === 'delivered',
             // Product return of rented dress/jewellery to vendor — NOT a dispute.
             ...self::productReturnFields($order),
@@ -724,8 +732,27 @@ class CustomerApiPresenter
             'can_cancel' => in_array($order->status, ['new', 'pending_acceptance', 'accepted'], true),
             'allowed_next_statuses' => collect(OrderDispatchSupport::allowedNextStatuses($order))->values()->all(),
             'review' => $order->review ? self::orderReview($order->review) : ($vendorDetail['customer_review'] ?? null),
+            'reviews' => ($order->relationLoaded('reviews') ? $order->reviews : $order->reviews()->with(['customer', 'orderItem'])->get())
+                ->map(fn (OrderReview $review) => self::orderReview($review))
+                ->values()
+                ->all(),
             'refund' => $order->refund ? self::refund($order->refund) : null,
         ];
+    }
+
+    protected static function bookingCanReview(Order $order): bool
+    {
+        $order->loadMissing(['orderItems.review', 'reviews']);
+
+        if ($order->orderItems->isNotEmpty()) {
+            return $order->orderItems->contains(
+                fn (OrderItem $item) => in_array($item->status, OrderReview::reviewableStatuses(), true) && ! $item->review
+            );
+        }
+
+        $hasBookingLevelReview = $order->reviews->contains(fn (OrderReview $review) => blank($review->order_item_id));
+
+        return in_array($order->status, OrderReview::reviewableStatuses(), true) && ! $hasBookingLevelReview;
     }
 
     /**

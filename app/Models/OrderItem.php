@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OrderItem extends Model
 {
@@ -98,6 +99,11 @@ class OrderItem extends Model
     public function driver(): BelongsTo
     {
         return $this->belongsTo(Driver::class);
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(OrderReview::class);
     }
 
     public function canAssignDriver(): bool
