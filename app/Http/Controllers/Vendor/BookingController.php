@@ -133,7 +133,10 @@ class BookingController extends VendorController
             ],
             're_intransit' => $booking->isRental()
                 ? [['label' => 'Mark Returned', 'status' => 'returned', 'variant' => 'success']]
-                : [['label' => 'Mark Re-delivered', 'status' => 're_delivered', 'variant' => 'success']],
+                : [
+                    ['label' => 'Mark Completed', 'status' => 'completed', 'variant' => 'success'],
+                    ['label' => 'Mark Re-delivered', 'status' => 're_delivered', 'variant' => 'outline'],
+                ],
             'rework' => [
                 ['label' => 'Dispatch Rework (Return In Transit)', 'status' => 're_intransit', 'variant' => 'primary'],
             ],

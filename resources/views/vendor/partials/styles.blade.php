@@ -6839,6 +6839,7 @@ border-bottom: 0px !important;
     font-weight: 700;
 }
 .vp-rent-tracking-phase--active { color: #059669; }
+.vp-rent-tracking-phase--finished { color: #059669; }
 .vp-rent-tracking-phase--upcoming { color: #2563eb; }
 .vp-rent-tracking-phase--awaiting_return,
 .vp-rent-tracking-phase--overdue { color: #c2410c; }

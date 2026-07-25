@@ -1549,6 +1549,10 @@
         color: rgb(5 150 105);
     }
 
+    .jb-rent-tracking-phase--finished {
+        color: rgb(5 150 105);
+    }
+
     .jb-rent-tracking-phase--upcoming {
         color: rgb(37 99 235);
     }

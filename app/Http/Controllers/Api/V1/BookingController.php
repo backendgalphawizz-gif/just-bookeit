@@ -547,11 +547,12 @@ class BookingController extends ApiController
 
         $data = $request->validate([
             'reason' => ['nullable', 'string', 'min:5', 'max:1000'],
+            'item_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         try {
             $updated = app(\App\Services\Booking\BookingLifecycleService::class)
-                ->requestRework($booking, $data['reason'] ?? null);
+                ->requestRework($booking, $data['reason'] ?? null, isset($data['item_id']) ? (int) $data['item_id'] : null);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
         }

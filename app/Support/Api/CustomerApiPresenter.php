@@ -27,6 +27,7 @@ use App\Support\ChatDateTime;
 use App\Support\OrderDispatchSupport;
 use App\Support\OrderItemDriverDeliverySupport;
 use App\Support\OrderItemStatusSupport;
+use App\Support\FashionDesignerLifecycleSupport;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -660,7 +661,11 @@ class CustomerApiPresenter
                         ? (string) $model->item_snapshot['event_date']
                         : ($order->event_date?->format('Y-m-d')),
                     'tracking_steps' => $model->trackSteps(),
+                    'tracking_type' => OrderItemStatusSupport::isRentalItem($model, $order)
+                        ? 'rental'
+                        : 'fashion_designer',
                     ...self::itemProductReturnFields($model, $order),
+                    ...FashionDesignerLifecycleSupport::apiFields($model, $order),
                 ];
             })
             ->values()
@@ -698,6 +703,7 @@ class CustomerApiPresenter
             'remaining_amount' => $customerPayment['remaining_amount'] ?? null,
             'advance_amount' => $customerPayment['advance_amount'] ?? ($vendorDetail['advance_amount'] ?? null),
             'tracking_steps' => $order->trackBookingSteps(),
+            'tracking_type' => $order->isRental() ? 'rental' : 'fashion_designer',
             'delivery_otp' => $order->ensureDeliveryOtp(),
             'line_items' => $lineItems,
             'order_items' => $lineItems,
@@ -714,7 +720,7 @@ class CustomerApiPresenter
             'can_confirm_received' => $order->status === 'delivered',
             // Product return of rented dress/jewellery to vendor — NOT a dispute.
             ...self::productReturnFields($order),
-            'can_request_rework' => in_array($order->status, ['delivered', 'rental_active', 're_delivered'], true),
+            ...self::bookingReworkFields($order),
             'can_cancel' => in_array($order->status, ['new', 'pending_acceptance', 'accepted'], true),
             'allowed_next_statuses' => collect(OrderDispatchSupport::allowedNextStatuses($order))->values()->all(),
             'review' => $order->review ? self::orderReview($order->review) : ($vendorDetail['customer_review'] ?? null),
@@ -1031,6 +1037,47 @@ class CustomerApiPresenter
             'product_return_label' => $canReturn
                 ? 'Return this rented item to the vendor'
                 : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    protected static function bookingReworkFields(Order $order): array
+    {
+        $order->loadMissing('orderItems');
+        $items = $order->orderItems->where('status', '!=', OrderItem::STATUS_CANCELLED);
+
+        if ($items->isEmpty()) {
+            $can = in_array($order->status, ['delivered', 'rental_active', 're_delivered'], true);
+
+            return [
+                'can_request_rework' => $can,
+                'rework_window_hours' => $order->isRental() ? null : FashionDesignerLifecycleSupport::REWORK_WINDOW_HOURS,
+                'rework_window_open' => $can && ! $order->isRental() ? true : ($can ? null : false),
+                'auto_complete_after_rework_window' => ! $order->isRental(),
+            ];
+        }
+
+        $canAny = $items->contains(
+            fn (OrderItem $item) => FashionDesignerLifecycleSupport::canCustomerRequestRework($item, $order)
+        );
+        $designer = $items->first(
+            fn (OrderItem $item) => FashionDesignerLifecycleSupport::usesDesignerDeliveryTrack($item, $order)
+        );
+
+        if ($designer) {
+            $fields = FashionDesignerLifecycleSupport::apiFields($designer, $order);
+            $fields['can_request_rework'] = $canAny;
+
+            return $fields;
+        }
+
+        return [
+            'can_request_rework' => $canAny,
+            'rework_window_hours' => null,
+            'rework_deadline_at' => null,
+            'rework_deadline_label' => null,
+            'rework_window_open' => null,
+            'auto_complete_after_rework_window' => false,
         ];
     }
 

@@ -193,7 +193,7 @@ class OrderDispatchSupport
             'rework' => ['re_intransit', 'cancelled'],
             're_intransit' => $isRental
                 ? ['returned', 'cancelled']
-                : ['re_delivered', 'cancelled'],
+                : ['completed', 're_delivered', 'cancelled'],
             'returned' => ['completed', 're_intransit'],
             're_delivered' => ['completed', 'rework'],
             'completed', 'cancelled', 'refunded' => [],

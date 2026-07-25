@@ -57,6 +57,7 @@ class OrderItem extends Model
         'driver_assigned_at',
         'driver_delivery_status',
         'driver_pickup_at',
+        'delivered_at',
         'damage_note',
         'damage_amount',
         'damage_deduct_percent',
@@ -75,6 +76,7 @@ class OrderItem extends Model
             'responded_at' => 'datetime',
             'driver_assigned_at' => 'datetime',
             'driver_pickup_at' => 'datetime',
+            'delivered_at' => 'datetime',
         ];
     }
 

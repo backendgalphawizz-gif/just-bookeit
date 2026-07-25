@@ -476,6 +476,7 @@ class VendorApiPresenter
             'payment_summary' => self::bookingPaymentSummaryPayload($order),
             'damage' => self::bookingDamage($order),
             'tracking_steps' => $order->trackBookingSteps(),
+            'tracking_type' => $order->isRental() ? 'rental' : 'fashion_designer',
             'rental_tracking' => $order->isRental() ? $order->rentalTrackingSummary() : null,
             'delivery_otp' => self::bookingDeliveryOtp($order),
             'driver' => $order->driver ? [
@@ -559,6 +560,10 @@ class VendorApiPresenter
                 ?? (($item->order ?? null) ? self::resolveOrderMeasurementProfileId($item->order) : null),
             'measurements' => self::orderItemMeasurements($item),
             'tracking_steps' => $item->trackSteps(),
+            'tracking_type' => OrderItemStatusSupport::isRentalItem($item, $item->order)
+                ? 'rental'
+                : 'fashion_designer',
+            ...\App\Support\FashionDesignerLifecycleSupport::apiFields($item, $item->order),
             ...self::orderItemLegAddressFields($item),
             ...self::orderItemDriverFields($item),
         ];
@@ -645,6 +650,10 @@ class VendorApiPresenter
             'shipping_address' => $shippingAddress,
             'payment_summary' => self::itemPaymentSummaryPayload($item, $order),
             'tracking_steps' => $item->trackSteps(),
+            'tracking_type' => OrderItemStatusSupport::isRentalItem($item, $order)
+                ? 'rental'
+                : 'fashion_designer',
+            ...\App\Support\FashionDesignerLifecycleSupport::apiFields($item, $order),
             ...self::orderItemDamageFields($item),
             ...self::orderItemLegAddressFields($item, $order),
             ...self::orderItemDriverFields($item),
@@ -792,6 +801,7 @@ class VendorApiPresenter
             'shipping_address' => $shippingAddress,
             'payment_summary' => self::bookingPaymentSummaryPayload($order),
             'tracking_steps' => $order->trackBookingSteps(),
+            'tracking_type' => $order->isRental() ? 'rental' : 'fashion_designer',
             'has_driver' => $order->driver_id !== null,
             'driver_assigned' => $order->driver_id !== null,
             'driver' => $order->driver ? [

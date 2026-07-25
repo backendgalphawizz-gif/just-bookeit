@@ -6,11 +6,23 @@ use App\Models\CheckoutOrder;
 
 class CheckoutRollupService
 {
-    /** @var list<string> */
-    protected const TERMINAL_SUCCESS = ['delivered', 'returned', 're_delivered'];
+    /** Sub-orders fully finished (all items completed). */
+    protected const TERMINAL_SUCCESS = ['completed'];
 
     /** @var list<string> */
     protected const TERMINAL_CANCEL = ['cancelled', 'refunded'];
+
+    /** Mid-lifecycle statuses (not awaiting acceptance, not fully completed). */
+    protected const IN_PROGRESS = [
+        'accepted',
+        'in_progress',
+        'delivered',
+        'rental_active',
+        'rework',
+        're_intransit',
+        'returned',
+        're_delivered',
+    ];
 
     public function sync(CheckoutOrder $checkout): CheckoutOrder
     {
@@ -23,23 +35,24 @@ class CheckoutRollupService
         $statuses = $subOrders->pluck('status')->all();
 
         $allCancelled = collect($statuses)->every(fn ($s) => in_array($s, self::TERMINAL_CANCEL, true));
-        $allSuccess = collect($statuses)->every(fn ($s) => in_array($s, self::TERMINAL_SUCCESS, true));
+        $allCompleted = collect($statuses)->every(fn ($s) => in_array($s, self::TERMINAL_SUCCESS, true));
         $anyCancelled = collect($statuses)->contains(fn ($s) => in_array($s, self::TERMINAL_CANCEL, true));
-        $anyDelivered = collect($statuses)->contains(fn ($s) => in_array($s, ['delivered', 're_delivered'], true));
+        $anyDelivered = collect($statuses)->contains(fn ($s) => in_array($s, ['delivered', 're_delivered', 'rental_active', 'returned', 'completed'], true));
         // Keep awaiting acceptance separate from in-progress so parent status
         // still reflects individual items waiting on vendor response.
         $anyAwaiting = collect($statuses)->contains(fn ($s) => in_array($s, ['new', 'pending_acceptance'], true));
-        $anyInProgress = collect($statuses)->contains(fn ($s) => in_array($s, ['accepted', 'in_progress', 're_intransit', 'rework'], true));
+        $anyInProgress = collect($statuses)->contains(fn ($s) => in_array($s, self::IN_PROGRESS, true));
 
         if ($checkout->payment_status === 'pending') {
             $checkout->status = 'new';
         } elseif ($allCancelled) {
             $checkout->status = 'cancelled';
-        } elseif ($allSuccess) {
+        } elseif ($allCompleted) {
+            // Every sub-order (and thus all items) completed → checkout completed.
             $checkout->status = 'completed';
-        } elseif ($anyCancelled && ($anyDelivered || $anyInProgress || $anyAwaiting)) {
+        } elseif ($anyCancelled && ($anyDelivered || $anyInProgress || $anyAwaiting || $allCompleted)) {
             $checkout->status = 'partially_cancelled';
-        } elseif ($anyDelivered && ! $allSuccess) {
+        } elseif ($anyDelivered && ! $allCompleted) {
             $checkout->status = 'partially_delivered';
         } elseif ($anyAwaiting && ! $anyInProgress && ! $anyDelivered) {
             $checkout->status = 'pending_acceptance';

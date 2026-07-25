@@ -5,6 +5,7 @@ namespace App\Services\Booking;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Checkout\VendorBookingItemService;
+use App\Support\FashionDesignerLifecycleSupport;
 use App\Support\OrderItemStatusSupport;
 use InvalidArgumentException;
 
@@ -102,20 +103,76 @@ class BookingLifecycleService
     }
 
     /**
-     * User requests rework (diagram: Need Rework) — designer fittings or rental issues.
+     * User requests rework (diagram: Need Rework) — fashion designer within 48h of delivery,
+     * or rental issues while delivered / rental active.
+     *
+     * @param  int|null  $itemId  Optional line item; otherwise all eligible active items.
      */
-    public function requestRework(Order $order, ?string $reason = null): Order
+    public function requestRework(Order $order, ?string $reason = null, ?int $itemId = null): Order
     {
-        if (! in_array($order->status, ['delivered', 'rental_active', 're_delivered'], true)) {
-            throw new InvalidArgumentException('Rework can only be requested after delivery / during rental.');
-        }
+        $order->loadMissing('orderItems');
 
         if ($reason) {
             $order->customer_notes = trim(($order->customer_notes ? $order->customer_notes."\n" : '').'Rework: '.$reason);
             $order->save();
         }
 
-        return $this->items->setActiveItemsStatus($order, 'rework');
+        $active = $order->orderItems->where('status', '!=', OrderItem::STATUS_CANCELLED)->values();
+
+        if ($active->isEmpty()) {
+            if (! in_array($order->status, ['delivered', 'rental_active', 're_delivered'], true)) {
+                throw new InvalidArgumentException('Rework can only be requested after delivery / during rental.');
+            }
+
+            return $this->items->updateBookingStatus($order, 'rework');
+        }
+
+        $candidates = $active->filter(
+            fn (OrderItem $item) => FashionDesignerLifecycleSupport::canCustomerRequestRework($item, $order)
+        );
+
+        if ($itemId) {
+            $item = $active->firstWhere('id', $itemId);
+            if (! $item) {
+                throw new InvalidArgumentException('Item does not belong to this booking.');
+            }
+            if (! FashionDesignerLifecycleSupport::canCustomerRequestRework($item, $order)) {
+                if (
+                    FashionDesignerLifecycleSupport::usesDesignerDeliveryTrack($item, $order)
+                    && $item->status === 'delivered'
+                    && ! FashionDesignerLifecycleSupport::reworkWindowOpen($item, $order)
+                ) {
+                    throw new InvalidArgumentException(
+                        'Rework window has expired (48 hours after delivery). This item will be marked completed automatically.'
+                    );
+                }
+
+                throw new InvalidArgumentException('Rework cannot be requested for this item in its current status.');
+            }
+
+            return $this->items->updateItemStatus($order, $item, 'rework');
+        }
+
+        if ($candidates->isEmpty()) {
+            $designerDelivered = $active->first(
+                fn (OrderItem $item) => FashionDesignerLifecycleSupport::usesDesignerDeliveryTrack($item, $order)
+                    && $item->status === 'delivered'
+            );
+            if ($designerDelivered && ! FashionDesignerLifecycleSupport::reworkWindowOpen($designerDelivered, $order)) {
+                throw new InvalidArgumentException(
+                    'Rework window has expired (48 hours after delivery). Delivered designer items auto-complete after 48 hours.'
+                );
+            }
+
+            throw new InvalidArgumentException('Rework can only be requested after delivery / during rental, within the allowed window.');
+        }
+
+        $updated = $order;
+        foreach ($candidates as $item) {
+            $updated = $this->items->updateItemStatus($updated->fresh(['orderItems']), $item->fresh(), 'rework');
+        }
+
+        return $updated;
     }
 
     /**
@@ -123,8 +180,8 @@ class BookingLifecycleService
      */
     public function markCompleted(Order $order): Order
     {
-        if (! in_array($order->status, ['returned', 're_delivered', 'delivered'], true)) {
-            throw new InvalidArgumentException('Booking can only be completed after return, re-delivery, or designer delivery.');
+        if (! in_array($order->status, ['returned', 're_delivered', 'delivered', 're_intransit'], true)) {
+            throw new InvalidArgumentException('Booking can only be completed after return, re-delivery, designer delivery, or rework transit.');
         }
 
         return $this->items->updateBookingStatus($order, 'completed');

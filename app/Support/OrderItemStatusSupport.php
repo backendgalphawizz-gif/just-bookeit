@@ -77,7 +77,8 @@ class OrderItemStatusSupport
             'rework' => ['re_intransit', OrderItem::STATUS_CANCELLED],
             're_intransit' => $isRental
                 ? ['returned', OrderItem::STATUS_CANCELLED]
-                : ['re_delivered', OrderItem::STATUS_CANCELLED],
+                // Designer rework return: vendor may complete after pickup, or mark re-delivered.
+                : ['completed', 're_delivered', OrderItem::STATUS_CANCELLED],
             // Allow reopening return pickup if marked returned too early (admin can reassign driver).
             'returned' => ['completed', 're_intransit'],
             're_delivered' => ['completed', 'rework'],
@@ -271,6 +272,9 @@ class OrderItemStatusSupport
             }
             if (in_array($itemNext, [OrderItem::STATUS_ACCEPTED, OrderItem::STATUS_CANCELLED], true)) {
                 $payload['responded_at'] = $item->responded_at ?? now();
+            }
+            if (in_array($itemNext, ['delivered', 'rental_active'], true) && blank($item->delivered_at)) {
+                $payload['delivered_at'] = now();
             }
 
             $item->update($payload);

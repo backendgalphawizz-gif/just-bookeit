@@ -295,7 +295,27 @@ class Order extends Model
 
     public function isRental(): bool
     {
-        $this->loadMissing('category');
+        $this->loadMissing(['category', 'orderItems']);
+
+        // Prefer line items when present (mixed checkouts / mis-tagged order category).
+        $active = $this->orderItems
+            ->where('status', '!=', OrderItem::STATUS_CANCELLED)
+            ->values();
+
+        if ($active->isNotEmpty()) {
+            $rentalFlags = $active->map(
+                fn (OrderItem $item) => OrderItemStatusSupport::isRentalItem($item, $this)
+            );
+            if ($rentalFlags->every(fn (bool $isRental) => $isRental === false)) {
+                return false;
+            }
+            if ($rentalFlags->every(fn (bool $isRental) => $isRental === true)) {
+                return true;
+            }
+            // Mixed rental + designer items: booking-level helpers treat as rental;
+            // UIs should use per-item trackSteps() for timelines.
+        }
+
         $slug = $this->category?->slug;
 
         if ($slug === 'fashion-designer') {
@@ -424,10 +444,12 @@ class Order extends Model
 
         return in_array($this->status, [
             'delivered',
+            'rental_active',
             're_intransit',
             'returned',
             'rework',
             're_delivered',
+            'completed',
         ], true);
     }
 
@@ -480,6 +502,10 @@ class Order extends Model
 
     public function rentalProgressPercent(): ?int
     {
+        if (in_array($this->status, ['returned', 're_delivered', 'completed'], true)) {
+            return 100;
+        }
+
         if (! $this->hasRentalPeriodStarted()) {
             return 0;
         }
@@ -502,6 +528,10 @@ class Order extends Model
 
         if (in_array($this->status, ['cancelled', 'refunded'], true)) {
             return 'cancelled';
+        }
+
+        if (in_array($this->status, ['returned', 're_delivered', 'completed'], true)) {
+            return 'finished';
         }
 
         if (! $this->rental_start_date || ! $this->rental_end_date) {
@@ -543,6 +573,7 @@ class Order extends Model
             'active' => 'Rental in progress',
             'awaiting_return' => 'Awaiting return',
             'overdue' => 'Return overdue',
+            'finished' => 'Rental completed',
             'unscheduled' => 'Rental dates not set',
             'cancelled' => 'Rental cancelled',
             default => 'Rental',
@@ -579,6 +610,7 @@ class Order extends Model
         }
 
         $cancelled = in_array($this->status, ['cancelled', 'refunded'], true);
+        $finished = in_array($this->status, ['returned', 're_delivered', 'completed'], true);
         $started = $this->hasRentalPeriodStarted();
         $today = now()->startOfDay();
         $start = $this->rental_start_date?->copy()->startOfDay();
@@ -596,7 +628,7 @@ class Order extends Model
 
         $deliveryState = match (true) {
             $cancelled => 'cancelled',
-            $started => 'done',
+            $finished || $started => 'done',
             $this->status === 'in_progress' => 'current',
             $this->status === 'accepted' => 'upcoming',
             default => 'upcoming',
@@ -616,11 +648,11 @@ class Order extends Model
 
         $startState = $cancelled
             ? 'cancelled'
-            : (! $started ? 'upcoming' : ($today->lt($start) ? 'upcoming' : 'done'));
-        $startDetail = ! $started ? 'Starts when outfit is delivered' : null;
+            : (($finished || ($started && ! $today->lt($start))) ? 'done' : 'upcoming');
+        $startDetail = (! $started && ! $finished) ? 'Starts when outfit is delivered' : null;
         $steps[] = $this->rentalTrackStep(
             'Rental starts',
-            $started ? $start->format('M d, Y') : 'After delivery',
+            ($started || $finished) ? $start->format('M d, Y') : 'After delivery',
             $startState,
             $startDetail
         );
@@ -631,6 +663,9 @@ class Order extends Model
 
         if ($cancelled) {
             $periodState = 'cancelled';
+        } elseif ($finished) {
+            $periodState = 'done';
+            $periodTime = $duration ? $duration.' days completed' : 'Rental completed';
         } elseif (! $started) {
             $periodState = 'upcoming';
             $periodTime = 'Waiting for delivery';
@@ -651,6 +686,9 @@ class Order extends Model
         if ($returnDue) {
             if ($cancelled) {
                 $returnState = 'cancelled';
+            } elseif ($finished) {
+                $returnState = 'done';
+                $returnTime = 'Returned';
             } elseif (! $started) {
                 $returnState = 'upcoming';
                 $returnTime = 'After rental ends';
@@ -755,39 +793,34 @@ class Order extends Model
                 fn (array $step) => ! in_array($step['min'], ['rework', 're_delivered'], true)
             ));
         } else {
-            // Fashion designer: Delivered → Completed, with Rework / Re-delivered branch.
-            // No Rental Active / Return In Transit / Returned.
-            $steps = array_values(array_filter(
-                $steps,
-                fn (array $step) => ! in_array($step['min'], ['rental_active', 're_intransit', 'returned'], true)
-            ));
-            $steps[] = ['keys' => ['rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Rework', 'min' => 'rework'];
-            $steps[] = ['keys' => ['re_delivered', 'completed'], 'label' => 'Re-delivered', 'min' => 're_delivered'];
-            $steps[] = ['keys' => ['completed'], 'label' => 'Completed', 'min' => 'completed'];
-            // Dedupe completed
-            $seen = [];
-            $steps = array_values(array_filter($steps, function (array $step) use (&$seen) {
-                if (isset($seen[$step['label']])) {
-                    return false;
-                }
-                $seen[$step['label']] = true;
-
-                return true;
-            }));
+            // Fashion designer (customer / vendor apps + panels):
+            // Booking placed → Accepted → In Transit → Delivered → Rework → Return In Transit → Re-delivered → Completed
+            $steps = [
+                ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Booking placed', 'min' => 'new'],
+                ['keys' => ['accepted', 'in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Accepted', 'min' => 'accepted'],
+                ['keys' => ['in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'In Transit', 'min' => 'in_progress'],
+                ['keys' => ['delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Delivered', 'min' => 'delivered'],
+                ['keys' => ['rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Rework', 'min' => 'rework'],
+                ['keys' => ['re_intransit', 're_delivered', 'completed'], 'label' => 'Return In Transit', 'min' => 're_intransit'],
+                ['keys' => ['re_delivered', 'completed'], 'label' => 'Re-delivered', 'min' => 're_delivered'],
+                ['keys' => ['completed'], 'label' => 'Completed', 'min' => 'completed'],
+            ];
         }
 
         $rank = array_flip(self::STATUSES);
         // Treat pending acceptance as still on the first step so the timeline has a clear current marker.
         $current = $rank[$status === 'pending_acceptance' ? 'new' : $status] ?? 0;
+        $isTerminal = in_array($status, ['completed', 'cancelled', 'refunded'], true);
 
         // Designer "delivered" is current until completed; rental "delivered" is current until rental_active.
-        return array_map(function (array $step) use ($rank, $current): array {
+        return array_map(function (array $step) use ($rank, $current, $isTerminal): array {
             $minRank = $rank[$step['min']] ?? 0;
 
             if ($current > $minRank) {
                 $state = 'done';
             } elseif ($current === $minRank) {
-                $state = 'current';
+                // Final status (e.g. Completed) should show a checkmark, not an open "current" circle.
+                $state = $isTerminal ? 'done' : 'current';
             } else {
                 $state = 'upcoming';
             }
@@ -842,7 +875,8 @@ class Order extends Model
                     ['label' => 'Mark Returned', 'url' => $route('returned'), 'status' => 'returned', 'variant' => 'success'],
                 ]
                 : [
-                    ['label' => 'Mark Re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'success'],
+                    ['label' => 'Mark Completed', 'url' => $route('completed'), 'status' => 'completed', 'variant' => 'success'],
+                    ['label' => 'Mark Re-delivered', 'url' => $route('re_delivered'), 'status' => 're_delivered', 'variant' => 'outline'],
                 ],
             'rework' => [
                 ['label' => 'Dispatch Rework (Return In Transit)', 'url' => $route('re_intransit'), 'status' => 're_intransit', 'variant' => 'primary'],

@@ -163,6 +163,9 @@ class VendorBookingItemService
             if (in_array($nextStatus, [OrderItem::STATUS_ACCEPTED, OrderItem::STATUS_CANCELLED], true)) {
                 $payload['responded_at'] = now();
             }
+            if (in_array($nextStatus, ['delivered', 'rental_active'], true) && blank($item->delivered_at)) {
+                $payload['delivered_at'] = now();
+            }
             $item->update($payload);
 
             // Rework / return pickup: clear driver so admin can assign again.
@@ -228,7 +231,11 @@ class VendorBookingItemService
                 }
 
                 $previousItemStatus = $item->status;
-                $item->update(['status' => $nextStatus]);
+                $payload = ['status' => $nextStatus];
+                if (in_array($nextStatus, ['delivered', 'rental_active'], true) && blank($item->delivered_at)) {
+                    $payload['delivered_at'] = now();
+                }
+                $item->update($payload);
 
                 if (
                     in_array($nextStatus, ['rework', 're_intransit'], true)

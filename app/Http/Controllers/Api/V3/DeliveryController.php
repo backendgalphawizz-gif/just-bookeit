@@ -324,6 +324,9 @@ class DeliveryController extends DriverApiController
         $item->update([
             'status' => $itemFinal,
             'driver_delivery_status' => null,
+            ...((in_array($itemFinal, ['delivered', 'rental_active'], true) && blank($item->delivered_at))
+                ? ['delivered_at' => now()]
+                : []),
         ]);
 
         app(\App\Services\Checkout\VendorBookingItemService::class)

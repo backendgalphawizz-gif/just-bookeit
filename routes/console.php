@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('wallet:release-holds')->hourly();
+Schedule::command('bookings:auto-complete-designer')->hourly();
