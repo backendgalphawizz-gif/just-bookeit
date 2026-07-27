@@ -3,54 +3,27 @@
 @section('title', 'Vendor Registration')
 
 @section('content')
-<div
-    class="vp-register-wizard"
-    x-data="{
-        step: {{ (int) $initialStep }},
-        total: 3,
-        go(n) { this.step = Math.min(this.total, Math.max(1, n)); window.scrollTo({ top: 0, behavior: 'smooth' }); },
-        next() {
-            const panel = this.$root.querySelector('.vp-register-panel[data-step=\"' + this.step + '\"]');
-            if (panel) {
-                const fields = panel.querySelectorAll('input, select, textarea');
-                for (const field of fields) {
-                    if (!field.checkValidity()) {
-                        field.reportValidity();
-                        return;
-                    }
-                }
-                if (this.step === 2) {
-                    const checked = panel.querySelectorAll('input[name=\"service_types[]\"]:checked');
-                    if (!checked.length) {
-                        alert('Please select at least one service type.');
-                        return;
-                    }
-                }
-            }
-            this.go(this.step + 1);
-        },
-        prev() { if (this.step === 1) { window.location.href = '{{ route('vendor.register') }}'; return; } this.go(this.step - 1); },
-        remaining() { return this.total - this.step; }
-    }"
->
+@php $startStep = max(1, min(3, (int) ($initialStep ?? 1))); @endphp
+
+<div class="vp-register-wizard" id="vp-register-wizard" data-step="{{ $startStep }}">
     <div class="vp-register-top">
-        <button type="button" class="vp-register-back" @click="prev()" aria-label="Back">
+        <button type="button" class="vp-register-back" id="vp-register-back" aria-label="Back">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
         </button>
         <h1 class="vp-register-heading">Vendor Registration</h1>
-        <span class="vp-register-step-label" x-text="'Step ' + step + ' of ' + total"></span>
+        <span class="vp-register-step-label" id="vp-register-step-label">Step {{ $startStep }} of 3</span>
     </div>
-    <div class="vp-register-progress" role="progressbar" :aria-valuenow="step" aria-valuemin="1" aria-valuemax="3">
-        <span class="vp-register-progress-fill" :style="'width:' + ((step / total) * 100) + '%'"></span>
+    <div class="vp-register-progress" role="progressbar" aria-valuenow="{{ $startStep }}" aria-valuemin="1" aria-valuemax="3">
+        <span class="vp-register-progress-fill" id="vp-register-progress-fill" style="width: {{ ($startStep / 3) * 100 }}%"></span>
     </div>
 
     <form method="POST" action="{{ route('vendor.register.submit') }}" enctype="multipart/form-data" class="vp-register-card" id="vp-register-form">
         @csrf
         <input type="hidden" name="registration_token" value="{{ $registerSession['registration_token'] }}">
-        <input type="hidden" name="_step" :value="step">
+        <input type="hidden" name="_step" id="vp-register-step-input" value="{{ $startStep }}">
 
         {{-- Step 1: Personal Details --}}
-        <div class="vp-register-panel" data-step="1" x-show="step === 1" x-cloak>
+        <div class="vp-register-panel" data-step="1" @if ($startStep !== 1) hidden @endif>
             <h2 class="vp-register-panel-title">Personal Details</h2>
 
             <div class="vp-field">
@@ -71,28 +44,33 @@
                 @error('email')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
 
+            @php
+                $maxImageBytes = \App\Support\VendorValidationRules::effectiveMaxImageBytes();
+                $maxImageMb = \App\Support\UploadLimits::formatMegabytes($maxImageBytes);
+            @endphp
             <div class="vp-field">
                 <label class="vp-label">Aadhaar Card <span class="vp-required">*</span></label>
                 <div class="vp-upload-grid">
                     <label class="vp-upload-tile">
-                        <input type="file" name="aadhar_front" accept="image/jpeg,image/jpg,image/png,image/webp" required class="vp-upload-input" data-vp-preview>
+                        <input type="file" name="aadhar_front" accept="image/jpeg,image/jpg,image/png,image/webp" required class="vp-upload-input" data-vp-preview data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar front">
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
                         <span class="vp-upload-title">Upload Front</span>
-                        <span class="vp-upload-sub">JPEG, PNG</span>
+                        <span class="vp-upload-sub">JPEG/PNG, max {{ $maxImageMb }} MB</span>
                         <span class="vp-upload-name"></span>
                     </label>
                     <label class="vp-upload-tile">
-                        <input type="file" name="aadhar_back" accept="image/jpeg,image/jpg,image/png,image/webp" required class="vp-upload-input" data-vp-preview>
+                        <input type="file" name="aadhar_back" accept="image/jpeg,image/jpg,image/png,image/webp" required class="vp-upload-input" data-vp-preview data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar back">
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
                         <span class="vp-upload-title">Upload Back</span>
-                        <span class="vp-upload-sub">JPEG, PNG</span>
+                        <span class="vp-upload-sub">JPEG/PNG, max {{ $maxImageMb }} MB</span>
                         <span class="vp-upload-name"></span>
                     </label>
                 </div>
+                <p class="vp-field-hint">Use clear JPEG/PNG photos under {{ $maxImageMb }} MB each. Large phone camera shots often fail ??? compress or resize first.</p>
                 @error('aadhar_front')<p class="vp-field-error">{{ $message }}</p>@enderror
                 @error('aadhar_back')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
@@ -124,8 +102,8 @@
             </div>
         </div>
 
-        {{-- Step 2: Business Details --}}
-        <div class="vp-register-panel" data-step="2" x-show="step === 2" x-cloak>
+        {{-- Step 2: Business + Location + Documents --}}
+        <div class="vp-register-panel" data-step="2" @if ($startStep !== 2) hidden @endif>
             <h2 class="vp-register-panel-title">Business Details</h2>
 
             <div class="vp-field">
@@ -171,11 +149,8 @@
                 <input id="gst_no" type="text" name="gst_no" class="vp-input @error('gst_no') vp-input--error @enderror" value="{{ old('gst_no') }}" placeholder="22AAAAA0000A1Z5" maxlength="15" data-vp-restrict="gst" style="text-transform:uppercase">
                 @error('gst_no')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
-        </div>
 
-        {{-- Step 3: Location & Documents --}}
-        <div class="vp-register-panel" data-step="3" x-show="step === 3" x-cloak>
-            <h2 class="vp-register-panel-title">Location</h2>
+            <h2 class="vp-register-panel-title" style="margin-top:1.35rem;">Location</h2>
 
             <div class="vp-field">
                 <label class="vp-label" for="address">Full Address</label>
@@ -186,12 +161,12 @@
             <div class="vp-form-grid-2">
                 <div class="vp-field">
                     <label class="vp-label" for="city">City</label>
-                    <input id="city" type="text" name="city" class="vp-input @error('city') vp-input--error @enderror" value="{{ old('city', 'Mumbai') }}" maxlength="100" data-vp-restrict="city">
+                    <input id="city" type="text" name="city" class="vp-input @error('city') vp-input--error @enderror" value="{{ old('city') }}" placeholder="Mumbai" maxlength="100" data-vp-restrict="city">
                     @error('city')<p class="vp-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="vp-field">
                     <label class="vp-label" for="state">State</label>
-                    <input id="state" type="text" name="state" class="vp-input @error('state') vp-input--error @enderror" value="{{ old('state', 'Maharashtra') }}" maxlength="100" data-vp-restrict="city">
+                    <input id="state" type="text" name="state" class="vp-input @error('state') vp-input--error @enderror" value="{{ old('state') }}" placeholder="Maharashtra" maxlength="100" data-vp-restrict="city">
                     @error('state')<p class="vp-field-error">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -204,12 +179,12 @@
                 </div>
                 <div class="vp-field">
                     <label class="vp-label" for="pincode">Pincode</label>
-                    <input id="pincode" type="text" name="pincode" class="vp-input @error('pincode') vp-input--error @enderror" value="{{ old('pincode', '400001') }}" inputmode="numeric" maxlength="6" pattern="[1-9][0-9]{5}">
+                    <input id="pincode" type="text" name="pincode" class="vp-input @error('pincode') vp-input--error @enderror" value="{{ old('pincode') }}" placeholder="400001" inputmode="numeric" maxlength="6" pattern="[1-9][0-9]{5}">
                     @error('pincode')<p class="vp-field-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 
-            <h2 class="vp-register-panel-title" style="margin-top:1.25rem;">Documents</h2>
+            <h2 class="vp-register-panel-title" style="margin-top:1.35rem;">Documents</h2>
             <div class="vp-upload-grid">
                 <label class="vp-upload-tile">
                     <input type="file" name="shop_logo" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview>
@@ -234,22 +209,191 @@
             @error('pan_card')<p class="vp-field-error">{{ $message }}</p>@enderror
         </div>
 
+        {{-- Step 3: Bank Details --}}
+        <div class="vp-register-panel" data-step="3" @if ($startStep !== 3) hidden @endif>
+            <h2 class="vp-register-panel-title">Bank Details</h2>
+
+            <div class="vp-field">
+                <label class="vp-label" for="account_name">Account Holder Name <span class="vp-required">*</span></label>
+                <input id="account_name" type="text" name="account_name" class="vp-input @error('account_name') vp-input--error @enderror" value="{{ old('account_name') }}" placeholder="Name as per bank records" required maxlength="255" data-vp-restrict="person-name">
+                @error('account_name')<p class="vp-field-error">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="vp-field">
+                <label class="vp-label" for="account_no">Account Number <span class="vp-required">*</span></label>
+                <input id="account_no" type="text" name="account_no" class="vp-input @error('account_no') vp-input--error @enderror" value="{{ old('account_no') }}" placeholder=".... .... ...." required inputmode="numeric" maxlength="20" data-vp-restrict="account">
+                @error('account_no')<p class="vp-field-error">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="vp-field">
+                <label class="vp-label" for="bank_name">Bank Name <span class="vp-required">*</span></label>
+                <input id="bank_name" type="text" name="bank_name" class="vp-input @error('bank_name') vp-input--error @enderror" value="{{ old('bank_name') }}" placeholder="State Bank of India" required maxlength="255" data-vp-restrict="title">
+                @error('bank_name')<p class="vp-field-error">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="vp-field">
+                <label class="vp-label" for="ifsc_code">IFSC Code <span class="vp-required">*</span></label>
+                <input id="ifsc_code" type="text" name="ifsc_code" class="vp-input @error('ifsc_code') vp-input--error @enderror" value="{{ old('ifsc_code') }}" placeholder="SBIN0000001" required maxlength="11" data-vp-restrict="ifsc" style="text-transform:uppercase">
+                @error('ifsc_code')<p class="vp-field-error">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="vp-field">
+                <label class="vp-label">Account Type <span class="vp-required">*</span></label>
+                <div class="vp-account-type">
+                    <label class="vp-account-type-option">
+                        <input type="radio" name="account_type" value="savings" @checked(old('account_type', 'savings') === 'savings') required>
+                        <span>Saving</span>
+                    </label>
+                    <label class="vp-account-type-option">
+                        <input type="radio" name="account_type" value="current" @checked(old('account_type') === 'current')>
+                        <span>Current</span>
+                    </label>
+                </div>
+                @error('account_type')<p class="vp-field-error">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
         <div class="vp-register-footer">
-            <p class="vp-register-remaining" x-text="remaining() === 0 ? 'Last step' : (remaining() + ' step' + (remaining() === 1 ? '' : 's') + ' remaining')"></p>
-            <button type="button" class="vp-btn vp-btn--primary vp-register-continue" x-show="step < total" @click="next()">Continue</button>
-            <button type="submit" class="vp-btn vp-btn--primary vp-register-continue" x-show="step === total" x-cloak>Submit</button>
+            <p class="vp-register-remaining" id="vp-register-remaining">
+                @if ($startStep >= 3)
+                    Final Step
+                @else
+                    {{ 3 - $startStep }} step{{ (3 - $startStep) === 1 ? '' : 's' }} remaining
+                @endif
+            </p>
+            <button type="button" class="vp-btn vp-btn--primary vp-register-continue" id="vp-register-continue">
+                {{ $startStep >= 3 ? 'Submit Application' : 'Continue' }}
+            </button>
         </div>
     </form>
+
+    <p class="vp-auth-footer" style="text-align:center;margin-top:1rem;">
+        Wrong number? <a href="{{ route('vendor.register') }}">Change mobile</a>
+    </p>
 </div>
 
 <script>
+(function () {
+    const wizard = document.getElementById('vp-register-wizard');
+    const form = document.getElementById('vp-register-form');
+    if (!wizard || !form) return;
+
+    const total = 3;
+    const registerUrl = @json(route('vendor.register'));
+    let step = Number(wizard.dataset.step || 1);
+
+    const stepLabel = document.getElementById('vp-register-step-label');
+    const progressFill = document.getElementById('vp-register-progress-fill');
+    const stepInput = document.getElementById('vp-register-step-input');
+    const remainingEl = document.getElementById('vp-register-remaining');
+    const continueBtn = document.getElementById('vp-register-continue');
+    const backBtn = document.getElementById('vp-register-back');
+    const panels = Array.from(wizard.querySelectorAll('.vp-register-panel'));
+
+    function setStep(next) {
+        step = Math.min(total, Math.max(1, next));
+        wizard.dataset.step = String(step);
+        stepInput.value = String(step);
+        stepLabel.textContent = 'Step ' + step + ' of ' + total;
+        progressFill.style.width = ((step / total) * 100) + '%';
+
+        const left = total - step;
+        remainingEl.textContent = left === 0
+            ? 'Final Step'
+            : (left + ' step' + (left === 1 ? '' : 's') + ' remaining');
+
+        panels.forEach((panel) => {
+            panel.hidden = Number(panel.dataset.step) !== step;
+        });
+
+        continueBtn.textContent = step >= total ? 'Submit Application' : 'Continue';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function validateCurrentStep() {
+        const panel = wizard.querySelector('.vp-register-panel[data-step="' + step + '"]');
+        if (!panel) return true;
+
+        const fields = panel.querySelectorAll('input, select, textarea');
+        for (const field of fields) {
+            if (field.type === 'radio') continue;
+            if (!field.checkValidity()) {
+                field.reportValidity();
+                return false;
+            }
+        }
+
+        if (step === 2) {
+            const checked = panel.querySelectorAll('input[name="service_types[]"]:checked');
+            if (!checked.length) {
+                alert('Please select at least one service type.');
+                return false;
+            }
+        }
+
+        if (step === 3) {
+            const accountType = panel.querySelector('input[name="account_type"]:checked');
+            if (!accountType) {
+                alert('Please select an account type.');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    continueBtn.addEventListener('click', function () {
+        if (!validateCurrentStep()) return;
+
+        if (step < total) {
+            setStep(step + 1);
+            return;
+        }
+
+        form.requestSubmit();
+    });
+
+    backBtn.addEventListener('click', function () {
+        if (step === 1) {
+            window.location.href = registerUrl;
+            return;
+        }
+        setStep(step - 1);
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (step < total) {
+            event.preventDefault();
+            if (validateCurrentStep()) setStep(step + 1);
+            return;
+        }
+        if (!validateCurrentStep()) {
+            event.preventDefault();
+        }
+    });
+
     document.querySelectorAll('[data-vp-preview]').forEach((input) => {
         input.addEventListener('change', () => {
             const nameEl = input.closest('.vp-upload-tile')?.querySelector('.vp-upload-name');
+            const file = input.files?.[0];
+            const maxBytes = Number(input.dataset.vpMaxFileBytes || 0);
+            const label = input.dataset.vpFileLabel || 'Image';
+
+            if (file && maxBytes > 0 && file.size > maxBytes) {
+                const maxMb = (maxBytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '');
+                alert(label + ' is too large (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB). Maximum is ' + maxMb + ' MB. Please compress or choose a smaller file.');
+                input.value = '';
+                if (nameEl) nameEl.textContent = '';
+                return;
+            }
+
             if (nameEl) {
-                nameEl.textContent = input.files?.[0]?.name || '';
+                nameEl.textContent = file?.name || '';
             }
         });
     });
+
+    setStep(step);
+})();
 </script>
 @endsection

@@ -174,7 +174,6 @@ class Order extends Model
                 OrderDispatchSupport::prepareForTransit($order);
             }
 
-            // Admin/system driver assignment is treated as accepted — no separate driver accept step.
             if ($order->isDirty('driver_id') && ! $order->isDirty('driver_delivery_status')) {
                 if ($order->driver_id === null) {
                     $order->driver_delivery_status = null;
@@ -301,7 +300,6 @@ class Order extends Model
         return $this->hasMany(OrderReview::class);
     }
 
-
     public function isCod(): bool
     {
         return $this->payment_method === 'cod';
@@ -311,7 +309,6 @@ class Order extends Model
     {
         $this->loadMissing(['category', 'orderItems']);
 
-        // Prefer line items when present (mixed checkouts / mis-tagged order category).
         $active = $this->orderItems
             ->where('status', '!=', OrderItem::STATUS_CANCELLED)
             ->values();
@@ -326,8 +323,6 @@ class Order extends Model
             if ($rentalFlags->every(fn (bool $isRental) => $isRental === true)) {
                 return true;
             }
-            // Mixed rental + designer items: booking-level helpers treat as rental;
-            // UIs should use per-item trackSteps() for timelines.
         }
 
         $slug = $this->category?->slug;
@@ -418,7 +413,6 @@ class Order extends Model
             }
         }
 
-        // Prefer exact amount recorded by the vendor (never recompute from percent).
         if ($this->damage_amount !== null) {
             return round((float) $this->damage_amount, 2);
         }
@@ -447,9 +441,6 @@ class Order extends Model
         return (int) ($this->rental_start_date->diffInDays($this->rental_end_date) + 1);
     }
 
-    /**
-     * Rental clock starts only after the outfit is delivered to the customer.
-     */
     public function hasRentalPeriodStarted(): bool
     {
         if (! $this->isRental()) {
@@ -552,7 +543,6 @@ class Order extends Model
             return 'unscheduled';
         }
 
-        // Do not start the rental period until the outfit is delivered.
         if (! $this->hasRentalPeriodStarted()) {
             return 'awaiting_delivery';
         }
@@ -734,13 +724,6 @@ class Order extends Model
         ];
     }
 
-    /**
-     * Status used for the booking-level tracking timeline.
-     * Uses the furthest (most advanced) active item so mixed bookings do not
-     * stay stuck on a stale booking.status or an earlier dispatch leg
-     * (e.g. one item In Transit must not hide another on Return In Transit).
-     * Prefer per-item trackSteps() when rendering multi-item bookings.
-     */
     public function statusForTracking(): string
     {
         $this->loadMissing('orderItems');
@@ -755,7 +738,6 @@ class Order extends Model
 
         foreach ($active as $item) {
             $trackStatus = $item->status;
-            // Premature "returned" (no return pickup yet) still tracks as Return In Transit.
             if ($trackStatus === 'returned' && blank($item->driver_pickup_at)) {
                 $trackStatus = 're_intransit';
             }
@@ -800,15 +782,11 @@ class Order extends Model
         }
 
         if ($isRental) {
-            // Rental: Delivered → Rental Active → Return In Transit → Returned → Completed
-            // No Rework / Re-delivered on this track.
             $steps = array_values(array_filter(
                 $steps,
                 fn (array $step) => ! in_array($step['min'], ['rework', 're_delivered'], true)
             ));
         } else {
-            // Fashion designer (customer / vendor apps + panels):
-            // Booking placed → Accepted → In Transit → Delivered → Rework → Return In Transit → Completed
             $steps = [
                 ['keys' => ['new', 'pending_acceptance', 'accepted', 'in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Booking placed', 'min' => 'new'],
                 ['keys' => ['accepted', 'in_progress', 'delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Accepted', 'min' => 'accepted'],
@@ -816,18 +794,13 @@ class Order extends Model
                 ['keys' => ['delivered', 'rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Delivered', 'min' => 'delivered'],
                 ['keys' => ['rework', 're_intransit', 're_delivered', 'completed'], 'label' => 'Rework', 'min' => 'rework'],
                 ['keys' => ['re_intransit', 're_delivered', 'completed'], 'label' => 'Return In Transit', 'min' => 're_intransit'],
-                // Re-delivered is not shown — it maps onto Completed for the designer timeline.
                 ['keys' => ['re_delivered', 'completed'], 'label' => 'Completed', 'min' => 're_delivered'],
             ];
         }
 
         $rank = array_flip(self::STATUSES);
-        // Treat pending acceptance as still on the first step so the timeline has a clear current marker.
         $current = $rank[$status === 'pending_acceptance' ? 'new' : $status] ?? 0;
         $isTerminal = in_array($status, ['completed', 'cancelled', 'refunded'], true);
-        // Fashion designer: delivery itself is finished — check Delivered (not leave it as open "current").
-        // Rework / return stay upcoming until those statuses happen; Completed checks when done.
-        // re_delivered is treated as Completed on this track (no separate Re-delivered step).
         $designerDeliveryDone = ! $isRental && $status === 'delivered';
         $designerCompleted = ! $isRental && in_array($status, ['re_delivered', 'completed'], true);
 

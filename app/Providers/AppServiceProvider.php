@@ -25,14 +25,12 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
     }
 
     public function boot(): void
     {
         Broadcast::routes(['middleware' => ['web', 'auth:customer,vendor']]);
 
-        // Prefer the matching panel session when both customer + vendor are logged in.
         Broadcast::resolveAuthenticatedUserUsing(function ($request) {
             if (Auth::guard('vendor')->check() && str_contains((string) $request->input('channel_name'), 'chat.vendor.')) {
                 return Auth::guard('vendor')->user();
@@ -43,7 +41,6 @@ class AppServiceProvider extends ServiceProvider
             }
 
             if (Auth::guard('vendor')->check() && Auth::guard('customer')->check()) {
-                // Conversation channels: return whichever party belongs to the thread.
                 return Auth::guard('vendor')->user();
             }
 
@@ -71,8 +68,6 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(OrderObserver::class);
         ChatMessage::observe(ChatMessageObserver::class);
 
-        // Driver delivery routes: accept booking id OR line-item id (resolves to parent booking).
-        // When an item id is used, stash it so pickup/dispatch only updates that item.
         Route::bind('delivery', function (string $value): Order {
             $order = Order::query()->find($value);
             if ($order) {

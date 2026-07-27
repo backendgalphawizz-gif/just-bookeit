@@ -191,17 +191,20 @@
                         </td>
                         <td>
                             <div class="vp-actions vp-actions--bookings">
-                                @if ($listStatus['status'] === 'new')
-                                    <form method="POST" action="{{ route('vendor.bookings.accept', $order) }}">@csrf
-                                        <button type="submit" class="vp-btn vp-btn--primary vp-btn--sm">Accept</button>
-                                    </form>
-                                    <form method="POST" action="{{ route('vendor.bookings.reject', $order) }}"
-                                          data-vp-confirm="This booking will be rejected."
-                                          data-vp-confirm-title="Reject booking?"
-                                          data-vp-confirm-label="Reject"
-                                          data-vp-confirm-variant="error">@csrf
-                                        <button type="submit" class="vp-btn vp-btn--danger vp-btn--sm">Reject</button>
-                                    </form>
+                                @if ($listStatus['status'] === 'new' || $listStatus['status'] === 'pending' || $order->orderItems->contains(fn ($i) => $i->canAccept() || $i->canReject()))
+                                    @if ($order->orderItems->contains(fn ($i) => $i->canAccept()) || in_array($order->status, ['new', 'pending_acceptance'], true))
+                                        <form method="POST" action="{{ route('vendor.bookings.accept', $order) }}">@csrf
+                                            <button type="submit" class="vp-btn vp-btn--primary vp-btn--sm">Accept</button>
+                                        </form>
+                                    @endif
+                                    @if ($order->orderItems->contains(fn ($i) => $i->canReject()) || in_array($order->status, ['new', 'pending_acceptance'], true))
+                                        <form method="POST" action="{{ route('vendor.bookings.reject', $order) }}"
+                                              onsubmit="var r=prompt('Reason for rejecting (required):'); if(!r||r.trim().length<5){event.preventDefault();alert('Please enter a reason (at least 5 characters).');return false;} this.querySelector('[name=reason]').value=r.trim();">
+                                            @csrf
+                                            <input type="hidden" name="reason" value="">
+                                            <button type="submit" class="vp-btn vp-btn--danger vp-btn--sm">Reject</button>
+                                        </form>
+                                    @endif
                                 @endif
                                 <a href="{{ route('vendor.bookings.show', $order) }}" class="vp-btn vp-btn--icon" title="View booking" aria-label="View booking">
                                     @include('vendor.partials.nav-icon', ['icon' => 'eye'])

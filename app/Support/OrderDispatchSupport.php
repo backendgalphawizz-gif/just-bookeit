@@ -8,15 +8,6 @@ use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
-/**
- * Booking status graph aligned to the product architecture:
- *
- * NEW → ACCEPTED → IN TRANSIT (in_progress) → DELIVERED → RENTAL ACTIVE
- *   → RETURN IN TRANSIT (re_intransit) → RETURNED → COMPLETED
- *
- * Branches: NEW→cancelled (rejected), ACCEPTED→cancelled,
- * RENTAL ACTIVE / DELIVERED→rework (designer), rework→re_intransit→re_delivered→completed.
- */
 class OrderDispatchSupport
 {
     public static function preparePickupAddress(Order $order): void
@@ -43,10 +34,6 @@ class OrderDispatchSupport
         }
     }
 
-    /**
-     * Reset driver assignment when a new delivery/return leg starts
-     * so admin can assign (or driver can claim) again.
-     */
     public static function resetDriverAssignment(Order $order): void
     {
         $order->driver_id = null;
@@ -60,9 +47,6 @@ class OrderDispatchSupport
         $order->delivery_otp = Order::generateDeliveryOtpValue();
     }
 
-    /**
-     * Clear per-item driver so admin can assign a new driver for the return leg.
-     */
     public static function resetItemDriverAssignment(OrderItem $item): void
     {
         $item->forceFill([
@@ -79,15 +63,10 @@ class OrderDispatchSupport
             return true;
         }
 
-        // Premature "returned" before return pickup — still the return leg.
         return $item->status === 'returned' && blank($item->driver_pickup_at);
     }
 
     /**
-     * True when the driver's visible dispatch items are all on the return leg.
-     * Mixed outbound + return assignments stay outbound at booking level;
-     * each line item still uses its own addresses via isReturnLegItem().
-     *
      * @param  Collection<int, OrderItem>|iterable<int, OrderItem>  $items
      */
     public static function isReturnLegForItems(iterable $items): bool
@@ -111,9 +90,6 @@ class OrderDispatchSupport
     }
 
     /**
-     * Pickup / delivery addresses for the current leg.
-     * Outbound: vendor → customer. Return: customer → vendor (swapped).
-     *
      * @return array{
      *     pickup_address: ?string,
      *     delivery_address: ?string,
@@ -181,11 +157,9 @@ class OrderDispatchSupport
             'new' => ['pending_acceptance', 'accepted', 'cancelled'],
             'pending_acceptance' => ['accepted', 'cancelled'],
             'accepted' => ['in_progress', 'cancelled'],
-            // Rentals: delivery completes into rental_active.
             'in_progress' => $isRental
                 ? ['delivered', 'rental_active', 'cancelled']
                 : ['delivered', 'cancelled'],
-            // After delivery: rentals enter rental_active; designers may rework or complete.
             'delivered' => $isRental
                 ? ['rental_active', 're_intransit', 'cancelled']
                 : ['rework', 'completed', 'cancelled'],
@@ -226,9 +200,6 @@ class OrderDispatchSupport
         return in_array($next, $allowed, true);
     }
 
-    /**
-     * Apply a validated status transition with side effects (OTP, driver reset).
-     */
     public static function applyTransition(Order $order, string $nextStatus): Order
     {
         if ($nextStatus === 'delivered' && $order->isRental()) {
@@ -247,7 +218,6 @@ class OrderDispatchSupport
         if ($nextStatus === 're_intransit' && $previous !== 're_intransit') {
             self::resetDriverAssignment($order);
         } elseif ($nextStatus === 'rework' && $previous !== 'rework') {
-            // Rework stays with the vendor — clear any outbound driver until vendor dispatches return.
             self::resetDriverAssignment($order);
         } elseif ($nextStatus === 'in_progress') {
             self::prepareForTransit($order);

@@ -232,13 +232,10 @@ class OrderController extends AdminController
         $previousPaymentStatus = $order->payment_status;
         $statusChanged = $data['status'] !== $order->status;
 
-        // Admin may still override status for ops, but prefer the lifecycle graph.
         if ($statusChanged && ! OrderDispatchSupport::canTransitionTo($order, $data['status'])) {
             return back()->with('error', 'Invalid status transition from '.$order->status.' to '.$data['status'].'.');
         }
 
-        // Driver can only be assigned when booking status is In Transit or Return In Transit.
-        // Check the submitted status so admin can set "In Transit" + driver in one save.
         $assigningOrChangingDriver = filled($data['driver_id'])
             && (int) $data['driver_id'] !== (int) ($order->driver_id ?? 0);
 
@@ -256,7 +253,6 @@ class OrderController extends AdminController
             OrderDispatchSupport::prepareForTransit($order);
         }
 
-        // When assigning a driver for a dispatch leg, set delivery sub-status.
         if (filled($data['driver_id']) && (int) $data['driver_id'] !== (int) $order->driver_id) {
             $data['driver_delivery_status'] = Order::DRIVER_STATUS_ACCEPTED;
             $data['driver_assigned_at'] = now();
@@ -280,9 +276,6 @@ class OrderController extends AdminController
         return back()->with('success', $this->manageSuccessMessage($order->fresh(), $data));
     }
 
-    /**
-     * Assign / clear a driver for a single line item (only when that item is In Transit).
-     */
     public function assignItemDriver(Request $request, Order $order, OrderItem $item): RedirectResponse
     {
         $this->authorizeAdmin('edit');
@@ -301,7 +294,6 @@ class OrderController extends AdminController
             );
         }
 
-        // Vendor marked "returned" early — reopen as Return In Transit so admin can assign pickup driver.
         if ($item->status === 'returned') {
             $item->update(['status' => 're_intransit']);
             $item->refresh();
@@ -317,8 +309,6 @@ class OrderController extends AdminController
             'driver_pickup_at' => null,
         ]);
 
-        // Keep booking-level driver in sync with the latest in-transit item assignment.
-        // Admin assignment = already accepted (driver skips accept and can pickup).
         if ($driverId) {
             $order->update([
                 'driver_id' => $driverId,
@@ -328,7 +318,6 @@ class OrderController extends AdminController
                 'delivery_otp' => $order->delivery_otp ?: Order::generateDeliveryOtpValue(),
             ]);
         } elseif ($previousItemDriverId && (int) $order->driver_id === (int) $previousItemDriverId) {
-            // Cleared the same driver from this item — drop booking driver if no other items keep them.
             $stillAssigned = $order->orderItems()
                 ->where('driver_id', $previousItemDriverId)
                 ->where('id', '!=', $item->id)
@@ -368,8 +357,6 @@ class OrderController extends AdminController
 
     protected function applyStatusSideEffects(Order $order, string $status, ?string $paymentStatus = null): void
     {
-        // Do not auto-mark payment success on delivery when an advance is already paid —
-        // remaining balance is collected separately after completion.
         if (
             $status === 'delivered'
             && ($paymentStatus === 'pending' || $order->payment_status === 'pending')

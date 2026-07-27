@@ -7,17 +7,8 @@ use App\Models\OrderItem;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
-/**
- * Item-level status graph + booking rollup.
- *
- * Booking status depends on line items:
- * - all cancelled → cancelled
- * - all active completed → completed
- * - otherwise pending (fulfillment), booking.status = slowest active item
- */
 class OrderItemStatusSupport
 {
-    /** Lifecycle ranks used to pick the slowest active item. */
     public const STATUS_RANK = [
         'pending_acceptance' => 10,
         'accepted' => 20,
@@ -48,10 +39,6 @@ class OrderItemStatusSupport
         return $order ? $order->isRental() : true;
     }
 
-    /**
-     * Status after outbound driver/vendor delivery.
-     * Rental dress/jewellery → rental_active; fashion designer stays delivered.
-     */
     public static function statusAfterOutboundDelivery(OrderItem $item, ?Order $order = null): string
     {
         return self::isRentalItem($item, $order) ? 'rental_active' : 'delivered';
@@ -65,21 +52,17 @@ class OrderItemStatusSupport
         return match ($item->status) {
             OrderItem::STATUS_PENDING => [OrderItem::STATUS_ACCEPTED, OrderItem::STATUS_CANCELLED],
             OrderItem::STATUS_ACCEPTED => ['in_progress', OrderItem::STATUS_CANCELLED],
-            // Rentals: delivery completes into rental_active (Delivered stays a done tracking step).
             'in_progress' => $isRental
                 ? ['delivered', 'rental_active', OrderItem::STATUS_CANCELLED]
                 : ['delivered', OrderItem::STATUS_CANCELLED],
             'delivered' => $isRental
-                // Start return pickup (re_intransit); admin assigns driver. Final returned only after pickup.
                 ? ['rental_active', 're_intransit', OrderItem::STATUS_CANCELLED]
                 : ['rework', 'completed', OrderItem::STATUS_CANCELLED],
             'rental_active' => ['re_intransit', 'rework', OrderItem::STATUS_CANCELLED],
             'rework' => ['re_intransit', OrderItem::STATUS_CANCELLED],
             're_intransit' => $isRental
                 ? ['returned', OrderItem::STATUS_CANCELLED]
-                // Designer rework return: vendor may complete after pickup, or mark re-delivered.
                 : ['completed', 're_delivered', OrderItem::STATUS_CANCELLED],
-            // Allow reopening return pickup if marked returned too early (admin can reassign driver).
             'returned' => ['completed', 're_intransit'],
             're_delivered' => ['completed', 'rework'],
             'completed', OrderItem::STATUS_CANCELLED => [],
@@ -93,12 +76,55 @@ class OrderItemStatusSupport
             return true;
         }
 
-        // `returned` = rented dress/jewellery is back with the vendor — never for designer items.
         if ($next === 'returned' && ! self::isRentalItem($item, $order)) {
             return false;
         }
 
         return in_array($next, self::allowedNextStatuses($item, $order), true);
+    }
+
+    /**
+     * Vendor "returned" on an active rental starts Return In Transit (admin assigns driver).
+     * Final returned is only from re_intransit after pickup.
+     */
+    public static function normalizeVendorRequestedStatus(OrderItem $item, string $nextStatus, ?Order $order = null): string
+    {
+        if (
+            $nextStatus === 'returned'
+            && self::isRentalItem($item, $order)
+            && in_array($item->status, ['delivered', 'rental_active'], true)
+        ) {
+            return 're_intransit';
+        }
+
+        return $nextStatus;
+    }
+
+    /** @return list<string> */
+    public static function vendorActionStatuses(OrderItem $item, ?Order $order = null): array
+    {
+        return array_values(array_filter(
+            self::allowedNextStatuses($item, $order),
+            fn (string $status) => $status !== OrderItem::STATUS_CANCELLED
+        ));
+    }
+
+    public static function vendorActionLabel(string $status, OrderItem $item, ?Order $order = null): string
+    {
+        return match ($status) {
+            'in_progress' => 'Mark In Transit',
+            'delivered' => 'Mark Delivered',
+            'rental_active' => 'Mark Rental Active',
+            're_intransit' => $item->status === 'rework'
+                ? 'Dispatch Rework (Return In Transit)'
+                : 'Start Return Pickup',
+            'returned' => 'Mark Returned to Vendor',
+            'rework' => 'Send for Rework',
+            're_delivered' => 'Mark Re-delivered',
+            'completed' => 'Mark Completed',
+            default => OrderItem::STATUS_LABELS[$status]
+                ?? ucfirst(str_replace('_', ' ', $status)),
+        };
     }
 
     public static function assertCanTransition(OrderItem $item, string $next, ?Order $order = null): void
@@ -156,8 +182,6 @@ class OrderItemStatusSupport
             ];
         }
 
-        // Item-wise accept/reject: any undecided line keeps the booking pending.
-        // Booking becomes accepted only when every active item is accepted (or further).
         if ($active->contains(fn (OrderItem $item) => $item->status === OrderItem::STATUS_PENDING)) {
             return [
                 'status' => 'pending_acceptance',
@@ -166,7 +190,6 @@ class OrderItemStatusSupport
             ];
         }
 
-        // All active items decided and still in acceptance stage → accepted.
         if ($active->every(fn (OrderItem $item) => $item->status === OrderItem::STATUS_ACCEPTED)) {
             return [
                 'status' => 'accepted',
@@ -184,7 +207,6 @@ class OrderItemStatusSupport
             ];
         }
 
-        // Mixed fulfillment progress → booking stays at slowest active status.
         return [
             'status' => self::slowestStatus($active),
             'fulfillment_state' => 'pending',
@@ -212,9 +234,6 @@ class OrderItemStatusSupport
     }
 
     /**
-     * Apply the same fulfillment status to every active (non-cancelled) item.
-     * When $driver is set, only that driver's assigned items are updated (item-wise dispatch).
-     *
      * @return int Number of items updated
      */
     public static function applyStatusToActiveItems(
@@ -229,8 +248,6 @@ class OrderItemStatusSupport
         $items = $booking->orderItems;
         if ($driver) {
             $driverItems = $items->where('driver_id', $driver->id);
-            // Item-wise assign: only touch this driver's lines. If none, fall back to all active
-            // only when the booking has no per-item drivers at all (legacy).
             if ($driverItems->isNotEmpty()) {
                 $items = $driverItems;
             } elseif ($items->contains(fn (OrderItem $item) => $item->driver_id !== null)) {
@@ -244,13 +261,11 @@ class OrderItemStatusSupport
             }
 
             $itemNext = $nextStatus;
-            // Per-item final status for return vs outbound legs.
             if ($driver && $item->status === 're_intransit') {
                 $itemNext = self::isRentalItem($item, $booking) ? 'returned' : 're_delivered';
             } elseif ($driver && $item->status === 'in_progress') {
                 $itemNext = self::statusAfterOutboundDelivery($item, $booking);
             } elseif ($itemNext === 'delivered') {
-                // Booking/vendor "delivered" on a rental line → rental active immediately.
                 $itemNext = self::statusAfterOutboundDelivery($item, $booking);
             }
 

@@ -137,9 +137,6 @@ class VendorBookingItemService
         });
     }
 
-    /**
-     * Update one line item status; booking status is recalculated from all items.
-     */
     public function updateItemStatus(Order $booking, OrderItem $item, string $nextStatus): Order
     {
         $this->assertItemBelongs($booking, $item);
@@ -148,7 +145,6 @@ class VendorBookingItemService
             throw new InvalidArgumentException('Invalid item status.');
         }
 
-        // Rental outbound delivery completes as rental_active (not stuck on delivered).
         if ($nextStatus === 'delivered') {
             $nextStatus = OrderItemStatusSupport::statusAfterOutboundDelivery($item, $booking);
         }
@@ -168,8 +164,6 @@ class VendorBookingItemService
             }
             $item->update($payload);
 
-            // Rework / return pickup: clear driver so admin can assign again.
-            // Returned: product is back with vendor — clear active return driver.
             if (
                 in_array($nextStatus, ['rework', 're_intransit', 'returned'], true)
                 && $previousItemStatus !== $nextStatus
@@ -184,18 +178,12 @@ class VendorBookingItemService
         });
     }
 
-    /**
-     * Booking-level status update: push status onto all active items, then roll up.
-     * Example: status=in_progress marks every accepted item in transit; booking becomes
-     * in_progress only when all active items reach that stage (or slowest if mixed).
-     */
     public function updateBookingStatus(Order $booking, string $nextStatus): Order
     {
         if (! in_array($nextStatus, Order::STATUSES, true)) {
             throw new InvalidArgumentException('Invalid booking status.');
         }
 
-        // Rental bookings: marking delivered advances straight to rental active.
         if ($nextStatus === 'delivered' && $booking->isRental()) {
             $nextStatus = 'rental_active';
         }
@@ -204,7 +192,6 @@ class VendorBookingItemService
             $booking->loadMissing('orderItems');
             $previousBookingStatus = $booking->status;
 
-            // Legacy / single-row bookings without line items: keep order-only transition.
             if ($booking->orderItems->isEmpty()) {
                 OrderDispatchSupport::applyTransition($booking, $nextStatus);
 
@@ -216,13 +203,11 @@ class VendorBookingItemService
                 throw new InvalidArgumentException('All items are cancelled; booking status cannot be changed.');
             }
 
-            // Advance each active item that is behind / at a prior step toward nextStatus.
             foreach ($active as $item) {
                 if ($item->status === $nextStatus) {
                     continue;
                 }
 
-                // Allow jump only along allowed graph from current item status.
                 if (! OrderItemStatusSupport::canTransitionTo($item, $nextStatus, $booking)) {
                     throw new InvalidArgumentException(
                         'Item #'.$item->id.' ('.$item->status.') cannot move to '.$nextStatus.
@@ -252,10 +237,6 @@ class VendorBookingItemService
         });
     }
 
-    /**
-     * Force-set active items to a status (used by driver/customer lifecycle), then roll up.
-     * When $driver is set, only items assigned to that driver are updated (item-wise dispatch).
-     */
     public function setActiveItemsStatus(Order $booking, string $nextStatus, ?\App\Models\Driver $driver = null): Order
     {
         return DB::transaction(function () use ($booking, $nextStatus, $driver) {
@@ -295,7 +276,6 @@ class VendorBookingItemService
 
         $active = $items->where('status', '!=', OrderItem::STATUS_CANCELLED);
 
-        // Recalculate amounts from remaining (non-cancelled) lines.
         $subtotal = round($active->sum(fn (OrderItem $item) => (float) $item->line_amount), 2);
         $gstPercent = BookingPricingService::gstPercent();
         $taxAmount = round($subtotal * ($gstPercent / 100), 2);
@@ -319,13 +299,11 @@ class VendorBookingItemService
                 $updates['cancellation_reason'] = $firstCancelled?->cancellation_reason;
             }
         } elseif ($resolved['status'] !== 'cancelled') {
-            // Clear cancel reason once booking is active again after partial reject.
             if ($active->isNotEmpty() && $resolved['status'] !== 'cancelled') {
                 $updates['cancellation_reason'] = null;
             }
         }
 
-        // Refresh display title from first active item when available.
         $firstActive = $active->first();
         if ($firstActive) {
             $booking->loadMissing('vendor');
@@ -352,7 +330,6 @@ class VendorBookingItemService
     {
         $booking->refresh();
 
-        // Rework: release driver — vendor owns the item until they dispatch Return In Transit.
         if ($booking->status === 'rework' && $previousStatus !== 'rework') {
             OrderDispatchSupport::resetDriverAssignment($booking);
             $booking->save();
@@ -360,7 +337,6 @@ class VendorBookingItemService
             return;
         }
 
-        // Return In Transit: clear driver so admin can assign the return/rework pickup leg.
         if ($booking->status === 're_intransit' && $previousStatus !== 're_intransit') {
             OrderDispatchSupport::resetDriverAssignment($booking);
             $booking->save();
@@ -372,7 +348,6 @@ class VendorBookingItemService
 
     protected function assertRespondable(Order $booking): void
     {
-        // Vendors may accept/reject before customer payment is confirmed.
         if (! in_array($booking->status, ['new', 'pending_acceptance', 'accepted'], true)) {
             throw new InvalidArgumentException('This booking cannot be updated.');
         }

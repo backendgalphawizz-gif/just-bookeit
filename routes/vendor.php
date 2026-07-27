@@ -48,6 +48,8 @@ Route::middleware('web')->prefix('vendor')->name('vendor.')->group(function () {
         Route::post('bookings/{booking}/reject', [BookingController::class, 'reject'])->name('bookings.reject');
         Route::post('bookings/{booking}/items/{item}/accept', [BookingController::class, 'acceptItem'])->name('bookings.items.accept');
         Route::post('bookings/{booking}/items/{item}/reject', [BookingController::class, 'rejectItem'])->name('bookings.items.reject');
+        Route::post('bookings/{booking}/items/{item}/status', [BookingController::class, 'updateItemStatus'])->name('bookings.items.status');
+        Route::post('bookings/{booking}/items/{item}/damage', [BookingController::class, 'updateItemDamage'])->name('bookings.items.damage');
         Route::post('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.status');
         Route::post('bookings/{booking}/damage', [BookingController::class, 'updateDamage'])->name('bookings.damage');
 

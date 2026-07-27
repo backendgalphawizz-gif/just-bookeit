@@ -261,17 +261,8 @@ class BookingController extends VendorApiController
         $data = $this->validateVendor($request, VendorValidationRules::bookingItemStatus());
 
         $nextStatus = VendorBookingStatus::normalizeInput($data['status']);
-
-        // Vendor "returned" on an active rental = start Return In Transit (admin assigns driver).
-        // Final "Returned to Vendor" is only from re_intransit after pickup completes.
         $requestedReturned = $nextStatus === 'returned';
-        if (
-            $requestedReturned
-            && OrderItemStatusSupport::isRentalItem($orderItem, $order)
-            && in_array($orderItem->status, ['delivered', 'rental_active'], true)
-        ) {
-            $nextStatus = 're_intransit';
-        }
+        $nextStatus = OrderItemStatusSupport::normalizeVendorRequestedStatus($orderItem, $nextStatus, $order);
 
         $damagePayload = $this->damagePayloadFromRequest($data);
         $wantsDamage = $damagePayload !== null;

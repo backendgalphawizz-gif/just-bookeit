@@ -79,8 +79,13 @@
                                         @endif
                                     </p>
                                 @endif
-                                @if ($lineItem->canAccept() || $lineItem->canReject())
-                                    <div class="vp-booking-line-actions" style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;">
+                                @php
+                                    $itemActions = \App\Support\OrderItemStatusSupport::vendorActionStatuses($lineItem, $booking);
+                                    $designerFields = \App\Support\FashionDesignerLifecycleSupport::apiFields($lineItem, $booking);
+                                    $driverDeliveryLabel = $lineItem->driverDeliveryStatusLabel();
+                                @endphp
+                                @if ($lineItem->canAccept() || $lineItem->canReject() || count($itemActions) > 0)
+                                    <div class="vp-booking-line-actions" style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;align-items:center;">
                                         @if ($lineItem->canAccept())
                                             <form method="POST" action="{{ route('vendor.bookings.items.accept', [$booking, $lineItem]) }}">
                                                 @csrf
@@ -89,14 +94,35 @@
                                         @endif
                                         @if ($lineItem->canReject())
                                             <form method="POST" action="{{ route('vendor.bookings.items.reject', [$booking, $lineItem]) }}"
-                                                  data-vp-confirm="Reject this item? A partial refund may be issued."
                                                   onsubmit="var r=prompt('Reason for rejecting this item (required):'); if(!r||r.trim().length<5){event.preventDefault();alert('Please enter a reason (at least 5 characters).');return false;} this.querySelector('[name=reason]').value=r.trim();">
                                                 @csrf
                                                 <input type="hidden" name="reason" value="">
                                                 <button type="submit" class="vp-btn vp-btn--sm vp-btn--outline">Reject item</button>
                                             </form>
                                         @endif
+                                        @foreach ($itemActions as $nextStatus)
+                                            <form method="POST" action="{{ route('vendor.bookings.items.status', [$booking, $lineItem]) }}">
+                                                @csrf
+                                                <input type="hidden" name="status" value="{{ $nextStatus }}">
+                                                <button type="submit" class="vp-btn vp-btn--sm vp-btn--outline">
+                                                    {{ \App\Support\OrderItemStatusSupport::vendorActionLabel($nextStatus, $lineItem, $booking) }}
+                                                </button>
+                                            </form>
+                                        @endforeach
                                     </div>
+                                @endif
+                                @if ($driverDeliveryLabel)
+                                    <p class="vp-booking-product-meta" style="margin-top:.35rem">Driver status: {{ $driverDeliveryLabel }}</p>
+                                @endif
+                                @if (($designerFields['rework_window_open'] ?? null) === true && filled($designerFields['rework_deadline_label'] ?? null))
+                                    <p class="vp-booking-product-meta" style="margin-top:.35rem;color:#a16207">
+                                        Customer rework window open until {{ $designerFields['rework_deadline_label'] }}
+                                        (auto-completes after {{ $designerFields['rework_window_hours'] }}h).
+                                    </p>
+                                @elseif (($designerFields['auto_complete_after_rework_window'] ?? false) && $lineItem->status === 'delivered' && ($designerFields['rework_window_open'] ?? null) === false)
+                                    <p class="vp-booking-product-meta" style="margin-top:.35rem;color:#64748b">
+                                        Rework window closed — item will auto-complete.
+                                    </p>
                                 @endif
                             </div>
                         </div>
@@ -264,6 +290,15 @@
                     <div class="vp-booking-person-info">
                         <p class="vp-booking-person-name">{{ $booking->driver->name }}</p>
                         <p class="vp-booking-person-meta">{{ $booking->driver->vehicle_no ?? 'No vehicle' }} · {{ $booking->driver->mobile }}</p>
+                        @if ($booking->driver_delivery_status)
+                            <p class="vp-booking-person-meta">Status: {{ match ($booking->driver_delivery_status) {
+                                'accepted' => 'Accepted',
+                                'picked_up' => 'Picked up',
+                                'out_for_delivery' => 'Out for delivery',
+                                'rescheduled' => 'Rescheduled',
+                                default => ucfirst(str_replace('_', ' ', $booking->driver_delivery_status)),
+                            } }}</p>
+                        @endif
                     </div>
                     <a href="tel:{{ $booking->driver->mobile }}" class="vp-booking-call-btn" title="Call driver">📞</a>
                 </div>
@@ -291,7 +326,26 @@
                                 <p class="vp-item-track-status">{{ $lineItem->statusLabel() }}</p>
                             </div>
                             @if ($lineItem->driver)
-                                <p class="vp-item-track-driver">Driver: {{ $lineItem->driver->name }}</p>
+                                <p class="vp-item-track-driver">
+                                    Driver: {{ $lineItem->driver->name }}
+                                    @if ($lineItem->driverDeliveryStatusLabel())
+                                        · {{ $lineItem->driverDeliveryStatusLabel() }}
+                                    @endif
+                                </p>
+                            @endif
+                            @php $itemActions = \App\Support\OrderItemStatusSupport::vendorActionStatuses($lineItem, $booking); @endphp
+                            @if (count($itemActions) > 0)
+                                <div class="vp-booking-line-actions" style="display:flex;gap:.4rem;margin:.5rem 0 .75rem;flex-wrap:wrap;">
+                                    @foreach ($itemActions as $nextStatus)
+                                        <form method="POST" action="{{ route('vendor.bookings.items.status', [$booking, $lineItem]) }}">
+                                            @csrf
+                                            <input type="hidden" name="status" value="{{ $nextStatus }}">
+                                            <button type="submit" class="vp-btn vp-btn--sm vp-btn--outline">
+                                                {{ \App\Support\OrderItemStatusSupport::vendorActionLabel($nextStatus, $lineItem, $booking) }}
+                                            </button>
+                                        </form>
+                                    @endforeach
+                                </div>
                             @endif
                             <ol class="vp-booking-track">
                                 @foreach ($lineItem->trackSteps() as $step)
@@ -398,6 +452,29 @@
             </div>
         @endif
 
+        @if (! empty($deliveryOtp))
+            <div class="vp-booking-card">
+                <h3 class="vp-booking-card-title">Delivery OTP</h3>
+                <p class="vp-booking-notes" style="font-size:1.5rem;letter-spacing:.2em;font-weight:800;margin:0">{{ $deliveryOtp }}</p>
+                <p class="vp-booking-muted" style="margin-top:.35rem">Share with the driver on delivery / return pickup.</p>
+            </div>
+        @endif
+
+        @if ($booking->review)
+            <div class="vp-booking-card">
+                <h3 class="vp-booking-card-title">Customer review</h3>
+                <p class="vp-booking-notes" style="margin:0">
+                    <strong>{{ number_format((float) $booking->review->rating, 1) }}/5</strong>
+                    @if (filled($booking->review->comment))
+                        — {{ $booking->review->comment }}
+                    @endif
+                </p>
+                @if ($booking->review->customer?->name)
+                    <p class="vp-booking-muted" style="margin-top:.35rem">{{ $booking->review->customer->name }}</p>
+                @endif
+            </div>
+        @endif
+
         @if ($booking->refund || $booking->dispute)
             <div class="vp-booking-card">
                 <h3 class="vp-booking-card-title">Related</h3>
@@ -410,20 +487,26 @@
             </div>
         @endif
 
-        @if (in_array($booking->status, ['new', 'pending_acceptance'], true))
+        @if (in_array($booking->status, ['new', 'pending_acceptance'], true)
+            || $booking->orderItems->contains(fn ($i) => $i->canAccept() || $i->canReject()))
             <div class="vp-booking-card">
                 <h3 class="vp-booking-card-title">Respond to booking</h3>
                 <div class="vp-booking-actions">
-                    <form method="POST" action="{{ route('vendor.bookings.accept', $booking) }}">@csrf
-                        <button type="submit" class="vp-btn vp-btn--primary vp-btn--block">Accept booking</button>
-                    </form>
-                    <form method="POST" action="{{ route('vendor.bookings.reject', $booking) }}"
-                          data-vp-confirm="This booking will be rejected."
-                          data-vp-confirm-title="Reject booking?"
-                          data-vp-confirm-label="Reject"
-                          data-vp-confirm-variant="error">@csrf
-                        <button type="submit" class="vp-btn vp-btn--danger vp-btn--block">Reject</button>
-                    </form>
+                    @if (in_array($booking->status, ['new', 'pending_acceptance'], true)
+                        || $booking->orderItems->contains(fn ($i) => $i->canAccept()))
+                        <form method="POST" action="{{ route('vendor.bookings.accept', $booking) }}">@csrf
+                            <button type="submit" class="vp-btn vp-btn--primary vp-btn--block">Accept all pending</button>
+                        </form>
+                    @endif
+                    @if (in_array($booking->status, ['new', 'pending_acceptance'], true)
+                        || $booking->orderItems->contains(fn ($i) => $i->canReject()))
+                        <form method="POST" action="{{ route('vendor.bookings.reject', $booking) }}"
+                              onsubmit="var r=prompt('Reason for rejecting this booking (required):'); if(!r||r.trim().length<5){event.preventDefault();alert('Please enter a reason (at least 5 characters).');return false;} this.querySelector('[name=reason]').value=r.trim();">
+                            @csrf
+                            <input type="hidden" name="reason" value="">
+                            <button type="submit" class="vp-btn vp-btn--danger vp-btn--block">Reject remaining</button>
+                        </form>
+                    @endif
                 </div>
             </div>
         @endif
@@ -431,6 +514,9 @@
         @if (count($quickActions) > 0)
             <div class="vp-booking-card">
                 <h3 class="vp-booking-card-title">Quick actions</h3>
+                @if (! empty($itemsDiverged))
+                    <p class="vp-booking-muted" style="margin:0 0 .75rem">Items are at different stages — use per-item actions above.</p>
+                @endif
                 <div class="vp-booking-actions">
                     @foreach ($quickActions as $action)
                         <form method="POST" action="{{ route('vendor.bookings.status', $booking) }}">@csrf
@@ -440,21 +526,28 @@
                     @endforeach
                 </div>
             </div>
+        @elseif (! empty($itemsDiverged))
+            <div class="vp-booking-card">
+                <h3 class="vp-booking-card-title">Quick actions</h3>
+                <p class="vp-booking-muted" style="margin:0">Items are at different stages — update each line item individually in Product detail or Delivery tracking.</p>
+            </div>
         @endif
 
-        <div class="vp-booking-card">
-            <h3 class="vp-booking-card-title">Update status</h3>
-            <form method="POST" action="{{ route('vendor.bookings.status', $booking) }}" class="vp-booking-manage-form">
-                @csrf
-                <label class="vp-label" for="booking-status">Order status</label>
-                <select id="booking-status" name="status" class="vp-select">
-                    @foreach ($manageableStatuses as $status)
-                        <option value="{{ $status }}" @selected($booking->status === $status)>{{ \App\Models\Order::statusLabelFor($status) }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="vp-btn vp-btn--outline vp-btn--block" style="margin-top:.75rem">Save status</button>
-            </form>
-        </div>
+        @if (empty($itemsDiverged))
+            <div class="vp-booking-card">
+                <h3 class="vp-booking-card-title">Update status</h3>
+                <form method="POST" action="{{ route('vendor.bookings.status', $booking) }}" class="vp-booking-manage-form">
+                    @csrf
+                    <label class="vp-label" for="booking-status">Order status</label>
+                    <select id="booking-status" name="status" class="vp-select">
+                        @foreach ($manageableStatuses as $status)
+                            <option value="{{ $status }}" @selected($booking->status === $status)>{{ \App\Models\Order::statusLabelFor($status) }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="vp-btn vp-btn--outline vp-btn--block" style="margin-top:.75rem">Save status</button>
+                </form>
+            </div>
+        @endif
 
         @php
             $returnedItems = $booking->orderItems->where('status', 'returned')->values();
@@ -466,16 +559,34 @@
                 <h3 class="vp-booking-card-title">Damage deduction</h3>
                 @if ($returnedItems->isNotEmpty())
                     @foreach ($returnedItems as $damageItem)
-                        <form method="POST" action="{{ route('vendor.bookings.damage', $booking) }}" class="vp-booking-manage-form" style="{{ ! $loop->first ? 'margin-top:1rem;padding-top:1rem;border-top:1px solid var(--vp-border)' : '' }}">
+                        <form method="POST" action="{{ route('vendor.bookings.items.damage', [$booking, $damageItem]) }}" class="vp-booking-manage-form" style="{{ ! $loop->first ? 'margin-top:1rem;padding-top:1rem;border-top:1px solid var(--vp-border)' : '' }}">
                             @csrf
-                            <input type="hidden" name="item_id" value="{{ $damageItem->id }}">
                             <p class="vp-booking-muted" style="margin:0 0 .5rem;font-weight:700;color:var(--vp-text)">{{ $damageItem->title() }}</p>
+                            @if ($damageItem->portfolioItem?->damageDeductions?->isNotEmpty())
+                                <p class="vp-booking-muted" style="margin:0 0 .5rem;font-size:.8rem">
+                                    Product rules:
+                                    @foreach ($damageItem->portfolioItem->damageDeductions as $rule)
+                                        {{ $rule->damage_type }} ({{ rtrim(rtrim(number_format((float) $rule->percent, 2), '0'), '.') }}%)
+                                        @if (! $loop->last); @endif
+                                    @endforeach
+                                </p>
+                            @endif
                             <label class="vp-label" for="damage_amount_{{ $damageItem->id }}">Deduction amount (₹)</label>
                             <input id="damage_amount_{{ $damageItem->id }}" type="number" min="0" step="0.01" name="damage_amount"
                                    class="vp-input" value="{{ old('damage_amount', $damageItem->damage_amount) }}" placeholder="e.g. 28">
+                            <label class="vp-label" for="damage_percent_{{ $damageItem->id }}" style="margin-top:.75rem">Or percent (%)</label>
+                            <input id="damage_percent_{{ $damageItem->id }}" type="number" min="0" max="100" step="0.01" name="damage_deduct_percent"
+                                   class="vp-input" value="{{ old('damage_deduct_percent', $damageItem->damage_deduct_percent) }}" placeholder="e.g. 10">
                             <label class="vp-label" for="damage_note_{{ $damageItem->id }}" style="margin-top:.75rem">Reason</label>
                             <textarea id="damage_note_{{ $damageItem->id }}" name="damage_note" class="vp-textarea" rows="3" placeholder="Describe damage">{{ old('damage_note', $damageItem->damage_note) }}</textarea>
-                            <button type="submit" class="vp-btn vp-btn--outline vp-btn--block" style="margin-top:.75rem">Save damage</button>
+                            <div style="display:grid;gap:.5rem;margin-top:.75rem">
+                                <button type="submit" class="vp-btn vp-btn--outline vp-btn--block">Save damage</button>
+                            </div>
+                        </form>
+                        <form method="POST" action="{{ route('vendor.bookings.items.status', [$booking, $damageItem]) }}" style="margin-top:.5rem">
+                            @csrf
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="vp-btn vp-btn--primary vp-btn--block">Complete item</button>
                         </form>
                     @endforeach
                 @else
@@ -484,6 +595,9 @@
                         <label class="vp-label" for="damage_amount">Deduction amount (₹)</label>
                         <input id="damage_amount" type="number" min="0" step="0.01" name="damage_amount"
                                class="vp-input" value="{{ old('damage_amount', $booking->damage_amount) }}" placeholder="e.g. 28">
+                        <label class="vp-label" for="damage_percent" style="margin-top:.75rem">Or percent (%)</label>
+                        <input id="damage_percent" type="number" min="0" max="100" step="0.01" name="damage_deduct_percent"
+                               class="vp-input" value="{{ old('damage_deduct_percent', $booking->damage_deduct_percent) }}" placeholder="e.g. 10">
                         <label class="vp-label" for="damage_note" style="margin-top:.75rem">Reason</label>
                         <textarea id="damage_note" name="damage_note" class="vp-textarea" rows="3" placeholder="Describe damage">{{ old('damage_note', $booking->damage_note) }}</textarea>
                         <button type="submit" class="vp-btn vp-btn--outline vp-btn--block" style="margin-top:.75rem">Save damage</button>

@@ -470,7 +470,6 @@ class CustomerApiPresenter
 
     public static function measurementSummary(CustomerMeasurement $profile): array
     {
-        // Full profile payload so list/add/edit screens share the same fields.
         return self::measurementDetail($profile);
     }
 
@@ -612,10 +611,6 @@ class CustomerApiPresenter
     }
 
     /**
-     * Customer booking detail — same payload shape as vendor `api/v2/bookings/{id}`,
-     * plus customer-only fields (dispute, review actions, designer, pay summary).
-     * Lifecycle `status` stays the real booking/item progress (not vendor list badges).
-     *
      * @param  list<string>|null  $itemStatusFilter
      */
     public static function bookingDetail(Order $order, ?array $itemStatusFilter = null): array
@@ -681,7 +676,6 @@ class CustomerApiPresenter
 
         return [
             ...$vendorDetail,
-            // Real lifecycle for customer app (override vendor list new/processing/complete).
             ...$bookingStatus,
             'status_raw' => $order->status,
             'lifecycle_status' => $bookingStatus['status'],
@@ -690,7 +684,6 @@ class CustomerApiPresenter
             'booking_status_label' => $bookingStatus['status_label'],
             'fulfillment_status' => $order->status,
             'fulfillment_status_label' => $order->statusLabel(),
-            // Customer naming aliases expected by existing app screens.
             'category' => $order->category ? self::category($order->category) : ($vendorDetail['category_detail'] ?? null),
             'designer' => $order->vendor ? self::designerSummary($order->vendor) : null,
             'item_title' => $order->itemDisplayName(),
@@ -726,7 +719,6 @@ class CustomerApiPresenter
             'dispute_subject_options' => \App\Models\Dispute::subjectOptionsForCategory($order->category),
             'can_review' => self::bookingCanReview($order),
             'can_confirm_received' => $order->status === 'delivered',
-            // Product return of rented dress/jewellery to vendor — NOT a dispute.
             ...self::productReturnFields($order),
             ...self::bookingReworkFields($order),
             'can_cancel' => in_array($order->status, ['new', 'pending_acceptance', 'accepted'], true),
@@ -1014,11 +1006,7 @@ class CustomerApiPresenter
         ];
     }
 
-    /**
-     * Rental product return (dress/jewellery back to vendor) — distinct from dispute.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     protected static function productReturnFields(Order $order): array
     {
         $order->loadMissing('orderItems');

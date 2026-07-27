@@ -66,7 +66,6 @@
         }
 
         .jb-topbar-actions {
-            /* width: 100%; */
             justify-content: flex-start;
         }
 
@@ -4030,7 +4029,7 @@
         }
     }
 
-    /* BUG-R06–R15: mobile/tablet hardening */
+    /* Mobile / tablet hardening */
     @media (max-width: 1023px) {
         .jb-sidebar {
             transform: translateX(-100%);

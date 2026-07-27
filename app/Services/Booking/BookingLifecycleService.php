@@ -11,10 +11,6 @@ use App\Support\OrderItemStatusSupport;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
-/**
- * Customer / vendor lifecycle actions for the booking architecture diagram.
- * Status changes flow through items when line items exist; booking rolls up.
- */
 class BookingLifecycleService
 {
     public function __construct(
@@ -22,10 +18,6 @@ class BookingLifecycleService
         protected CheckoutRollupService $rollup
     ) {}
 
-    /**
-     * Customer cancels early-stage booking (new / pending_acceptance / accepted).
-     * Cancels all open line items so list/detail stay consistent.
-     */
     public function cancelByCustomer(Order $order, string $reason): Order
     {
         if (! in_array($order->status, ['new', 'pending_acceptance', 'accepted'], true)) {
@@ -68,10 +60,6 @@ class BookingLifecycleService
         });
     }
 
-    /**
-     * User confirms they received the order (diagram: Receive Order).
-     * Rentals → rental_active; designers stay delivered (ready for rework/complete).
-     */
     public function confirmReceived(Order $order): Order
     {
         if ($order->status !== 'delivered') {
@@ -85,13 +73,6 @@ class BookingLifecycleService
         return $order;
     }
 
-    /**
-     * Customer requests pickup so rented dress/jewellery is returned to the vendor.
-     * This is product return — not a dispute / refund return.
-     *
-     * Only rented-dress / rented-jewellery items are moved to Return In Transit.
-     * Fashion-designer items are never included.
-     */
     public function requestReturn(Order $order, ?OrderItem $item = null): Order
     {
         $order->loadMissing(['orderItems', 'category']);
@@ -108,7 +89,6 @@ class BookingLifecycleService
             ->filter(fn (OrderItem $line) => $this->isRentalProductItem($line, $order))
             ->values();
 
-        // Legacy booking with no line items: keep order-level rental return.
         if ($rentalItems->isEmpty()) {
             if (! $order->isRental()) {
                 throw new InvalidArgumentException(
@@ -152,9 +132,6 @@ class BookingLifecycleService
     }
 
     /**
-     * User requests rework (diagram: Need Rework) — fashion designer within 48h of delivery,
-     * or rental issues while delivered / rental active.
-     *
      * @param  int|null  $itemId  Optional line item; otherwise all eligible active items.
      */
     public function requestRework(Order $order, ?string $reason = null, ?int $itemId = null): Order
@@ -224,9 +201,6 @@ class BookingLifecycleService
         return $updated;
     }
 
-    /**
-     * Vendor/admin marks booking completed after return + settlement (diagram: Completed).
-     */
     public function markCompleted(Order $order): Order
     {
         if (! in_array($order->status, ['returned', 're_delivered', 'delivered', 're_intransit'], true)) {
@@ -236,9 +210,6 @@ class BookingLifecycleService
         return $this->items->updateBookingStatus($order, 'completed');
     }
 
-    /**
-     * Final order status after driver completes a leg.
-     */
     public function statusAfterDriverDeliver(Order $order): string
     {
         if ($order->status === 're_intransit') {
@@ -248,10 +219,6 @@ class BookingLifecycleService
         return 'delivered';
     }
 
-    /**
-     * Apply driver delivery completion to items + booking rollup.
-     * When a driver is provided, only that driver's assigned items are updated.
-     */
     public function completeDriverDelivery(Order $order, ?\App\Models\Driver $driver = null): Order
     {
         $next = $this->statusAfterDriverDeliver($order);

@@ -1,4 +1,3 @@
-{{-- Per-item (or booking-level when $orderItem is null) customer lifecycle actions — same rules as API. --}}
 @php
     /** @var \App\Models\Order $order */
     /** @var \App\Models\OrderItem|null $orderItem */

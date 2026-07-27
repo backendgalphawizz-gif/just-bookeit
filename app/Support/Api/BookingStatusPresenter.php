@@ -6,10 +6,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\OrderItemDriverDeliverySupport;
 
-/**
- * Shared booking/item status fields so customer (v1), vendor (v2), and driver (v3)
- * APIs all show the same picked_up / out_for_delivery progress.
- */
 class BookingStatusPresenter
 {
     /**
@@ -53,9 +49,6 @@ class BookingStatusPresenter
     }
 
     /**
-     * Booking lifecycle status stays unchanged when a driver picks up items.
-     * Pickup progress is exposed only via driver_delivery_status / is_picked_up.
-     *
      * @return array{
      *   status: string,
      *   status_raw: string,

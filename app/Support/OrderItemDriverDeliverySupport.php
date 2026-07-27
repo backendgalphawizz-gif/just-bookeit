@@ -7,10 +7,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use InvalidArgumentException;
 
-/**
- * Item-wise driver delivery progress.
- * Pickup / dispatch / deliver update only the targeted line item.
- */
 class OrderItemDriverDeliverySupport
 {
     public static function syncItem(
@@ -43,7 +39,6 @@ class OrderItemDriverDeliverySupport
             $payload['driver_assigned_at'] = now();
         }
 
-        // Pickup implies this item is at least In Transit (other items untouched).
         if (
             in_array($deliveryStatus, [
                 Order::DRIVER_STATUS_PICKED_UP,
@@ -69,8 +64,6 @@ class OrderItemDriverDeliverySupport
 
     /**
      * @deprecated Prefer syncItem() for item-wise flow.
-     * Kept for legacy single-item / booking-level assign only when $onlyItemId is null
-     * and no per-item drivers exist.
      */
     public static function syncForDriver(
         Order $order,
@@ -94,12 +87,10 @@ class OrderItemDriverDeliverySupport
         $items = $order->orderItems->where('driver_id', $driver->id);
         if ($items->isEmpty()) {
             $anyItemDriver = $order->orderItems->contains(fn (OrderItem $item) => $item->driver_id !== null);
-            // Item-wise bookings: never touch unassigned / other items without explicit item_id.
             if ($anyItemDriver) {
                 return 0;
             }
 
-            // Legacy: whole booking assigned, no per-item drivers — only then update all active lines.
             $items = $order->orderItems->filter(
                 fn (OrderItem $item) => $item->status !== OrderItem::STATUS_CANCELLED
                     && in_array($item->status, [
@@ -138,10 +129,6 @@ class OrderItemDriverDeliverySupport
         ]);
     }
 
-    /**
-     * Effective driver delivery status for an item.
-     * Does NOT inherit booking-level pickup onto other items (item-wise isolation).
-     */
     public static function effectiveDriverDeliveryStatus(OrderItem $item, ?Order $order = null): ?string
     {
         if (filled($item->driver_delivery_status)) {
@@ -156,12 +143,10 @@ class OrderItemDriverDeliverySupport
         $order->loadMissing('orderItems');
         $anyItemDriver = $order->orderItems->contains(fn (OrderItem $row) => $row->driver_id !== null);
 
-        // Item-wise assignment is active — never bleed booking status onto items.
         if ($anyItemDriver) {
             return null;
         }
 
-        // Legacy booking-level only.
         if ($item->driver_id === null || (int) $item->driver_id === (int) $order->driver_id) {
             return $order->driver_delivery_status;
         }
@@ -169,10 +154,6 @@ class OrderItemDriverDeliverySupport
         return null;
     }
 
-    /**
-     * Roll up booking driver_delivery_status from this driver's assigned items
-     * without forcing every item to the same value.
-     */
     public static function refreshBookingDriverStatusFromItems(Order $order, Driver $driver): void
     {
         $order->loadMissing('orderItems');
@@ -185,7 +166,6 @@ class OrderItemDriverDeliverySupport
         $done = ['delivered', 'returned', 're_delivered', 'completed'];
         $active = $mine->where('status', '!=', OrderItem::STATUS_CANCELLED);
 
-        // All of this driver's items delivered → mark booking driver leg complete.
         if ($active->isNotEmpty() && $active->every(fn (OrderItem $item) => in_array($item->status, $done, true))) {
             $order->forceFill([
                 'driver_id' => $driver->id,
@@ -208,7 +188,6 @@ class OrderItemDriverDeliverySupport
             return;
         }
 
-        // Booking-level mirrors the furthest progress among this driver's open items.
         $rank = [
             Order::DRIVER_STATUS_ACCEPTED => 1,
             Order::DRIVER_STATUS_RESCHEDULED => 2,
@@ -252,7 +231,6 @@ class OrderItemDriverDeliverySupport
             return $mine->first();
         }
 
-        // Legacy: no item drivers — single active line.
         $anyItemDriver = $order->orderItems->contains(fn (OrderItem $i) => $i->driver_id !== null);
         if (! $anyItemDriver) {
             $active = $order->orderItems->filter(

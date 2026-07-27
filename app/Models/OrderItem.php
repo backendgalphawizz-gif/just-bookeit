@@ -112,7 +112,6 @@ class OrderItem extends Model
             return true;
         }
 
-        // Premature "returned" before return pickup — admin can assign return driver.
         return $this->status === 'returned'
             && blank($this->driver_pickup_at)
             && \App\Support\OrderItemStatusSupport::isRentalItem($this);
@@ -131,9 +130,6 @@ class OrderItem extends Model
         return $order->trackBookingSteps($this->statusForDisplay($order), $isRental);
     }
 
-    /**
-     * Display/coerced status: premature rental "returned" (no return pickup) → re_intransit.
-     */
     public function statusForDisplay(?Order $order = null): string
     {
         $order ??= $this->relationLoaded('order') ? $this->order : $this->order()->first();
@@ -193,7 +189,6 @@ class OrderItem extends Model
 
     public function damageDeduction(): float
     {
-        // Prefer the exact amount recorded by the vendor (never recompute from percent).
         if ($this->damage_amount !== null) {
             return round((float) $this->damage_amount, 2);
         }
@@ -213,9 +208,6 @@ class OrderItem extends Model
     }
 
     /**
-     * Persist the vendor-provided amount as-is. Percent is stored only when the vendor sent percent
-     * (amount is then derived once at save time — never recalculated later for display).
-     *
      * @return array{damage_amount: float|null, damage_deduct_percent: float|null}
      */
     public static function resolveDamageFields(

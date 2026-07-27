@@ -11,6 +11,7 @@ use App\Support\VendorValidationRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class LoginController extends VendorController
@@ -24,29 +25,9 @@ class LoginController extends VendorController
         return view('vendor.auth.login');
     }
 
-    public function showRegister(Request $request): View
+    public function showRegister(): View
     {
-        $errorStep = 1;
-        if ($errors = session('errors')) {
-            $bag = $errors->getBag('default')->getMessages();
-            $step2 = ['shop_name', 'service_types', 'business_mobile', 'business_mail', 'aadhar_number', 'gst_no', 'address', 'city', 'state', 'country', 'pincode', 'shop_logo', 'pan_card'];
-            $step3 = ['account_name', 'account_no', 'bank_name', 'ifsc_code', 'account_type'];
-            foreach (array_keys($bag) as $field) {
-                $base = explode('.', $field)[0];
-                if (in_array($base, $step3, true)) {
-                    $errorStep = 3;
-                    break;
-                }
-                if (in_array($base, $step2, true)) {
-                    $errorStep = 2;
-                }
-            }
-        }
-
-        return view('vendor.auth.register', [
-            'serviceOptions' => VendorValidationRules::SERVICE_TYPES,
-            'initialStep' => (int) old('_step', $errorStep),
-        ]);
+        return view('vendor.auth.register');
     }
 
     public function sendOtp(Request $request): RedirectResponse
@@ -56,26 +37,22 @@ class LoginController extends VendorController
             ['type' => ['required', 'in:login,register']]
         ));
 
-        if ($data['type'] === OtpService::TYPE_LOGIN) {
-            $vendor = $this->otp->findActor(
-                OtpService::ACTOR_VENDOR,
-                $this->otp->normalizeMobile($data['mobile'])
-            );
+        try {
+            if ($data['type'] === OtpService::TYPE_LOGIN) {
+                $vendor = $this->otp->findActor(
+                    OtpService::ACTOR_VENDOR,
+                    $this->otp->normalizeMobile($data['mobile'])
+                );
 
-            if ($vendor) {
-                try {
+                if ($vendor) {
                     $this->otp->ensureActorCanAuthenticate(OtpService::ACTOR_VENDOR, $vendor);
-                } catch (\Illuminate\Validation\ValidationException $exception) {
-                    return back()->with('error', collect($exception->errors())->flatten()->first());
                 }
             }
-        }
 
-        if ($data['type'] === OtpService::TYPE_REGISTER) {
-            return redirect()->route('vendor.register');
+            $payload = $this->otp->send(OtpService::ACTOR_VENDOR, $data['mobile'], $data['type']);
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors())->withInput();
         }
-
-        $payload = $this->otp->send(OtpService::ACTOR_VENDOR, $data['mobile'], $data['type']);
 
         $this->storeVendorOtpSession($request, $payload['mobile'], $data['type']);
 
@@ -111,7 +88,7 @@ class LoginController extends VendorController
                 $otpSession['mobile'],
                 $otpSession['type']
             );
-        } catch (\Illuminate\Validation\ValidationException $exception) {
+        } catch (ValidationException $exception) {
             return back()->withErrors($exception->errors());
         }
 
@@ -156,12 +133,16 @@ class LoginController extends VendorController
             'otp' => ['required', 'digits:4'],
         ]);
 
-        $payload = $this->otp->verify(
-            OtpService::ACTOR_VENDOR,
-            $otpSession['mobile'],
-            $data['otp'],
-            $otpSession['type']
-        );
+        try {
+            $payload = $this->otp->verify(
+                OtpService::ACTOR_VENDOR,
+                $otpSession['mobile'],
+                $data['otp'],
+                $otpSession['type']
+            );
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors())->withInput();
+        }
 
         if ($payload['type'] === OtpService::TYPE_LOGIN) {
             $vendor = $this->otp->findActor(OtpService::ACTOR_VENDOR, $otpSession['mobile']);
@@ -173,75 +154,86 @@ class LoginController extends VendorController
             return redirect()->intended(route('vendor.dashboard'))->with('success', 'Welcome back!');
         }
 
-        $pending = $request->session()->get('vendor_register_pending');
-
-        if (! $pending || ($pending['mobile'] ?? null) !== $otpSession['mobile']) {
-            $request->session()->forget('vendor_otp');
-
-            return redirect()->route('vendor.register')
-                ->with('error', 'Registration session expired. Please fill the form again.');
-        }
-
-        if (Vendor::query()->where('mobile', $otpSession['mobile'])->exists()) {
-            $request->session()->forget(['vendor_otp', 'vendor_register_pending']);
-
-            return redirect()->route('vendor.login')->with('error', 'Account already exists. Please login.');
-        }
-
-        // Confirm OTP / registration token is valid, then create the vendor.
-        $this->otp->consumeRegistrationToken(
-            OtpService::ACTOR_VENDOR,
-            $payload['registration_token']
-        );
-
-        Vendor::query()->create([
-            'vendor_code' => CodeGenerator::vendorCode(),
-            'shop_name' => $pending['shop_name'],
-            'brand_name' => $pending['shop_name'],
-            'owner_name' => $pending['owner_name'],
-            'email' => $pending['email'],
+        $request->session()->forget('vendor_otp');
+        $request->session()->put('vendor_register', [
             'mobile' => $otpSession['mobile'],
-            'business_mobile' => $pending['business_mobile'] ?? null,
-            'business_email' => $pending['business_email'] ?? null,
-            'aadhar_number' => $pending['aadhar_number'] ?? null,
-            'gst_number' => $pending['gst_number'] ?? null,
-            'address' => $pending['address'] ?? null,
-            'city' => $pending['city'] ?? null,
-            'state' => $pending['state'] ?? null,
-            'country' => $pending['country'] ?? null,
-            'pincode' => $pending['pincode'] ?? null,
-            'service_types' => $pending['service_types'] ?? null,
-            'account_name' => $pending['account_name'] ?? null,
-            'account_number' => $pending['account_number'] ?? null,
-            'bank_name' => $pending['bank_name'] ?? null,
-            'ifsc_code' => $pending['ifsc_code'] ?? null,
-            'account_type' => $pending['account_type'] ?? null,
-            'status' => 'pending',
-            'aadhar_front_path' => $pending['aadhar_front_path'] ?? null,
-            'aadhar_back_path' => $pending['aadhar_back_path'] ?? null,
-            'cover_image_path' => $pending['cover_image_path'] ?? null,
-            'profile_image_path' => $pending['profile_image_path'] ?? null,
-            'shop_logo_path' => $pending['shop_logo_path'] ?? null,
-            'pan_card_path' => $pending['pan_card_path'] ?? null,
+            'registration_token' => $payload['registration_token'],
+            'masked_mobile' => $payload['masked_mobile'] ?? '+91 ******'.substr($otpSession['mobile'], -3),
         ]);
 
-        $request->session()->forget(['vendor_otp', 'vendor_register_pending']);
-
-        return redirect()->route('vendor.register.success');
+        return redirect()
+            ->route('vendor.register.complete')
+            ->with('success', 'Mobile verified. Complete your registration.');
     }
 
-    public function showRegisterComplete(): RedirectResponse
+    public function showRegisterComplete(Request $request): View|RedirectResponse
     {
-        return redirect()->route('vendor.register');
+        $registerSession = $request->session()->get('vendor_register');
+
+        if (! $registerSession || empty($registerSession['registration_token'])) {
+            return redirect()->route('vendor.register')
+                ->with('error', 'Verify your mobile number with OTP first.');
+        }
+
+        $errorStep = 1;
+        if ($errors = session('errors')) {
+            $bag = $errors->getBag('default')->getMessages();
+            $step2 = ['shop_name', 'service_types', 'business_mobile', 'business_mail', 'aadhar_number', 'gst_no', 'address', 'city', 'state', 'country', 'pincode', 'shop_logo', 'pan_card'];
+            $step3 = ['account_name', 'account_no', 'bank_name', 'ifsc_code', 'account_type'];
+            foreach (array_keys($bag) as $field) {
+                $base = explode('.', $field)[0];
+                if (in_array($base, $step3, true)) {
+                    $errorStep = 3;
+                    break;
+                }
+                if (in_array($base, $step2, true)) {
+                    $errorStep = 2;
+                }
+            }
+        }
+
+        return view('vendor.auth.complete-register', [
+            'serviceOptions' => VendorValidationRules::SERVICE_TYPES,
+            'initialStep' => (int) old('_step', $errorStep),
+            'registerSession' => $registerSession,
+            'maskedMobile' => $registerSession['masked_mobile']
+                ?? '+91 ******'.substr((string) $registerSession['mobile'], -3),
+        ]);
     }
 
     public function register(Request $request): RedirectResponse
     {
-        $data = $this->validateVendor($request, VendorValidationRules::register());
+        $registerSession = $request->session()->get('vendor_register');
 
-        $mobile = $this->otp->normalizeMobile($data['mobile']);
+        if (! $registerSession || empty($registerSession['registration_token'])) {
+            return redirect()->route('vendor.register')
+                ->with('error', 'Verify your mobile number with OTP first.');
+        }
+
+        $rules = VendorValidationRules::register();
+        unset($rules['mobile']);
+        $rules['registration_token'] = ['required', 'string'];
+
+        $data = $this->validateVendor($request, $rules);
+
+        $token = $registerSession['registration_token'];
+        if (($data['registration_token'] ?? null) !== $token) {
+            return redirect()->route('vendor.register')
+                ->with('error', 'Registration session mismatch. Verify OTP again.');
+        }
+
+        try {
+            $mobile = $this->otp->consumeRegistrationToken(OtpService::ACTOR_VENDOR, $token);
+        } catch (ValidationException $exception) {
+            $request->session()->forget('vendor_register');
+
+            return redirect()->route('vendor.register')
+                ->with('error', collect($exception->errors())->flatten()->first() ?: 'Registration session expired.');
+        }
 
         if (Vendor::query()->where('mobile', $mobile)->exists()) {
+            $request->session()->forget('vendor_register');
+
             return redirect()->route('vendor.login')->with('error', 'Account already exists. Please login.');
         }
 
@@ -284,6 +276,7 @@ class LoginController extends VendorController
                 : null,
         ]);
 
+        $request->session()->forget('vendor_register');
         Auth::guard('vendor')->login($vendor);
         $request->session()->regenerate();
 
