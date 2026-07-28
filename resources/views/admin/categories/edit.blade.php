@@ -4,7 +4,7 @@
     $indexType = $type === \App\Models\Category::TYPE_SERVICE ? $type : 'catalog';
 @endphp
 @section('page_title', 'Edit ' . $category->name)
-@section('page_subtitle', \App\Models\Category::typeLabel($type))
+@section('page_subtitle', $type === \App\Models\Category::TYPE_SERVICE ? 'Update image and sort order only' : \App\Models\Category::typeLabel($type))
 @section('back_href', route('admin.categories.index', ['type' => $indexType]))
 @section('content')
     <div class="jb-card"><div class="jb-card-body">

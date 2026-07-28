@@ -38,8 +38,6 @@
                 @if ($isCatalog)
                     <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => \App\Models\Category::TYPE_MAIN])">+ Add category</x-admin.button>
                     <x-admin.button variant="secondary" size="sm" :href="route('admin.categories.create', ['type' => \App\Models\Category::TYPE_SUB])">+ Add sub-category</x-admin.button>
-                @else
-                    <x-admin.button variant="primary" size="sm" :href="route('admin.categories.create', ['type' => \App\Models\Category::TYPE_SERVICE])">+ Add service category</x-admin.button>
                 @endif
             </div>
         @endif
@@ -238,13 +236,6 @@
                                     <div class="jb-actions">
                                         @if (auth('admin')->user()->hasPermission('categories', 'edit'))
                                             <x-admin.action-btn variant="edit" :href="route('admin.categories.edit', $category)" />
-                                        @endif
-                                        @if (auth('admin')->user()->hasPermission('categories', 'delete'))
-                                            <form method="POST" action="{{ route('admin.categories.destroy', $category) }}" class="jb-action-form">
-                                                @csrf
-                                                @method('DELETE')
-                                                <x-admin.action-btn variant="delete" type="submit" confirm="Delete this category?" />
-                                            </form>
                                         @endif
                                     </div>
                                 </td>

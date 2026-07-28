@@ -33,9 +33,16 @@ class CategoryController extends AdminController
         return view('admin.categories.index', $this->catalogCategoriesViewData($request));
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
         $type = $this->resolveType($request->string('type', Category::TYPE_MAIN)->toString());
+
+        if ($type === Category::TYPE_SERVICE) {
+            return redirect()
+                ->route('admin.categories.index', ['type' => Category::TYPE_SERVICE])
+                ->with('error', 'Service categories are fixed and cannot be added from admin.');
+        }
+
         $parents = Category::query()->main()->orderBy('name')->get();
         $serviceCategories = $this->serviceCategories();
 
@@ -45,6 +52,13 @@ class CategoryController extends AdminController
     public function store(CategoryRequest $request): RedirectResponse
     {
         $data = $request->validated();
+
+        if ($data['type'] === Category::TYPE_SERVICE) {
+            return redirect()
+                ->route('admin.categories.index', ['type' => Category::TYPE_SERVICE])
+                ->with('error', 'Service categories are fixed and cannot be added from admin.');
+        }
+
         unset($data['image']);
         $data['parent_id'] = $this->resolveParentId($data['type'], $data['parent_id'] ?? null);
         $data['slug'] = CategorySlugResolver::forCategory(
@@ -85,6 +99,23 @@ class CategoryController extends AdminController
 
     public function update(CategoryRequest $request, Category $category): RedirectResponse
     {
+        if ($category->type === Category::TYPE_SERVICE) {
+            $data = $request->validated();
+
+            $category->update([
+                'sort_order' => (int) ($data['sort_order'] ?? $category->sort_order),
+                'image_path' => StoresUploadedFiles::replace(
+                    $request->file('image'),
+                    $category->image_path,
+                    'categories'
+                ),
+            ]);
+
+            return redirect()
+                ->route('admin.categories.index', ['type' => Category::TYPE_SERVICE])
+                ->with('success', 'Service category updated successfully.');
+        }
+
         $data = $request->validated();
         unset($data['image']);
         $data['parent_id'] = $this->resolveParentId($data['type'], $data['parent_id'] ?? null);
@@ -116,6 +147,10 @@ class CategoryController extends AdminController
 
     public function destroy(Category $category): RedirectResponse
     {
+        if ($category->type === Category::TYPE_SERVICE) {
+            return back()->with('error', 'Service categories are fixed and cannot be deleted.');
+        }
+
         if ($category->orders()->exists()) {
             return back()->with('error', 'This category is linked to orders and cannot be deleted.');
         }

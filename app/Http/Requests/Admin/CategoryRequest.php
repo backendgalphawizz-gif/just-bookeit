@@ -12,6 +12,17 @@ class CategoryRequest extends AdminFormRequest
     {
         parent::prepareForValidation();
 
+        /** @var Category|null $category */
+        $category = $this->route('category');
+
+        if ($category?->type === Category::TYPE_SERVICE) {
+            $this->merge([
+                'sort_order' => (int) ($this->input('sort_order') ?? 0),
+            ]);
+
+            return;
+        }
+
         $this->merge([
             'is_active' => $this->boolean('is_active'),
             'sort_order' => (int) ($this->input('sort_order') ?? 0),
@@ -20,6 +31,16 @@ class CategoryRequest extends AdminFormRequest
 
     public function rules(): array
     {
+        /** @var Category|null $category */
+        $category = $this->route('category');
+
+        if ($category?->type === Category::TYPE_SERVICE) {
+            return [
+                'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
+                'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            ];
+        }
+
         return [
             ...AdminValidationRules::category(),
             'is_active' => ['nullable', 'boolean'],
@@ -28,6 +49,13 @@ class CategoryRequest extends AdminFormRequest
 
     protected function passedValidation(): void
     {
+        /** @var Category|null $category */
+        $category = $this->route('category');
+
+        if ($category?->type === Category::TYPE_SERVICE) {
+            return;
+        }
+
         $this->merge([
             'parent_id' => $this->input('type') === Category::TYPE_SERVICE ? null : $this->input('parent_id'),
             'service_category_id' => $this->input('type') === Category::TYPE_SUB
@@ -38,6 +66,13 @@ class CategoryRequest extends AdminFormRequest
 
     public function withValidator(Validator $validator): void
     {
+        /** @var Category|null $category */
+        $category = $this->route('category');
+
+        if ($category?->type === Category::TYPE_SERVICE) {
+            return;
+        }
+
         $validator->after(function (Validator $validator): void {
             $type = $this->input('type');
 
