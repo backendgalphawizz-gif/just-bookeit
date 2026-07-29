@@ -92,11 +92,12 @@ class OtpService
         $record = OtpVerification::query()
             ->where('actor_type', $actorType)
             ->where('mobile', $mobile)
+            ->whereNull('verified_at')
             ->latest('id')
             ->first();
 
         if (! $record || $record->expires_at->timezone('Asia/Kolkata')->isPast()) {
-            throw ValidationException::withMessages(['otp' => ['OTP expired. Request a new code.']]);
+            throw ValidationException::withMessages(['otp' => ['OTP already used or expired. Request a new code.']]);
         }
 
         if ($record->attempts >= 5) {
@@ -108,7 +109,12 @@ class OtpService
             throw ValidationException::withMessages(['otp' => ['Invalid OTP.']]);
         }
 
-        $record->update(['verified_at' => now('Asia/Kolkata')]);
+        // Single-use: consume immediately so the same code cannot login again (app + panel).
+        OtpVerification::query()->whereKey($record->id)->delete();
+        OtpVerification::query()
+            ->where('actor_type', $actorType)
+            ->where('mobile', $mobile)
+            ->delete();
 
         if ($type === self::TYPE_LOGIN) {
             $actor = $this->findActor($actorType, $mobile);
