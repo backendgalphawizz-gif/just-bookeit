@@ -40,7 +40,7 @@ class WebLocation
             }
         }
 
-        return 'Choose location';
+        return 'Detecting location…';
     }
 
     /**
@@ -81,7 +81,25 @@ class WebLocation
 
     public static function needsAutoDetect(Request $request): bool
     {
-        return self::get($request) === null;
+        // Already asked the browser for GPS this session — don't prompt again.
+        if ($request->session()->get('web_location_gps_attempted')) {
+            return false;
+        }
+
+        $stored = self::get($request);
+        if ($stored === null) {
+            return true;
+        }
+
+        $source = (string) ($stored['source'] ?? $stored['type'] ?? '');
+
+        // Upgrade rough IP / geo guesses to precise device GPS once.
+        return in_array($source, ['ip', 'geo'], true);
+    }
+
+    public static function markGpsAttempted(Request $request): void
+    {
+        $request->session()->put('web_location_gps_attempted', true);
     }
 
     /**
@@ -98,6 +116,7 @@ class WebLocation
             return;
         }
 
+        $payload['source'] = 'ip';
         self::put($request, $payload);
 
         $customer = Auth::guard('customer')->user();
@@ -156,6 +175,8 @@ class WebLocation
             $payload = self::ensureCoordinates($payload);
         }
 
+        $payload['source'] = 'ip';
+
         \Illuminate\Support\Facades\Cache::put($cacheKey, $payload, 900);
 
         return $payload;
@@ -171,6 +192,7 @@ class WebLocation
 
         return [
             'type' => 'geo',
+            'source' => 'geo',
             'city_id' => null,
             'city' => $city,
             'state' => $state !== '' ? $state : null,
@@ -453,6 +475,7 @@ class WebLocation
 
         return self::ensureCoordinates([
             'type' => 'city',
+            'source' => 'city',
             'city_id' => $city->id,
             'city' => $city->name,
             'state' => $state?->name,
@@ -465,6 +488,7 @@ class WebLocation
     {
         return self::ensureCoordinates([
             'type' => 'address',
+            'source' => 'address',
             'address_id' => $address->id,
             'city' => $address->city,
             'state' => $address->state,

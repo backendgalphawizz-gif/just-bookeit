@@ -3335,7 +3335,8 @@ img[data-vp-variant-thumb][hidden] {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    /* Top-align so validation errors don't shift the logo/card vertically. */
+    justify-content: flex-start;
     padding: 2rem 1.25rem 3rem;
     background: #ffffff;
 }
@@ -6130,7 +6131,7 @@ border-bottom: 0px !important;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         padding: 1.5rem 1.25rem 2.5rem;
         background: #ffffff;
     }

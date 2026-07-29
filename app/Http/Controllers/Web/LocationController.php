@@ -20,6 +20,9 @@ class LocationController extends WebController
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id', 'required_without:city_id'],
         ]);
 
+        // Manual city/address pick — don't auto-override again this session.
+        WebLocation::markGpsAttempted($request);
+
         if ($request->filled('address_id')) {
             $customer = Auth::guard('customer')->user();
             abort_unless($customer instanceof Customer && ! $customer->is_guest, 403);
@@ -57,7 +60,12 @@ class LocationController extends WebController
         $data = $request->validate([
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'gps_attempted' => ['nullable', 'boolean'],
         ]);
+
+        if ($request->boolean('gps_attempted') || isset($data['latitude'], $data['longitude'])) {
+            WebLocation::markGpsAttempted($request);
+        }
 
         $payload = null;
         $source = 'ip';
@@ -78,6 +86,7 @@ class LocationController extends WebController
 
             $payload['latitude'] = (float) $data['latitude'];
             $payload['longitude'] = (float) $data['longitude'];
+            $payload['source'] = 'gps';
         }
 
         $payload ??= WebLocation::payloadFromIp($request);
@@ -89,6 +98,7 @@ class LocationController extends WebController
             ], 422);
         }
 
+        $payload['source'] = $payload['source'] ?? $source;
         $payload = WebLocation::ensureCoordinates($payload);
         WebLocation::put($request, $payload);
 
@@ -102,7 +112,7 @@ class LocationController extends WebController
             'label' => $payload['label'],
             'city_id' => $payload['city_id'] ?? null,
             'city' => $payload['city'] ?? null,
-            'source' => $source,
+            'source' => $payload['source'] ?? $source,
         ]);
     }
 }

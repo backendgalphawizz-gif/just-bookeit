@@ -5,7 +5,7 @@
     $title = $isLogin ? 'Sign in to your Account' : 'Sign up to your Account';
     $footerPrompt = $isLogin ? "Don't have an account?" : 'Already have an account?';
     $footerHref = $isLogin ? route('web.register') : route('web.login');
-    $footerLink = $isLogin ? 'Register Now' : 'Sign in';
+    $footerLink = $isLogin ? 'Sign up' : 'Sign in';
     $otpType = $isLogin ? 'login' : 'register';
 
     $mobileDigits = preg_replace('/\D+/', '', (string) old('mobile', ''));

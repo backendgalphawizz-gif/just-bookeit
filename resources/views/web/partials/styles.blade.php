@@ -894,13 +894,24 @@ a { color: inherit; }
     transition: background var(--trans), border-color var(--trans);
 }
 .jbw-icon-btn:hover { background: var(--c-bg); }
-.jbw-avatar-btn { padding: 0; overflow: hidden; }
-.jbw-avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.jbw-avatar-btn {
+    padding: 0;
+    overflow: hidden;
+    border-radius: 9999px;
+}
+.jbw-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: inherit;
+}
 .jbw-avatar-fallback {
     width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center;
     background: #fce7df; color: var(--c-primary);
     font-weight: 700; font-size: 0.875rem; line-height: 1;
+    border-radius: inherit;
 }
 
 .jbw-profile-menu { position: relative; display: flex; align-items: center; height: 2.5rem; }
@@ -1633,21 +1644,26 @@ a { color: inherit; }
     pointer-events: auto;
     width: 2.75rem;
     height: 2.75rem;
-    border: 1px solid rgb(255 255 255 / 0.4);
+    border: 1px solid rgb(15 23 42 / 0.12);
     border-radius: 9999px;
-    background: rgb(255 255 255 / 0.14);
-    color: #fff;
+    background: #fff;
+    color: #1a2f38;
     font-size: 1.125rem;
+    line-height: 1;
     cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
-    transition: background 0.25s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+    transition: background 0.25s ease, transform 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .jbw-hero-arrow:hover {
-    background: rgb(255 255 255 / 0.28);
+    background: #fff;
+    color: var(--c-primary, #f25123);
     transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 10px 28px rgb(0 0 0 / 0.28);
 }
 
 .jbw-hero-arrow--prev { left: 1rem; }
@@ -5578,7 +5594,8 @@ a { color: inherit; }
 /* ── Left brand panel ── */
 .jbw-auth-page-brand {
     position: relative;
-    display: flex; align-items: center; justify-content: center;
+    /* Keep logo pinned to the top so form validation errors don't re-center it. */
+    display: flex; align-items: flex-start; justify-content: center;
     padding: 3rem 2rem;
     overflow: hidden;
     min-height: 38vh;
@@ -5586,7 +5603,7 @@ a { color: inherit; }
 @media (max-width: 768px) {
     .jbw-auth-page-brand {
         min-height: 12vh;
-        padding: 1.5rem 1rem;
+        padding: 1.5rem 1rem 0.75rem;
     }
      .auth-logo {
         height: 100px !important;
@@ -5596,6 +5613,7 @@ a { color: inherit; }
     }
     .jbw-auth-page-form {
         padding: 0rem 1.25rem 3rem !important;
+        align-items: flex-start !important;
     }
 }
 .textmanage {
@@ -5655,7 +5673,8 @@ a { color: inherit; }
 
 /* ── Right form panel ── */
 .jbw-auth-page-form {
-    flex: 1; display: flex; align-items: center; justify-content: center;
+    /* Top-align so error messages grow the card downward instead of shifting layout. */
+    flex: 1; display: flex; align-items: flex-start; justify-content: center;
     padding: 2rem 1.25rem 3rem; background: #fefefe;
 }
 .auth-logo {
@@ -5873,11 +5892,22 @@ a { color: inherit; }
     font-size: 10px;
 }
 @media (min-width: 960px) {
-    .jbw-auth-page { flex-direction: row; align-items: stretch; }
-    .jbw-auth-page-brand { flex: 1; min-height: 100vh; padding: 3rem 3rem; }
+    .jbw-auth-page { flex-direction: row; align-items: flex-start; }
+    .jbw-auth-page-brand {
+        flex: 1;
+        min-height: 100vh;
+        padding: 3rem 3rem;
+        align-items: flex-start;
+        justify-content: center;
+    }
     .jbw-auth-page-brand-inner { max-width: 32rem; gap: 3rem; }
     .jbw-logo--auth .jbw-logo-media--auth { height: 5rem; max-width: 16rem; }
-    .jbw-auth-page-form { flex: 1; min-height: 100vh; padding: 3rem 3rem; }
+    .jbw-auth-page-form {
+        flex: 1;
+        min-height: 100vh;
+        padding: 3rem 3rem;
+        align-items: flex-start;
+    }
 }
 @media (max-width: 959px) {
     .jbw-auth-brand-tagline { display: none; }
@@ -7260,9 +7290,17 @@ background: #AE2A0B;
     .jbw-hero-actions { gap: 0.625rem; }
     .jbw-hero-actions .jbw-btn--lg { padding: 0.7rem 1rem; font-size: 0.875rem; }
     .jbw-hero-scroll { display: none; }
-    .jbw-hero-arrow { width: 2rem; height: 2rem; font-size: 0.875rem; }
+    .jbw-hero-arrow {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.875rem;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    .jbw-hero-arrow:hover { transform: translateY(-50%) scale(1.05); }
     .jbw-hero-arrow--prev { left: 0.5rem; }
     .jbw-hero-arrow--next { right: 0.5rem; }
+    .jbw-hero-arrow svg { width: 14px; height: 14px; }
     .jbw-hero-dots { bottom: 0.65rem; gap: 0.3rem; }
 }
 

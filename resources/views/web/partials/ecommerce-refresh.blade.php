@@ -77,6 +77,10 @@ body {
     transition: background 0.2s, transform 0.15s;
 }
 
+.jbw-avatar-btn {
+    border-radius: 9999px;
+}
+
 .jbw-header-tools {
     align-items: center;
 }
@@ -184,11 +188,16 @@ body {
 }
 
 .jbw-hero-arrow {
-    background: rgb(255 255 255 / 0.95);
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: #fff;
+    color: #1a2f38;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s, color 0.2s;
 }
 
 .jbw-hero-arrow:hover {
+    color: var(--c-primary, #f25123);
     transform: translateY(-50%) scale(1.05);
     box-shadow: var(--shadow-hover);
 }

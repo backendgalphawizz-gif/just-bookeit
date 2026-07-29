@@ -68,10 +68,10 @@ $categoryFallbacks = [
     @if ($heroSlides->count() > 1)
         <div class="jbw-hero-nav">
             <button type="button" class="jbw-hero-arrow jbw-hero-arrow--prev" data-hero-prev aria-label="Previous banner">
-                &#10094;
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <button type="button" class="jbw-hero-arrow jbw-hero-arrow--next" data-hero-next aria-label="Next banner">
-                &#10095;
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
         </div>
         <div class="jbw-hero-dots" role="tablist" aria-label="Banner slides">

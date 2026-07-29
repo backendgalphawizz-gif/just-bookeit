@@ -10,6 +10,10 @@
     var detectBtn = root.querySelector('[data-location-detect]');
     var statusEl = root.querySelector('[data-location-detect-status]');
     var busy = false;
+    var hadLabel = labelEl && labelEl.textContent && labelEl.textContent.trim() !== ''
+        && labelEl.textContent.trim() !== 'Choose location'
+        && labelEl.textContent.trim() !== 'Detecting location…';
+    var previousLabel = hadLabel ? labelEl.textContent.trim() : '';
 
     function csrfToken() {
         var meta = document.querySelector('meta[name="csrf-token"]');
@@ -52,33 +56,44 @@
         });
     }
 
-    function applyResult(result, fallbackStatus) {
+    function applyResult(result, fallbackStatus, options) {
         busy = false;
+        options = options || {};
 
         if (!result.ok || !result.data || !result.data.ok) {
             setStatus((result.data && result.data.message) || fallbackStatus || 'Could not detect location');
-            setLabel('Choose location');
+            if (!previousLabel) {
+                setLabel('Choose location');
+            } else {
+                setLabel(previousLabel);
+            }
             return;
         }
 
         var via = result.data.source === 'ip' ? ' (approx.)' : '';
-        setStatus('Using ' + result.data.city + via);
+        setStatus('Using ' + (result.data.city || result.data.label) + via);
         setLabel(result.data.label);
-        window.location.reload();
+
+        // Reload once so catalog/home filters use the new location.
+        if (!options.skipReload) {
+            window.location.reload();
+        }
     }
 
     function detectByIp(fallbackStatus) {
         setStatus('Detecting from network…');
-        setLabel('Detecting location…');
+        if (!previousLabel) {
+            setLabel('Detecting location…');
+        }
 
-        return postDetect({})
+        return postDetect({ gps_attempted: true })
             .then(function (result) {
                 applyResult(result, fallbackStatus || 'Could not detect location');
             })
             .catch(function () {
                 busy = false;
                 setStatus(fallbackStatus || 'Could not detect location');
-                setLabel('Choose location');
+                setLabel(previousLabel || 'Choose location');
             });
     }
 
@@ -102,16 +117,20 @@
         return 'Location unavailable — trying network…';
     }
 
-    function detect() {
+    function detect(options) {
+        options = options || {};
+
         if (!detectUrl || busy) {
             return;
         }
 
         busy = true;
-        setStatus('Detecting…');
-        setLabel('Detecting location…');
+        setStatus('Detecting your location…');
+        if (!previousLabel) {
+            setLabel('Detecting location…');
+        }
 
-        // LAN / HTTP hosts (e.g. 192.168.x.x) cannot use browser GPS — use IP immediately.
+        // Secure contexts only (HTTPS / localhost). LAN HTTP cannot use GPS.
         var canUseGps = typeof navigator !== 'undefined'
             && navigator.geolocation
             && (window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
@@ -123,13 +142,15 @@
 
         navigator.geolocation.getCurrentPosition(
             function (position) {
-                postDetect({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                })
+        // Also mark GPS attempted when posting GPS coords (even if city match fails later).
+        postDetect({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            gps_attempted: true,
+        })
                     .then(function (result) {
                         if (result.ok && result.data && result.data.ok) {
-                            applyResult(result);
+                            applyResult(result, null, options);
                             return;
                         }
 
@@ -142,23 +163,30 @@
             },
             function (error) {
                 setStatus(gpsErrorMessage(error));
+                // Mark GPS attempted via IP fallback request (no coords) path —
+                // also fire a lightweight GPS-mark by posting empty after fail
+                // so server can still set session flag through IP detect.
                 detectByIp('Could not detect location');
             },
             {
-                enableHighAccuracy: false,
-                timeout: 8000,
-                maximumAge: 300000,
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 60000,
             }
         );
     }
 
     if (detectBtn) {
         detectBtn.addEventListener('click', function () {
-            detect();
+            detect({ skipReload: false });
         });
     }
 
+    // On first visit (or IP-only location), ask the browser for current GPS.
     if (autoDetect) {
-        detect();
+        // Slight delay so the header paints first, then permission prompt.
+        window.setTimeout(function () {
+            detect();
+        }, 250);
     }
 })();
