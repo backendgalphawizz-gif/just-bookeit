@@ -40,7 +40,7 @@ class OrderController extends AdminController
         $checkoutQuery = AdminCityScope::scopeCheckoutOrders(
             $this->applyDateRange(CheckoutOrder::query(), $request)
         )
-            ->with(['customer', 'subOrders.vendor'])
+            ->with(['customer', 'subOrders.vendor', 'subOrders.category'])
             ->withCount('subOrders');
 
         if ($request->filled('search')) {

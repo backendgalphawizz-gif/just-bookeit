@@ -46,7 +46,7 @@
                             <td>{{ str_replace('_', ' ', $log->audience) }}</td>
                             <td class="text-center">{{ $log->recipients_count }}</td>
                             <td class="jb-col-status"><span class="jb-badge bg-emerald-100 text-emerald-800">{{ $log->status }}</span></td>
-                            <td class="jb-col-date text-sm text-slate-500">{{ $log->sent_at?->format('M d, Y h:i A') ?? '—' }}</td>
+                            <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::format($log->sent_at, 'M d, Y h:i A') }}</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.notifications.show', $log)" /></div></td>
                         </tr>
                     @empty

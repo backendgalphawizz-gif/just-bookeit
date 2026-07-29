@@ -141,7 +141,7 @@
                             <td>{{ $vendor->mobile ?? '—' }}</td>
                             <td>{{ $vendor->email ?? '—' }}</td>
                             <td>{{ $vendor->city ?? '—' }}</td>
-                            <td>{{ $vendor->created_at ? $vendor->created_at->format('M d, Y') : '—' }}</td>
+                            <td>{{ $vendor->created_at ? \App\Support\AdminDateTime::formatDate($vendor->created_at) : '—' }}</td>
                             <td class="jb-col-status">
                                 @include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])
                                 @if ($vendor->status === 'inactive' && $vendor->rejection_reason)

@@ -75,7 +75,7 @@
                             </td>
                             <td>{{ $customer->mobile }}</td>
                             <td>{{ $customer->city ?? '—' }}</td>
-                            <td class="jb-col-date text-sm text-slate-600">{{ $customer->registered_at?->format('M d, Y') ?? '—' }}</td>
+                            <td class="jb-col-date text-sm text-slate-600">{{ \App\Support\AdminDateTime::formatDate($customer->registered_at) }}</td>
                             <td class="text-center">{{ $customer->total_orders }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $customer->status, 'label' => \App\Support\AdminAccountStatus::labelFor($customer->status)])</td>
                             <td class="jb-table-actions-col">

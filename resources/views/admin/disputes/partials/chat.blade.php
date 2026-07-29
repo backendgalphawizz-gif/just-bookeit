@@ -26,7 +26,7 @@
             ])>
                 <p class="jb-dispute-chat__msg-meta">
                     {{ $message->senderLabel() }}
-                    · {{ $message->created_at->format('M d, Y · g:i A') }}
+                    · {{ \App\Support\AdminDateTime::format($message->created_at, 'M d, Y · g:i A') }}
                 </p>
                 @if ($message->body)
                     <p class="jb-dispute-chat__msg-body">{{ $message->body }}</p>

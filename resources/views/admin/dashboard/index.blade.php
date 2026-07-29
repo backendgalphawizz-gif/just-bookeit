@@ -2,7 +2,7 @@
 
 @section('title', 'Dashboard')
 @section('page_title', 'Dashboard')
-@section('page_subtitle', $page_subtitle ?? 'Platform overview · Updated ' . now()->format('M d, Y h:i A'))
+@section('page_subtitle', $page_subtitle ?? 'Platform overview · Updated ' . \App\Support\AdminDateTime::format(now(), 'M d, Y h:i A'))
 
 @section('content')
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">

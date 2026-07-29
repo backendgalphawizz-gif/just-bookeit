@@ -25,7 +25,7 @@
                     <div class="jb-notification-row-body">
                         <p class="jb-notification-row-title">{{ $notification->title }}</p>
                         <p class="jb-notification-row-message">{{ $notification->message }}</p>
-                        <p class="jb-notification-row-time">{{ $notification->created_at?->diffForHumans() }}</p>
+                        <p class="jb-notification-row-time">{{ \App\Support\AdminDateTime::format($notification->created_at, 'M d, Y · h:i A') }}</p>
                     </div>
                     <div class="jb-notification-row-actions">
                         <x-admin.button variant="primary" size="sm" :href="route('admin.inbox-notifications.open', $notification)">Review</x-admin.button>

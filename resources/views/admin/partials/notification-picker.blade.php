@@ -36,7 +36,7 @@
                     <a href="{{ route('admin.inbox-notifications.open', $notification) }}" class="jb-notification-item-link">
                         <p class="jb-notification-item-title">{{ $notification->title }}</p>
                         <p class="jb-notification-item-message">{{ \Illuminate\Support\Str::limit($notification->message, 90) }}</p>
-                        <p class="jb-notification-item-time">{{ $notification->created_at?->diffForHumans() }}</p>
+                        <p class="jb-notification-item-time">{{ \App\Support\AdminDateTime::format($notification->created_at, 'M d · h:i A') }}</p>
                     </a>
                     <form method="POST" action="{{ route('admin.inbox-notifications.read', $notification) }}">
                         @csrf

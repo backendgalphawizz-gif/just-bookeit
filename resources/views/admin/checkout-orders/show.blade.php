@@ -2,7 +2,7 @@
 
 @section('title', 'Checkout '.$checkout->order_number)
 @section('page_title', 'Checkout order')
-@section('page_subtitle', $checkout->subOrders->count().' sub-order'.($checkout->subOrders->count() === 1 ? '' : 's').' · '.$checkout->created_at->format('M d, Y · H:i'))
+@section('page_subtitle', $checkout->subOrders->count().' sub-order'.($checkout->subOrders->count() === 1 ? '' : 's').' · '.\App\Support\AdminDateTime::format($checkout->created_at, 'M d, Y · H:i'))
 @section('back_href', route('admin.orders.index'))
 
 @php
@@ -50,7 +50,7 @@
                 @include('admin.components.status-badge', ['status' => $checkout->status, 'label' => $checkout->statusLabel()])
             </div>
         </div>
-        <p class="jb-booking-booked-on">Placed on {{ $checkout->created_at->format('M d, Y · H:i') }}</p>
+        <p class="jb-booking-booked-on">Placed on {{ \App\Support\AdminDateTime::format($checkout->created_at, 'M d, Y · H:i') }}</p>
     </div>
 
     <div class="jb-booking-layout">
@@ -322,7 +322,7 @@
                             @if ($refund->histories->isNotEmpty())
                                 <ul style="margin:0.5rem 0 0;padding-left:1.1rem;font-size:0.8125rem;color:var(--jb-muted,#64748b)">
                                     @foreach ($refund->histories as $history)
-                                        <li>{{ $history->created_at->format('M d, H:i') }} — {{ $history->status }}: {{ $history->note }}</li>
+                                        <li>{{ \App\Support\AdminDateTime::format($history->created_at, 'M d, H:i') }} — {{ $history->status }}: {{ $history->note }}</li>
                                     @endforeach
                                 </ul>
                             @endif
@@ -402,7 +402,7 @@
                         <p>Method: <strong>{{ strtoupper(str_replace('_', ' ', $checkout->payment_method)) }}</strong></p>
                     @endif
                     @if ($checkout->paid_at)
-                        <p>Last paid: <strong>{{ $checkout->paid_at->format('M d, Y · H:i') }}</strong></p>
+                        <p>Last paid: <strong>{{ \App\Support\AdminDateTime::format($checkout->paid_at, 'M d, Y · H:i') }}</strong></p>
                     @endif
                 </div>
             </div>
@@ -420,7 +420,7 @@
                     </div>
                     <div class="jb-booking-billing-row">
                         <span class="jb-booking-billing-label">Created</span>
-                        <span class="jb-booking-billing-value">{{ $checkout->created_at->format('M d, Y') }}</span>
+                        <span class="jb-booking-billing-value">{{ \App\Support\AdminDateTime::formatDate($checkout->created_at) }}</span>
                     </div>
                     @if ($hasRentalService)
                         <div class="jb-booking-billing-row">

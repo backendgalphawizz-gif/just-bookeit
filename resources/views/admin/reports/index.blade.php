@@ -106,7 +106,7 @@
                                 <td class="jb-col-name">{{ $order->vendor?->brand_name ?? '—' }}</td>
                                 <td class="jb-col-amount">₹{{ number_format($order->amount, 2) }}</td>
                                 <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
-                                <td class="jb-col-date text-sm text-slate-500">{{ $order->created_at->format('M d, Y') }}</td>
+                                <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($order->created_at) }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="7" class="jb-table-empty">No orders for this filter.</td></tr>
@@ -171,7 +171,7 @@
                                 <td>{{ $vendor->city }}</td>
                                 <td class="text-center">{{ $vendor->orders_completed }}</td>
                                 <td class="jb-col-amount">₹{{ number_format($vendor->earnings, 2) }}</td>
-                                <td class="jb-col-date text-sm text-slate-500">{{ $vendor->created_at->format('M d, Y') }}</td>
+                                <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($vendor->created_at) }}</td>
                                 <td class="jb-col-status">{{ $vendor->status }}</td>
                             </tr>
                         @empty
@@ -242,7 +242,7 @@
                                 <td class="jb-col-id">{{ $refund->order?->order_number ?? '—' }}</td>
                                 <td class="jb-col-amount">₹{{ number_format($refund->amount, 2) }}</td>
                                 <td class="jb-col-status">{{ $refund->status }}</td>
-                                <td class="jb-col-date">{{ $refund->created_at->format('M d, Y') }}</td>
+                                <td class="jb-col-date">{{ \App\Support\AdminDateTime::formatDate($refund->created_at) }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="7" class="jb-table-empty">No refunds.</td></tr>

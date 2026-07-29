@@ -292,12 +292,12 @@
                         @endif
                         <div class="jb-product-fact">
                             <dt>Submitted</dt>
-                            <dd>{{ $portfolio->created_at->format('M d, Y · h:i A') }}</dd>
+                            <dd>{{ \App\Support\AdminDateTime::format($portfolio->created_at) }}</dd>
                         </div>
                         @if ($portfolio->reviewed_at)
                             <div class="jb-product-fact">
                                 <dt>Reviewed</dt>
-                                <dd>{{ $portfolio->reviewed_at->format('M d, Y · h:i A') }}</dd>
+                                <dd>{{ \App\Support\AdminDateTime::format($portfolio->reviewed_at) }}</dd>
                             </div>
                         @endif
                     </dl>

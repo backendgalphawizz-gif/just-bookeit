@@ -105,7 +105,7 @@
                                 @endif
                             </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status, 'label' => ucfirst((string) $item->status)])</td>
-                            <td class="jb-col-date text-sm text-slate-500">{{ $item->created_at->format('M d, Y') }}</td>
+                            <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($item->created_at) }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" />

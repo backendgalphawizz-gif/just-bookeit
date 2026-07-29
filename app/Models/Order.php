@@ -644,7 +644,7 @@ class Order extends Model
         $steps = [
             $this->rentalTrackStep(
                 'Booking placed',
-                $this->created_at->format('M d, Y · H:i'),
+                \App\Support\AdminDateTime::format($this->created_at, 'M d, Y · H:i'),
                 $cancelled ? 'cancelled' : 'done'
             ),
         ];
@@ -836,7 +836,7 @@ class Order extends Model
 
             $time = null;
             if ($step['min'] === 'new' && $this->created_at) {
-                $time = $this->created_at->format('M d, Y · H:i');
+                $time = \App\Support\AdminDateTime::format($this->created_at, 'M d, Y · H:i');
             }
 
             return [

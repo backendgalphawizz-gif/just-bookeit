@@ -15,6 +15,7 @@ use App\View\Composers\WebLayoutComposer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
@@ -63,6 +64,10 @@ class AppServiceProvider extends ServiceProvider
 
         Builder::macro('latestIdFirst', function () {
             return AdminListOrder::latestIdFirst($this);
+        });
+
+        Blade::directive('adminDate', function (string $expression) {
+            return "<?php echo \\App\\Support\\AdminDateTime::format({$expression}); ?>";
         });
 
         Order::observe(OrderObserver::class);

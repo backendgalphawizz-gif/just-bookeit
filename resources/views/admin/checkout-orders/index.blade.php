@@ -2,7 +2,7 @@
 
 @section('title', 'Checkout orders')
 @section('page_title', 'Checkout orders')
-@section('page_subtitle', 'Multi-vendor parent orders with sub-orders')
+@section('page_subtitle', 'Cart checkout orders with one or more vendor sub-orders')
 
 @section('content')
     <form method="GET" class="jb-filters jb-orders-filters">
@@ -56,7 +56,7 @@
         <div class="jb-card-header jb-orders-card__header">
             <div>
                 <p class="jb-card-header-title">{{ number_format($checkouts->total()) }} checkout orders</p>
-                <p class="jb-orders-card__subtitle">One customer payment, multiple vendor sub-orders</p>
+                <p class="jb-orders-card__subtitle">One customer checkout — may include one or more vendors</p>
             </div>
         </div>
         <div class="jb-table-wrap">
@@ -101,7 +101,7 @@
                                 @include('admin.components.status-badge', ['status' => $checkout->status, 'label' => $checkout->statusLabel()])
                             </td>
                             <td class="jb-col-date">
-                                <span class="jb-orders-date">{{ $checkout->created_at->format('M d, Y') }}</span>
+                                <span class="jb-orders-date">{{ \App\Support\AdminDateTime::formatDate($checkout->created_at) }}</span>
                             </td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">

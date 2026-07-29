@@ -43,7 +43,7 @@
                             <td class="jb-col-name">{{ $payment->customer->name }}</td>
                             <td class="jb-col-name">{{ $payment->vendor?->brand_name ?? '—' }}</td>
                             <td class="jb-col-amount font-semibold">₹{{ number_format($payment->amount, 2) }}</td>
-                            <td class="jb-col-date text-slate-500">{{ ($payment->paid_at ?? $payment->created_at)?->format('M d, Y - g:i A') }}</td>
+                            <td class="jb-col-date text-slate-500">{{ \App\Support\AdminDateTime::format($payment->paid_at ?? $payment->created_at, 'M d, Y - g:i A') }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $payment->payment_status, 'label' => ucfirst($payment->payment_status)])</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.payments.show', $payment)" /></div></td>
                         </tr>

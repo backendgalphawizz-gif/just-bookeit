@@ -122,7 +122,7 @@
                             <td class="jb-col-id font-mono text-xs">{{ $dispute->order->order_number }}</td>
                             <td class="jb-col-name font-medium">{{ $dispute->subject }}</td>
                             <td class="jb-col-name">{{ $dispute->raised_by === 'customer' ? ($dispute->order->customer?->name ?? '—') : ($dispute->order->vendor?->brand_name ?? '—') }}</td>
-                            <td>{{ $dispute->created_at ? $dispute->created_at->format('M d, Y') : '—' }}</td>
+                            <td>{{ $dispute->created_at ? \App\Support\AdminDateTime::formatDate($dispute->created_at) : '—' }}</td>
                             <td class="jb-col-meta capitalize">{{ $dispute->raised_by }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $dispute->status, 'label' => $dispute->statusLabel()])</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.disputes.show', $dispute)" /></div></td>

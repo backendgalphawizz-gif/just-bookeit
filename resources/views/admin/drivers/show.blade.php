@@ -82,7 +82,7 @@
                 <div><dt>City</dt><dd>{{ $driver->city ?? '—' }}</dd></div>
                 <div><dt>Vehicle no.</dt><dd>{{ $driver->vehicle_no ?? '—' }}</dd></div>
                 <div><dt>Verified</dt><dd>{{ $driver->is_verified ? 'Yes' : 'No' }}</dd></div>
-                <div><dt>Registered</dt><dd>{{ $driver->registered_at?->format('M d, Y') ?? '—' }}</dd></div>
+                <div><dt>Registered</dt><dd>{{ \App\Support\AdminDateTime::formatDate($driver->registered_at) }}</dd></div>
             </dl>
         </div>
         @if ($driver->aadharFrontUrl() || $driver->aadharBackUrl() || $driver->drivingLicenceUrl() || $driver->aadharUrl())

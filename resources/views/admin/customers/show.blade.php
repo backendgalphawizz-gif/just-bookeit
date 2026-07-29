@@ -76,7 +76,7 @@
                 <div><dt>Country</dt><dd>{{ $customer->country ?? '—' }}</dd></div>
                 <div><dt>Pincode</dt><dd>{{ $customer->pincode ?? '—' }}</dd></div>
                 @endif
-                <div><dt>Registered</dt><dd>{{ $customer->registered_at?->format('M d, Y') }}</dd></div>
+                <div><dt>Registered</dt><dd>{{ \App\Support\AdminDateTime::formatDate($customer->registered_at) }}</dd></div>
             </dl>
         </div>
         <div class="jb-detail-card lg:col-span-2">

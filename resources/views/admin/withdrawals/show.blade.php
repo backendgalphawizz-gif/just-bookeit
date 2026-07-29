@@ -17,7 +17,7 @@
                 @include('admin.components.status-badge', ['status' => $withdrawal->status, 'label' => $withdrawal->statusLabel()])
             </div>
         </div>
-        <p class="jb-payout-created">Requested {{ $withdrawal->created_at->format('M d, Y · h:i A') }}</p>
+        <p class="jb-payout-created">Requested {{ \App\Support\AdminDateTime::format($withdrawal->created_at) }}</p>
     </div>
 
     <div class="jb-booking-layout">
@@ -72,7 +72,7 @@
                         </div>
                         <div>
                             <dt>Reviewed at</dt>
-                            <dd>{{ $withdrawal->reviewed_at?->format('M d, Y · h:i A') ?? '—' }}</dd>
+                            <dd>{{ \App\Support\AdminDateTime::format($withdrawal->reviewed_at) }}</dd>
                         </div>
                         @if ($withdrawal->payment_reference)
                             <div>

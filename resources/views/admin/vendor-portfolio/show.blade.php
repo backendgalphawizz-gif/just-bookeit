@@ -134,7 +134,7 @@
                                         @endif
                                         <div class="border-t border-slate-100 px-3 py-2.5">
                                             <p class="text-xs font-medium text-slate-700">{{ $group['label'] }}</p>
-                                            <p class="mt-0.5 text-xs text-slate-500">Added {{ $image->created_at->format('M d, Y') }}</p>
+                                            <p class="mt-0.5 text-xs text-slate-500">Added {{ \App\Support\AdminDateTime::formatDate($image->created_at) }}</p>
                                         </div>
                                     </article>
                                 @endforeach

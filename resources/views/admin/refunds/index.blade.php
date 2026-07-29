@@ -139,7 +139,7 @@
                             <td class="jb-col-name">{{ $refund->customer?->name ?? '—' }}</td>
                             <td class="jb-col-name">{{ $refund->order?->vendor?->brand_name ?? $refund->order?->vendor?->shop_name ?? '—' }}</td>
                             <td class="jb-col-id font-mono text-xs">{{ $refund->order?->order_number ?? '—' }}</td>
-                            <td>{{ $refund->created_at ? $refund->created_at->format('M d, Y') : '—' }}</td>
+                            <td>{{ $refund->created_at ? \App\Support\AdminDateTime::formatDate($refund->created_at) : '—' }}</td>
                             <td class="jb-col-amount font-semibold">₹{{ number_format($refund->amount, 2) }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $refund->status])</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.refunds.show', $refund)" /></div></td>

@@ -16,7 +16,7 @@
             <div><dt>Customer</dt><dd>{{ $order->customer->name }}</dd></div>
             <div><dt>Vendor</dt><dd>{{ $order->vendor?->brand_name ?? 'Unassigned' }}</dd></div>
             <div><dt>Category</dt><dd>{{ $order->category->name }}</dd></div>
-            <div><dt>Date</dt><dd>{{ $order->created_at->format('M d, Y h:i A') }}</dd></div>
+            <div><dt>Date</dt><dd>{{ \App\Support\AdminDateTime::format($order->created_at, 'M d, Y h:i A') }}</dd></div>
         </dl>
     </div>
 @endsection

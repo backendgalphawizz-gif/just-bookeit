@@ -57,7 +57,7 @@
                             <td class="jb-col-name">{{ $withdrawal->vendor->brand_name }}</td>
                             <td class="jb-col-amount font-semibold">₹{{ number_format($withdrawal->amount, 2) }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $withdrawal->status, 'label' => $withdrawal->statusLabel()])</td>
-                            <td class="jb-col-date text-sm text-slate-500">{{ $withdrawal->created_at->format('M d, Y') }}</td>
+                            <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($withdrawal->created_at) }}</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.withdrawals.show', $withdrawal)" /></div></td>
                         </tr>
                     @empty

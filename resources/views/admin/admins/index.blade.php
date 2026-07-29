@@ -58,7 +58,7 @@
                                 <span class="block truncate" title="{{ $adminCityLabel }}">{{ $adminCityLabel }}</span>
                             </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $admin->status])</td>
-                            <td class="jb-col-date text-sm text-slate-500">{{ $admin->last_login_at?->format('M d, Y h:i A') ?? '—' }}</td>
+                            <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::format($admin->last_login_at, 'M d, Y h:i A') }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     @if (auth('admin')->user()->hasPermission('admins', 'edit'))

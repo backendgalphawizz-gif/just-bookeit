@@ -60,7 +60,7 @@
                             <td class="jb-col-name">{{ $payout->vendor->brand_name }}</td>
                             <td class="jb-col-amount font-semibold">₹{{ number_format($payout->net_amount, 2) }}</td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $payout->status])</td>
-                            <td class="jb-col-date text-sm text-slate-500">{{ $payout->created_at->format('M d, Y') }}</td>
+                            <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($payout->created_at) }}</td>
                             <td class="jb-table-actions-col"><div class="jb-actions"><x-admin.action-btn variant="view" :href="route('admin.payouts.show', $payout)" /></div></td>
                         </tr>
                     @empty

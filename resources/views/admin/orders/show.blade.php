@@ -2,7 +2,7 @@
 
 @section('title', 'Booking '.$order->order_number)
 @section('page_title', 'Booking Detail')
-@section('page_subtitle', 'Booked '.$order->created_at->format('M d, Y · H:i'))
+@section('page_subtitle', 'Booked '.\App\Support\AdminDateTime::format($order->created_at, 'M d, Y · H:i'))
 @section('back_href', route('admin.orders.index'))
 
 @section('header_actions')
@@ -28,7 +28,7 @@
                 @include('admin.components.status-badge', ['status' => $order->status])
             </div>
         </div>
-        <p class="jb-booking-booked-on">Booked on {{ $order->created_at->format('M d, Y · H:i') }}</p>
+        <p class="jb-booking-booked-on">Booked on {{ \App\Support\AdminDateTime::format($order->created_at, 'M d, Y · H:i') }}</p>
     </div>
 
     <div class="jb-booking-layout">
@@ -122,7 +122,7 @@
                                                 <span class="text-xs text-slate-600">
                                                     Assigned: {{ $lineItem->driver->name }}
                                                     @if ($lineItem->driver_assigned_at)
-                                                        · {{ $lineItem->driver_assigned_at->format('M d, H:i') }}
+                                                        · {{ \App\Support\AdminDateTime::format($lineItem->driver_assigned_at, 'M d, H:i') }}
                                                     @endif
                                                 </span>
                                             @endif
@@ -456,7 +456,7 @@
                     <p class="jb-booking-product-meta" style="margin-top:0.5rem">Method: {{ strtoupper(str_replace('_', ' ', $order->payment_method)) }}</p>
                 @endif
                 @if ($order->paid_at)
-                    <p class="jb-booking-product-meta">Paid: {{ $order->paid_at->format('M d, Y · H:i') }}</p>
+                    <p class="jb-booking-product-meta">Paid: {{ \App\Support\AdminDateTime::format($order->paid_at, 'M d, Y · H:i') }}</p>
                 @endif
             </div>
 

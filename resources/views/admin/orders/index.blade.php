@@ -121,7 +121,7 @@
                     @if ($activeFilters->isNotEmpty())
                         Showing filtered results
                     @else
-                        Standalone bookings and multi-vendor checkout orders (one row per checkout)
+                        Standalone bookings and cart checkout orders (one row per checkout)
                     @endif
                 </p>
             </div>
@@ -146,21 +146,48 @@
                 <tbody>
                     @forelse ($orders as $entry)
                         @if ($entry['kind'] === 'checkout')
-                            @php $checkout = $entry['checkout']; @endphp
+                            @php
+                                $checkout = $entry['checkout'];
+                                $vendorCount = (int) ($checkout->sub_orders_count ?? $checkout->subOrders->count());
+                                $uniqueVendors = $checkout->subOrders
+                                    ->filter(fn ($sub) => $sub->vendor)
+                                    ->unique('vendor_id')
+                                    ->values();
+                                $uniqueCategories = $checkout->subOrders
+                                    ->filter(fn ($sub) => $sub->category)
+                                    ->unique('category_id')
+                                    ->values();
+                                $isMultiVendor = $uniqueVendors->count() > 1
+                                    || ($uniqueVendors->isEmpty() && $vendorCount > 1);
+                            @endphp
                             <tr>
                                 @include('admin.partials.table-index-cell', ['paginator' => $orders])
                                 <td class="jb-col-id">
                                     <span class="jb-orders-id">{{ $checkout->order_number }}</span>
-                                    <span class="jb-order-type-badge jb-order-type-badge--rental" style="display:block;margin-top:0.25rem;font-size:0.65rem">Multi-vendor</span>
+                                    @if ($isMultiVendor)
+                                        <span class="jb-order-type-badge jb-order-type-badge--rental" style="display:block;margin-top:0.25rem;font-size:0.65rem">Multi-vendor</span>
+                                    @endif
                                 </td>
                                 <td class="jb-col-name">
                                     <span class="jb-orders-name">{{ $checkout->customer->name }}</span>
                                 </td>
                                 <td class="jb-col-name">
-                                    <span class="jb-orders-name">{{ $checkout->sub_orders_count }} vendor{{ $checkout->sub_orders_count === 1 ? '' : 's' }}</span>
+                                    @if ($uniqueVendors->count() === 1)
+                                        <span class="jb-orders-name">{{ $uniqueVendors->first()->vendor->brand_name }}</span>
+                                    @elseif ($vendorCount > 0)
+                                        <span class="jb-orders-name">{{ $vendorCount }} vendors</span>
+                                    @else
+                                        <span class="jb-orders-name">—</span>
+                                    @endif
                                 </td>
                                 <td>
-                                    <span class="jb-orders-category">Multiple</span>
+                                    @if ($uniqueCategories->count() === 1)
+                                        <span class="jb-orders-category">{{ $uniqueCategories->first()->category->name }}</span>
+                                    @elseif ($uniqueCategories->count() > 1)
+                                        <span class="jb-orders-category">Multiple</span>
+                                    @else
+                                        <span class="jb-orders-category">—</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="jb-orders-type">Checkout</span>
@@ -175,7 +202,7 @@
                                     @include('admin.components.status-badge', ['status' => $checkout->status, 'label' => $checkout->statusLabel()])
                                 </td>
                                 <td class="jb-col-date">
-                                    <span class="jb-orders-date">{{ $checkout->created_at->format('M d, Y') }}</span>
+                                    <span class="jb-orders-date">{{ \App\Support\AdminDateTime::formatDate($checkout->created_at) }}</span>
                                 </td>
                                 <td class="jb-table-actions-col">
                                     <div class="jb-actions">
@@ -212,7 +239,7 @@
                                     @include('admin.components.status-badge', ['status' => $order->status])
                                 </td>
                                 <td class="jb-col-date">
-                                    <span class="jb-orders-date">{{ $order->created_at->format('M d, Y') }}</span>
+                                    <span class="jb-orders-date">{{ \App\Support\AdminDateTime::formatDate($order->created_at) }}</span>
                                 </td>
                                 <td class="jb-table-actions-col">
                                     <div class="jb-actions">

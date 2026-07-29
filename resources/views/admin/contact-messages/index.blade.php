@@ -72,7 +72,7 @@
                                     <span class="jb-badge bg-emerald-100 text-emerald-800">Read</span>
                                 @endif
                             </td>
-                            <td class="jb-col-date text-sm text-slate-500">{{ $item->created_at?->format('M d, Y h:i A') }}</td>
+                            <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::format($item->created_at, 'M d, Y h:i A') }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.contact-messages.show', $item)" />

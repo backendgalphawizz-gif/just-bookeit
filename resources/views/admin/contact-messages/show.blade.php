@@ -54,7 +54,7 @@
                 <div>
                     <a href="mailto:{{ $message->email }}" class="jb-contact-msg__email">{{ $message->email }}</a>
                     <p class="jb-contact-msg__from-meta">
-                        {{ $message->created_at?->format('D, M j, Y · g:i A') ?? '—' }}
+                        {{ \App\Support\AdminDateTime::format($message->created_at, 'D, M j, Y · g:i A') }}
                     </p>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                     </div>
                     <div>
                         <dt>Received</dt>
-                        <dd>{{ $message->created_at?->format('M d, Y h:i A') ?? '—' }}</dd>
+                        <dd>{{ \App\Support\AdminDateTime::format($message->created_at, 'M d, Y h:i A') }}</dd>
                     </div>
                     <div>
                         <dt>Read by</dt>
@@ -95,7 +95,7 @@
                             @if ($message->read_at)
                                 {{ $message->readByAdmin?->name ?? 'Admin' }}
                                 <span class="block text-xs font-normal text-slate-500 mt-0.5">
-                                    {{ $message->read_at->format('M d, Y h:i A') }}
+                                    {{ \App\Support\AdminDateTime::format($message->read_at, 'M d, Y h:i A') }}
                                 </span>
                             @else
                                 Not read yet
