@@ -7,10 +7,17 @@
 @section('content')
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
         @foreach ($stat_cards as $card)
-            <div class="jb-stat-card">
-                <p class="jb-stat-label">{{ $card['label'] }}</p>
-                <p class="jb-stat-value">{{ $card['value'] }}</p>
-            </div>
+            @if (! empty($card['url']))
+                <a href="{{ $card['url'] }}" class="jb-stat-card jb-stat-card--link">
+                    <p class="jb-stat-label">{{ $card['label'] }}</p>
+                    <p class="jb-stat-value">{{ $card['value'] }}</p>
+                </a>
+            @else
+                <div class="jb-stat-card">
+                    <p class="jb-stat-label">{{ $card['label'] }}</p>
+                    <p class="jb-stat-value">{{ $card['value'] }}</p>
+                </div>
+            @endif
         @endforeach
     </div>
 

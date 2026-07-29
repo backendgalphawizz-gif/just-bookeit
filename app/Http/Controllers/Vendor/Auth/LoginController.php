@@ -259,7 +259,7 @@ class LoginController extends VendorController
             'bank_name' => $data['bank_name'],
             'ifsc_code' => strtoupper($data['ifsc_code']),
             'account_type' => $data['account_type'],
-            'status' => 'active',
+            'status' => 'pending',
             'aadhar_front_path' => StoresUploadedFiles::store($request->file('aadhar_front'), 'vendors/aadhar/front'),
             'aadhar_back_path' => StoresUploadedFiles::store($request->file('aadhar_back'), 'vendors/aadhar/back'),
             'cover_image_path' => $request->file('cover_image')

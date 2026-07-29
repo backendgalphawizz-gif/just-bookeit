@@ -46,6 +46,7 @@
                     <label class="jb-label" for="orders-filter-status">Status</label>
                     <select id="orders-filter-status" name="status" class="jb-select">
                         <option value="">All statuses</option>
+                        <option value="_in_progress_" @selected(request('status') === '_in_progress_')">In progress</option>
                         @foreach (\App\Models\Order::STATUSES as $status)
                             <option value="{{ $status }}" @selected(request('status') === $status)>
                                 {{ \App\Models\Order::statusLabelFor($status) }}

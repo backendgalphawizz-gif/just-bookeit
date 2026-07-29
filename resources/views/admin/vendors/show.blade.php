@@ -100,14 +100,6 @@
             </x-admin.actor-profile-header>
             <div class="jb-doc-image-grid mt-4">
                 <div>
-                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Profile photo</p>
-                    @if ($vendor->profileImageUrl())
-                        <img src="{{ $vendor->profileImageUrl() }}" alt="Profile photo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
-                    @else
-                        <p class="text-sm text-slate-500">Not uploaded</p>
-                    @endif
-                </div>
-                <div>
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
                     @if ($vendor->shopLogoUrl())
                         <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">

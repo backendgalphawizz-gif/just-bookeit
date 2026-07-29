@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Vendor;
 use App\Models\Category;
 use App\Models\PortfolioItem;
 use App\Models\PortfolioItemImage;
+use App\Services\Admin\AdminInboxNotificationService;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
 use App\Support\ProductDamageDeductionRules;
@@ -20,6 +21,10 @@ class ProductController extends VendorController
 {
     use AppliesListDateFilter;
     use ManagesPortfolioProducts;
+
+    public function __construct(
+        protected AdminInboxNotificationService $adminInboxNotifications
+    ) {}
 
     protected array $typeMap = [
         'fashion-designer' => 'Fashion Designer',
@@ -175,6 +180,8 @@ class ProductController extends VendorController
             $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
         }
 
+        $this->adminInboxNotifications->notifyProductPendingApproval($product);
+
         return redirect()->route('vendor.products.index', ['type' => $type])
             ->with('success', 'Product submitted for approval.');
     }
@@ -300,6 +307,8 @@ class ProductController extends VendorController
         if ($isRental) {
             $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? [], true);
         }
+
+        $this->adminInboxNotifications->notifyProductPendingApproval($product->fresh(), true);
 
         $type = $product->category?->slug ?? 'fashion-designer';
 

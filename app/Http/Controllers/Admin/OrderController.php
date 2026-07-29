@@ -51,8 +51,14 @@ class OrderController extends AdminController
 
         if ($request->filled('status')) {
             $status = $request->string('status')->toString();
-            $standaloneQuery->where('status', $status);
-            $checkoutQuery->where('status', $status);
+
+            if ($status === '_in_progress_') {
+                $standaloneQuery->whereIn('status', Order::IN_PROGRESS_STATUSES);
+                $checkoutQuery->whereIn('status', Order::IN_PROGRESS_STATUSES);
+            } else {
+                $standaloneQuery->where('status', $status);
+                $checkoutQuery->where('status', $status);
+            }
         }
 
         if ($request->filled('payment_status')) {

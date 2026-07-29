@@ -12,7 +12,7 @@
     @include('admin.partials.admin-theme-vars')
     @stack('styles')
 </head>
-<body class="jb-admin-shell" x-data="{ sidebarOpen: false }">
+<body class="jb-admin-shell" x-data="{ sidebarOpen: false, notificationOpen: false }">
     <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden" @click="sidebarOpen = false"></div>
 
     <aside
@@ -86,6 +86,7 @@
                     <x-admin.button variant="secondary" size="sm" :href="$backHref" class="shrink-0">{{ $backLabel }}</x-admin.button>
                 @endif
                 @yield('header_actions')
+                @include('admin.partials.notification-picker')
                 @include('admin.partials.profile-menu')
             </div>
         </header>

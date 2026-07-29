@@ -378,6 +378,18 @@
         box-shadow: 0 0 0 4px color-mix(in srgb, var(--jb-primary, #be123c) 12%, transparent);
     }
 
+    .jb-password-wrap {
+        @apply relative;
+    }
+
+    .jb-input--password {
+        @apply pr-11;
+    }
+
+    .jb-password-toggle {
+        @apply absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:text-slate-600;
+    }
+
     .jb-btn {
         @apply inline-flex min-h-[2.5rem] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold leading-none transition focus:outline-none focus:ring-4 focus:ring-rose-500/20;
     }
@@ -635,6 +647,10 @@
     .jb-stat-card::before {
         content: '';
         @apply absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-rose-500 to-rose-400;
+    }
+
+    a.jb-stat-card--link {
+        @apply block no-underline transition hover:border-rose-200 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-400;
     }
 
     .jb-stat-label {

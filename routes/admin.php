@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\InboxNotificationController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\BannerController;
@@ -43,6 +44,11 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
 
         Route::get('profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
         Route::put('profile', [AdminProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('inbox-notifications', [InboxNotificationController::class, 'index'])->name('inbox-notifications.index');
+        Route::get('inbox-notifications/{inboxNotification}/open', [InboxNotificationController::class, 'open'])->name('inbox-notifications.open');
+        Route::post('inbox-notifications/{inboxNotification}/read', [InboxNotificationController::class, 'read'])->name('inbox-notifications.read');
+        Route::post('inbox-notifications/read-all', [InboxNotificationController::class, 'readAll'])->name('inbox-notifications.read-all');
 
         Route::middleware('admin.module')->group(function () {
             Route::get('list-export/{module}', ListExportController::class)

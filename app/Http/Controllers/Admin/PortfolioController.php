@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\PortfolioItem;
 use App\Models\PortfolioItemImage;
 use App\Models\Vendor;
+use App\Services\Admin\AdminInboxNotificationService;
 use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
@@ -19,6 +20,10 @@ class PortfolioController extends AdminController
 {
     use AppliesListDateFilter;
     use ManagesPortfolioProducts;
+
+    public function __construct(
+        protected AdminInboxNotificationService $adminInboxNotifications
+    ) {}
 
     protected string $permissionModule = 'portfolio';
 
@@ -132,6 +137,8 @@ class PortfolioController extends AdminController
             $this->authorizeVendorCity($portfolio->vendor);
         }
 
+        $this->adminInboxNotifications->dismissForProduct($portfolio);
+
         return view('admin.portfolio.show', compact('portfolio'));
     }
 
@@ -243,6 +250,8 @@ class PortfolioController extends AdminController
             'reviewed_at' => now(),
         ]);
 
+        $this->adminInboxNotifications->dismissForProduct($portfolio);
+
         return back()->with('success', 'Product approved.');
     }
 
@@ -259,6 +268,8 @@ class PortfolioController extends AdminController
             'rejection_reason' => $data['rejection_reason'],
             'reviewed_at' => now(),
         ]);
+
+        $this->adminInboxNotifications->dismissForProduct($portfolio);
 
         return back()->with('success', 'Product rejected.');
     }

@@ -4094,4 +4094,211 @@
             word-break: break-word;
         }
     }
+
+    .jb-password-wrap {
+        position: relative;
+    }
+
+    .jb-input--password {
+        padding-right: 2.75rem;
+    }
+
+    .jb-password-toggle {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        border-radius: 0.375rem;
+        padding: 0.25rem;
+        color: #94a3b8;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        transition: color 0.15s ease;
+    }
+
+    .jb-password-toggle:hover {
+        color: #475569;
+    }
+
+    .jb-notification-picker {
+        position: relative;
+    }
+
+    .jb-notification-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .jb-notification-badge {
+        position: absolute;
+        top: -0.35rem;
+        right: -0.35rem;
+        min-width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 9999px;
+        background: #e11d48;
+        color: #fff;
+        font-size: 0.625rem;
+        font-weight: 700;
+        line-height: 1.1rem;
+        text-align: center;
+        padding: 0 0.25rem;
+    }
+
+    .jb-notification-panel {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.5rem);
+        z-index: 50;
+        width: min(22rem, calc(100vw - 2rem));
+        max-height: 24rem;
+        display: flex;
+        flex-direction: column;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    }
+
+    .jb-notification-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .jb-notification-panel-title {
+        margin: 0;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .jb-notification-mark-all {
+        border: 0;
+        background: transparent;
+        color: #be123c;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .jb-notification-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .jb-notification-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+    .jb-notification-item.is-unread {
+        background: #fff1f2;
+    }
+
+    .jb-notification-item-link {
+        flex: 1;
+        min-width: 0;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .jb-notification-item-title {
+        margin: 0;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .jb-notification-item-message {
+        margin: 0.25rem 0 0;
+        font-size: 0.75rem;
+        color: #64748b;
+        line-height: 1.45;
+    }
+
+    .jb-notification-item-time {
+        margin: 0.35rem 0 0;
+        font-size: 0.6875rem;
+        color: #94a3b8;
+    }
+
+    .jb-notification-dot {
+        width: 0.65rem;
+        height: 0.65rem;
+        margin-top: 0.35rem;
+        border: 0;
+        border-radius: 9999px;
+        background: #e11d48;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .jb-notification-empty {
+        padding: 2rem 1rem;
+        text-align: center;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+
+    .jb-notification-panel-foot {
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #f1f5f9;
+        text-align: center;
+    }
+
+    .jb-notification-view-all {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #be123c;
+        text-decoration: none;
+    }
+
+    .jb-notification-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+    }
+
+    .jb-notification-row.is-unread {
+        background: #fff1f2;
+    }
+
+    .jb-notification-row-title {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .jb-notification-row-message {
+        margin: 0.35rem 0 0;
+        font-size: 0.85rem;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    .jb-notification-row-time {
+        margin: 0.35rem 0 0;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .jb-notification-row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
 </style>

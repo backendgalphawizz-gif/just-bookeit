@@ -358,6 +358,10 @@ class Order extends Model
             return '—';
         }
 
+        if ($status === '_in_progress_') {
+            return 'In progress';
+        }
+
         return self::STATUS_LABELS[$status] ?? str_replace('_', ' ', ucfirst($status));
     }
 

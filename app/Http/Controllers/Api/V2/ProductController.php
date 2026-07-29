@@ -7,6 +7,7 @@ use App\Models\PortfolioItem;
 use App\Models\PortfolioItemDamageDeduction;
 use App\Models\PortfolioItemImage;
 use App\Models\PortfolioItemVariant;
+use App\Services\Admin\AdminInboxNotificationService;
 use App\Support\Api\VendorApiPresenter;
 use App\Support\AppliesListDateFilter;
 use App\Support\ProductDamageDeductionRules;
@@ -129,6 +130,8 @@ class ProductController extends VendorApiController
         $this->syncDamageDeductions($product, $data['damage_deductions'] ?? []);
         $product->refreshDressPricingFromVariants();
 
+        app(AdminInboxNotificationService::class)->notifyProductPendingApproval($product);
+
         return $this->success([
             'product' => VendorApiPresenter::productDetail($product->load(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions'])),
         ], 'Product submitted for approval.', 201);
@@ -231,6 +234,8 @@ class ProductController extends VendorApiController
         if (array_key_exists('damage_deductions', $data)) {
             $this->syncDamageDeductions($product, $data['damage_deductions'] ?? [], true);
         }
+
+        app(AdminInboxNotificationService::class)->notifyProductPendingApproval($product->fresh(), true);
 
         return $this->success([
             'product' => VendorApiPresenter::productDetail($product->fresh(['category', 'subcategory.parent', 'vendor', 'images', 'variants', 'damageDeductions'])),
