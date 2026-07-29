@@ -9,6 +9,13 @@
     <h1 class="vp-auth-title">Verify OTP</h1>
     <p class="vp-auth-sub">We've sent a 4-digit code to <strong>{{ $maskedMobile }}</strong></p>
 
+    @if (! empty($displayOtp))
+        <div class="vp-otp-onscreen" role="status" aria-live="polite">
+            <p class="vp-otp-onscreen-label">Your OTP (SMS gateway not connected)</p>
+            <p class="vp-otp-onscreen-code">{{ $displayOtp }}</p>
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('vendor.verify-otp.submit') }}" class="vp-auth-form" id="vp-otp-form">
         @csrf
         <div class="vp-field">

@@ -81,6 +81,8 @@ class RefundController extends AdminController
             $this->authorizeOrderCity($refund->order);
         }
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForRefund($refund);
+
         return view('admin.refunds.show', compact('refund'));
     }
 

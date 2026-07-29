@@ -4,6 +4,13 @@
 
 @section('content')
     <x-web.auth-shell title="Get Verified" subtitle="Enter the 4-digit code sent to +91 ******{{ substr($otpSession['mobile'], -3) }}" :centered="true">
+        @if (! empty($displayOtp))
+            <div class="jbw-otp-onscreen" role="status" aria-live="polite">
+                <p class="jbw-otp-onscreen-label">Your OTP (SMS gateway not connected)</p>
+                <p class="jbw-otp-onscreen-code">{{ $displayOtp }}</p>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('web.verify-otp.submit') }}" class="jbw-form-stack jbw-form-stack--otp" id="otp-form">
             @csrf
             <div class="jbw-otp-row">

@@ -5825,6 +5825,30 @@ a { color: inherit; }
 }
 .jbw-auth-timer { color: var(--c-primary); font-weight: 700; font-variant-numeric: tabular-nums; }
 
+.jbw-otp-onscreen {
+    margin: 0 0 1.25rem;
+    padding: 0.95rem 1rem;
+    border-radius: 0.9rem;
+    border: 1px dashed #f15a24;
+    background: #fff4ef;
+    text-align: center;
+}
+.jbw-otp-onscreen-label {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9a3412;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.jbw-otp-onscreen-code {
+    margin: 0.35rem 0 0;
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: 0.35em;
+    color: #9a3412;
+}
+
 .jbw-otp-row {
     display: flex; justify-content: center; align-items: center;
     gap: clamp(0.75rem, 3vw, 1.125rem); margin: 0 0 1.625rem;

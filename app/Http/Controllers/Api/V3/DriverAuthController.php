@@ -87,6 +87,7 @@ class DriverAuthController extends ApiController
         $driver->save();
 
         StoresActorFcmToken::saveForActor($driver, $fcmToken);
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyDriverPendingApproval($driver);
 
         return $this->success([
             'user' => $this->otp->formatActor(OtpService::ACTOR_DRIVER, $driver),

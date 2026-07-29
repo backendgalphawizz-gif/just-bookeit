@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Models\ContactMessage;
 use App\Models\PlatformSetting;
+use App\Services\Admin\AdminInboxNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -32,13 +33,15 @@ class ContactController extends WebController
             'inquiry_type.in' => 'Please select a valid inquiry type.',
         ]);
 
-        ContactMessage::query()->create([
+        $message = ContactMessage::query()->create([
             'inquiry_type' => $validated['inquiry_type'],
             'email' => $validated['email'],
             'subject' => $validated['subject'],
             'message' => $validated['message'],
             'status' => ContactMessage::STATUS_UNREAD,
         ]);
+
+        app(AdminInboxNotificationService::class)->notifyContactMessage($message);
 
         return redirect()
             ->route('web.contact')

@@ -594,22 +594,30 @@
         display: grid;
         gap: 1rem;
         margin-top: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
     }
 
-    @media (min-width: 640px) {
-        .jb-doc-image-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+    .jb-doc-image-grid > div {
+        min-width: 0;
+    }
+
+    .jb-doc-image-thumbs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
     }
 
     .jb-doc-image {
-        width: 100%;
-        max-height: 20rem;
+        display: block;
+        width: 9.5rem;
+        height: 9.5rem;
+        max-width: 100%;
         border-radius: 0.75rem;
         border: 1px solid rgb(226 232 240);
         background: rgb(248 250 252);
-        padding: 0.5rem;
         object-fit: contain;
+        object-position: center;
+        cursor: zoom-in;
     }
 
     .jb-sr-only {

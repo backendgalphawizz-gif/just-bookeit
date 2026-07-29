@@ -44,6 +44,8 @@ class DisputeController extends ApiController
             ]);
         }
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyDisputeRaised($dispute);
+
         return $this->success([
             'dispute' => $this->presentDispute($dispute->fresh(['category', 'messages'])),
         ], 'Dispute raised successfully.', 201);

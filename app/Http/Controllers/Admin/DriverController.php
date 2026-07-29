@@ -78,6 +78,8 @@ class DriverController extends AdminController
             'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
         ]);
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForDriver($driver);
+
         return view('admin.drivers.show', compact('driver'));
     }
 
@@ -157,6 +159,8 @@ class DriverController extends AdminController
             $previousStatus,
             'active',
         );
+
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForDriver($driver);
 
         return back()->with('success', $wasBlocked
             ? "Driver {$driver->name} unblocked."

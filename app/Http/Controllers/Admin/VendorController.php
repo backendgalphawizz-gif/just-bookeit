@@ -87,6 +87,8 @@ class VendorController extends AdminController
             'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
         ]);
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForVendor($vendor);
+
         return view('admin.vendors.show', compact('vendor'));
     }
 
@@ -164,6 +166,8 @@ class VendorController extends AdminController
             $previousStatus,
             'active',
         );
+
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForVendor($vendor);
 
         return back()->with('success', "Vendor {$vendor->brand_name} approved.");
     }

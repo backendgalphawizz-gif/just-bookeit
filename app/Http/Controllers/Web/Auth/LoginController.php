@@ -59,11 +59,8 @@ class LoginController extends WebController
             'mobile' => $payload['mobile'],
             'type' => $data['type'],
             'sent_at' => now()->timestamp,
+            'otp' => $payload['otp'] ?? null,
         ]);
-
-        if (config('app.debug') && isset($payload['otp'])) {
-            $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
-        }
 
         return redirect()->route('web.verify-otp');
     }
@@ -80,7 +77,9 @@ class LoginController extends WebController
 
         return view('web.auth.verify-otp', [
             'otpSession' => $otpSession,
+            'displayOtp' => $otpSession['otp'] ?? null,
             'resendIn' => max(0, $cooldown - $elapsed),
+            'resendCooldown' => $cooldown,
         ]);
     }
 
@@ -115,11 +114,8 @@ class LoginController extends WebController
             'mobile' => $payload['mobile'],
             'type' => $otpSession['type'],
             'sent_at' => now()->timestamp,
+            'otp' => $payload['otp'] ?? null,
         ]);
-
-        if (config('app.debug') && isset($payload['otp'])) {
-            $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
-        }
 
         return redirect()
             ->route('web.verify-otp')

@@ -254,13 +254,15 @@ class VendorWalletService
                 );
             }
 
-            return VendorWithdrawalRequest::query()->create([
+            return tap(VendorWithdrawalRequest::query()->create([
                 'request_code' => CodeGenerator::withdrawalRequestCode(),
                 'vendor_id' => $vendor->id,
                 'amount' => $amount,
                 'status' => VendorWithdrawalRequest::STATUS_PENDING,
                 'vendor_note' => filled($vendorNote) ? trim($vendorNote) : null,
-            ]);
+            ]), function (VendorWithdrawalRequest $withdrawal): void {
+                app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyWithdrawalRequested($withdrawal);
+            });
         });
     }
 

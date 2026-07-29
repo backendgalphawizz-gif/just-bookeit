@@ -72,7 +72,7 @@ class OtpService
             'message' => $type === self::TYPE_LOGIN
                 ? 'OTP sent for login.'
                 : 'OTP sent for registration.',
-            ...(config('app.debug') ? ['otp' => $otp] : []),
+            ...(config('api.otp_show_on_screen', true) || config('app.debug') ? ['otp' => $otp] : []),
         ];
     }
 

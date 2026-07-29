@@ -54,11 +54,7 @@ class LoginController extends VendorController
             return back()->withErrors($exception->errors())->withInput();
         }
 
-        $this->storeVendorOtpSession($request, $payload['mobile'], $data['type']);
-
-        if (config('app.debug') && isset($payload['otp'])) {
-            $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
-        }
+        $this->storeVendorOtpSession($request, $payload['mobile'], $data['type'], $payload['otp'] ?? null);
 
         return redirect()
             ->route('vendor.verify-otp')
@@ -92,11 +88,7 @@ class LoginController extends VendorController
             return back()->withErrors($exception->errors());
         }
 
-        $this->storeVendorOtpSession($request, $payload['mobile'], $otpSession['type']);
-
-        if (config('app.debug') && isset($payload['otp'])) {
-            $request->session()->flash('info', 'Dev OTP: '.$payload['otp']);
-        }
+        $this->storeVendorOtpSession($request, $payload['mobile'], $otpSession['type'], $payload['otp'] ?? null);
 
         return redirect()
             ->route('vendor.verify-otp')
@@ -115,6 +107,7 @@ class LoginController extends VendorController
 
         return view('vendor.auth.verify-otp', [
             'otpSession' => $otpSession,
+            'displayOtp' => $otpSession['otp'] ?? null,
             'maskedMobile' => '+91 ******'.substr($otpSession['mobile'], -3),
             'resendIn' => max(0, $cooldown - $elapsed),
             'resendCooldown' => $cooldown,
@@ -276,6 +269,8 @@ class LoginController extends VendorController
                 : null,
         ]);
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyVendorPendingApproval($vendor);
+
         $request->session()->forget('vendor_register');
         Auth::guard('vendor')->login($vendor);
         $request->session()->regenerate();
@@ -297,12 +292,13 @@ class LoginController extends VendorController
         return redirect()->route('vendor.login')->with('success', 'Logged out successfully.');
     }
 
-    protected function storeVendorOtpSession(Request $request, string $mobile, string $type): void
+    protected function storeVendorOtpSession(Request $request, string $mobile, string $type, ?string $otp = null): void
     {
         $request->session()->put('vendor_otp', [
             'mobile' => $mobile,
             'type' => $type,
             'sent_at' => now()->timestamp,
+            'otp' => $otp,
         ]);
     }
 

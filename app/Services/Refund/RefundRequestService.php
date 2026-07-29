@@ -44,6 +44,7 @@ class RefundRequestService
         ]);
 
         app(VendorWalletService::class)->debitForRefund($refund);
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyRefundRequested($refund);
 
         return $refund;
     }

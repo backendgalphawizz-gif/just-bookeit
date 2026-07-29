@@ -2,7 +2,7 @@
 
 @section('title', 'Notifications')
 @section('page_title', 'Notifications')
-@section('page_subtitle', 'Product approval alerts from vendors')
+@section('page_subtitle', 'Product approvals, support, vendors, refunds, and more')
 @section('back_href', route('admin.dashboard'))
 
 @section('content')
@@ -10,7 +10,7 @@
         <div class="jb-card-header jb-card-header--stack">
             <div>
                 <p class="jb-card-header-title">{{ $unreadCount }} unread notification{{ $unreadCount === 1 ? '' : 's' }}</p>
-                <p class="text-sm text-slate-500">Read notifications are cleared automatically.</p>
+                <p class="text-sm text-slate-500">Opening a notification clears it automatically.</p>
             </div>
             @if ($unreadCount > 0)
                 <form method="POST" action="{{ route('admin.inbox-notifications.read-all') }}">

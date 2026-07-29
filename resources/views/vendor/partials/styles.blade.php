@@ -3508,6 +3508,29 @@ img[data-vp-variant-thumb][hidden] {
     line-height: 1.5;
     text-align: left !important;
 }
+.vp-otp-onscreen {
+    margin: 0 0 1.25rem;
+    padding: 0.9rem 1rem;
+    border-radius: 0.85rem;
+    border: 1px dashed #f97316;
+    background: #fff7ed;
+    text-align: center;
+}
+.vp-otp-onscreen-label {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #9a3412;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.vp-otp-onscreen-code {
+    margin: 0.35rem 0 0;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: 0.35em;
+    color: #9a3412;
+}
 .vp-auth-form { text-align: left; }
 .vp-auth-card--login .vp-auth-form .vp-field {
     margin-bottom: 1.5rem;

@@ -71,6 +71,8 @@ class WithdrawalController extends AdminController
             $this->authorizeVendorCity($withdrawal->vendor);
         }
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForWithdrawal($withdrawal);
+
         return view('admin.withdrawals.show', [
             'withdrawal' => $withdrawal,
             'available' => $this->wallet->availableForWithdrawal($withdrawal->vendor),

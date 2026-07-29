@@ -102,7 +102,7 @@
                 <div>
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop logo</p>
                     @if ($vendor->shopLogoUrl())
-                        <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                        <img src="{{ $vendor->shopLogoUrl() }}" alt="Shop logo" class="jb-doc-image panel-lightbox-trigger">
                     @else
                         <p class="text-sm text-slate-500">Not uploaded</p>
                     @endif
@@ -110,9 +110,9 @@
                 <div class="sm:col-span-2">
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Shop images</p>
                     @if ($vendor->shopImageUrls() !== [])
-                        <div class="flex flex-wrap gap-3">
+                        <div class="jb-doc-image-thumbs">
                             @foreach ($vendor->shopImageUrls() as $imageUrl)
-                                <img src="{{ $imageUrl }}" alt="Shop image" class="jb-doc-image panel-lightbox-trigger" style="max-width:10rem">
+                                <img src="{{ $imageUrl }}" alt="Shop image" class="jb-doc-image panel-lightbox-trigger">
                             @endforeach
                         </div>
                     @else

@@ -5,6 +5,9 @@ return [
 
     'otp_resend_cooldown_seconds' => (int) env('API_OTP_RESEND_COOLDOWN_SECONDS', 48),
 
+    // Show OTP on screen / in API when SMS gateway is not configured.
+    'otp_show_on_screen' => filter_var(env('OTP_SHOW_ON_SCREEN', true), FILTER_VALIDATE_BOOL),
+
     'driver_delivery_payout' => env('DRIVER_DELIVERY_PAYOUT') !== null
         ? (float) env('DRIVER_DELIVERY_PAYOUT')
         : null,

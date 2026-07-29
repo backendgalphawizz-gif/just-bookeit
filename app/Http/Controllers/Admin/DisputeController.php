@@ -90,6 +90,8 @@ class DisputeController extends AdminController
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForDispute($dispute);
+
         return view('admin.disputes.show', compact('dispute'));
     }
 

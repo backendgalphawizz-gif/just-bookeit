@@ -44,6 +44,8 @@ class DisputeController extends WebController
             ]);
         }
 
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyDisputeRaised($dispute);
+
         return redirect()
             ->route('web.bookings.dispute.show', $order)
             ->with('success', 'Dispute raised. Our team will review it under '.$order->category?->name.'.');

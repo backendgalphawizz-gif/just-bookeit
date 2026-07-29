@@ -11,6 +11,20 @@ class AdminInboxNotification extends Model
 
     public const TYPE_PRODUCT_RESUBMITTED = 'product_resubmitted';
 
+    public const TYPE_CONTACT_MESSAGE = 'contact_message';
+
+    public const TYPE_SUPPORT_TICKET = 'support_ticket';
+
+    public const TYPE_VENDOR_PENDING = 'vendor_pending';
+
+    public const TYPE_DRIVER_PENDING = 'driver_pending';
+
+    public const TYPE_REFUND_REQUESTED = 'refund_requested';
+
+    public const TYPE_WITHDRAWAL_REQUESTED = 'withdrawal_requested';
+
+    public const TYPE_DISPUTE_RAISED = 'dispute_raised';
+
     protected $fillable = [
         'type',
         'portfolio_item_id',

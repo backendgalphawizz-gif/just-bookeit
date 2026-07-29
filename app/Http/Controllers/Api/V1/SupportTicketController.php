@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Models\SupportTicket;
+use App\Services\Admin\AdminInboxNotificationService;
 use App\Support\AdminValidationRules;
 use App\Support\Api\CustomerApiPresenter;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +42,8 @@ class SupportTicketController extends ApiController
             ...$data,
             'status' => 'pending',
         ]);
+
+        app(AdminInboxNotificationService::class)->notifySupportTicket($ticket);
 
         return $this->success([
             'ticket' => CustomerApiPresenter::supportTicket($ticket),

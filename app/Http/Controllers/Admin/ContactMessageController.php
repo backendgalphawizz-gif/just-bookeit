@@ -47,6 +47,7 @@ class ContactMessageController extends AdminController
     {
         $admin = auth('admin')->user();
         $contactMessage->markAsRead($admin);
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForContactMessage($contactMessage);
 
         return view('admin.contact-messages.show', [
             'message' => $contactMessage->fresh('readByAdmin'),
