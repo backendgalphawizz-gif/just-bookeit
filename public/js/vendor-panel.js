@@ -21,7 +21,7 @@
         text: (v) => v.replace(/[^\p{L}\p{N}\s.,'!?&()\-:@#%/\\[\]\n\r]/gu, ''),
         integer: (v) => v.replace(/\D/g, ''),
         gst: (v) => v.replace(/[^0-9A-Za-z]/g, '').toUpperCase().slice(0, 15),
-        'account-number': (v) => v.replace(/\D/g, '').slice(0, 20),
+        'account-number': (v) => v.replace(/\D/g, '').slice(0, 18),
         ifsc: (v) => v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 11),
         email: (v) => v.replace(/[^\w.@+\-]/g, '').slice(0, 255),
         otp: (v) => v.replace(/\D/g, '').slice(0, 4),

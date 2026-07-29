@@ -476,12 +476,22 @@
             @if (auth('admin')->user()->hasPermission('orders', 'edit'))
                 <div class="jb-booking-card jb-booking-manage" style="margin-bottom: 15px;">
                     <h3 class="jb-booking-card-title">Update status</h3>
+                    @if ($order->status === 'new')
+                        <p class="text-xs text-slate-500 mb-3">
+                            Waiting for customer payment. After COD or online payment, this booking is sent to the designer automatically — no admin “Send to designer” step.
+                        </p>
+                    @endif
                     <form method="POST" action="{{ route('admin.orders.manage', $order) }}" class="jb-booking-manage-form">
                         @csrf
                         <div>
                             <label class="jb-label" for="status">Order status</label>
+                            @php
+                                $manageStatuses = $order->status === 'new'
+                                    ? ['new', 'cancelled']
+                                    : \App\Models\Order::STATUSES;
+                            @endphp
                             <select id="status" name="status" class="jb-select">
-                                @foreach (\App\Models\Order::STATUSES as $s)
+                                @foreach ($manageStatuses as $s)
                                     <option value="{{ $s }}" @selected($order->status === $s)>{{ \App\Models\Order::statusLabelFor($s) }}</option>
                                 @endforeach
                             </select>

@@ -124,10 +124,10 @@ a { color: inherit; }
 }
 
 .jbw-logo--image .jbw-logo-media--header {
-    background: var(--c-navy);
-    border-radius: 10px;
-    padding: 0.3125rem 0.75rem;
-    box-shadow: 0 1px 3px rgb(26 47 56 / 0.12);
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
 }
 
 .jbw-logo-media--footer {

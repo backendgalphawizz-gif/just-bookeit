@@ -93,9 +93,13 @@ class CheckoutPaymentController extends WebController
                 ->with('error', $e->getMessage());
         }
 
-        $message = in_array($summary['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
-            ? 'Advance paid successfully. Remaining amount will be due when the booking is completed.'
-            : 'Payment successful. Your order is awaiting vendor confirmation.';
+        if ($data['payment_method'] === 'cod') {
+            $message = 'Cash on delivery confirmed. Your order was sent to the designers.';
+        } else {
+            $message = in_array($summary['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+                ? 'Advance paid successfully. Remaining amount will be due when the booking is completed.'
+                : 'Payment successful. Your order is awaiting vendor confirmation.';
+        }
 
         return redirect()
             ->route('web.bookings.checkout.show', $checkoutOrder)

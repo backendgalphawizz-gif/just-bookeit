@@ -142,6 +142,8 @@ class PaymentController extends ApiController
 
         $booking->load(['vendor', 'category', 'orderItems.portfolioItem']);
 
+        $isCod = $data['payment_method'] === 'cod';
+
         return $this->success([
             'booking' => CustomerApiPresenter::bookingDetail($booking),
             'payment_summary' => $after,
@@ -151,13 +153,15 @@ class PaymentController extends ApiController
                 'phase' => $after['payment_phase'],
                 'transaction_id' => $request->string('razorpay_payment_id')->toString()
                     ?: 'JBTX'.strtoupper(substr(md5($booking->id.now()->timestamp), 0, 12)),
-                'paid_amount' => (float) $before['payable_now'],
+                'paid_amount' => $isCod ? 0.0 : (float) $before['payable_now'],
                 'amount_paid_total' => (float) $after['amount_paid'],
                 'remaining_amount' => (float) $after['remaining_amount'],
             ],
-        ], in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
-            ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
-            : 'Payment successful. Booking sent to the designer.');
+        ], $isCod
+            ? 'Cash on delivery confirmed. Booking sent to the designer.'
+            : (in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+                ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
+                : 'Payment successful. Booking sent to the designer.'));
     }
 
     public function checkoutSummary(Request $request, CheckoutOrder $checkoutOrder): JsonResponse
@@ -263,6 +267,8 @@ class PaymentController extends ApiController
 
         $checkout->load(['subOrders.vendor', 'subOrders.category', 'subOrders.orderItems']);
 
+        $isCod = $data['payment_method'] === 'cod';
+
         return $this->success([
             'checkout_order' => CustomerApiPresenter::checkoutOrderDetail($checkout),
             'payment_summary' => $after,
@@ -272,13 +278,15 @@ class PaymentController extends ApiController
                 'phase' => $after['payment_phase'],
                 'transaction_id' => $request->string('razorpay_payment_id')->toString()
                     ?: 'JBTX'.strtoupper(substr(md5($checkout->id.now()->timestamp), 0, 12)),
-                'paid_amount' => (float) $before['payable_now'],
+                'paid_amount' => $isCod ? 0.0 : (float) $before['payable_now'],
                 'amount_paid_total' => (float) $after['amount_paid'],
                 'remaining_amount' => (float) $after['remaining_amount'],
             ],
-        ], in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
-            ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
-            : 'Payment successful. Booking sent to the designer.');
+        ], $isCod
+            ? 'Cash on delivery confirmed. Booking sent to the designers.'
+            : (in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+                ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
+                : 'Payment successful. Booking sent to the designer.'));
     }
 
     /**

@@ -52,7 +52,7 @@
                 <label class="vp-label">Aadhaar Card <span class="vp-required">*</span></label>
                 <div class="vp-upload-grid">
                     <label class="vp-upload-tile">
-                        <input type="file" name="aadhar_front" accept="image/jpeg,image/jpg,image/png,image/webp" required class="vp-upload-input" data-vp-preview data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar front">
+                        <input type="file" name="aadhar_front" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview data-vp-required-step="1" data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar front">
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
@@ -61,7 +61,7 @@
                         <span class="vp-upload-name"></span>
                     </label>
                     <label class="vp-upload-tile">
-                        <input type="file" name="aadhar_back" accept="image/jpeg,image/jpg,image/png,image/webp" required class="vp-upload-input" data-vp-preview data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar back">
+                        <input type="file" name="aadhar_back" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview data-vp-required-step="1" data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar back">
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
@@ -70,7 +70,7 @@
                         <span class="vp-upload-name"></span>
                     </label>
                 </div>
-                <p class="vp-field-hint">Use clear JPEG/PNG photos under {{ $maxImageMb }} MB each. Large phone camera shots often fail ??? compress or resize first.</p>
+                <p class="vp-field-hint">Use clear JPEG/PNG photos under {{ $maxImageMb }} MB each. Large phone camera shots often fail — compress or resize first.</p>
                 @error('aadhar_front')<p class="vp-field-error">{{ $message }}</p>@enderror
                 @error('aadhar_back')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
@@ -221,7 +221,8 @@
 
             <div class="vp-field">
                 <label class="vp-label" for="account_no">Account Number <span class="vp-required">*</span></label>
-                <input id="account_no" type="text" name="account_no" class="vp-input @error('account_no') vp-input--error @enderror" value="{{ old('account_no') }}" placeholder=".... .... ...." required inputmode="numeric" maxlength="20" data-vp-restrict="account">
+                <input id="account_no" type="text" name="account_no" class="vp-input @error('account_no') vp-input--error @enderror" value="{{ old('account_no') }}" placeholder="9–18 digits" required inputmode="numeric" minlength="9" maxlength="18" pattern="[0-9]{9,18}" data-vp-restrict="account-number" autocomplete="off">
+                <p class="vp-field-hint">Enter 9–18 digits only. No spaces or letters.</p>
                 @error('account_no')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
 
@@ -233,7 +234,8 @@
 
             <div class="vp-field">
                 <label class="vp-label" for="ifsc_code">IFSC Code <span class="vp-required">*</span></label>
-                <input id="ifsc_code" type="text" name="ifsc_code" class="vp-input @error('ifsc_code') vp-input--error @enderror" value="{{ old('ifsc_code') }}" placeholder="SBIN0000001" required maxlength="11" data-vp-restrict="ifsc" style="text-transform:uppercase">
+                <input id="ifsc_code" type="text" name="ifsc_code" class="vp-input @error('ifsc_code') vp-input--error @enderror" value="{{ old('ifsc_code') }}" placeholder="SBIN0000001" required minlength="11" maxlength="11" pattern="[A-Za-z]{4}0[A-Za-z0-9]{6}" data-vp-restrict="ifsc" style="text-transform:uppercase" autocomplete="off">
+                <p class="vp-field-hint">11 characters, e.g. SBIN0001234</p>
                 @error('ifsc_code')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
 
@@ -279,7 +281,6 @@
     if (!wizard || !form) return;
 
     const total = 3;
-    const registerUrl = @json(route('vendor.register'));
     let step = Number(wizard.dataset.step || 1);
 
     const stepLabel = document.getElementById('vp-register-step-label');
@@ -296,6 +297,7 @@
         stepInput.value = String(step);
         stepLabel.textContent = 'Step ' + step + ' of ' + total;
         progressFill.style.width = ((step / total) * 100) + '%';
+        progressFill.parentElement.setAttribute('aria-valuenow', String(step));
 
         const left = total - step;
         remainingEl.textContent = left === 0
@@ -310,15 +312,40 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    function fieldError(field, message) {
+        field.setCustomValidity(message || '');
+        if (message) {
+            field.reportValidity();
+        }
+    }
+
     function validateCurrentStep() {
         const panel = wizard.querySelector('.vp-register-panel[data-step="' + step + '"]');
         if (!panel) return true;
 
         const fields = panel.querySelectorAll('input, select, textarea');
         for (const field of fields) {
-            if (field.type === 'radio') continue;
+            if (field.type === 'radio' || field.type === 'checkbox' || field.type === 'file' || field.type === 'hidden') {
+                continue;
+            }
+
+            fieldError(field, '');
+
             if (!field.checkValidity()) {
                 field.reportValidity();
+                return false;
+            }
+        }
+
+        if (step === 1) {
+            const front = form.querySelector('input[name="aadhar_front"]');
+            const back = form.querySelector('input[name="aadhar_back"]');
+            if (!front?.files?.length) {
+                alert('Please upload Aadhaar front image.');
+                return false;
+            }
+            if (!back?.files?.length) {
+                alert('Please upload Aadhaar back image.');
                 return false;
             }
         }
@@ -329,10 +356,51 @@
                 alert('Please select at least one service type.');
                 return false;
             }
+
+            const aadharNumber = panel.querySelector('#aadhar_number');
+            if (aadharNumber && aadharNumber.value.trim() !== '' && !/^[2-9][0-9]{11}$/.test(aadharNumber.value.trim())) {
+                fieldError(aadharNumber, 'Enter a valid 12-digit Aadhaar number.');
+                return false;
+            }
+
+            const gst = panel.querySelector('#gst_no');
+            if (gst && gst.value.trim() !== '' && gst.value.trim().length !== 15) {
+                fieldError(gst, 'GSTIN must be exactly 15 characters.');
+                return false;
+            }
+
+            const pincode = panel.querySelector('#pincode');
+            if (pincode && pincode.value.trim() !== '' && !/^[1-9][0-9]{5}$/.test(pincode.value.trim())) {
+                fieldError(pincode, 'Enter a valid 6-digit pincode.');
+                return false;
+            }
         }
 
         if (step === 3) {
+            const accountNo = panel.querySelector('#account_no');
+            const ifsc = panel.querySelector('#ifsc_code');
             const accountType = panel.querySelector('input[name="account_type"]:checked');
+
+            if (accountNo) {
+                const digits = String(accountNo.value || '').replace(/\D/g, '');
+                accountNo.value = digits;
+                if (!/^[0-9]{9,18}$/.test(digits)) {
+                    fieldError(accountNo, 'Account number must be 9–18 digits only.');
+                    return false;
+                }
+                fieldError(accountNo, '');
+            }
+
+            if (ifsc) {
+                const code = String(ifsc.value || '').toUpperCase().trim();
+                ifsc.value = code;
+                if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(code)) {
+                    fieldError(ifsc, 'Enter a valid IFSC code (e.g. SBIN0001234).');
+                    return false;
+                }
+                fieldError(ifsc, '');
+            }
+
             if (!accountType) {
                 alert('Please select an account type.');
                 return false;
@@ -354,8 +422,8 @@
     });
 
     backBtn.addEventListener('click', function () {
+        // Keep filled steps/images — only move within the wizard.
         if (step === 1) {
-            window.location.href = registerUrl;
             return;
         }
         setStep(step - 1);
@@ -367,8 +435,15 @@
             if (validateCurrentStep()) setStep(step + 1);
             return;
         }
-        if (!validateCurrentStep()) {
-            event.preventDefault();
+
+        // Final submit: validate every step so bank errors don't lose earlier uploads.
+        for (let s = 1; s <= total; s++) {
+            step = s;
+            if (!validateCurrentStep()) {
+                event.preventDefault();
+                setStep(s);
+                return;
+            }
         }
     });
 
@@ -396,4 +471,5 @@
     setStep(step);
 })();
 </script>
+@include('vendor.partials.form-file-persistence')
 @endsection

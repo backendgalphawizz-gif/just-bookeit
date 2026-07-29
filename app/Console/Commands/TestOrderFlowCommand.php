@@ -95,8 +95,21 @@ class TestOrderFlowCommand extends Command
         } catch (\Throwable $e) {
             $this->newLine();
             $this->error('Flow failed: '.$e->getMessage());
+            $this->line('  at '.$e->getFile().':'.$e->getLine());
+            $this->line('  '.get_class($e));
+            if ($e instanceof \Illuminate\Http\Exceptions\HttpResponseException) {
+                $body = $e->getResponse()->getContent();
+                $this->line('  response: '.$body);
+            }
             foreach ($this->errors as $error) {
                 $this->line("  ✗ {$error}");
+            }
+            if ($this->log !== []) {
+                $this->newLine();
+                $this->warn('Completed steps before failure:');
+                foreach ($this->log as $line) {
+                    $this->line("  · {$line}");
+                }
             }
 
             return self::FAILURE;
@@ -228,12 +241,14 @@ class TestOrderFlowCommand extends Command
         $payload = $response->getData(true);
 
         $this->assert($response->getStatusCode() === 200, 'Payment succeeded');
-        $this->assert(($payload['data']['payment']['status'] ?? '') === 'success', 'Payment status success');
+        $this->assert(($payload['data']['payment']['method'] ?? '') === 'cod', 'Payment method is COD');
+        $this->assert(($payload['data']['payment']['status'] ?? '') === 'pending', 'COD payment stays pending until delivery');
 
         $order->refresh();
-        $this->assert($order->payment_status === 'success', 'Order payment_status is success');
-        $this->assert($order->status === 'pending_acceptance', 'Order moves to pending_acceptance after payment');
-        $this->log[] = "Customer paid booking (status: {$order->status})";
+        $this->assert($order->payment_method === 'cod', 'Order payment_method is cod');
+        $this->assert($order->payment_status === 'pending', 'Order payment_status stays pending for COD');
+        $this->assert($order->status === 'pending_acceptance', 'Order moves to pending_acceptance after COD (sent to vendor)');
+        $this->log[] = "Customer placed COD booking (status: {$order->status})";
     }
 
     protected function stepVendorAccept(Vendor $vendor, Order $order): void
@@ -243,11 +258,12 @@ class TestOrderFlowCommand extends Command
         $request = Request::create("/api/v2/bookings/{$order->id}/accept", 'POST');
         $request->setUserResolver(fn () => $vendor);
 
-        $response = app(VendorBookingController::class)->accept($request, $order);
+        $response = app(VendorBookingController::class)->accept($request, (string) $order->id);
         $payload = $response->getData(true);
 
         $this->assert($response->getStatusCode() === 200, 'Vendor accept succeeded');
-        $this->assert(($payload['data']['booking']['status'] ?? '') === 'accepted', 'Vendor accepted booking');
+        $order->refresh();
+        $this->assert($order->status === 'accepted', 'Vendor accepted booking (order status)');
 
         $this->log[] = 'Vendor accepted booking';
     }
@@ -259,11 +275,12 @@ class TestOrderFlowCommand extends Command
         ]);
         $request->setUserResolver(fn () => $vendor);
 
-        $response = app(VendorBookingController::class)->updateStatus($request, $order->fresh());
+        $response = app(VendorBookingController::class)->updateStatus($request, (string) $order->id);
         $payload = $response->getData(true);
 
         $this->assert($response->getStatusCode() === 200, "Vendor status → {$status}");
-        $this->assert(($payload['data']['booking']['status'] ?? '') === $status, "Booking status is {$status}");
+        $order->refresh();
+        $this->assert($order->status === $status, "Booking status is {$status}");
 
         $this->log[] = "Vendor updated status to {$status}";
     }

@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\AppPushNotificationService;
+use App\Services\Booking\BookingPaymentService;
 use App\Services\Booking\RentalPeriodService;
 use App\Services\Checkout\CheckoutRollupService;
 use App\Services\Refund\RefundRequestService;
@@ -23,9 +24,16 @@ class OrderObserver
             $previousPayment = (string) $order->getOriginal('payment_status');
             if (! in_array($previousPayment, ['success', 'advance_paid'], true)) {
                 $notifications->orderPaymentSucceeded($order);
-                // COD / Razorpay payment auto-dispatches to the vendor (no admin "Send to designer").
-                $notifications->orderDispatchedToVendor($order);
             }
+        }
+
+        // Payment (online) or COD placement auto-dispatches — no admin "Send to designer".
+        if (
+            $order->wasChanged('status')
+            && $order->status === 'pending_acceptance'
+            && (string) $order->getOriginal('status') === 'new'
+        ) {
+            $notifications->orderDispatchedToVendor($order);
         }
 
         if ($order->wasChanged('status')) {
@@ -50,6 +58,9 @@ class OrderObserver
             if ($order->isRental()) {
                 app(RentalPeriodService::class)->activateOnDelivery($order->fresh());
             }
+
+            // COD cash is collected on delivery — mark paid + credit vendor (no admin step).
+            app(BookingPaymentService::class)->settleCodOnDelivery($order->fresh());
         }
 
         if ($order->checkout_order_id !== null && $order->wasChanged('status')) {

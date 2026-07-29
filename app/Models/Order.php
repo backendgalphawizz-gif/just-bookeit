@@ -257,12 +257,27 @@ class Order extends Model
 
     public function scopePaymentConfirmed(Builder $query): Builder
     {
-        return $query->whereIn('payment_status', ['success', 'advance_paid']);
+        return $query->where(function (Builder $q) {
+            $q->whereIn('payment_status', ['success', 'advance_paid'])
+                // COD is vendor-ready without admin marking payment as paid.
+                ->orWhere(function (Builder $cod) {
+                    $cod->where('payment_method', 'cod')
+                        ->where('payment_status', 'pending')
+                        ->whereNotIn('status', ['new', 'cancelled', 'refunded']);
+                });
+        });
     }
 
     public function isPaymentConfirmed(): bool
     {
-        return in_array($this->payment_status, ['success', 'advance_paid'], true);
+        if (in_array($this->payment_status, ['success', 'advance_paid'], true)) {
+            return true;
+        }
+
+        // Cash on delivery: booking is already with the vendor; cash is collected later.
+        return $this->isCod()
+            && $this->payment_status === 'pending'
+            && ! in_array($this->status, ['new', 'cancelled', 'refunded'], true);
     }
 
     public function portfolioItem(): BelongsTo

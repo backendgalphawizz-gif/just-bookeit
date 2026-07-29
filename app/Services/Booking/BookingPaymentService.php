@@ -62,7 +62,9 @@ class BookingPaymentService
             'requires_advance' => $advanceRequired > 0,
             'remaining_payment_unlocked' => $remainingUnlocked,
             'is_fully_paid' => in_array($order->payment_status, [self::STATUS_SUCCESS], true) || $remaining <= 0.0,
-            'can_pay' => $payableNow > 0 && ! in_array($order->payment_status, [self::STATUS_SUCCESS, 'refunded'], true),
+            'can_pay' => $payableNow > 0
+                && ! in_array($order->payment_status, [self::STATUS_SUCCESS, 'refunded'], true)
+                && ! $this->isCodConfirmedOrder($order),
             'pay_label' => $this->payLabel($order->payment_status, $advanceRequired, $payableNow, $phase),
         ];
     }
@@ -104,13 +106,19 @@ class BookingPaymentService
             'requires_advance' => $advanceRequired > 0,
             'remaining_payment_unlocked' => $remainingUnlocked,
             'is_fully_paid' => in_array($checkout->payment_status, [self::STATUS_SUCCESS], true) || $remaining <= 0.0,
-            'can_pay' => $payableNow > 0 && ! in_array($checkout->payment_status, [self::STATUS_SUCCESS, 'refunded', 'partially_refunded'], true),
+            'can_pay' => $payableNow > 0
+                && ! in_array($checkout->payment_status, [self::STATUS_SUCCESS, 'refunded', 'partially_refunded'], true)
+                && ! $this->isCodConfirmedCheckout($checkout),
             'pay_label' => $this->payLabel($checkout->payment_status, $advanceRequired, $payableNow, $phase),
         ];
     }
 
     public function payOrder(Order $order, string $paymentMethod): Order
     {
+        if ($paymentMethod === 'cod') {
+            return $this->confirmCodOrder($order);
+        }
+
         $summary = $this->summaryForOrder($order);
 
         if (! $summary['can_pay']) {
@@ -132,7 +140,7 @@ class BookingPaymentService
             'payment_status' => $nextStatus,
             'payment_method' => $paymentMethod,
             'paid_at' => now(),
-            // Auto-dispatch to vendor after COD or Razorpay — no admin "Send to designer" step.
+            // Auto-dispatch to vendor after payment — no admin "Send to designer" step.
             'status' => in_array($order->status, ['new', 'pending_acceptance'], true)
                 ? 'pending_acceptance'
                 : $order->status,
@@ -147,8 +155,46 @@ class BookingPaymentService
         return $order;
     }
 
+    /**
+     * COD: send booking straight to the vendor. Cash stays pending until delivery —
+     * no admin payment approval and no wallet credit yet.
+     */
+    public function confirmCodOrder(Order $order): Order
+    {
+        if ($order->isCod() && $order->status !== 'new' && ! in_array($order->status, ['cancelled', 'refunded'], true)) {
+            return $order->fresh(['vendor', 'category', 'orderItems.portfolioItem', 'portfolioItem']);
+        }
+
+        if (in_array($order->payment_status, [self::STATUS_SUCCESS, self::STATUS_ADVANCE_PAID], true)) {
+            throw new InvalidArgumentException('Payment already completed for this booking.');
+        }
+
+        if (in_array($order->status, ['cancelled', 'refunded'], true)) {
+            throw new InvalidArgumentException('This booking cannot be updated.');
+        }
+
+        $summary = $this->summaryForOrder($order);
+
+        $order->update([
+            'advance_amount' => $summary['advance_amount'],
+            'payment_method' => 'cod',
+            'payment_status' => self::STATUS_PENDING,
+            'amount_paid' => (float) ($order->amount_paid ?? 0),
+            'paid_at' => null,
+            'status' => in_array($order->status, ['new', 'pending_acceptance'], true)
+                ? 'pending_acceptance'
+                : $order->status,
+        ]);
+
+        return $order->fresh(['vendor', 'category', 'orderItems.portfolioItem', 'portfolioItem']);
+    }
+
     public function payCheckout(CheckoutOrder $checkout, string $paymentMethod): CheckoutOrder
     {
+        if ($paymentMethod === 'cod') {
+            return $this->confirmCodCheckout($checkout);
+        }
+
         return DB::transaction(function () use ($checkout, $paymentMethod) {
             $summary = $this->summaryForCheckout($checkout);
 
@@ -222,6 +268,74 @@ class BookingPaymentService
                 'subOrders.category',
             ]));
         });
+    }
+
+    public function confirmCodCheckout(CheckoutOrder $checkout): CheckoutOrder
+    {
+        return DB::transaction(function () use ($checkout) {
+            if (
+                $checkout->payment_method === 'cod'
+                && $checkout->status !== 'new'
+                && ! in_array($checkout->status, ['cancelled', 'refunded'], true)
+            ) {
+                return $checkout->fresh([
+                    'subOrders.orderItems.portfolioItem',
+                    'subOrders.vendor',
+                    'subOrders.category',
+                ]);
+            }
+
+            if (in_array($checkout->payment_status, [self::STATUS_SUCCESS, self::STATUS_ADVANCE_PAID], true)) {
+                throw new InvalidArgumentException('Payment already completed for this checkout.');
+            }
+
+            if (in_array($checkout->status, ['cancelled', 'refunded'], true)) {
+                throw new InvalidArgumentException('This checkout cannot be updated.');
+            }
+
+            $summary = $this->summaryForCheckout($checkout);
+
+            $checkout->update([
+                'advance_amount' => $summary['advance_amount'],
+                'payment_method' => 'cod',
+                'payment_status' => self::STATUS_PENDING,
+                'amount_paid' => (float) ($checkout->amount_paid ?? 0),
+                'paid_at' => null,
+                'status' => in_array($checkout->status, ['new', 'pending_acceptance'], true)
+                    ? 'pending_acceptance'
+                    : $checkout->status,
+            ]);
+
+            foreach ($checkout->subOrders()->with(['orderItems.portfolioItem', 'portfolioItem'])->get() as $subOrder) {
+                $this->confirmCodOrder($subOrder);
+            }
+
+            return $this->rollup->sync($checkout->fresh([
+                'subOrders.orderItems.portfolioItem',
+                'subOrders.vendor',
+                'subOrders.category',
+            ]));
+        });
+    }
+
+    /** Mark COD cash collected and credit the vendor wallet (on delivery). */
+    public function settleCodOnDelivery(Order $order): void
+    {
+        if (! $order->isCod() || $order->payment_status !== self::STATUS_PENDING) {
+            return;
+        }
+
+        $total = round((float) ($this->summaryForOrder($order)['total_amount'] ?? $order->grandTotal()), 2);
+
+        Order::withoutEvents(function () use ($order, $total): void {
+            $order->update([
+                'payment_status' => self::STATUS_SUCCESS,
+                'amount_paid' => max((float) ($order->amount_paid ?? 0), $total),
+                'paid_at' => $order->paid_at ?? now(),
+            ]);
+        });
+
+        $this->wallet->creditFromPayment($order->fresh());
     }
 
     /** @param array<string, mixed> $pricing */
@@ -314,5 +428,19 @@ class BookingPaymentService
     public function remainingPaymentUnlocked(string $status): bool
     {
         return in_array($status, self::REMAINING_DUE_STATUSES, true);
+    }
+
+    protected function isCodConfirmedOrder(Order $order): bool
+    {
+        return $order->isCod()
+            && $order->status !== 'new'
+            && ! in_array($order->status, ['cancelled', 'refunded'], true);
+    }
+
+    protected function isCodConfirmedCheckout(CheckoutOrder $checkout): bool
+    {
+        return $checkout->payment_method === 'cod'
+            && $checkout->status !== 'new'
+            && ! in_array($checkout->status, ['cancelled', 'refunded'], true);
     }
 }

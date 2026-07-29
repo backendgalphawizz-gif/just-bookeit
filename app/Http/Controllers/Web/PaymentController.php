@@ -94,10 +94,13 @@ class PaymentController extends WebController
                 ->with('error', $e->getMessage());
         }
 
-        $message = in_array($summary['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
-            ? 'Advance paid successfully. Remaining amount will be due when the booking is completed.'
-            : 'Payment successful. Your booking is awaiting designer confirmation.';
-
+        if ($data['payment_method'] === 'cod') {
+            $message = 'Cash on delivery confirmed. Your booking was sent to the designer.';
+        } else {
+            $message = in_array($summary['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+                ? 'Advance paid successfully. Remaining amount will be due when the booking is completed.'
+                : 'Payment successful. Your booking is awaiting designer confirmation.';
+        }
         return redirect()
             ->route('web.bookings.show', $order)
             ->with('success', $message);

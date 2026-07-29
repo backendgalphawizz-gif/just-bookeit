@@ -112,11 +112,24 @@ class CheckoutOrder extends Model
 
     public function scopePaymentConfirmed(Builder $query): Builder
     {
-        return $query->whereIn('payment_status', ['success', 'advance_paid']);
+        return $query->where(function (Builder $q) {
+            $q->whereIn('payment_status', ['success', 'advance_paid'])
+                ->orWhere(function (Builder $cod) {
+                    $cod->where('payment_method', 'cod')
+                        ->where('payment_status', 'pending')
+                        ->whereNotIn('status', ['new', 'cancelled', 'refunded']);
+                });
+        });
     }
 
     public function isPaymentConfirmed(): bool
     {
-        return in_array($this->payment_status, ['success', 'advance_paid'], true);
+        if (in_array($this->payment_status, ['success', 'advance_paid'], true)) {
+            return true;
+        }
+
+        return $this->payment_method === 'cod'
+            && $this->payment_status === 'pending'
+            && ! in_array($this->status, ['new', 'cancelled', 'refunded'], true);
     }
 }

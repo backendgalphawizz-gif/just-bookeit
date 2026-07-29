@@ -154,7 +154,7 @@ class OrderDispatchSupport
     protected static function allowedNextStatusesForCurrent(string $current, bool $isRental): array
     {
         return match ($current) {
-            'new' => ['pending_acceptance', 'accepted', 'cancelled'],
+            'new' => ['cancelled'], // System moves to pending_acceptance on COD / online payment.
             'pending_acceptance' => ['accepted', 'cancelled'],
             'accepted' => ['in_progress', 'cancelled'],
             'in_progress' => $isRental

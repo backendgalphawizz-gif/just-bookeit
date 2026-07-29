@@ -119,6 +119,17 @@ class VendorValidationRules
             'aadhar_back.image' => 'Aadhaar back must be a JPEG, PNG, or WebP image.',
             'aadhar_front.mimes' => 'Aadhaar front must be a JPEG, PNG, or WebP image.',
             'aadhar_back.mimes' => 'Aadhaar back must be a JPEG, PNG, or WebP image.',
+            'account_no.required' => 'Please enter the bank account number.',
+            'account_no.min' => 'Account number must be at least 9 digits.',
+            'account_no.max' => 'Account number must not exceed 18 digits.',
+            'account_no.regex' => 'Account number must contain 9–18 digits only (no spaces or letters).',
+            'ifsc_code.required' => 'Please enter the IFSC code.',
+            'ifsc_code.size' => 'IFSC code must be exactly 11 characters.',
+            'ifsc_code.regex' => 'Enter a valid IFSC code (e.g. SBIN0001234).',
+            'account_name.required' => 'Please enter the account holder name.',
+            'bank_name.required' => 'Please enter the bank name.',
+            'account_type.required' => 'Please select an account type.',
+            'service_types.required' => 'Please select at least one service type.',
         ]);
     }
 
@@ -250,7 +261,7 @@ class VendorValidationRules
             'shop_logo' => ['nullable', ...$image],
             'pan_card' => ['nullable', ...$image],
             'account_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
-            'account_no' => ['required', 'string', 'max:20', 'regex:'.AdminValidationRules::REGEX_ACCOUNT_NUMBER],
+            'account_no' => ['required', 'string', 'min:9', 'max:18', 'regex:/^[0-9]{9,18}$/'],
             'bank_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'ifsc_code' => ['required', 'string', 'size:11', 'regex:'.AdminValidationRules::REGEX_IFSC],
             'account_type' => ['required', 'in:savings,current'],

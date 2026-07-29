@@ -208,6 +208,10 @@ class OrderController extends AdminController
 
         $previousPaymentStatus = $order->payment_status;
 
+        if ($data['status'] !== $order->status && ! OrderDispatchSupport::canTransitionTo($order, $data['status'])) {
+            return back()->with('error', 'Invalid status transition from '.$order->status.' to '.$data['status'].'.');
+        }
+
         try {
             if ($data['status'] !== $order->status) {
                 app(\App\Services\Checkout\VendorBookingItemService::class)
@@ -363,9 +367,15 @@ class OrderController extends AdminController
 
     protected function applyStatusSideEffects(Order $order, string $status, ?string $paymentStatus = null): void
     {
+        if (in_array($status, ['delivered', 'rental_active'], true)) {
+            app(\App\Services\Booking\BookingPaymentService::class)->settleCodOnDelivery($order->fresh());
+            $order->refresh();
+        }
+
         if (
             $status === 'delivered'
             && ($paymentStatus === 'pending' || $order->payment_status === 'pending')
+            && ! $order->isCod()
             && (float) ($order->advance_amount ?? 0) <= 0
             && (float) ($order->amount_paid ?? 0) <= 0
         ) {

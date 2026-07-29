@@ -203,9 +203,22 @@ class LoginController extends VendorController
                 ->with('error', 'Verify your mobile number with OTP first.');
         }
 
+        $request->merge([
+            'service_types' => VendorValidationRules::prepareServiceTypesInput($request->input('service_types')),
+            'account_no' => preg_replace('/\D+/', '', (string) $request->input('account_no', '')) ?: null,
+            'ifsc_code' => strtoupper(trim((string) $request->input('ifsc_code', ''))),
+            'gst_no' => filled($request->input('gst_no'))
+                ? strtoupper(trim((string) $request->input('gst_no')))
+                : null,
+            'aadhar_number' => filled($request->input('aadhar_number'))
+                ? preg_replace('/\D+/', '', (string) $request->input('aadhar_number'))
+                : null,
+        ]);
+
         $rules = VendorValidationRules::register();
         unset($rules['mobile']);
         $rules['registration_token'] = ['required', 'string'];
+        $rules['_step'] = ['nullable', 'integer', 'min:1', 'max:3'];
 
         $data = $this->validateVendor($request, $rules);
 
