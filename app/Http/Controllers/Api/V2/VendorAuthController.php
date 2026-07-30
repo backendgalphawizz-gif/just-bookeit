@@ -108,7 +108,7 @@ class VendorAuthController extends ApiController
             'bank_name' => $data['bank_name'],
             'ifsc_code' => strtoupper($data['ifsc_code']),
             'account_type' => $data['account_type'],
-            'status' => 'active',
+            'status' => 'pending',
             'aadhar_front_path' => StoresUploadedFiles::store($request->file('aadhar_front'), 'vendors/aadhar/front'),
             'aadhar_back_path' => StoresUploadedFiles::store($request->file('aadhar_back'), 'vendors/aadhar/back'),
             'cover_image_path' => $this->storeOptionalImage($request, ['cover_image', 'coverImage'], 'vendors/cover-images'),
@@ -118,14 +118,11 @@ class VendorAuthController extends ApiController
         ]);
 
         StoresActorFcmToken::saveForActor($vendor, $fcmToken);
-
-        $token = $vendor->createToken('vendor-api')->plainTextToken;
+        app(\App\Services\Admin\AdminInboxNotificationService::class)->notifyVendorPendingApproval($vendor);
 
         return $this->success([
-            'token' => $token,
-            'token_type' => 'Bearer',
             'user' => $this->otp->formatActor(OtpService::ACTOR_VENDOR, $vendor),
-        ], 'Vendor registration successful.', 201);
+        ], 'Vendor registration submitted for approval.', 201);
     }
 
     public function me(Request $request): JsonResponse
