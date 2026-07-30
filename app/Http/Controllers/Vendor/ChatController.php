@@ -6,6 +6,7 @@ use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Services\ChatLiveService;
 use App\Services\ChatPresenceService;
+use App\Services\ChatReadReceiptService;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
 use App\Support\WebChatLivePresenter;
@@ -51,12 +52,17 @@ class ChatController extends VendorController
             abort_unless($activeChat->vendor_id === $vendor->id, 403);
 
             $activeChat->load('customer');
-            $messages = $activeChat->messages()->orderBy('id')->get();
+            $messages = $activeChat->messages()
+                ->orderByDesc('id')
+                ->limit(80)
+                ->get()
+                ->sortBy('id')
+                ->values();
 
-            $activeChat->messages()
-                ->where('sender_type', ChatMessage::SENDER_CUSTOMER)
-                ->whereNull('read_at')
-                ->update(['read_at' => now()]);
+            app(ChatReadReceiptService::class)->markIncomingAsRead(
+                $activeChat,
+                ChatMessage::SENDER_VENDOR
+            );
         }
 
         if ($activeChat && ! $request->filled('chat')) {

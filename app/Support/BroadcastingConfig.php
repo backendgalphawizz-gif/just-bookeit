@@ -57,6 +57,7 @@ class BroadcastingConfig
                 'created' => '.chat.message.created',
                 'updated' => '.chat.message.updated',
                 'deleted' => '.chat.message.deleted',
+                'read' => '.chat.messages.read',
             ],
         ];
     }

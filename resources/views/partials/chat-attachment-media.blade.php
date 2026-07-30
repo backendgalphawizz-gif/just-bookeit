@@ -10,7 +10,7 @@
     @if ($type === 'video')
         <video src="{{ $url }}" class="{{ $class }}" controls playsinline preload="metadata"></video>
     @elseif ($type === 'image')
-        <img src="{{ $url }}" alt="Attachment" class="{{ $class }} panel-lightbox-trigger">
+        <img src="{{ $url }}" alt="Attachment" class="{{ $class }} panel-lightbox-trigger" loading="lazy" decoding="async">
     @else
         <a href="{{ $url }}" target="_blank" rel="noopener" download class="{{ $class }} {{ $class }}--file vp-chat-file">
             <span class="vp-chat-file-icon" aria-hidden="true">

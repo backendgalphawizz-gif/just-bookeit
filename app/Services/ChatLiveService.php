@@ -13,6 +13,10 @@ use Illuminate\Http\Request;
 
 class ChatLiveService
 {
+    public function __construct(
+        protected ChatReadReceiptService $readReceipts,
+    ) {}
+
     /**
      * @param  Builder<Conversation>|Relation  $conversationsQuery
      * @param  Closure(Conversation): array<string, mixed>  $threadPresenter
@@ -28,34 +32,35 @@ class ChatLiveService
         $data = $request->validate([
             'chat_id' => ['nullable', 'integer'],
             'after_message_id' => ['nullable', 'integer', 'min:0'],
+            'include_threads' => ['nullable', 'boolean'],
         ]);
 
         $afterId = (int) ($data['after_message_id'] ?? 0);
+        $includeThreads = ! array_key_exists('include_threads', $data)
+            || filter_var($data['include_threads'], FILTER_VALIDATE_BOOLEAN);
 
-        $threads = (clone $conversationsQuery)
-            ->with(['customer', 'vendor', 'latestMessage'])
-            ->orderByRaw('last_message_at is null')
-            ->orderByDesc('last_message_at')
-            ->orderByDesc('id')
-            ->get()
-            ->map(fn (Conversation $conversation) => $threadPresenter($conversation))
-            ->values()
-            ->all();
+        $threads = [];
+
+        if ($includeThreads) {
+            $threads = (clone $conversationsQuery)
+                ->with(['customer', 'vendor', 'latestMessage'])
+                ->orderByRaw('last_message_at is null')
+                ->orderByDesc('last_message_at')
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn (Conversation $conversation) => $threadPresenter($conversation))
+                ->values()
+                ->all();
+        }
 
         $messages = [];
+        $readIds = [];
 
         if (! empty($data['chat_id'])) {
             $chat = Conversation::query()->findOrFail((int) $data['chat_id']);
             $authorizeChat($chat);
 
-            $incomingSender = $viewerRole === ChatMessage::SENDER_VENDOR
-                ? ChatMessage::SENDER_CUSTOMER
-                : ChatMessage::SENDER_VENDOR;
-
-            $chat->messages()
-                ->where('sender_type', $incomingSender)
-                ->whereNull('read_at')
-                ->update(['read_at' => now()]);
+            $this->readReceipts->markIncomingAsRead($chat, $viewerRole);
 
             $messages = $chat->messages()
                 ->where('id', '>', $afterId)
@@ -64,11 +69,24 @@ class ChatLiveService
                 ->map(fn (ChatMessage $message) => WebChatLivePresenter::message($message, $viewerRole))
                 ->values()
                 ->all();
+
+            // Own messages already on screen that the peer has read (tick updates).
+            $readIds = $chat->messages()
+                ->where('sender_type', $viewerRole)
+                ->whereNotNull('read_at')
+                ->when($afterId > 0, fn ($query) => $query->where('id', '<=', $afterId))
+                ->orderByDesc('id')
+                ->limit(100)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
         }
 
         return response()->json([
             'messages' => $messages,
             'threads' => $threads,
+            'read_ids' => $readIds,
         ]);
     }
 }

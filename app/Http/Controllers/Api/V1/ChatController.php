@@ -8,6 +8,7 @@ use App\Models\Conversation;
 use App\Models\Customer;
 use App\Models\Vendor;
 use App\Services\ChatPresenceService;
+use App\Services\ChatReadReceiptService;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\ChatAttachmentSupport;
 use App\Support\StoresUploadedFiles;
@@ -17,7 +18,8 @@ use Illuminate\Http\Request;
 class ChatController extends ApiController
 {
     public function __construct(
-        protected ChatPresenceService $presence
+        protected ChatPresenceService $presence,
+        protected ChatReadReceiptService $readReceipts,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -116,10 +118,7 @@ class ChatController extends ApiController
                 ->orderBy('id')
                 ->get();
 
-            $chat->messages()
-                ->where('sender_type', ChatMessage::SENDER_VENDOR)
-                ->whereNull('read_at')
-                ->update(['read_at' => now()]);
+            $this->readReceipts->markIncomingAsRead($chat, ChatMessage::SENDER_CUSTOMER);
 
             return $this->success([
                 'messages' => $messages
@@ -133,10 +132,7 @@ class ChatController extends ApiController
             ->orderBy('id')
             ->paginate($request->integer('per_page', 50));
 
-        $chat->messages()
-            ->where('sender_type', ChatMessage::SENDER_VENDOR)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $this->readReceipts->markIncomingAsRead($chat, ChatMessage::SENDER_CUSTOMER);
 
         return $this->success([
             'chat' => CustomerApiPresenter::chatSummary($chat),

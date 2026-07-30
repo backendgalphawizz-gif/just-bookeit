@@ -8166,6 +8166,21 @@ background: #AE2A0B;
 .jbw-chat-message-wrapper--theirs .jbw-chat-meta {
     align-items: flex-start;
 }
+.jbw-chat-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+}
+.chat-ticks {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(15, 23, 42, 0.45);
+    line-height: 1;
+    flex-shrink: 0;
+}
+.chat-ticks.is-read {
+    color: #53bdeb;
+}
 .jbw-chat-message-actions {
     display: flex;
     gap: 0.55rem;
@@ -8774,6 +8789,21 @@ background: #AE2A0B;
 }
 .jbw-chat-message-wrapper--theirs .jbw-chat-meta {
     align-items: flex-start;
+}
+.jbw-chat-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+}
+.chat-ticks {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(15, 23, 42, 0.45);
+    line-height: 1;
+    flex-shrink: 0;
+}
+.chat-ticks.is-read {
+    color: #53bdeb;
 }
 .jbw-chat-message-actions {
     display: flex;

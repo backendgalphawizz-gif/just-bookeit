@@ -19,6 +19,7 @@ class WebChatLivePresenter
             'attachment_type' => $message->attachmentType(),
             'attachment_name' => $message->attachmentDisplayName(),
             'is_mine' => $isMine,
+            'is_read' => $message->read_at !== null,
             'is_edited' => $message->edited_at !== null,
             'can_edit' => $isMine && filled($message->body),
             'can_delete' => $isMine,

@@ -19,6 +19,7 @@ class ChatBroadcastPresenter
             'attachment_url' => $message->attachmentUrl(),
             'attachment_type' => $message->attachmentType(),
             'attachment_name' => $message->attachmentDisplayName(),
+            'is_read' => $message->read_at !== null,
             'is_edited' => $message->edited_at !== null,
             'sent_at' => ChatDateTime::clock($message->created_at),
             'created_at' => $message->created_at?->toIso8601String(),

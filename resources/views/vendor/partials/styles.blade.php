@@ -1515,6 +1515,25 @@ img { max-width: 100%; display: block; }
 .vp-chat-row--theirs .vp-chat-meta {
     align-items: flex-start;
 }
+.vp-chat-time {
+    display: inline-flex;
+    align-items: center;
+    gap: .28rem;
+}
+.chat-ticks {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(15, 23, 42, .45);
+    line-height: 1;
+    flex-shrink: 0;
+}
+.vp-chat-row--mine .chat-ticks {
+    color: rgba(15, 23, 42, .45);
+}
+.chat-ticks.is-read,
+.vp-chat-row--mine .chat-ticks.is-read {
+    color: #53bdeb;
+}
 .vp-chat-message-actions {
     display: flex;
     gap: .55rem;

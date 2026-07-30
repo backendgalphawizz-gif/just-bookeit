@@ -91,7 +91,7 @@
 
         if (message.attachment_type === 'image') {
             const lightbox = theme === 'vendor' ? ' panel-lightbox-trigger' : '';
-            return `<img src="${url}" alt="Attachment" class="${className}${lightbox}">`;
+            return `<img src="${url}" alt="Attachment" class="${className}${lightbox}" loading="lazy" decoding="async">`;
         }
 
         return `
@@ -133,6 +133,24 @@
         */
     }
 
+    function renderReadTicks(message) {
+        if (!message.is_mine) {
+            return '';
+        }
+
+        const isRead = !!message.is_read;
+        const label = isRead ? 'Read' : 'Sent';
+
+        return `
+            <span class="chat-ticks${isRead ? ' is-read' : ''}" data-chat-ticks aria-label="${label}" title="${label}">
+                <svg viewBox="0 0 16 11" width="16" height="11" aria-hidden="true" focusable="false">
+                    <path d="M11.07 0.8 5.7 6.92 3.03 4.1 1.9 5.3l3.8 4.05 1.2-1.28L12.2 2z" fill="currentColor"></path>
+                    <path d="M14.1 0.8 8.72 6.92l-.7-.75 1.13-1.2L15.22 2z" fill="currentColor"></path>
+                </svg>
+            </span>
+        `;
+    }
+
     function renderMessageMeta(message, theme) {
         const edited = message.is_edited
             ? `<span class="${theme === 'vendor' ? 'vp-chat-edited' : 'jbw-chat-edited'}">· Edited</span>`
@@ -143,10 +161,28 @@
 
         return `
             <div class="${metaClass}">
-                <${timeTag} class="${timeClass}">${escapeHtml(message.sent_at || '')}${edited}</${timeTag}>
+                <${timeTag} class="${timeClass}">${escapeHtml(message.sent_at || '')}${edited}${renderReadTicks(message)}</${timeTag}>
                 ${renderMessageActions(message, theme)}
             </div>
         `;
+    }
+
+    function applyReadReceipts(container, messageIds) {
+        if (!Array.isArray(messageIds) || messageIds.length === 0) {
+            return;
+        }
+
+        messageIds.forEach((id) => {
+            const row = container.querySelector(`[data-message-id="${id}"]`);
+            const ticks = row?.querySelector('[data-chat-ticks]');
+            if (!ticks) {
+                return;
+            }
+
+            ticks.classList.add('is-read');
+            ticks.setAttribute('aria-label', 'Read');
+            ticks.setAttribute('title', 'Read');
+        });
     }
 
     function messageUrlAttrs(message) {
@@ -481,6 +517,13 @@
                 params.set('search', search);
             }
 
+            const now = Date.now();
+            const lastThreadsAt = Number(container.dataset.chatLastThreadsAt || 0);
+            const includeThreads = options.forceThreads
+                || !lastThreadsAt
+                || (now - lastThreadsAt) >= 10000;
+            params.set('include_threads', includeThreads ? '1' : '0');
+
             const response = await fetch(`${pollUrl}?${params.toString()}`, {
                 headers: jsonHeaders(),
                 credentials: 'same-origin',
@@ -497,7 +540,12 @@
                 appendMessage(container, message, theme);
             });
 
-            updateThreads(container, data.threads || [], theme, chatId, options);
+            applyReadReceipts(container, data.read_ids || []);
+
+            if (includeThreads && Array.isArray(data.threads)) {
+                container.dataset.chatLastThreadsAt = String(now);
+                updateThreads(container, data.threads, theme, chatId, options);
+            }
         } finally {
             container.dataset.chatPollingInFlight = '0';
         }
@@ -691,8 +739,6 @@
                 bodyField.value = '';
             }
             clearAttachPreview(form);
-
-            await poll(container, { scrollToTop: true });
         } catch (error) {
             window.alert('Could not send message. Please try again.');
         } finally {
@@ -1116,6 +1162,13 @@
         const activeChatId = Number(container.dataset.chatId || 0);
         const conversationId = Number(payload?.conversation_id || payload?.message?.conversation_id || 0);
 
+        if (eventName === 'read') {
+            if (activeChatId && conversationId === activeChatId) {
+                applyReadReceipts(container, payload?.message_ids || []);
+            }
+            return;
+        }
+
         if (eventName === 'deleted') {
             const messageId = payload?.message_id;
             if (messageId && activeChatId && conversationId === activeChatId) {
@@ -1196,6 +1249,7 @@
         const createdEvent = cfg.events?.created || '.chat.message.created';
         const updatedEvent = cfg.events?.updated || '.chat.message.updated';
         const deletedEvent = cfg.events?.deleted || '.chat.message.deleted';
+        const readEvent = cfg.events?.read || '.chat.messages.read';
 
         const listen = (channelName) => {
             try {
@@ -1203,6 +1257,7 @@
                 channel.listen(createdEvent, (payload) => handleRealtimePayload(container, payload, 'created'));
                 channel.listen(updatedEvent, (payload) => handleRealtimePayload(container, payload, 'updated'));
                 channel.listen(deletedEvent, (payload) => handleRealtimePayload(container, payload, 'deleted'));
+                channel.listen(readEvent, (payload) => handleRealtimePayload(container, payload, 'read'));
                 channel.error?.((status) => {
                     console.warn('[JustBook chat] channel error', channelName, status);
                 });
