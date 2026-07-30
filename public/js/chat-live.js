@@ -1162,6 +1162,18 @@
         appendMessage(container, message, theme, container.dataset.chatPinnedBottom !== '0');
     }
 
+    function pusherConnection() {
+        try {
+            return window.Echo?.connector?.pusher?.connection || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function isRealtimeHealthy() {
+        return pusherConnection()?.state === 'connected';
+    }
+
     function bindRealtime(container) {
         const cfg = window.JustBookChatRealtime;
         const echo = window.Echo;
@@ -1220,6 +1232,47 @@
         return true;
     }
 
+    function startAdaptivePolling(container) {
+        const FAST_POLL_MS = 2000;
+        const SLOW_POLL_MS = 15000;
+        let timer = null;
+        let currentMs = 0;
+
+        const schedule = (fromTick = false) => {
+            // Only slow down when the WebSocket is actually connected.
+            // Echo existing is not enough — Reverb down used to leave a 15s gap.
+            const nextMs = isRealtimeHealthy() ? SLOW_POLL_MS : FAST_POLL_MS;
+
+            if (!fromTick && timer && nextMs === currentMs) {
+                return;
+            }
+
+            if (timer) {
+                window.clearTimeout(timer);
+                timer = null;
+            }
+
+            currentMs = nextMs;
+            timer = window.setTimeout(() => {
+                timer = null;
+                if (!document.hidden) {
+                    poll(container).catch(() => {});
+                }
+                schedule(true);
+            }, currentMs);
+        };
+
+        const connection = pusherConnection();
+        if (connection && typeof connection.bind === 'function') {
+            ['connected', 'disconnected', 'unavailable', 'failed', 'error'].forEach((eventName) => {
+                connection.bind(eventName, () => schedule(false));
+            });
+        }
+
+        poll(container).catch(() => {});
+        schedule(true);
+    }
+
     function bindContainer(container) {
         const form = container.querySelector('[data-chat-compose]');
 
@@ -1239,7 +1292,7 @@
         container.dataset.chatPinnedBottom = '1';
         scrollMessages(container, true);
 
-        const realtimeEnabled = bindRealtime(container);
+        bindRealtime(container);
 
         if (container.dataset.chatLivePolling === '1') {
             return;
@@ -1248,17 +1301,7 @@
         container.dataset.chatLivePolling = '1';
 
         // Keep a light poll as fallback (and for thread list sync) even with websockets.
-        poll(container).catch(() => {});
-
-        const pollMs = realtimeEnabled ? 15000 : 2000;
-
-        window.setInterval(() => {
-            if (document.hidden) {
-                return;
-            }
-
-            poll(container).catch(() => {});
-        }, pollMs);
+        startAdaptivePolling(container);
 
         bindPresenceHeartbeat(container);
     }
