@@ -26,14 +26,12 @@ class DisputeController extends AdminController
         $this->validateListDateRange($request);
 
         $categoryId = $request->filled('category') ? $request->integer('category') : null;
-        $raisedBy = $request->filled('raised_by') && in_array($request->string('raised_by')->toString(), ['customer', 'vendor'], true)
-            ? $request->string('raised_by')->toString()
-            : null;
+        $raisedBy = 'customer';
 
         $disputes = $this->applyDateRange(Dispute::query(), $request)
             ->with(['order.customer', 'order.vendor', 'category'])
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
-            ->when($raisedBy, fn ($q) => $q->where('raised_by', $raisedBy))
+            ->where('raised_by', $raisedBy)
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->whereHas('order', fn ($order) => $order->where('order_number', 'like', $term));
