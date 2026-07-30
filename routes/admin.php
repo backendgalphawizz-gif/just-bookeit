@@ -108,6 +108,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
             Route::get('portfolio/{portfolio}', [PortfolioController::class, 'show'])->name('portfolio.show');
             Route::post('portfolio/{portfolio}/approve', [PortfolioController::class, 'approve'])->name('portfolio.approve');
             Route::post('portfolio/{portfolio}/reject', [PortfolioController::class, 'reject'])->name('portfolio.reject');
+            Route::patch('portfolio/{portfolio}/listing-active', [PortfolioController::class, 'toggleListingActive'])->name('portfolio.listing-active');
 
             Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
             Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');

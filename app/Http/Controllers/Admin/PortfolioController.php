@@ -99,7 +99,7 @@ class PortfolioController extends AdminController
         );
 
         $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
-        $isRental = in_array($typeSlug, ['rented-dress', 'rented-jewellery'], true);
+        $isDress = $typeSlug === 'rented-dress';
 
         $product = PortfolioItem::query()->create([
             'vendor_id' => $data['vendor_id'],
@@ -107,8 +107,8 @@ class PortfolioController extends AdminController
             'subcategory_id' => $data['subcategory_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $isRental ? null : ($data['price_per_day'] ?? null),
-            'advance_amount' => $isRental ? null : ($data['advance_amount'] ?? null),
+            'price_per_day' => $isDress ? null : ($data['price_per_day'] ?? null),
+            'advance_amount' => $typeSlug === 'rented-jewellery' ? ($data['advance_amount'] ?? null) : null,
             'audience' => $data['audience'],
             'image_url' => $imagePath,
             'status' => $data['status'],
@@ -118,7 +118,7 @@ class PortfolioController extends AdminController
 
         $this->storeProductGalleryImages($request, $product, $request->file('image'));
         $this->storeProductGalleryVideos($request, $product);
-        if ($typeSlug === 'rented-dress') {
+        if ($isDress) {
             $this->syncProductVariants($request, $product, $request->input('variants', $data['variants'] ?? []));
             $this->propagateVariantColorImages($product);
             $product->refreshDressPricingFromVariants();
@@ -164,7 +164,7 @@ class PortfolioController extends AdminController
 
         $this->normalizeProductFormInput($request);
         $typeSlug = $this->resolveServiceCategorySlug($request);
-        $isRental = in_array($typeSlug, ['rented-dress', 'rented-jewellery'], true);
+        $isDress = $typeSlug === 'rented-dress';
 
         $data = $request->validate(
             AdminValidationRules::portfolioItem(false, $typeSlug),
@@ -184,10 +184,10 @@ class PortfolioController extends AdminController
             'subcategory_id' => $data['subcategory_id'],
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
-            'price_per_day' => $isRental ? null : ($data['price_per_day'] ?? $portfolio->price_per_day),
-            'advance_amount' => $isRental
-                ? null
-                : (array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $portfolio->advance_amount),
+            'price_per_day' => $isDress ? null : ($data['price_per_day'] ?? $portfolio->price_per_day),
+            'advance_amount' => $typeSlug === 'rented-jewellery'
+                ? (array_key_exists('advance_amount', $data) ? $data['advance_amount'] : $portfolio->advance_amount)
+                : null,
             'audience' => $data['audience'],
             'status' => $data['status'],
             'rejection_reason' => $data['status'] === 'rejected' ? ($data['rejection_reason'] ?? null) : null,
@@ -272,6 +272,28 @@ class PortfolioController extends AdminController
         $this->adminInboxNotifications->dismissForProduct($portfolio);
 
         return back()->with('success', 'Product rejected.');
+    }
+
+    public function toggleListingActive(Request $request, PortfolioItem $portfolio): RedirectResponse
+    {
+        $this->authorizeAdmin('edit');
+        $portfolio->loadMissing('vendor');
+        if ($portfolio->vendor) {
+            $this->authorizeVendorCity($portfolio->vendor);
+        }
+
+        if ($portfolio->status !== 'approved') {
+            return back()->with('error', 'Only approved products can be marked active or inactive.');
+        }
+
+        $portfolio->update([
+            'is_listing_active' => $request->boolean('is_listing_active'),
+        ]);
+
+        return back()->with(
+            'success',
+            $portfolio->is_listing_active ? 'Product is now active.' : 'Product is now inactive.'
+        );
     }
 
     /** @return array<string, mixed> */

@@ -77,10 +77,15 @@
                     <th class="jb-col-amount">Price/day</th>
                     <th class="jb-col-status">Status</th>
                     <th class="jb-col-date">Submitted</th>
+                    <th class="jb-col-status">Listing</th>
                     <th class="jb-table-actions-col">Actions</th>
                 </tr></thead>
                 <tbody>
                     @forelse ($items as $item)
+                        @php
+                            $isApproved = $item->status === 'approved';
+                            $isListingActive = (bool) ($item->is_listing_active ?? true);
+                        @endphp
                         <tr>
                             @include('admin.partials.table-index-cell', ['paginator' => $items])
                             <td class="jb-col-name max-w-[10rem]">
@@ -106,6 +111,36 @@
                             </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $item->status, 'label' => ucfirst((string) $item->status)])</td>
                             <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($item->created_at) }}</td>
+                            <td class="jb-col-status">
+                                @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
+                                    <form
+                                        method="POST"
+                                        action="{{ route('admin.portfolio.listing-active', $item) }}"
+                                        class="jb-listing-toggle @unless($isApproved) is-disabled @endunless"
+                                        @unless($isApproved) title="Only approved products can be activated" @endunless
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="is_listing_active" value="0">
+                                        <label class="jb-toggle">
+                                            <input
+                                                type="checkbox"
+                                                name="is_listing_active"
+                                                value="1"
+                                                @checked($isApproved && $isListingActive)
+                                                @disabled(! $isApproved)
+                                                onchange="this.form.submit()"
+                                            >
+                                            <span class="jb-toggle-track"></span>
+                                        </label>
+                                        <span @class(['jb-listing-toggle-label', 'is-active' => $isApproved && $isListingActive])>
+                                            {{ $isApproved && $isListingActive ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </form>
+                                @else
+                                    <span class="text-sm text-slate-500">{{ $isApproved && $isListingActive ? 'Active' : 'Inactive' }}</span>
+                                @endif
+                            </td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" />
@@ -116,7 +151,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="jb-table-empty">No {{ strtolower($activeTypeLabel) }} products found.</td></tr>
+                        <tr><td colspan="9" class="jb-table-empty">No {{ strtolower($activeTypeLabel) }} products found.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -124,3 +159,68 @@
         @if ($items->hasPages()) {{ $items->links() }} @endif
     </div>
 @endsection
+
+@push('styles')
+<style>
+    .jb-listing-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin: 0;
+    }
+    .jb-listing-toggle.is-disabled {
+        opacity: 0.7;
+    }
+    .jb-listing-toggle-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #94a3b8;
+        white-space: nowrap;
+    }
+    .jb-listing-toggle-label.is-active {
+        color: #f25123;
+    }
+    .jb-toggle {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+    .jb-toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+    }
+    .jb-toggle-track {
+        position: absolute;
+        inset: 0;
+        background: #d5dce3;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background .2s;
+    }
+    .jb-toggle-track::after {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform .2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,.15);
+    }
+    .jb-toggle input:checked + .jb-toggle-track {
+        background: #f25123;
+    }
+    .jb-toggle input:checked + .jb-toggle-track::after {
+        transform: translateX(18px);
+    }
+    .jb-toggle input:disabled + .jb-toggle-track {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+</style>
+@endpush

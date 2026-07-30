@@ -13,9 +13,16 @@
     $videoCount = $mediaItems->where('type', 'video')->count();
     $hero = $mediaItems->first();
 
-    $priceAmount = $portfolio->rentalPriceAmount();
+    $priceAmount = $portfolio->price_per_day !== null
+        ? (float) $portfolio->price_per_day
+        : ($isRentalDress
+            ? ($portfolio->variants->min('price') !== null ? (float) $portfolio->variants->min('price') : null)
+            : null);
     $priceSuffix = $isFashion ? '' : ' / day';
     $priceLabel = $isFashion ? 'Selling price' : 'Price per day';
+    $advanceAmount = $isRentalDress
+        ? ($portfolio->variants->pluck('advance_amount')->filter(fn ($v) => $v !== null)->min())
+        : $portfolio->advance_amount;
 
     $colorCssMap = ProductOptionCatalog::colorCssMap();
     $resolveColorCss = function (?string $name) use ($colorCssMap): string {
@@ -264,14 +271,20 @@
                         </div>
                         <div class="jb-product-fact">
                             <dt>{{ $priceLabel }}</dt>
-                            <dd>₹{{ number_format((float) $priceAmount, 2) }}{{ $priceSuffix }}</dd>
+                            <dd>
+                                @if ($priceAmount !== null)
+                                    ₹{{ number_format((float) $priceAmount, 2) }}{{ $priceSuffix }}
+                                @else
+                                    —
+                                @endif
+                            </dd>
                         </div>
-                        @unless ($isRentalDress)
+                        @if ($typeSlug === 'rented-jewellery')
                             <div class="jb-product-fact">
                                 <dt>Advance amount</dt>
-                                <dd>{{ $portfolio->advance_amount !== null ? '₹'.number_format((float) $portfolio->advance_amount, 2) : '—' }}</dd>
+                                <dd>{{ $advanceAmount !== null ? '₹'.number_format((float) $advanceAmount, 2) : '—' }}</dd>
                             </div>
-                        @endunless
+                        @endif
                         <div class="jb-product-fact">
                             <dt>Status</dt>
                             <dd>@include('admin.components.status-badge', ['status' => $portfolio->status, 'label' => ucfirst((string) $portfolio->status)])</dd>

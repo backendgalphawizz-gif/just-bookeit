@@ -31,7 +31,10 @@
             return this.categorySlugs[String(this.categoryId)] || '';
         },
         get hideProductPricing() {
-            return ['rented-dress', 'rented-jewellery'].includes(this.productType);
+            return this.productType === 'rented-dress';
+        },
+        get showAdvanceAmount() {
+            return this.productType === 'rented-jewellery';
         },
         get showVariants() {
             return this.productType === 'rented-dress';
@@ -142,7 +145,7 @@
         @error('price_per_day')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>
 
-    <div x-show="!hideProductPricing" x-cloak>
+    <div x-show="showAdvanceAmount" x-cloak>
         <label for="advance_amount" class="jb-label">Advance amount (₹)</label>
         <input
             id="advance_amount"
@@ -152,7 +155,7 @@
             class="jb-input"
             min="0"
             step="0.01"
-            x-bind:disabled="hideProductPricing"
+            x-bind:disabled="!showAdvanceAmount"
         >
         @error('advance_amount')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>
@@ -160,6 +163,10 @@
     <template x-if="hideProductPricing">
         <div>
             <input type="hidden" name="price_per_day" value="">
+        </div>
+    </template>
+    <template x-if="!showAdvanceAmount">
+        <div>
             <input type="hidden" name="advance_amount" value="">
         </div>
     </template>

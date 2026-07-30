@@ -580,8 +580,8 @@ class AdminValidationRules
 
     public static function portfolioItem(bool $creating = false, ?string $typeSlug = null): array
     {
-        $isRental = in_array($typeSlug, ['rented-dress', 'rented-jewellery'], true);
-        $priceRule = $isRental ? 'nullable' : ($creating ? 'required' : 'nullable');
+        $isDress = $typeSlug === 'rented-dress';
+        $priceRule = $isDress ? 'nullable' : ($creating ? 'required' : 'nullable');
 
         $rules = [
             'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
