@@ -8,8 +8,8 @@ use Illuminate\Validation\Rule;
 
 class VendorValidationRules
 {
-    /** Max image upload size in kilobytes (20 MB). */
-    public const MAX_IMAGE_KB = 20480;
+    /** Max image upload size in kilobytes (50 MB). */
+    public const MAX_IMAGE_KB = 51200;
 
     /** Max video upload size in kilobytes (100 MB). */
     public const MAX_VIDEO_KB = 102400;

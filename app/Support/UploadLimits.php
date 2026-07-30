@@ -4,7 +4,7 @@ namespace App\Support;
 
 class UploadLimits
 {
-    public const PER_FILE_MAX_KB = 4096;
+    public const PER_FILE_MAX_KB = 51200;
 
     public static function postMaxSizeBytes(): int
     {

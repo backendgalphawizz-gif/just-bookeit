@@ -15,7 +15,7 @@ use Illuminate\Validation\Rule;
 
 class DriverAuthController extends ApiController
 {
-    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'];
+    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.\App\Support\VendorValidationRules::MAX_IMAGE_KB];
 
     public function __construct(
         protected OtpService $otp
