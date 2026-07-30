@@ -5588,32 +5588,49 @@ a { color: inherit; }
 .jbw-auth-page {
     min-height: 100vh;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.25rem;
+    box-sizing: border-box;
+}
+
+/* Logo + form stay together as one centered unit (no floating / stretched gap). */
+.jbw-auth-stage {
+    width: 100%;
+    max-width: 1040px;
+    display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
 }
 
 /* ── Left brand panel ── */
 .jbw-auth-page-brand {
     position: relative;
-    /* Keep logo pinned to the top so form validation errors don't re-center it. */
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 3rem 2rem;
-    overflow: hidden;
-    min-height: 38vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: visible;
+    min-height: 0;
+    flex: 0 0 auto;
 }
 @media (max-width: 768px) {
+    .jbw-auth-page {
+        padding: 1.25rem 1rem 2rem;
+        align-items: flex-start;
+    }
     .jbw-auth-page-brand {
-        min-height: 12vh;
-        padding: 1.5rem 1rem 0.75rem;
+        padding: 0.5rem 0 0;
     }
      .auth-logo {
         height: 100px !important;
+        width: auto !important;
+        max-width: 220px;
     }
     .jbw-auth-page-form {
-        padding-top: 0rem !important;
-    }
-    .jbw-auth-page-form {
-        padding: 0rem 1.25rem 3rem !important;
-        align-items: flex-start !important;
+        padding: 0 !important;
+        width: 100%;
     }
 }
 .textmanage {
@@ -5673,12 +5690,17 @@ a { color: inherit; }
 
 /* ── Right form panel ── */
 .jbw-auth-page-form {
-    /* Top-align so error messages grow the card downward instead of shifting layout. */
-    flex: 1; display: flex; align-items: flex-start; justify-content: center;
-    padding: 2rem 1.25rem 3rem; background: #fefefe;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    width: 100%;
+    max-width: 540px;
 }
 .auth-logo {
-    width: 360px;
+    width: min(280px, 70vw);
     height: auto;
     display: block;
     object-fit: contain;
@@ -5892,21 +5914,32 @@ a { color: inherit; }
     font-size: 10px;
 }
 @media (min-width: 960px) {
-    .jbw-auth-page { flex-direction: row; align-items: flex-start; }
+    .jbw-auth-stage {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(2.5rem, 5vw, 4rem);
+    }
     .jbw-auth-page-brand {
-        flex: 1;
-        min-height: 100vh;
-        padding: 3rem 3rem;
-        align-items: flex-start;
+        flex: 0 0 auto;
+        min-height: 0;
+        padding: 0;
+        align-items: center;
         justify-content: center;
     }
-    .jbw-auth-page-brand-inner { max-width: 32rem; gap: 3rem; }
+    .jbw-auth-page-brand-inner {
+        max-width: 20rem;
+        gap: 0;
+    }
     .jbw-logo--auth .jbw-logo-media--auth { height: 5rem; max-width: 16rem; }
+    .auth-logo {
+        width: 280px;
+    }
     .jbw-auth-page-form {
-        flex: 1;
-        min-height: 100vh;
-        padding: 3rem 3rem;
-        align-items: flex-start;
+        flex: 0 1 540px;
+        min-height: 0;
+        padding: 0;
+        align-items: center;
     }
 }
 @media (max-width: 959px) {
