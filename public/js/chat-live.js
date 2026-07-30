@@ -143,9 +143,9 @@
 
         return `
             <span class="chat-ticks${isRead ? ' is-read' : ''}" data-chat-ticks aria-label="${label}" title="${label}">
-                <svg viewBox="0 0 16 11" width="16" height="11" aria-hidden="true" focusable="false">
-                    <path d="M11.07 0.8 5.7 6.92 3.03 4.1 1.9 5.3l3.8 4.05 1.2-1.28L12.2 2z" fill="currentColor"></path>
-                    <path d="M14.1 0.8 8.72 6.92l-.7-.75 1.13-1.2L15.22 2z" fill="currentColor"></path>
+                <svg viewBox="0 0 16 11" width="16" height="11" aria-hidden="true" focusable="false" fill="none">
+                    <path d="M1.2 5.8 4.1 8.8 9.8 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M5.4 5.8 8.3 8.8 14 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
             </span>
         `;
