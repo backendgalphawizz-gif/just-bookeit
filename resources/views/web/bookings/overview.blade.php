@@ -235,7 +235,7 @@
                         </span>
                         <span id="booking-line-subtotal">₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span>
                     </div>
-                    <div><span>Delivery</span><span id="booking-line-delivery">₹{{ number_format($pricing['shipping_fee'] ?? 150, 0) }}</span></div>
+                    <div><span>Delivery</span><span id="booking-line-delivery">₹{{ number_format($pricing['shipping_fee'] ?? \App\Services\Booking\BookingPricingService::shippingFee(), 0) }}</span></div>
                     <div><span>GST &amp; tax</span><span id="booking-line-tax">₹{{ number_format($pricing['tax_amount'] ?? 0, 0) }}</span></div>
                 </div>
                 <div class="jbw-payment-total">

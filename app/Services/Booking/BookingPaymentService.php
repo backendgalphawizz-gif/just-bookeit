@@ -94,6 +94,8 @@ class BookingPaymentService
             'shipping_fee' => round((float) $checkout->delivery_fee, 2),
             'tax_amount' => round((float) $checkout->tax_amount, 2),
             'tax_percent' => BookingPricingService::gstPercent(),
+            'tax_included_in_payable' => false,
+            'tax_percent' => BookingPricingService::gstPercent(),
             'advance_amount' => $advanceRequired,
             'amount_paid' => $amountPaid,
             'remaining_amount' => $remaining,

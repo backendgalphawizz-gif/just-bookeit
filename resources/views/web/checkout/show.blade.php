@@ -241,7 +241,7 @@
             const tax = parseInr(block.querySelector('.js-line-tax')?.textContent);
             const delivery = checked ? fee : 0;
             if (deliveryEl) deliveryEl.textContent = formatInr(delivery);
-            grand += subtotal + tax + delivery;
+            grand += subtotal + delivery;
         });
         const total = document.getElementById('checkout-grand-total');
         if (total) total.textContent = formatInr(grand);

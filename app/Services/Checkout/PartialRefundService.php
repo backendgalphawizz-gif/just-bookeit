@@ -79,7 +79,7 @@ class PartialRefundService
         }
 
         $lineAmount = round((float) $item->line_amount, 2);
-        $taxAmount = round($lineAmount * (BookingPricingService::gstPercent() / 100), 2);
+        $taxAmount = BookingPricingService::taxAmountForSubtotal($lineAmount);
         $deliveryFee = 0.0;
 
         $remainingActive = $subOrder->orderItems
@@ -90,7 +90,8 @@ class PartialRefundService
             $deliveryFee = (float) ($subOrder->delivery_fee ?? 0);
         }
 
-        $amount = round($lineAmount + $taxAmount + $deliveryFee, 2);
+        // Refund what was charged at booking (GST is not part of payable).
+        $amount = BookingPricingService::payableTotal($lineAmount, $deliveryFee);
 
         if ($amount <= 0) {
             return null;

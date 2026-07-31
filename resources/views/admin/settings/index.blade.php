@@ -15,14 +15,14 @@
         'contact' => 'Contact',
         'legal' => 'Legal & policies',
         'refund_rules' => 'Refund rules',
-        'commission' => 'Commission',
+        'commission' => 'Fees & commission',
         'discovery' => 'Discovery radius',
     ];
 @endphp
 
 @section('title', 'Settings')
 @section('page_title', 'System settings')
-@section('page_subtitle', 'Logos, legal content, refund rules, contact, discovery radius, and platform options')
+@section('page_subtitle', 'Logos, fees, GST, shipping, refund rules, contact, discovery radius, and platform options')
 @section('content')
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
@@ -189,7 +189,12 @@
                     </div>
                 </section>
             @elseif ($tab === 'commission')
-                @include('admin.partials.form-input', ['label' => 'Global commission (%)', 'name' => 'global_commission_percent', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('global_commission_percent', $values['global_commission_percent'] ?? '10'), 'required' => true])
+                <p class="mb-4 text-sm text-slate-500">Shipping and GST apply to bookings. GST is shown on the summary but is not added to the amount paid at booking.</p>
+                <div class="grid gap-6 sm:grid-cols-2">
+                    @include('admin.partials.form-input', ['label' => 'Global commission (%)', 'name' => 'global_commission_percent', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('global_commission_percent', $values['global_commission_percent'] ?? '10'), 'required' => true])
+                    @include('admin.partials.form-input', ['label' => 'Default shipping fee (₹)', 'name' => 'default_shipping_fee', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'value' => old('default_shipping_fee', $values['default_shipping_fee'] ?? '450'), 'required' => true])
+                    @include('admin.partials.form-input', ['label' => 'GST (%)', 'name' => 'default_gst_percent', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('default_gst_percent', $values['default_gst_percent'] ?? '18'), 'required' => true])
+                </div>
                 <p class="mt-2 text-sm text-slate-500">Applied to vendor payouts unless overridden per vendor.</p>
             @elseif ($tab === 'discovery')
                 <p class="mb-6 text-sm text-slate-500">

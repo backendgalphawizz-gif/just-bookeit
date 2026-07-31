@@ -554,6 +554,8 @@ class AdminValidationRules
     {
         return [
             'global_commission_percent' => ['required', 'numeric', 'min:0', 'max:100'],
+            'default_shipping_fee' => ['required', 'numeric', 'min:0', 'max:999999'],
+            'default_gst_percent' => ['required', 'numeric', 'min:0', 'max:100'],
         ];
     }
 
@@ -718,6 +720,9 @@ class AdminValidationRules
             'earnings.min' => 'Earnings cannot be negative.',
             'global_commission_percent.min' => 'Commission cannot be negative.',
             'global_commission_percent.max' => 'Commission cannot exceed 100%.',
+            'default_shipping_fee.min' => 'Shipping fee cannot be negative.',
+            'default_gst_percent.min' => 'GST cannot be negative.',
+            'default_gst_percent.max' => 'GST cannot exceed 100%.',
             'refund_rental_cancel_days.min' => 'Cancellation notice cannot be negative.',
             'refund_rental_cancel_days.max' => 'Cancellation notice cannot exceed 365 days.',
             'refund_rental_late_fee_per_day.min' => 'Late return fee cannot be negative.',
@@ -820,6 +825,8 @@ class AdminValidationRules
             'order_id' => 'order',
             'raised_by' => 'raised by',
             'global_commission_percent' => 'commission',
+            'default_shipping_fee' => 'shipping fee',
+            'default_gst_percent' => 'GST percent',
             'discovery_radius_km' => 'discovery radius (km)',
             'refund_rental_cancel_days' => 'rental cancellation days',
             'refund_rental_late_fee_per_day' => 'late return fee',

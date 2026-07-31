@@ -278,7 +278,7 @@ class VendorBookingItemService
 
         $subtotal = round($active->sum(fn (OrderItem $item) => (float) $item->line_amount), 2);
         $gstPercent = BookingPricingService::gstPercent();
-        $taxAmount = round($subtotal * ($gstPercent / 100), 2);
+        $taxAmount = BookingPricingService::taxAmountForSubtotal($subtotal, $gstPercent);
         $deliveryFee = $active->isEmpty() ? 0.0 : (float) ($booking->delivery_fee ?? 0);
 
         $resolved = OrderItemStatusSupport::resolveBookingFromItems($items, $booking);

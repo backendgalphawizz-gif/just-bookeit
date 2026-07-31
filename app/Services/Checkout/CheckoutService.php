@@ -54,7 +54,7 @@ class CheckoutService
         $amount = round($groups->sum('subtotal'), 2);
         $deliveryFee = round($groups->sum('delivery_fee'), 2);
         $taxAmount = round($groups->sum('tax_amount'), 2);
-        $grandTotal = round($amount + $deliveryFee + $taxAmount, 2);
+        $grandTotal = BookingPricingService::payableTotal($amount, $deliveryFee);
         $advanceAmount = round($groups->sum('advance_amount'), 2);
 
         return [
@@ -86,6 +86,8 @@ class CheckoutService
                 'amount' => $amount,
                 'delivery_fee' => $deliveryFee,
                 'tax_amount' => $taxAmount,
+                'tax_percent' => BookingPricingService::gstPercent(),
+                'tax_included_in_payable' => false,
                 'advance_amount' => $advanceAmount,
                 'remaining_amount' => round(max(0, $grandTotal - $advanceAmount), 2),
                 'grand_total' => $grandTotal,
@@ -364,8 +366,8 @@ class CheckoutService
                 $advanceAmount = round($lines->sum('advance_amount'), 2);
                 $shipmentRequired = $vendorShipments[(int) $vendorId] ?? true;
                 $deliveryFee = BookingPricingService::shippingFee($shipmentRequired);
-                $taxAmount = round($subtotal * (BookingPricingService::gstPercent() / 100), 2);
-                $grandTotal = round($subtotal + $deliveryFee + $taxAmount, 2);
+                $taxAmount = BookingPricingService::taxAmountForSubtotal($subtotal);
+                $grandTotal = BookingPricingService::payableTotal($subtotal, $deliveryFee);
 
                 return [
                     'vendor_id' => (int) $vendorId,
@@ -377,6 +379,7 @@ class CheckoutService
                     'remaining_amount' => round(max(0, $grandTotal - $advanceAmount), 2),
                     'delivery_fee' => $deliveryFee,
                     'tax_amount' => $taxAmount,
+                    'tax_included_in_payable' => false,
                     'grand_total' => $grandTotal,
                 ];
             })

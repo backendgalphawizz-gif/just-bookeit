@@ -164,6 +164,8 @@ class SettingsController extends AdminController
         );
 
         PlatformSetting::set('global_commission_percent', $data['global_commission_percent'], 'commission');
+        PlatformSetting::set('default_shipping_fee', $data['default_shipping_fee'], 'fees');
+        PlatformSetting::set('default_gst_percent', $data['default_gst_percent'], 'fees');
     }
 
     protected function updateDiscovery(Request $request): void

@@ -862,7 +862,8 @@ class VendorApiPresenter
         $itemAdvance = round((float) $item->advanceAmount(), 2);
 
         if (! $order) {
-            $taxAmount = round($subtotal * ($gstPercent / 100), 2);
+            $taxAmount = BookingPricingService::taxAmountForSubtotal($subtotal, $gstPercent);
+            $totalAmount = BookingPricingService::payableTotal($subtotal);
 
             return [
                 'subtotal' => $subtotal,
@@ -871,7 +872,8 @@ class VendorApiPresenter
                 'shipping_and_handling' => 0.0,
                 'tax_percent' => $gstPercent,
                 'tax_amount' => $taxAmount,
-                'total_amount' => round($subtotal + $taxAmount, 2),
+                'tax_included_in_payable' => false,
+                'total_amount' => $totalAmount,
                 'currency' => (string) \App\Models\PlatformSetting::get('currency', 'INR'),
                 'subtotal_label' => '₹'.number_format($subtotal, 0),
                 'advance_amount_label' => '₹'.number_format($itemAdvance, 0),
@@ -879,7 +881,7 @@ class VendorApiPresenter
                 'shipping_and_handling_label' => '₹0',
                 'tax_amount_label' => '₹'.number_format($taxAmount, 0),
                 'tax_label' => 'Tax (GST '.(int) $gstPercent.'%)',
-                'total_amount_label' => '₹'.number_format($subtotal + $taxAmount, 0),
+                'total_amount_label' => '₹'.number_format($totalAmount, 0),
             ];
         }
 
@@ -897,10 +899,10 @@ class VendorApiPresenter
             ? self::orderAdvanceAmount($order)
             : $itemAdvance;
         $taxAmount = $isSingle
-            ? (float) ($order->tax_amount ?? round($subtotal * ($gstPercent / 100), 2))
-            : round($subtotal * ($gstPercent / 100), 2);
+            ? (float) ($order->tax_amount ?? BookingPricingService::taxAmountForSubtotal($subtotal, $gstPercent))
+            : BookingPricingService::taxAmountForSubtotal($subtotal, $gstPercent);
         $damage = round((float) $item->damageDeduction(), 2);
-        $totalAmount = round(max(0, $subtotal + $shipping + $taxAmount - $damage), 2);
+        $totalAmount = BookingPricingService::payableTotal($subtotal, $shipping, $damage);
 
         return [
             'subtotal' => $subtotal,
@@ -914,6 +916,7 @@ class VendorApiPresenter
                 : null,
             'tax_percent' => $gstPercent,
             'tax_amount' => $taxAmount,
+            'tax_included_in_payable' => false,
             'total_amount' => $totalAmount,
             'currency' => (string) \App\Models\PlatformSetting::get('currency', 'INR'),
             'subtotal_label' => '₹'.number_format($subtotal, 0),

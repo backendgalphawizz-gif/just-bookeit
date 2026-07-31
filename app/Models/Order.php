@@ -445,9 +445,9 @@ class Order extends Model
 
     public function grandTotal(): float
     {
+        // GST is stored for display/invoice but not charged in the booking payable total.
         return max(0, $this->subtotal()
             + (float) ($this->delivery_fee ?? 0)
-            + (float) ($this->tax_amount ?? 0)
             - $this->damageDeduction());
     }
 

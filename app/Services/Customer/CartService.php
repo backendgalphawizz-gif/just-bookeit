@@ -86,8 +86,8 @@ class CartService
                 }), 2);
                 $deliveryFee = BookingPricingService::shippingFee($shipmentRequired);
                 $taxPercent = BookingPricingService::gstPercent();
-                $taxAmount = round($vendorSubtotal * ($taxPercent / 100), 2);
-                $totalAmount = round($vendorSubtotal + $deliveryFee + $taxAmount, 2);
+                $taxAmount = BookingPricingService::taxAmountForSubtotal($vendorSubtotal, $taxPercent);
+                $totalAmount = BookingPricingService::payableTotal($vendorSubtotal, $deliveryFee);
 
                 return [
                     'vendor_id' => (int) $group->first()->vendor_id,
@@ -99,6 +99,7 @@ class CartService
                     'tax_percent' => $taxPercent,
                     'gst_percent' => $taxPercent,
                     'tax_amount' => $taxAmount,
+                    'tax_included_in_payable' => false,
                     'total_amount' => $totalAmount,
                     'remaining_amount' => round(max(0, $totalAmount - $vendorAdvance), 2),
                 ];
@@ -108,8 +109,8 @@ class CartService
 
         $deliveryFeeTotal = round(collect($vendors)->sum('delivery_fee'), 2);
         $taxPercent = BookingPricingService::gstPercent();
-        $taxAmount = round($subtotal * ($taxPercent / 100), 2);
-        $totalAmount = round($subtotal + $deliveryFeeTotal + $taxAmount, 2);
+        $taxAmount = BookingPricingService::taxAmountForSubtotal($subtotal, $taxPercent);
+        $totalAmount = BookingPricingService::payableTotal($subtotal, $deliveryFeeTotal);
 
         return [
             'items_count' => $items->sum('quantity'),
@@ -122,6 +123,7 @@ class CartService
             'tax_percent' => $taxPercent,
             'gst_percent' => $taxPercent,
             'tax_amount' => $taxAmount,
+            'tax_included_in_payable' => false,
             'advance_amount' => $advanceAmount,
             'remaining_amount' => round(max(0, $totalAmount - $advanceAmount), 2),
             'total_amount' => $totalAmount,

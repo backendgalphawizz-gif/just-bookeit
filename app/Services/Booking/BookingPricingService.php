@@ -49,8 +49,9 @@ class BookingPricingService
         $subtotal = round($dailyRate * $billingDays, 2);
         $shipping = (float) ($options['shipping_fee'] ?? self::shippingFee($options['shipment_required'] ?? true));
         $gstPercent = (float) ($options['gst_percent'] ?? self::gstPercent());
-        $tax = round($subtotal * ($gstPercent / 100), 2);
-        $total = round($subtotal + $shipping + $tax, 2);
+        $tax = self::taxAmountForSubtotal($subtotal, $gstPercent);
+        // Payable at booking = subtotal + shipping (GST is informational, not charged now).
+        $total = self::payableTotal($subtotal, $shipping);
         $advanceAmount = self::resolveAdvanceAmount($item, $options, $total);
 
         return [
@@ -62,19 +63,22 @@ class BookingPricingService
             'shipping_fee' => $shipping,
             'tax_percent' => $gstPercent,
             'tax_amount' => $tax,
+            'tax_included_in_payable' => false,
             'advance_amount' => $advanceAmount,
             'remaining_amount' => round(max(0, $total - $advanceAmount), 2),
             'total_amount' => $total,
+            'total_with_tax' => round($total + $tax, 2),
             'currency' => (string) PlatformSetting::get('currency', 'INR'),
         ];
     }
 
     public static function fromOrder(Order $order): array
     {
-        $order->loadMissing(['portfolioItem', 'orderItems.portfolioItem', 'category']);
+        $order->loadMissing(['portfolioItem', 'orderItems', 'category']);
         $total = $order->grandTotal();
         $rentalDays = $order->rentalDurationDays();
         $requiresRentalPeriod = $order->requiresRentalPeriod();
+        $taxAmount = (float) ($order->tax_amount ?? 0);
 
         if ($order->orderItems->isNotEmpty()) {
             $advanceAmount = round($order->orderItems->sum(fn (OrderItem $item) => $item->advanceAmount()), 2);
@@ -94,10 +98,12 @@ class BookingPricingService
             'subtotal' => $order->subtotal(),
             'shipping_fee' => (float) ($order->delivery_fee ?? 0),
             'tax_percent' => self::gstPercent(),
-            'tax_amount' => (float) ($order->tax_amount ?? 0),
+            'tax_amount' => $taxAmount,
+            'tax_included_in_payable' => false,
             'advance_amount' => $advanceAmount,
             'remaining_amount' => round(max(0, $total - $advanceAmount), 2),
             'total_amount' => $total,
+            'total_with_tax' => round($total + $taxAmount, 2),
             'currency' => (string) PlatformSetting::get('currency', 'INR'),
         ];
     }
@@ -139,7 +145,9 @@ class BookingPricingService
             'platform_fee_percent' => $commissionPercent,
             'tax_amount' => $taxAmount,
             'tax_percent' => self::gstPercent(),
+            'tax_included_in_payable' => false,
             'total_amount' => $totalAmount,
+            'total_with_tax' => round($totalAmount + $taxAmount, 2),
             'vendor_net_amount' => $vendorNet,
             'currency' => (string) PlatformSetting::get('currency', 'INR'),
         ];
@@ -160,11 +168,24 @@ class BookingPricingService
             return 0.0;
         }
 
-        return (float) PlatformSetting::get('default_shipping_fee', self::DEFAULT_SHIPPING);
+        return round(max(0, (float) PlatformSetting::get('default_shipping_fee', self::DEFAULT_SHIPPING)), 2);
     }
 
     public static function gstPercent(): float
     {
-        return (float) PlatformSetting::get('default_gst_percent', self::DEFAULT_GST_PERCENT);
+        return round(max(0, (float) PlatformSetting::get('default_gst_percent', self::DEFAULT_GST_PERCENT)), 2);
+    }
+
+    public static function taxAmountForSubtotal(float $subtotal, ?float $gstPercent = null): float
+    {
+        $percent = $gstPercent ?? self::gstPercent();
+
+        return round(max(0, $subtotal) * ($percent / 100), 2);
+    }
+
+    /** Amount charged at booking (GST excluded). */
+    public static function payableTotal(float $subtotal, float $shippingFee = 0, float $damageDeduction = 0): float
+    {
+        return round(max(0, $subtotal + $shippingFee - $damageDeduction), 2);
     }
 }

@@ -32,6 +32,8 @@ class PlatformSettingsSeeder extends Seeder
             ['group' => 'features', 'key' => 'maintenance_mode', 'value' => '0', 'type' => 'boolean'],
             ['group' => 'features', 'key' => 'currency', 'value' => 'INR', 'type' => 'text'],
             ['group' => 'commission', 'key' => 'global_commission_percent', 'value' => '10', 'type' => 'text'],
+            ['group' => 'fees', 'key' => 'default_shipping_fee', 'value' => '450', 'type' => 'text'],
+            ['group' => 'fees', 'key' => 'default_gst_percent', 'value' => '18', 'type' => 'text'],
             ['group' => 'refund_rules', 'key' => 'refund_policy_user', 'value' => 'Refunds are processed per the rental or purchase terms agreed at checkout. Security deposits are returned after the outfit is inspected on return.', 'type' => 'html'],
             ['group' => 'refund_rules', 'key' => 'return_policy_user', 'value' => 'Rented outfits must be returned on or before the due date in the same condition. Late returns may incur daily charges. Purchased items may be returned only within the allowed window if tags are intact.', 'type' => 'html'],
             ['group' => 'refund_rules', 'key' => 'refund_enable_rental', 'value' => '1', 'type' => 'boolean'],
