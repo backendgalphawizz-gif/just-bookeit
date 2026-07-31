@@ -1291,7 +1291,8 @@ class VendorApiPresenter
         };
 
         // Images and videos are returned separately for mobile clients.
-        $galleryImageUrls = collect($item->galleryImageUrls())
+        // Gallery excludes the primary cover — that is already in `image_url`.
+        $galleryImageUrls = collect($item->additionalGalleryImageUrls())
             ->map(fn ($path) => $absoluteUrl($path))
             ->filter()
             ->unique()

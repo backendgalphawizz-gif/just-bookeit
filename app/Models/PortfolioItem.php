@@ -182,12 +182,24 @@ class PortfolioItem extends Model
         $items = [];
         $seen = [];
 
-        $push = function (string $type, ?string $url) use (&$items, &$seen, $poster): void {
-            if ($url === null || $url === '' || isset($seen[$type.':'.$url])) {
+        $normalizeKey = static function (?string $url): ?string {
+            if ($url === null || $url === '') {
+                return null;
+            }
+
+            $path = parse_url($url, PHP_URL_PATH);
+            $path = is_string($path) && $path !== '' ? $path : $url;
+
+            return ltrim(str_replace('\\', '/', $path), '/');
+        };
+
+        $push = function (string $type, ?string $url) use (&$items, &$seen, $poster, $normalizeKey): void {
+            $key = $normalizeKey($url);
+            if ($key === null || isset($seen[$type.':'.$key])) {
                 return;
             }
 
-            $seen[$type.':'.$url] = true;
+            $seen[$type.':'.$key] = true;
             $items[] = [
                 'type' => $type,
                 'url' => $url,
@@ -202,6 +214,42 @@ class PortfolioItem extends Model
         }
 
         return $items;
+    }
+
+    /**
+     * Gallery image paths/URLs excluding the primary cover (`image_url`).
+     * Use with APIs that already return `image_url` separately.
+     *
+     * @return list<string>
+     */
+    public function additionalGalleryImageUrls(): array
+    {
+        $this->loadMissing('images');
+
+        $primaryPath = is_string($this->image_url) ? ltrim(str_replace('\\', '/', $this->image_url), '/') : null;
+        $primaryKey = null;
+        if ($primaryPath) {
+            $primaryKey = str_starts_with($primaryPath, 'http://') || str_starts_with($primaryPath, 'https://')
+                ? ltrim((string) (parse_url($primaryPath, PHP_URL_PATH) ?: $primaryPath), '/')
+                : $primaryPath;
+        }
+
+        return $this->images
+            ->sortBy('sort_order')
+            ->filter(fn (PortfolioItemImage $media) => $media->isImage())
+            ->reject(function (PortfolioItemImage $media) use ($primaryKey) {
+                if ($primaryKey === null) {
+                    return false;
+                }
+
+                $path = ltrim(str_replace('\\', '/', (string) $media->image_path), '/');
+
+                return $path === $primaryKey || str_ends_with($path, $primaryKey) || str_ends_with($primaryKey, $path);
+            })
+            ->map(fn (PortfolioItemImage $media) => $media->mediaUrl())
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /** @return list<string> */

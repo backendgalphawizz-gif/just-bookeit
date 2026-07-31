@@ -112,7 +112,7 @@ class CustomerApiPresenter
             'vendor_code' => $vendor->vendor_code,
             'brand_name' => $vendor->brand_name,
             'shop_name' => $vendor->shop_name,
-            'city' => $vendor->city,
+            'city' => self::vendorAddress($vendor)['full_address'] ?: $vendor->city,
             'rating' => (float) $vendor->rating,
             'profile_image_url' => $vendor->profileImageUrl(),
             'shop_logo_url' => $vendor->shopLogoUrl(),
@@ -320,7 +320,7 @@ class CustomerApiPresenter
                 : url($path);
         };
 
-        $galleryImageUrls = collect($item->galleryImageUrls())
+        $galleryImageUrls = collect($item->additionalGalleryImageUrls())
             ->map(fn ($path) => $absoluteUrl($path))
             ->filter()
             ->unique()
