@@ -52,7 +52,7 @@ class BookingPricingService
         $tax = self::taxAmountForSubtotal($subtotal, $gstPercent);
         // Payable at booking = subtotal + shipping (GST is informational, not charged now).
         $total = self::payableTotal($subtotal, $shipping);
-        $advanceAmount = self::resolveAdvanceAmount($item, $options, $total);
+        $advanceAmount = min(self::resolveAdvanceAmount($item, $options, $total), $total);
 
         return [
             'daily_rate' => $dailyRate,
@@ -85,8 +85,10 @@ class BookingPricingService
         } else {
             $advanceAmount = $order->portfolioItem?->advance_amount !== null
                 ? round((float) $order->portfolioItem->advance_amount, 2)
-                : 0.0;
+                : round((float) ($order->advance_amount ?? 0), 2);
         }
+
+        $advanceAmount = round(min(max(0, $advanceAmount), $total), 2);
 
         return [
             'daily_rate' => $rentalDays

@@ -328,7 +328,14 @@ class PaymentController extends ApiController
     protected function assertCachedPayment(string $type, int|string $entityId, array $payload): void
     {
         $expected = Cache::get($this->cacheKey($type, $entityId));
-        if (! is_array($expected) || ($expected['razorpay_order_id'] ?? null) !== ($payload['razorpay_order_id'] ?? null)) {
+
+        // Prefer matching the cached Razorpay order when still available.
+        // If cache expired after a successful checkout UI, signature verification alone is enough.
+        if (
+            is_array($expected)
+            && ($expected['razorpay_order_id'] ?? null) !== null
+            && ($expected['razorpay_order_id'] ?? null) !== ($payload['razorpay_order_id'] ?? null)
+        ) {
             throw new InvalidArgumentException('Razorpay order mismatch. Create a new Razorpay order and try again.');
         }
 

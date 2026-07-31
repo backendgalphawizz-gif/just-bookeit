@@ -596,7 +596,6 @@ class CustomerApiPresenter
             'amount' => (float) $order->amount,
             'advance_amount' => $paymentSummary['advance_amount'],
             'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? 0),
-            'amount_paid_label' => '₹'.number_format((float) ($paymentSummary['amount_paid'] ?? 0), 2),
             'payable_now' => $paymentSummary['payable_now'],
             'remaining_amount' => $paymentSummary['remaining_amount'],
             'total_amount' => $order->grandTotal(),

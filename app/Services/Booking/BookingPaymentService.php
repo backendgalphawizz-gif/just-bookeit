@@ -38,23 +38,35 @@ class BookingPaymentService
         $order->loadMissing(['portfolioItem', 'orderItems.portfolioItem']);
         $pricing = BookingPricingService::fromOrder($order);
         $total = round((float) ($pricing['total_amount'] ?? $order->grandTotal()), 2);
-        $advanceRequired = $this->requiredAdvanceForOrder($order, $pricing);
-        $amountPaid = $this->resolvedAmountPaid(
+        $advanceRequired = min(
+            $this->requiredAdvanceForOrder($order, $pricing),
+            $total
+        );
+        $accountingPaid = $this->resolvedAmountPaid(
             (float) ($order->amount_paid ?? 0),
             (string) $order->payment_status,
             $total,
             $advanceRequired
         );
-        $remaining = round(max(0, $total - $amountPaid), 2);
+        $isCodPending = $order->isCod() && $order->payment_status === self::STATUS_PENDING;
+        // Customer apps expect amount_paid for COD to show the amount due on delivery.
+        $amountPaid = $isCodPending ? $total : $accountingPaid;
+        $remaining = $isCodPending
+            ? 0.0
+            : round(max(0, $total - $accountingPaid), 2);
         $remainingUnlocked = $this->remainingPaymentUnlocked($order->status);
-        $payableNow = $this->payableNow(
-            $order->payment_status,
-            $advanceRequired,
-            $total,
-            $amountPaid,
-            $remainingUnlocked
-        );
-        $phase = $this->phase($order->payment_status, $advanceRequired, $remaining, $remainingUnlocked);
+        $payableNow = $isCodPending
+            ? 0.0
+            : $this->payableNow(
+                $order->payment_status,
+                $advanceRequired,
+                $total,
+                $accountingPaid,
+                $remainingUnlocked
+            );
+        $phase = $isCodPending
+            ? 'cod_pending'
+            : $this->phase($order->payment_status, $advanceRequired, $remaining, $remainingUnlocked);
 
         return [
             ...$pricing,
@@ -66,11 +78,14 @@ class BookingPaymentService
             'payment_status' => $order->payment_status,
             'requires_advance' => $advanceRequired > 0,
             'remaining_payment_unlocked' => $remainingUnlocked,
-            'is_fully_paid' => in_array($order->payment_status, [self::STATUS_SUCCESS], true) || $remaining <= 0.0,
+            'is_fully_paid' => in_array($order->payment_status, [self::STATUS_SUCCESS], true)
+                || (! $isCodPending && $remaining <= 0.0),
             'can_pay' => $payableNow > 0
                 && ! in_array($order->payment_status, [self::STATUS_SUCCESS, 'refunded'], true)
                 && ! $this->isCodConfirmedOrder($order),
-            'pay_label' => $this->payLabel($order->payment_status, $advanceRequired, $payableNow, $phase),
+            'pay_label' => $isCodPending
+                ? 'Pay ₹'.number_format($total, 0).' on delivery'
+                : $this->payLabel($order->payment_status, $advanceRequired, $payableNow, $phase),
         ];
     }
 
@@ -79,25 +94,36 @@ class BookingPaymentService
     {
         $checkout->loadMissing(['subOrders.orderItems.portfolioItem', 'subOrders.portfolioItem']);
         $total = round((float) $checkout->grand_total, 2);
-        $advanceRequired = $this->requiredAdvanceForCheckout($checkout);
-        $amountPaid = $this->resolvedAmountPaid(
+        $advanceRequired = min(
+            $this->requiredAdvanceForCheckout($checkout),
+            $total
+        );
+        $accountingPaid = $this->resolvedAmountPaid(
             (float) ($checkout->amount_paid ?? 0),
             (string) $checkout->payment_status,
             $total,
             $advanceRequired
         );
-        $remaining = round(max(0, $total - $amountPaid), 2);
+        $isCodPending = $checkout->payment_method === 'cod' && $checkout->payment_status === self::STATUS_PENDING;
+        $amountPaid = $isCodPending ? $total : $accountingPaid;
+        $remaining = $isCodPending
+            ? 0.0
+            : round(max(0, $total - $accountingPaid), 2);
         $remainingUnlocked = $checkout->subOrders->contains(
             fn (Order $sub) => $this->remainingPaymentUnlocked($sub->status)
         ) || $this->remainingPaymentUnlocked($checkout->status);
-        $payableNow = $this->payableNow(
-            $checkout->payment_status,
-            $advanceRequired,
-            $total,
-            $amountPaid,
-            $remainingUnlocked
-        );
-        $phase = $this->phase($checkout->payment_status, $advanceRequired, $remaining, $remainingUnlocked);
+        $payableNow = $isCodPending
+            ? 0.0
+            : $this->payableNow(
+                $checkout->payment_status,
+                $advanceRequired,
+                $total,
+                $accountingPaid,
+                $remainingUnlocked
+            );
+        $phase = $isCodPending
+            ? 'cod_pending'
+            : $this->phase($checkout->payment_status, $advanceRequired, $remaining, $remainingUnlocked);
 
         return [
             'subtotal' => round((float) $checkout->amount, 2),
@@ -105,7 +131,6 @@ class BookingPaymentService
             'tax_amount' => round((float) $checkout->tax_amount, 2),
             'tax_percent' => BookingPricingService::gstPercent(),
             'tax_included_in_payable' => false,
-            'tax_percent' => BookingPricingService::gstPercent(),
             'advance_amount' => $advanceRequired,
             'amount_paid' => $amountPaid,
             'remaining_amount' => $remaining,
@@ -117,11 +142,14 @@ class BookingPaymentService
             'payment_status' => $checkout->payment_status,
             'requires_advance' => $advanceRequired > 0,
             'remaining_payment_unlocked' => $remainingUnlocked,
-            'is_fully_paid' => in_array($checkout->payment_status, [self::STATUS_SUCCESS], true) || $remaining <= 0.0,
+            'is_fully_paid' => in_array($checkout->payment_status, [self::STATUS_SUCCESS], true)
+                || (! $isCodPending && $remaining <= 0.0),
             'can_pay' => $payableNow > 0
                 && ! in_array($checkout->payment_status, [self::STATUS_SUCCESS, 'refunded', 'partially_refunded'], true)
                 && ! $this->isCodConfirmedCheckout($checkout),
-            'pay_label' => $this->payLabel($checkout->payment_status, $advanceRequired, $payableNow, $phase),
+            'pay_label' => $isCodPending
+                ? 'Pay ₹'.number_format($total, 0).' on delivery'
+                : $this->payLabel($checkout->payment_status, $advanceRequired, $payableNow, $phase),
         ];
     }
 
@@ -143,11 +171,11 @@ class BookingPaymentService
 
         $payableNow = (float) $summary['payable_now'];
         $total = (float) $summary['total_amount'];
-        $newPaid = round((float) ($order->amount_paid ?? 0) + $payableNow, 2);
+        $newPaid = round(min($total, (float) ($order->amount_paid ?? 0) + $payableNow), 2);
         $nextStatus = $newPaid + 0.009 >= $total ? self::STATUS_SUCCESS : self::STATUS_ADVANCE_PAID;
 
         $order->update([
-            'advance_amount' => $summary['advance_amount'],
+            'advance_amount' => min((float) $summary['advance_amount'], $total),
             'amount_paid' => $newPaid,
             'payment_status' => $nextStatus,
             'payment_method' => $paymentMethod,
@@ -220,12 +248,12 @@ class BookingPaymentService
 
             $payableNow = (float) $summary['payable_now'];
             $total = (float) $summary['total_amount'];
-            $newPaid = round((float) ($checkout->amount_paid ?? 0) + $payableNow, 2);
+            $newPaid = round(min($total, (float) ($checkout->amount_paid ?? 0) + $payableNow), 2);
             $nextStatus = $newPaid + 0.009 >= $total ? self::STATUS_SUCCESS : self::STATUS_ADVANCE_PAID;
             $checkoutTotal = max(0.01, $total);
 
             $checkout->update([
-                'advance_amount' => $summary['advance_amount'],
+                'advance_amount' => min((float) $summary['advance_amount'], $total),
                 'amount_paid' => $newPaid,
                 'payment_status' => $nextStatus,
                 'payment_method' => $paymentMethod,
@@ -250,7 +278,7 @@ class BookingPaymentService
                     $allocated += $subPay;
                 }
 
-                $subPaid = round((float) ($subOrder->amount_paid ?? 0) + max(0, $subPay), 2);
+                $subPaid = round(min($subTotal, (float) ($subOrder->amount_paid ?? 0) + max(0, $subPay)), 2);
                 $subStatus = $subPaid + 0.009 >= $subTotal ? self::STATUS_SUCCESS : self::STATUS_ADVANCE_PAID;
                 if ($nextStatus === self::STATUS_SUCCESS) {
                     $subStatus = self::STATUS_SUCCESS;
@@ -258,7 +286,7 @@ class BookingPaymentService
                 }
 
                 $subOrder->update([
-                    'advance_amount' => $subSummary['advance_amount'],
+                    'advance_amount' => min((float) $subSummary['advance_amount'], $subTotal),
                     'amount_paid' => $subPaid,
                     'payment_status' => $subStatus,
                     'payment_method' => $paymentMethod,
@@ -398,7 +426,7 @@ class BookingPaymentService
         }
 
         if ($paymentStatus === self::STATUS_ADVANCE_PAID) {
-            return round(max(0, $advanceRequired), 2);
+            return round(max(0, $advanceRequired > 0 ? $advanceRequired : $total), 2);
         }
 
         return 0.0;
@@ -418,8 +446,12 @@ class BookingPaymentService
         $remaining = round(max(0, $total - $amountPaid), 2);
 
         if ($paymentStatus === self::STATUS_PENDING) {
-            // Booking-time charge: advance only when set, otherwise full booking amount.
-            return $advanceRequired > 0 ? round($advanceRequired, 2) : $remaining;
+            // Charge advance at booking time, but never more than what is still due.
+            if ($advanceRequired > 0) {
+                return round(min($advanceRequired, $remaining), 2);
+            }
+
+            return $remaining;
         }
 
         // Remaining balance is collected only after the booking is completed/delivered.
@@ -444,7 +476,12 @@ class BookingPaymentService
             return $remainingUnlocked ? 'remaining_due' : 'advance_paid_waiting';
         }
 
-        return $advanceRequired > 0 ? 'advance_due' : 'full_due';
+        // Only "advance due" when advance is a real partial amount (< full remaining).
+        if ($advanceRequired > 0 && $advanceRequired + 0.009 < $remaining) {
+            return 'advance_due';
+        }
+
+        return 'full_due';
     }
 
     protected function payLabel(
@@ -457,7 +494,7 @@ class BookingPaymentService
             return 'Pay remaining ₹'.number_format($payableNow, 0);
         }
 
-        if ($phase === 'advance_due' || ($paymentStatus === self::STATUS_PENDING && $advanceRequired > 0)) {
+        if ($phase === 'advance_due') {
             return 'Pay advance ₹'.number_format($payableNow, 0);
         }
 
