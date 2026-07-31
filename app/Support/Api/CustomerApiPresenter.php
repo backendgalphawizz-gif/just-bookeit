@@ -595,7 +595,8 @@ class CustomerApiPresenter
             'event_date' => $order->event_date?->format('Y-m-d'),
             'amount' => (float) $order->amount,
             'advance_amount' => $paymentSummary['advance_amount'],
-            'amount_paid' => $paymentSummary['amount_paid'],
+            'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? 0),
+            'amount_paid_label' => '₹'.number_format((float) ($paymentSummary['amount_paid'] ?? 0), 2),
             'payable_now' => $paymentSummary['payable_now'],
             'remaining_amount' => $paymentSummary['remaining_amount'],
             'total_amount' => $order->grandTotal(),
@@ -698,11 +699,15 @@ class CustomerApiPresenter
             'requires_rental_period' => $order->requiresRentalPeriod(),
             'rental_duration_days' => $order->rentalDurationDays(),
             'booked_at' => $order->created_at?->format('d M Y, g:i A'),
-            'payment_summary' => array_merge($vendorDetail['payment_summary'] ?? [], $customerPayment),
-            'amount_paid' => $customerPayment['amount_paid'] ?? null,
-            'payable_now' => $customerPayment['payable_now'] ?? null,
-            'remaining_amount' => $customerPayment['remaining_amount'] ?? null,
-            'advance_amount' => $customerPayment['advance_amount'] ?? ($vendorDetail['advance_amount'] ?? null),
+            'payment_summary' => array_merge($vendorDetail['payment_summary'] ?? [], $customerPayment, [
+                'amount_paid' => (float) ($customerPayment['amount_paid'] ?? 0),
+                'amount_paid_label' => '₹'.number_format((float) ($customerPayment['amount_paid'] ?? 0), 2),
+            ]),
+            'amount_paid' => (float) ($customerPayment['amount_paid'] ?? 0),
+            'amount_paid_label' => '₹'.number_format((float) ($customerPayment['amount_paid'] ?? 0), 2),
+            'payable_now' => (float) ($customerPayment['payable_now'] ?? 0),
+            'remaining_amount' => (float) ($customerPayment['remaining_amount'] ?? 0),
+            'advance_amount' => (float) ($customerPayment['advance_amount'] ?? ($vendorDetail['advance_amount'] ?? 0)),
             'tracking_steps' => $order->trackBookingSteps(),
             'tracking_type' => $order->isRental() ? 'rental' : 'fashion_designer',
             'delivery_otp' => $order->ensureDeliveryOtp(),
@@ -834,10 +839,14 @@ class CustomerApiPresenter
             'delivery_fee' => (float) $checkout->delivery_fee,
             'tax_amount' => (float) $checkout->tax_amount,
             'advance_amount' => $paymentSummary['advance_amount'],
-            'amount_paid' => $paymentSummary['amount_paid'],
+            'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? 0),
+            'amount_paid_label' => '₹'.number_format((float) ($paymentSummary['amount_paid'] ?? 0), 2),
             'payable_now' => $paymentSummary['payable_now'],
             'remaining_amount' => $paymentSummary['remaining_amount'],
-            'payment_summary' => $paymentSummary,
+            'payment_summary' => array_merge($paymentSummary, [
+                'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? 0),
+                'amount_paid_label' => '₹'.number_format((float) ($paymentSummary['amount_paid'] ?? 0), 2),
+            ]),
             'grand_total' => $grandTotal,
             'amount_refunded' => (float) $checkout->amount_refunded,
             'vendor_count' => $checkout->subOrders->count(),
@@ -892,7 +901,7 @@ class CustomerApiPresenter
     {
         $subOrder->loadMissing(['vendor', 'category', 'orderItems.portfolioItem', 'portfolioItem']);
         $bookingType = self::resolveBookingType($subOrder);
-        $paymentSummary = BookingPricingService::fromOrder($subOrder);
+        $paymentSummary = app(\App\Services\Booking\BookingPaymentService::class)->summaryForOrder($subOrder);
         $items = $subOrder->orderItems;
         if ($itemStatusFilter !== null && $items->isNotEmpty()) {
             $items = $items->whereIn('status', $itemStatusFilter)->values();
@@ -913,8 +922,11 @@ class CustomerApiPresenter
             'amount' => (float) $subOrder->amount,
             'delivery_fee' => (float) $subOrder->delivery_fee,
             'advance_amount' => $paymentSummary['advance_amount'],
+            'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? 0),
+            'amount_paid_label' => '₹'.number_format((float) ($paymentSummary['amount_paid'] ?? 0), 2),
+            'payable_now' => $paymentSummary['payable_now'],
             'remaining_amount' => $paymentSummary['remaining_amount'],
-            'total_amount' => $subOrder->grandTotal(),
+            'total_amount' => (float) ($paymentSummary['total_amount'] ?? $subOrder->grandTotal()),
             'payment_summary' => $paymentSummary,
             'designer' => $subOrder->vendor ? self::designerSummary($subOrder->vendor) : null,
             'items_count' => max(1, $subOrder->orderItems->count()),
@@ -1230,6 +1242,7 @@ class CustomerApiPresenter
             'default_address' => $defaultAddress,
             'sizes' => ['S', 'M', 'L', 'XL', 'XXL'],
             'measurement_types' => ['women', 'men', 'kid'],
+            'measurement_forms' => \App\Support\WebMeasurementForm::apiFormSchema(),
             'max_reference_images' => 5,
             'advance_amount' => $pricing['advance_amount'] ?? null,
             'payment_summary' => $pricing,

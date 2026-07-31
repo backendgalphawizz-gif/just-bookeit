@@ -77,6 +77,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
     });
 
+    Route::get('measurements/forms', [MeasurementController::class, 'forms'])->name('measurements.forms');
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
         Route::get('bookings/addresses', [BookingController::class, 'addresses'])->name('bookings.addresses');

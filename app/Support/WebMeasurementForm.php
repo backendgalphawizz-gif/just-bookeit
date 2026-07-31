@@ -56,6 +56,81 @@ class WebMeasurementForm
         return $map[$type] ?? $map['women'];
     }
 
+    /**
+     * API schema for mobile apps — same type-wise fields as the website form.
+     *
+     * @return array{
+     *     measurement_types: list<array{value: string, label: string}>,
+     *     audience_to_measurement_type: array<string, string>,
+     *     forms: array<string, array{sections: list<array{name: string, fields: list<array{key: string, label: string, input: string, max: int}>}>}>
+     * }
+     */
+    public static function apiFormSchema(?string $type = null): array
+    {
+        $types = [
+            ['value' => 'women', 'label' => 'Women'],
+            ['value' => 'men', 'label' => 'Men'],
+            ['value' => 'kid', 'label' => 'Kids'],
+        ];
+
+        $forms = [];
+        foreach (array_keys(self::sectionsByType()) as $measurementType) {
+            if ($type !== null && $type !== '' && $measurementType !== $type) {
+                continue;
+            }
+
+            $forms[$measurementType] = [
+                'sections' => self::apiSectionsForType($measurementType),
+            ];
+        }
+
+        return [
+            'measurement_types' => $types,
+            'audience_to_measurement_type' => [
+                'women' => 'women',
+                'men' => 'men',
+                'kids' => 'kid',
+                'kid' => 'kid',
+            ],
+            'forms' => $forms,
+        ];
+    }
+
+    /**
+     * @return list<array{name: string, fields: list<array{key: string, label: string, input: string, max: int}>}>
+     */
+    public static function apiSectionsForType(?string $type): array
+    {
+        $labelToField = self::labelToField();
+        $sections = [];
+
+        foreach (self::sectionsForType($type) as $sectionName => $labels) {
+            $fields = [];
+            foreach ($labels as $label) {
+                $key = $labelToField[$label] ?? null;
+                if (! $key) {
+                    continue;
+                }
+
+                $fields[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'input' => 'text',
+                    'max' => 50,
+                ];
+            }
+
+            if ($fields !== []) {
+                $sections[] = [
+                    'name' => $sectionName,
+                    'fields' => $fields,
+                ];
+            }
+        }
+
+        return $sections;
+    }
+
     /** @return array<string, string> */
     public static function labelToField(): array
     {

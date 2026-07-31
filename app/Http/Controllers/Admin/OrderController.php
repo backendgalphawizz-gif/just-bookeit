@@ -381,6 +381,7 @@ class OrderController extends AdminController
         ) {
             $order->update([
                 'payment_status' => 'success',
+                'amount_paid' => max((float) ($order->amount_paid ?? 0), $order->grandTotal()),
                 'paid_at' => $order->paid_at ?? now(),
             ]);
         }

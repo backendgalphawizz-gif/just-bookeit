@@ -39,7 +39,12 @@ class BookingPaymentService
         $pricing = BookingPricingService::fromOrder($order);
         $total = round((float) ($pricing['total_amount'] ?? $order->grandTotal()), 2);
         $advanceRequired = $this->requiredAdvanceForOrder($order, $pricing);
-        $amountPaid = round((float) ($order->amount_paid ?? 0), 2);
+        $amountPaid = $this->resolvedAmountPaid(
+            (float) ($order->amount_paid ?? 0),
+            (string) $order->payment_status,
+            $total,
+            $advanceRequired
+        );
         $remaining = round(max(0, $total - $amountPaid), 2);
         $remainingUnlocked = $this->remainingPaymentUnlocked($order->status);
         $payableNow = $this->payableNow(
@@ -75,7 +80,12 @@ class BookingPaymentService
         $checkout->loadMissing(['subOrders.orderItems.portfolioItem', 'subOrders.portfolioItem']);
         $total = round((float) $checkout->grand_total, 2);
         $advanceRequired = $this->requiredAdvanceForCheckout($checkout);
-        $amountPaid = round((float) ($checkout->amount_paid ?? 0), 2);
+        $amountPaid = $this->resolvedAmountPaid(
+            (float) ($checkout->amount_paid ?? 0),
+            (string) $checkout->payment_status,
+            $total,
+            $advanceRequired
+        );
         $remaining = round(max(0, $total - $amountPaid), 2);
         $remainingUnlocked = $checkout->subOrders->contains(
             fn (Order $sub) => $this->remainingPaymentUnlocked($sub->status)
@@ -365,6 +375,33 @@ class BookingPaymentService
         return round($checkout->subOrders->sum(
             fn (Order $sub) => $this->requiredAdvanceForOrder($sub)
         ), 2);
+    }
+
+    /**
+     * Prefer the stored paid total; if older rows only flipped payment_status,
+     * infer what the customer has already paid.
+     */
+    protected function resolvedAmountPaid(
+        float $storedPaid,
+        string $paymentStatus,
+        float $total,
+        float $advanceRequired
+    ): float {
+        $paid = round(max(0, $storedPaid), 2);
+
+        if ($paid > 0) {
+            return $paid;
+        }
+
+        if (in_array($paymentStatus, [self::STATUS_SUCCESS, 'refunded', 'partially_refunded'], true)) {
+            return round(max(0, $total), 2);
+        }
+
+        if ($paymentStatus === self::STATUS_ADVANCE_PAID) {
+            return round(max(0, $advanceRequired), 2);
+        }
+
+        return 0.0;
     }
 
     protected function payableNow(

@@ -6,11 +6,32 @@ use App\Http\Controllers\Api\ApiController;
 use App\Models\Customer;
 use App\Models\CustomerMeasurement;
 use App\Support\Api\CustomerApiPresenter;
+use App\Support\WebMeasurementForm;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MeasurementController extends ApiController
 {
+    /**
+     * Form schema for Women / Men / Kids measurement fields (matches website).
+     * Optional ?type=women|men|kid|kids to return a single form.
+     */
+    public function forms(Request $request): JsonResponse
+    {
+        $type = $request->string('type')->toString();
+        if ($type === 'kids') {
+            $type = 'kid';
+        }
+
+        if ($type !== '' && ! in_array($type, CustomerMeasurement::TYPES, true)) {
+            return $this->error('Invalid measurement type. Use women, men, or kid.', 422);
+        }
+
+        return $this->success(
+            WebMeasurementForm::apiFormSchema($type !== '' ? $type : null)
+        );
+    }
+
     public function index(Request $request): JsonResponse
     {
         /** @var Customer $customer */
