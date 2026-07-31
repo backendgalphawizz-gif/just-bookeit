@@ -14,22 +14,35 @@ class MeasurementController extends ApiController
 {
     /**
      * Form schema for Women / Men / Kids measurement fields (matches website).
-     * Optional ?type=women|men|kid|kids to return a single form.
+     *
+     * GET  /api/v1/measurements/forms?type=women
+     * POST /api/v1/measurements/forms  { "type": "women" }
      */
     public function forms(Request $request): JsonResponse
     {
-        $type = $request->string('type')->toString();
+        $type = strtolower(trim((string) ($request->input('type') ?? '')));
         if ($type === 'kids') {
             $type = 'kid';
         }
 
         if ($type !== '' && ! in_array($type, CustomerMeasurement::TYPES, true)) {
-            return $this->error('Invalid measurement type. Use women, men, or kid.', 422);
+            return $this->error('Invalid measurement type. Use women, men, or kid (kids).', 422);
         }
 
-        return $this->success(
-            WebMeasurementForm::apiFormSchema($type !== '' ? $type : null)
-        );
+        $schema = WebMeasurementForm::apiFormSchema($type !== '' ? $type : null);
+
+        // When a type is sent, also expose flat sections for easy app rendering.
+        if ($type !== '') {
+            $schema['type'] = $type;
+            $schema['label'] = match ($type) {
+                'men' => 'Men',
+                'kid' => 'Kids',
+                default => 'Women',
+            };
+            $schema['sections'] = $schema['forms'][$type]['sections'] ?? [];
+        }
+
+        return $this->success($schema);
     }
 
     public function index(Request $request): JsonResponse

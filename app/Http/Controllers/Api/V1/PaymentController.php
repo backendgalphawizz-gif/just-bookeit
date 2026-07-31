@@ -40,6 +40,68 @@ class PaymentController extends ApiController
         ]);
     }
 
+    /**
+     * Create a Razorpay order for the current cart (pay before POST /bookings).
+     * Then complete Razorpay UI and send payment ids on POST /bookings.
+     */
+    public function createCartRazorpayOrder(Request $request): JsonResponse
+    {
+        /** @var Customer $customer */
+        $customer = $request->user();
+
+        if (! $this->razorpay->enabled()) {
+            return $this->error('Razorpay is not configured.', 503);
+        }
+
+        $data = $request->validate([
+            'rental_start_date' => ['nullable', 'date'],
+            'rental_end_date' => ['nullable', 'date', 'after_or_equal:rental_start_date'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'shipment_required' => ['nullable', 'boolean'],
+            'items' => ['nullable'],
+            'items_json' => ['nullable'],
+            'cart_items' => ['nullable'],
+            'line_items' => ['nullable'],
+            'vendor_shipments' => ['nullable', 'array'],
+        ]);
+
+        try {
+            $preview = app(\App\Services\Checkout\CheckoutService::class)->preview($customer, $data, true, $request);
+            $payableNow = (float) ($preview['summary']['advance_amount'] ?? 0);
+            $grandTotal = (float) ($preview['summary']['grand_total'] ?? 0);
+            if ($payableNow <= 0 || $payableNow > $grandTotal) {
+                $payableNow = $grandTotal;
+            }
+            if ($payableNow <= 0) {
+                return $this->error('Nothing to pay for this cart.', 422);
+            }
+
+            $options = $this->createCachedOrderPayload(
+                'cart',
+                $customer->id,
+                $payableNow,
+                'cart_'.$customer->id,
+                [
+                    'type' => 'cart',
+                    'customer_id' => (string) $customer->id,
+                ],
+                'Cart checkout',
+                $customer
+            );
+
+            return $this->success([
+                'razorpay' => $options,
+                'payment_summary' => $preview['summary'],
+                'payable_now' => $payableNow,
+            ], 'Razorpay order created for cart.');
+        } catch (InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (Throwable $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
     public function summary(Request $request, Order $booking): JsonResponse
     {
         /** @var Customer $customer */

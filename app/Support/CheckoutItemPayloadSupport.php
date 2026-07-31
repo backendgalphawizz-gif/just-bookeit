@@ -54,11 +54,78 @@ class CheckoutItemPayloadSupport
                 'Cart line JSON was overwritten by file fields named items[N][reference_images][]. '
                 .'Send the lines as items_json (keep image fields as items[N][reference_images][]), '
                 .'or keep field name items and upload images as reference_images[N][] instead. '
+                .'Also send rental_start_date and rental_end_date at top level for rental items. '
                 .'Rental dress/jewellery lines need rental_start_date and rental_end_date; fashion designer lines do not.'
             );
         }
 
         unset($data['items_json'], $data['cart_items'], $data['line_items']);
+
+        return $data;
+    }
+
+    /**
+     * When multipart image fields wipe the items JSON, rebuild line overrides from the cart.
+     * Prefer items_json from the client; otherwise use cart rows + top-level rental dates.
+     *
+     * @param  array<string, mixed>  $data
+     * @param  \Illuminate\Support\Collection<int, \App\Models\CartItem>|iterable<int, \App\Models\CartItem>  $cartItems
+     * @return array<string, mixed>
+     */
+    public static function recoverItemsFromCartWhenClobbered(array $data, ?Request $request, $cartItems): array
+    {
+        $candidate = self::preferredItemsCandidate($data, $request);
+        if (self::parseItemsCandidate($data['items_json'] ?? ($request?->input('items_json'))) !== null) {
+            return $data;
+        }
+        if (self::parseItemsCandidate($candidate) !== null) {
+            $data['items'] = self::parseItemsCandidate($candidate);
+
+            return $data;
+        }
+
+        $start = $data['rental_start_date']
+            ?? $data['start_date']
+            ?? $request?->input('rental_start_date')
+            ?? $request?->input('start_date');
+        $end = $data['rental_end_date']
+            ?? $data['end_date']
+            ?? $request?->input('rental_end_date')
+            ?? $request?->input('end_date');
+
+        $rows = [];
+        foreach (collect($cartItems)->values() as $index => $cartItem) {
+            /** @var CartItem $cartItem */
+            $cartItem->loadMissing('portfolioItem.category');
+
+            $rowStart = $request?->input("items.{$index}.rental_start_date")
+                ?? $request?->input("items.{$index}.start_date")
+                ?? $start;
+            $rowEnd = $request?->input("items.{$index}.rental_end_date")
+                ?? $request?->input("items.{$index}.end_date")
+                ?? $end;
+
+            $rows[] = array_filter([
+                'cart_item_id' => $cartItem->id,
+                'portfolio_item_id' => $cartItem->portfolio_item_id,
+                'portfolio_item_variant_id' => $cartItem->portfolio_item_variant_id,
+                'vendor_id' => $cartItem->vendor_id,
+                'quantity' => $cartItem->quantity,
+                'rental_start_date' => $rowStart,
+                'rental_end_date' => $rowEnd,
+                'service_type' => $cartItem->portfolioItem?->category?->slug,
+            ], fn ($value) => $value !== null && $value !== '');
+        }
+
+        if ($rows !== []) {
+            $data['items'] = $rows;
+            if (filled($start)) {
+                $data['rental_start_date'] = $start;
+            }
+            if (filled($end)) {
+                $data['rental_end_date'] = $end;
+            }
+        }
 
         return $data;
     }
@@ -74,13 +141,13 @@ class CheckoutItemPayloadSupport
         $fromInput = $request?->input('items');
         $fromPost = $request?->request->all()['items'] ?? null;
 
-        foreach ([$fromInput, $fromPost, $fromData] as $candidate) {
+        foreach ([$fromData, $fromInput, $fromPost] as $candidate) {
             if (is_string($candidate) && self::parseItemsCandidate($candidate) !== null) {
                 return $candidate;
             }
         }
 
-        foreach ([$fromInput, $fromPost, $fromData] as $candidate) {
+        foreach ([$fromData, $fromInput, $fromPost] as $candidate) {
             if (is_array($candidate) && self::parseItemsCandidate($candidate) !== null) {
                 return $candidate;
             }

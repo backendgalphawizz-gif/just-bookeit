@@ -242,8 +242,11 @@ class BookingController extends ApiController
             'measurement_id' => ['nullable', 'string'],
             'reference_images' => ['nullable', 'array', 'max:5'],
             'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
-            // Optional: COD can be confirmed at place-order time and sent straight to the vendor.
+            // Optional: COD or online payment can be confirmed at place-order time.
             'payment_method' => ['nullable', 'string', RazorpayPaymentSupport::allowedMethodRule()],
+            'razorpay_order_id' => ['nullable', 'string', 'max:100'],
+            'razorpay_payment_id' => ['nullable', 'string', 'max:100'],
+            'razorpay_signature' => ['nullable', 'string', 'max:255'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
         $item = PortfolioItem::query()
@@ -355,6 +358,10 @@ class BookingController extends ApiController
 
         $paymentSummary = BookingPricingService::fromOrder($order);
         $message = 'Booking created. Proceed to payment.';
+        $paymentMeta = null;
+
+        $wantsOnlinePay = filled($data['razorpay_payment_id'] ?? null)
+            || RazorpayPaymentSupport::isOnlineMethod((string) ($data['payment_method'] ?? ''));
 
         if (($data['payment_method'] ?? null) === 'cod') {
             if (! (bool) PlatformSetting::get('enable_cod', false)) {
@@ -368,11 +375,23 @@ class BookingController extends ApiController
             } catch (InvalidArgumentException $e) {
                 return $this->error($e->getMessage(), 422);
             }
+        } elseif ($wantsOnlinePay) {
+            try {
+                $result = $this->finalizeOrderOnlinePayment($order, $data);
+                $order = $result['order'];
+                $paymentSummary = $result['payment_summary'];
+                $paymentMeta = $result['payment'];
+                $message = $result['message'];
+            } catch (InvalidArgumentException|\RuntimeException $e) {
+                return $this->error($e->getMessage(), 422);
+            }
         }
 
         return $this->success([
             'booking' => CustomerApiPresenter::bookingDetail($order->fresh(['vendor', 'category', 'customer', 'dispute', 'review', 'orderItems'])),
             'payment_summary' => $paymentSummary,
+            'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? $order->amount_paid ?? 0),
+            'payment' => $paymentMeta,
         ], $message, 201);
     }
 
@@ -402,14 +421,25 @@ class BookingController extends ApiController
             'cart_items' => ['nullable'],
             'line_items' => ['nullable'],
             'payment_method' => ['nullable', 'string', RazorpayPaymentSupport::allowedMethodRule()],
+            'razorpay_order_id' => ['nullable', 'string', 'max:100'],
+            'razorpay_payment_id' => ['nullable', 'string', 'max:100'],
+            'razorpay_signature' => ['nullable', 'string', 'max:255'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
 
-        if (! $request->filled('items') && ! $request->filled('items_json') && ! $request->filled('cart_items') && ! $request->filled('line_items')) {
+        // Multipart + file fields named items[N][...] often wipe the text field "items".
+        // Treat presence of items_json / cart / files under items[*] as enough to continue.
+        $hasItemsPayload = $request->filled('items')
+            || $request->filled('items_json')
+            || $request->filled('cart_items')
+            || $request->filled('line_items')
+            || is_array($request->file('items'));
+
+        if (! $hasItemsPayload) {
             return $this->error('Send items_json (recommended) or items with the cart line payload.', 422);
         }
 
         // Multipart clients sometimes drop validated nullable dates; re-merge from the raw request.
-        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'event_date', 'items_json', 'cart_items', 'line_items'] as $key) {
+        foreach (['rental_start_date', 'rental_end_date', 'start_date', 'end_date', 'event_date', 'items_json', 'cart_items', 'line_items', 'razorpay_order_id', 'razorpay_payment_id', 'razorpay_signature'] as $key) {
             if ((! array_key_exists($key, $data) || blank($data[$key] ?? null)) && $request->filled($key)) {
                 $data[$key] = $request->input($key);
             }
@@ -419,13 +449,26 @@ class BookingController extends ApiController
             $data['measurement_profile_id'] = $data['measurement_id'];
         }
 
-        if ($this->cart->itemsFor($customer)->isEmpty()) {
+        $cartItems = $this->cart->itemsFor($customer);
+        if ($cartItems->isEmpty()) {
             return $this->error('Your cart is empty. Add items before checkout.', 422);
         }
+
+        // If PHP clobbered items JSON with image files, rebuild lines from the cart + top-level dates.
+        $data = CheckoutItemPayloadSupport::recoverItemsFromCartWhenClobbered(
+            $data,
+            $request,
+            $cartItems
+        );
 
         try {
             $checkout = $this->checkout->createFromCart($customer, $data, $request);
             $message = 'Checkout created. Proceed to payment.';
+            $paymentSummary = $this->payments->summaryForCheckout($checkout);
+            $paymentMeta = null;
+
+            $wantsOnlinePay = filled($data['razorpay_payment_id'] ?? null)
+                || RazorpayPaymentSupport::isOnlineMethod((string) ($data['payment_method'] ?? ''));
 
             if (($data['payment_method'] ?? null) === 'cod') {
                 if (! (bool) PlatformSetting::get('enable_cod', false)) {
@@ -433,7 +476,14 @@ class BookingController extends ApiController
                 }
 
                 $checkout = $this->payments->payCheckout($checkout, 'cod');
+                $paymentSummary = $this->payments->summaryForCheckout($checkout);
                 $message = 'Order placed with cash on delivery. Sent to the designers.';
+            } elseif ($wantsOnlinePay) {
+                $result = $this->finalizeCheckoutOnlinePayment($checkout, $data);
+                $checkout = $result['checkout'];
+                $paymentSummary = $result['payment_summary'];
+                $paymentMeta = $result['payment'];
+                $message = $result['message'];
             }
 
             return $this->success([
@@ -443,11 +493,107 @@ class BookingController extends ApiController
                     'subOrders.orderItems',
                 ])),
                 'booking_type' => 'multi_vendor_checkout',
-                'payment_summary' => $this->payments->summaryForCheckout($checkout),
+                'payment_summary' => $paymentSummary,
+                'amount_paid' => (float) ($paymentSummary['amount_paid'] ?? 0),
+                'payment' => $paymentMeta,
             ], $message, 200);
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 422);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
         }
+    }
+
+    /**
+     * Verify Razorpay and mark checkout paid (stores amount_paid / payment_status).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{checkout: CheckoutOrder, payment_summary: array<string, mixed>, payment: array<string, mixed>, message: string}
+     */
+    protected function finalizeCheckoutOnlinePayment(CheckoutOrder $checkout, array $data): array
+    {
+        $razorpay = app(\App\Services\Payment\RazorpayService::class);
+        if (! $razorpay->enabled()) {
+            throw new \RuntimeException('Online payments are not configured.');
+        }
+
+        $before = $this->payments->summaryForCheckout($checkout);
+        $payableNow = (float) ($before['payable_now'] ?? $before['total_amount'] ?? 0);
+
+        $verified = $razorpay->assertSuccessfulPayment([
+            'razorpay_order_id' => $data['razorpay_order_id'] ?? null,
+            'razorpay_payment_id' => $data['razorpay_payment_id'] ?? null,
+            'razorpay_signature' => $data['razorpay_signature'] ?? null,
+        ], $payableNow);
+
+        $checkout = $this->payments->payCheckout($checkout, 'razorpay');
+        $after = $this->payments->summaryForCheckout($checkout);
+
+        $message = in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+            ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
+            : 'Payment successful. Booking sent to the designer.';
+
+        return [
+            'checkout' => $checkout,
+            'payment_summary' => $after,
+            'payment' => [
+                'method' => 'razorpay',
+                'status' => $checkout->payment_status,
+                'phase' => $after['payment_phase'],
+                'transaction_id' => $verified['payment_id'],
+                'razorpay_order_id' => $verified['order_id'],
+                'paid_amount' => (float) ($before['payable_now'] ?? 0),
+                'amount_paid_total' => (float) ($after['amount_paid'] ?? 0),
+                'remaining_amount' => (float) ($after['remaining_amount'] ?? 0),
+            ],
+            'message' => $message,
+        ];
+    }
+
+    /**
+     * Verify Razorpay and mark a single booking paid.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{order: Order, payment_summary: array<string, mixed>, payment: array<string, mixed>, message: string}
+     */
+    protected function finalizeOrderOnlinePayment(Order $order, array $data): array
+    {
+        $razorpay = app(\App\Services\Payment\RazorpayService::class);
+        if (! $razorpay->enabled()) {
+            throw new \RuntimeException('Online payments are not configured.');
+        }
+
+        $before = $this->payments->summaryForOrder($order);
+        $payableNow = (float) ($before['payable_now'] ?? $before['total_amount'] ?? 0);
+
+        $verified = $razorpay->assertSuccessfulPayment([
+            'razorpay_order_id' => $data['razorpay_order_id'] ?? null,
+            'razorpay_payment_id' => $data['razorpay_payment_id'] ?? null,
+            'razorpay_signature' => $data['razorpay_signature'] ?? null,
+        ], $payableNow);
+
+        $order = $this->payments->payOrder($order, 'razorpay');
+        $after = $this->payments->summaryForOrder($order);
+
+        $message = in_array($after['payment_phase'], ['remaining_due', 'advance_paid_waiting'], true)
+            ? 'Advance paid successfully. Remaining amount is due on booking completion. Booking sent to the designer.'
+            : 'Payment successful. Booking sent to the designer.';
+
+        return [
+            'order' => $order,
+            'payment_summary' => $after,
+            'payment' => [
+                'method' => 'razorpay',
+                'status' => $order->payment_status,
+                'phase' => $after['payment_phase'],
+                'transaction_id' => $verified['payment_id'],
+                'razorpay_order_id' => $verified['order_id'],
+                'paid_amount' => (float) ($before['payable_now'] ?? 0),
+                'amount_paid_total' => (float) ($after['amount_paid'] ?? 0),
+                'remaining_amount' => (float) ($after['remaining_amount'] ?? 0),
+            ],
+            'message' => $message,
+        ];
     }
 
     public function cancel(Request $request, Order $booking): JsonResponse

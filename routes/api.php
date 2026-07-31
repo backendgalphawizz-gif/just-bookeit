@@ -77,7 +77,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
     });
 
-    Route::get('measurements/forms', [MeasurementController::class, 'forms'])->name('measurements.forms');
+    Route::match(['get', 'post'], 'measurements/forms', [MeasurementController::class, 'forms'])->name('measurements.forms');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
@@ -104,6 +104,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('checkout-orders/{checkoutOrder}', [CheckoutController::class, 'show'])->name('checkout-orders.show');
 
         Route::get('payment/methods', [PaymentController::class, 'methods'])->name('payment.methods');
+        Route::post('payment/cart/razorpay/order', [PaymentController::class, 'createCartRazorpayOrder'])->name('payment.cart.razorpay.order');
         Route::get('payment/bookings/{booking}', [PaymentController::class, 'summary'])->name('payment.summary');
         Route::post('payment/bookings/{booking}/razorpay/order', [PaymentController::class, 'createRazorpayOrder'])->name('payment.razorpay.order');
         Route::post('payment/bookings/{booking}/pay', [PaymentController::class, 'pay'])->name('payment.pay');

@@ -99,6 +99,67 @@ class RazorpayService
         }
     }
 
+    /**
+     * Confirm a Razorpay payment for place-order flows.
+     * Prefer full signature verification; fall back to fetching a captured payment by id.
+     *
+     * @param  array{razorpay_order_id?: string|null, razorpay_payment_id?: string|null, razorpay_signature?: string|null}  $payload
+     * @return array{payment_id: string, order_id: string|null, amount: float, status: string}
+     */
+    public function assertSuccessfulPayment(array $payload, ?float $expectedAmountRupees = null): array
+    {
+        $this->assertConfigured();
+
+        $paymentId = trim((string) ($payload['razorpay_payment_id'] ?? ''));
+        $orderId = trim((string) ($payload['razorpay_order_id'] ?? ''));
+        $signature = trim((string) ($payload['razorpay_signature'] ?? ''));
+
+        if ($paymentId === '') {
+            throw new InvalidArgumentException('razorpay_payment_id is required.');
+        }
+
+        if ($orderId !== '' && $signature !== '') {
+            $this->verifyPaymentSignature([
+                'razorpay_order_id' => $orderId,
+                'razorpay_payment_id' => $paymentId,
+                'razorpay_signature' => $signature,
+            ]);
+        }
+
+        try {
+            $payment = $this->api()->payment->fetch($paymentId);
+        } catch (Throwable $e) {
+            Log::error('Razorpay payment fetch failed', [
+                'payment_id' => $paymentId,
+                'message' => $e->getMessage(),
+            ]);
+            throw new InvalidArgumentException('Unable to verify Razorpay payment. Please try again.', 0, $e);
+        }
+
+        $status = strtolower((string) ($payment['status'] ?? ''));
+        if (! in_array($status, ['captured', 'authorized'], true)) {
+            throw new InvalidArgumentException('Razorpay payment is not successful (status: '.$status.').');
+        }
+
+        if ($orderId !== '' && filled($payment['order_id'] ?? null) && (string) $payment['order_id'] !== $orderId) {
+            throw new InvalidArgumentException('Razorpay payment does not match the given order.');
+        }
+
+        $amount = round(((int) ($payment['amount'] ?? 0)) / 100, 2);
+        if ($expectedAmountRupees !== null && $amount + 0.5 < $expectedAmountRupees) {
+            throw new InvalidArgumentException(
+                'Paid amount ₹'.number_format($amount, 2).' is less than payable ₹'.number_format($expectedAmountRupees, 2).'.'
+            );
+        }
+
+        return [
+            'payment_id' => $paymentId,
+            'order_id' => filled($payment['order_id'] ?? null) ? (string) $payment['order_id'] : ($orderId !== '' ? $orderId : null),
+            'amount' => $amount,
+            'status' => $status,
+        ];
+    }
+
     /** @return array<string, mixed> */
     public function checkoutOptions(
         string $razorpayOrderId,
