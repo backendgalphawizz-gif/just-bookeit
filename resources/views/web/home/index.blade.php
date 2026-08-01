@@ -6,7 +6,7 @@
 @php
 $defaultHeroImage = 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1800&q=90&fit=crop';
 $defaultHeroTitle = "Your style,\nyour moment.";
-$defaultHeroSubtitle = "India's premier platform for fashion designer bookings, rental dresses & jewellery. Look extraordinary - without the price tag.";
+$defaultHeroSubtitle = "Fashion Designer, Rented Dress & Rented Jewellery Booking App. Exclusive access to the world's most coveted wardrobes.";
 $defaultHeroUrl = route('web.catalog.index');
 
 $heroSlides = $banners->isNotEmpty()
@@ -37,41 +37,43 @@ $categoryFallbacks = [
 
 {{-- ── Hero ──────────────────────────────────────────────────────── --}}
 <section class="jbw-hero" data-hero-carousel>
-    <div class="jbw-hero-slides" aria-hidden="true">
-        @foreach ($heroSlides as $index => $slide)
-            <div class="jbw-hero-slide{{ $index === 0 ? ' is-active' : '' }}">
-                <img
-                    src="{{ $slide['image_url'] }}"
-                    alt=""
-                    class="jbw-hero-slide-img"
-                    loading="{{ $index === 0 ? 'eager' : 'lazy' }}"
-                >
-            </div>
-        @endforeach
-    </div>
-    <div class="jbw-hero-overlay"></div>
+    <div class="jbw-hero-frame">
+        <div class="jbw-hero-slides" aria-hidden="true">
+            @foreach ($heroSlides as $index => $slide)
+                <div class="jbw-hero-slide{{ $index === 0 ? ' is-active' : '' }}">
+                    <img
+                        src="{{ $slide['image_url'] }}"
+                        alt=""
+                        class="jbw-hero-slide-img"
+                        loading="{{ $index === 0 ? 'eager' : 'lazy' }}"
+                    >
+                </div>
+            @endforeach
+        </div>
+        <div class="jbw-hero-overlay"></div>
 
-    <div class="jbw-hero-content-stack">
-        @foreach ($heroSlides as $index => $slide)
-            <div class="jbw-container jbw-hero-content-wrap jbw-hero-content-panel{{ $index === 0 ? ' is-active' : '' }}" data-hero-panel>
-                <div class="jbw-hero-content">
-                    <h1 class="jbw-hero-title">{!! nl2br(e($slide['title'])) !!}</h1>
-                    <p class="jbw-hero-text">{{ $slide['subtitle'] }}</p>
-                    <div class="jbw-hero-actions">
-                        <a href="{{ $slide['redirect_url'] }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Explore collection</a>
+        <div class="jbw-hero-content-stack">
+            @foreach ($heroSlides as $index => $slide)
+                <div class="jbw-container jbw-hero-content-wrap jbw-hero-content-panel{{ $index === 0 ? ' is-active' : '' }}" data-hero-panel>
+                    <div class="jbw-hero-content">
+                        <h1 class="jbw-hero-title">{!! nl2br(e($slide['title'])) !!}</h1>
+                        <p class="jbw-hero-text">{{ $slide['subtitle'] }}</p>
+                        <div class="jbw-hero-actions">
+                            <a href="{{ $slide['redirect_url'] }}" class="jbw-btn jbw-btn--hero">Book Your Look</a>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @endforeach
+            @endforeach
+        </div>
     </div>
 
     @if ($heroSlides->count() > 1)
         <div class="jbw-hero-nav">
             <button type="button" class="jbw-hero-arrow jbw-hero-arrow--prev" data-hero-prev aria-label="Previous banner">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <button type="button" class="jbw-hero-arrow jbw-hero-arrow--next" data-hero-next aria-label="Next banner">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
         </div>
         <div class="jbw-hero-dots" role="tablist" aria-label="Banner slides">
@@ -124,8 +126,14 @@ $categoryFallbacks = [
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 </span>
                 <div>
-                    <p class="jbw-trust-label">4.8★ rated</p>
-                    <p class="jbw-trust-sub">Loved by customers</p>
+                    <p class="jbw-trust-label">{{ number_format($overallRating['average'], 1) }}★ rated</p>
+                    <p class="jbw-trust-sub">
+                        @if ($overallRating['count'] > 0)
+                            From {{ number_format($overallRating['count']) }} customer review{{ $overallRating['count'] === 1 ? '' : 's' }}
+                        @else
+                            Loved by customers
+                        @endif
+                    </p>
                 </div>
             </div>
         </div>
@@ -137,10 +145,9 @@ $categoryFallbacks = [
 @endphp
 <section class="jbw-section-band">
     <div class="jbw-container">
-        <div class="jbw-section-head designers-header{{ ($servicesCount === 0 || $servicesCount <= 4) ? ' is-centered' : '' }}">
+        <div class="jbw-section-head designers-header">
             <div>
-                <span class="jbw-eyebrow">What we offer</span>
-                <h2 class="jbw-section-title">Our services</h2>
+                <h2 class="jbw-section-title">Our Services</h2>
             </div>
             @if ($servicesCount > 4)
             <div class="designer-nav">
@@ -195,10 +202,9 @@ $categoryFallbacks = [
 @endphp
 <section class="jbw-section-band">
     <div class="jbw-container">
-        <div class="jbw-section-head designers-header{{ ($categoriesCount === 0 || $categoriesCount <= 4) ? ' is-centered' : '' }}">
+        <div class="jbw-section-head designers-header">
             <div>
-                <span class="jbw-eyebrow">Collections</span>
-                <h2 class="jbw-section-title">Shop by category</h2>
+                <h2 class="jbw-section-title">Shop by Category</h2>
             </div>
             @if ($categoriesCount > 4)
             <div class="designer-nav">
@@ -266,10 +272,10 @@ $categoryFallbacks = [
 @endphp
 <section class="jbw-section-band jbw-designer-marquee-section">
     <div class="jbw-container">
-        <div class="jbw-section-head">
-            <span class="jbw-eyebrow">Curated talent</span>
-            <h2 class="jbw-section-title">Featured designers</h2>
-            <p class="jbw-section-sub">Verified boutique partners crafting couture, occasion wear and everyday luxe. Hover the strip to pause.</p>
+        <div class="jbw-section-head designers-header">
+            <div>
+                <h2 class="jbw-section-title">Featured Designers</h2>
+            </div>
         </div>
 
 
@@ -296,9 +302,6 @@ $categoryFallbacks = [
                             @endif
                         </span>
                         <p class="jbw-designer-card-name">{{ $designer->brand_name }}</p>
-                        @if ($designer->city)
-                            <p class="jbw-designer-card-meta">{{ $designer->city }}</p>
-                        @endif
                     </a>
                 @endforeach
             @endfor
@@ -308,48 +311,50 @@ $categoryFallbacks = [
 </section>
 @endif
 
-{{-- ── Promo CTA ─────────────────────────────────────────────────── --}}
-<section class="jbw-section-band jbw-section-band--compact">
+{{-- ── App download banner ───────────────────────────────────────── --}}
+<section class="jbw-section-band jbw-section-band--compact" id="how-it-works">
     <div class="jbw-container">
-        <div class="jbw-promo-band">
-            <div>
-                <h3>Ready for your next occasion?</h3>
-                <p>Browse designer rentals, add to cart from multiple boutiques, and checkout once — we handle the rest.</p>
-            </div>
-            <a href="{{ route('web.catalog.index') }}" class="jbw-btn jbw-btn--primary jbw-btn--lg">Shop now</a>
-        </div>
-    </div>
-</section>
-
-{{-- ── How it works ─────────────────────────────────────────────── --}}
-<section class="jbw-section-band jbw-section-band--warm" id="how-it-works">
-    <div class="jbw-container">
-        <div class="jbw-section-head">
-            <span class="jbw-eyebrow">Simple process</span>
-            <h2 class="jbw-section-title">How it works</h2>
-        </div>
-        <div class="jbw-steps">
-            <div class="jbw-step">
-                <div class="jbw-step-num">01</div>
-                <div>
-                    <p class="jbw-step-title">Browse &amp; choose</p>
-                    <p class="jbw-step-text">Explore hundreds of designer outfits and jewellery from verified boutiques near you.</p>
+        <div class="jbw-app-band">
+            <div class="jbw-app-band-info">
+                <x-web.logo variant="header" class="jbw-app-band-logo" />
+                <h2 class="jbw-app-band-title">Fashion. Style.<br><span>Booked.</span></h2>
+                <p class="jbw-app-band-sub">Your go-to app for booking Fashion Designers,<br>Rented Dresses &amp; Rented Jewellery.</p>
+                <div class="jbw-app-band-tags">
+                    <span class="jbw-app-band-tag">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                        <span>Fashion Designer<br>Booking</span>
+                    </span>
+                    <span class="jbw-app-band-tag">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6a2 2 0 1 1 2-2"/><path d="M12 6 3.5 12.5a1.4 1.4 0 0 0 .85 2.5h15.3a1.4 1.4 0 0 0 .85-2.5L12 6z"/></svg>
+                        <span>Rented Dress<br>Booking</span>
+                    </span>
+                    <span class="jbw-app-band-tag">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 18 3 22 9 12 21 2 9"/><path d="M2 9h20"/><path d="M12 21 8 9l2-6"/><path d="m12 21 4-12-2-6"/></svg>
+                        <span>Rented Jewellery<br>Booking</span>
+                    </span>
                 </div>
-
-            </div>
-            <div class="jbw-step">
-                <div class="jbw-step-num">02</div>
-                <div>
-                    <p class="jbw-step-title">Book your dates</p>
-                    <p class="jbw-step-text">Select your event date, provide your measurements, and confirm your booking in minutes.</p>
+                <div class="jbw-app-band-download">
+                    <img class="jbw-app-band-qr"
+                         src="https://api.qrserver.com/v1/create-qr-code/?size=148x148&data={{ urlencode(url('/')) }}"
+                         alt="Scan to download the app" loading="lazy">
+                    <div class="jbw-app-band-download-copy">
+                        <p class="jbw-app-band-download-title">Download<br>the app now!</p>
+                        <p class="jbw-app-band-download-sub">Book. Wear. Shine.</p>
+                    </div>
+                    <div class="jbw-app-band-stores">
+                        <a href="#" class="jbw-store-badge" aria-label="Download on the App Store">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.2-1.26 3.08-.9.98-2.05 1.55-3.19 1.46-.05-1.11.44-2.24 1.26-3.1.87-.92 2.19-1.52 3.19-1.44zM20.94 17.06c-.53 1.22-.78 1.76-1.46 2.84-.95 1.5-2.29 3.37-3.95 3.38-1.47.02-1.85-.96-3.85-.95-2 .01-2.42.97-3.9.96-1.66-.02-2.93-1.7-3.88-3.2-2.66-4.09-2.94-8.79-1.25-11.29 1.2-1.77 3.09-2.8 4.87-2.8 1.81 0 2.95 1 4.45 1 1.45 0 2.34-1 4.43-1 1.58 0 3.26.86 4.45 2.35-3.91 2.14-3.28 7.72.09 8.71z"/></svg>
+                            <span><small>Download on the</small><strong>App Store</strong></span>
+                        </a>
+                        <a href="#" class="jbw-store-badge" aria-label="Get it on Google Play">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.05 2.29a1.4 1.4 0 0 0-.55 1.12v17.18c0 .46.21.87.55 1.12l8.9-9.71-8.9-9.71zm10.1 8.4 2.86-3.12-11.4-6.42a1.5 1.5 0 0 0-.61-.18l9.15 9.72zm0 2.62-9.15 9.72c.21-.02.42-.08.61-.18l11.4-6.42-2.86-3.12zm5.9-2.62-2.1-1.18-3.1 3.38.01-1.16 3.09 3.34 2.1-1.18c1.33-.75 1.33-2.45 0-3.2z"/></svg>
+                            <span><small>Get it on</small><strong>Google Play</strong></span>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="jbw-step">
-                <div class="jbw-step-num">03</div>
-                <div>
-                    <p class="jbw-step-title">Wear &amp; return</p>
-                    <p class="jbw-step-text">Receive your outfit, look incredible, then simply return it. No storage, no hassle.</p>
-                </div>
+            <div class="jbw-app-band-visual">
+                <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1100&q=85&fit=crop" alt="Designer gown ready to book" loading="lazy">
             </div>
         </div>
     </div>

@@ -1,6 +1,7 @@
 <style>
 /* ─── Design tokens ───────────────────────────────────────────────── */
 :root {
+    --page-gutter:  clamp(1.25rem, 6.25vw, 7.5rem);
     --c-primary:    #E95433;
     --c-primary-dk: #d0431b;
     --c-navy:       #1a2f38;
@@ -60,7 +61,8 @@ a { color: inherit; }
 
 /* ─── Layout ──────────────────────────────────────────────────────── */
 .jbw-container {
-    width: min(1200px, 100% - 2.5rem);
+    /* Figma proportions: ~6.25vw gutter each side, content fills the screen */
+    width: calc(100% - 2 * var(--page-gutter, clamp(1.25rem, 6.25vw, 7.5rem)));
     margin-inline: auto;
 }
 .jbw-main { padding-bottom: 0; }
@@ -1575,7 +1577,15 @@ a { color: inherit; }
 /* ─── Hero ────────────────────────────────────────────────────────── */
 .jbw-hero {
     position: relative;
+    background: transparent;
+    /* Same gutters as .jbw-container so the banner lines up with the sections */
+    padding: 1.5rem var(--page-gutter) 0;
+}
+
+.jbw-hero-frame {
+    position: relative;
     overflow: hidden;
+    border-radius: 16px;
     height: clamp(420px, 58vh, 560px);
     min-height: 420px;
     background: #111;
@@ -1632,7 +1642,10 @@ a { color: inherit; }
 
 .jbw-hero-nav {
     position: absolute;
-    inset: 0;
+    top: 1.5rem;
+    left: 0;
+    right: 0;
+    height: clamp(420px, 58vh, 560px);
     z-index: 3;
     pointer-events: none;
 }
@@ -1642,12 +1655,12 @@ a { color: inherit; }
     top: 50%;
     transform: translateY(-50%);
     pointer-events: auto;
-    width: 2.75rem;
-    height: 2.75rem;
-    border: 1px solid rgb(15 23 42 / 0.12);
-    border-radius: 9999px;
-    background: #fff;
-    color: #1a2f38;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #17130f;
     font-size: 1.125rem;
     line-height: 1;
     cursor: pointer;
@@ -1655,44 +1668,37 @@ a { color: inherit; }
     align-items: center;
     justify-content: center;
     padding: 0;
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
-    transition: background 0.25s ease, transform 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 .jbw-hero-arrow:hover {
-    background: #fff;
     color: var(--c-primary, #f25123);
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: 0 10px 28px rgb(0 0 0 / 0.28);
 }
 
-.jbw-hero-arrow--prev { left: 1rem; }
-.jbw-hero-arrow--next { right: 1rem; }
+.jbw-hero-arrow--prev { left: max(0.125rem, calc(var(--page-gutter) / 2 - 1.25rem)); }
+.jbw-hero-arrow--next { right: max(0.125rem, calc(var(--page-gutter) / 2 - 1.25rem)); }
 
 .jbw-hero-dots {
-    position: absolute;
-    left: 50%;
-    bottom: 1.25rem;
-    transform: translateX(-50%);
-    z-index: 3;
     display: flex;
+    justify-content: center;
     gap: 0.5rem;
+    padding: 0.9rem 0 0.1rem;
 }
 
 .jbw-hero-dot {
-    width: 1.75rem;
-    height: 0.25rem;
+    width: 0.4375rem;
+    height: 0.4375rem;
     border: none;
-    border-radius: 9999px;
-    background: rgb(255 255 255 / 0.4);
+    border-radius: 50%;
+    background: #ddd3c9;
     cursor: pointer;
     padding: 0;
-    transition: background 0.25s ease, width 0.25s ease;
+    transition: background 0.25s ease, transform 0.25s ease;
 }
 
 .jbw-hero-dot.is-active {
-    background: #fff;
-    width: 2.5rem;
+    background: var(--c-primary);
+    transform: scale(1.15);
 }
 
 .alignmentheading {
@@ -1706,9 +1712,9 @@ a { color: inherit; }
     z-index: 1;
     background: linear-gradient(
         115deg,
-        rgb(0 0 0 / 0.62) 0%,
-        rgb(0 0 0 / 0.42) 45%,
-        rgb(0 0 0 / 0.15) 100%
+        rgb(0 0 0 / 0.10) 0%,
+        rgb(0 0 0 / 0.04) 55%,
+        rgb(0 0 0 / 0) 100%
     );
 }
 
@@ -1721,16 +1727,16 @@ a { color: inherit; }
 }
 
 .jbw-hero-content {
-    padding: clamp(1.5rem, 3vw, 2.75rem);
-    color: #fff;
-    background: rgba(0, 0, 0, 0.32);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
+    color: var(--c-text);
+    background: rgb(255 255 255 / 0.38);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: inline-block;
-    border-radius: 18px;
-    border: 1px solid rgb(255 255 255 / 0.08);
-    max-width: min(100%, 38rem);
-    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.4);
+    border-radius: 10px;
+    border: 1px solid rgb(255 255 255 / 0.55);
+    max-width: min(100%, 34rem);
+    box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.35);
 }
 
 .jbw-hero-kicker {
@@ -1753,23 +1759,36 @@ a { color: inherit; }
 
 .jbw-hero-title {
     font-family: var(--font-serif);
-    font-size: clamp(2.5rem, 6vw, 3.5rem);
+    font-size: clamp(2.25rem, 5vw, 3.25rem);
     font-weight: 600;
-    line-height: 1.05;
-    margin: 0 0 1.25rem;
-    color: #fff;
-    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin: 0 0 1rem;
+    color: #17130f;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
 }
 
 .jbw-hero-text {
-    color: rgb(255 255 255 / 0.75);
-    font-size: 1.0125rem;
-    line-height: 1.75;
-    margin-bottom: 2rem;
-    max-width: 30rem;
+    color: #57504a;
+    font-size: 0.975rem;
+    line-height: 1.65;
+    margin-bottom: 1.75rem;
+    max-width: 27rem;
 }
 
 .jbw-hero-actions { display: flex; gap: 0.875rem; flex-wrap: wrap; align-items: center; }
+
+.jbw-btn--hero {
+    background: #a63c11;
+    color: #fff;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.9rem 1.75rem;
+}
+.jbw-btn--hero:hover { background: #8d3009; color: #fff; }
 
 .jbw-btn--hero-secondary {
     background: rgb(255 255 255 / 0.12);
@@ -2081,21 +2100,27 @@ a { color: inherit; }
     width: 100%;
 }
 
-/* When the slider has only a few items, center them and disable scroll behavior on
-   wider viewports so they don't sit against the left edge with empty space to the right. */
+/* When the slider has only a few items, stretch them edge-to-edge so the row
+   fills the container like the Figma layout. */
 @media (min-width: 720px) {
     .service-slider.slider-is-few,
     .category-slider.slider-is-few {
         justify-content: center;
         overflow-x: visible;
         flex-wrap: wrap;
+        gap: 1.5rem;
         row-gap: 1.5rem;
     }
     .service-slider.slider-is-few .service-card,
     .category-slider.slider-is-few .category-card {
-        width: clamp(220px, 28vw, 300px);
-        min-width: clamp(220px, 28vw, 300px);
-        flex: 0 0 clamp(220px, 28vw, 300px);
+        width: auto;
+        min-width: 220px;
+        max-width: none;
+        flex: 1 1 0;
+    }
+    .service-slider.slider-is-few .service-card .jbw-tile,
+    .category-slider.slider-is-few .jbw-tile--category {
+        aspect-ratio: 4 / 3;
     }
 }
 
@@ -2106,6 +2131,13 @@ a { color: inherit; }
     color: var(--c-text);
     margin-top: 0.85rem;
     letter-spacing: -0.005em;
+}
+
+/* Figma: category labels are uppercase */
+.category-card .jbw-step-title {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.9375rem;
 }
 
 .service-arrow {
@@ -2783,33 +2815,32 @@ a { color: inherit; }
 
 .jbw-designer-card {
     flex: 0 0 auto;
-    width: 10.5rem;
-    padding: 1.25rem 0.75rem 1rem;
-    background: #fff;
-    border-radius: 20px;
+    width: 9.5rem;
+    padding: 0.5rem 0.5rem 0.75rem;
+    background: transparent;
+    border-radius: 12px;
     text-align: center;
     text-decoration: none;
     color: inherit;
-    box-shadow: 0 4px 14px rgb(15 23 42 / 0.05);
-    border: 1px solid rgb(15 23 42 / 0.04);
-    transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    box-shadow: none;
+    border: none;
+    transition: transform 0.35s ease;
 }
 
 .jbw-designer-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 18px 40px rgb(242 81 35 / 0.16);
-    border-color: color-mix(in srgb, var(--c-primary) 24%, transparent);
 }
 
 .jbw-designer-avatar-ring {
     display: block;
-    width: 5rem;
-    height: 5rem;
+    width: 6rem;
+    height: 6rem;
     margin: 0 auto 0.75rem;
-    padding: 3px;
+    padding: 5px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f25123 0%, #f8a08a 50%, #ffd7c9 100%);
-    box-shadow: 0 8px 22px rgb(242 81 35 / 0.18);
+    background: #fff;
+    border: 1px solid #d8b3a4;
+    box-shadow: none;
 }
 
 .jbw-designer-avatar-img,
@@ -2829,8 +2860,8 @@ a { color: inherit; }
 
 .jbw-designer-card-name {
     margin: 0;
-    font-weight: 700;
-    font-size: 0.9375rem;
+    font-weight: 600;
+    font-size: 0.9rem;
     color: var(--c-text);
     line-height: 1.3;
     white-space: nowrap;
@@ -2922,12 +2953,13 @@ a { color: inherit; }
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 12px;
+    border-radius: 999px;
     border: 1px solid var(--c-border);
     background: #fff;
     color: var(--c-text);
     text-decoration: none;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgb(15 23 42 / 0.06);
     transition: background 0.15s, border-color 0.15s;
 }
 
@@ -2938,27 +2970,27 @@ a { color: inherit; }
 
 .jbw-catalog-page-title {
     margin: 0;
-    font-family: var(--font-serif);
-    font-size: clamp(1.6rem, 3vw, 2.15rem);
+    font-size: clamp(1.3rem, 2.2vw, 1.6rem);
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     color: var(--c-text);
     line-height: 1.15;
 }
 
-.jbw-filters--listing {
-    padding: 1.5rem 1.35rem 1.65rem;
-    border-radius: 20px;
-    border: 1px solid #eee8e2;
-    box-shadow: 0 10px 30px rgb(15 23 42 / 0.04);
-    background: #fff;
+/* Figma: filters sit flat on the page — no card chrome */
+.jbw-filters.jbw-filters--listing {
+    padding: 0.25rem 0.25rem 1.25rem;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
 }
 
 .jbw-filters--listing .jbw-filter-title {
     font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: #4b5563;
+    color: #1f2937;
     margin: 0 0 1.25rem;
 }
 
@@ -2983,8 +3015,8 @@ a { color: inherit; }
 .jbw-filters--listing .jbw-input,
 .jbw-filters--listing .jbw-select {
     border-radius: 999px;
-    background: #f2f2f2;
-    border: 1px solid #e8c4bf;
+    background: #f0eeeb;
+    border: 1px solid transparent;
     min-height: 48px;
     padding: 0.7rem 1.15rem;
     color: #374151;
@@ -2998,8 +3030,8 @@ a { color: inherit; }
 
 .jbw-filters--listing .jbw-input:focus,
 .jbw-filters--listing .jbw-select:focus {
-    background: #fafafa;
-    border-color: #e0a8a1;
+    background: #faf9f7;
+    border-color: #d8d2ca;
     outline: none;
     box-shadow: none;
 }
@@ -3090,7 +3122,7 @@ a { color: inherit; }
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: var(--c-primary);
+    background: #a63c11;
     border: 2px solid #fff;
     box-shadow: 0 1px 3px rgb(15 23 42 / 0.18);
     pointer-events: auto;
@@ -3104,7 +3136,7 @@ a { color: inherit; }
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: var(--c-primary);
+    background: #a63c11;
     border: 2px solid #fff;
     box-shadow: 0 1px 3px rgb(15 23 42 / 0.18);
     pointer-events: auto;
@@ -3214,9 +3246,9 @@ a { color: inherit; }
 .jbw-size-chip,
 .jbw-rating-chip {
     appearance: none;
-    border: 1px solid #f0cfc9;
+    border: 1px solid #ddd6cd;
     background: #fff;
-    border-radius: 10px;
+    border-radius: 6px;
     min-height: 42px;
     font-size: 0.875rem;
     font-weight: 700;
@@ -3227,14 +3259,14 @@ a { color: inherit; }
 
 .jbw-size-chip.is-active,
 .jbw-rating-chip.is-active {
-    background: var(--c-primary);
-    border-color: var(--c-primary);
+    background: #a63c11;
+    border-color: #a63c11;
     color: #fff;
 }
 
 .jbw-color-swatch {
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 0;
     background: var(--swatch, #ccc);
@@ -3251,7 +3283,7 @@ a { color: inherit; }
 .jbw-color-swatch.is-active {
     box-shadow:
         0 0 0 2px #fff,
-        0 0 0 4px var(--c-primary),
+        0 0 0 3.5px #35302a,
         inset 0 0 0 1px rgb(0 0 0 / 0.08);
     transform: scale(1.04);
 }
@@ -3301,14 +3333,15 @@ a { color: inherit; }
     gap: 1.5rem 1.25rem;
 }
 
+/* Figma: flat cards — bare rounded image with text below, no card chrome */
 .jbw-product-card.jbw-product-card--listing {
     border: 0 !important;
-    background: #fff !important;
-    border-radius: 20px !important;
+    background: transparent !important;
+    border-radius: 12px !important;
     box-shadow: none !important;
-    overflow: hidden;
+    overflow: visible;
     height: auto;
-    padding: 0.55rem 0.55rem 0.75rem;
+    padding: 0;
     transition: transform 0.2s ease;
 }
 
@@ -3320,7 +3353,7 @@ a { color: inherit; }
 .jbw-product-card--listing .jbw-product-card-img {
     position: relative;
     width: 100%;
-    border-radius: 16px !important;
+    border-radius: 12px !important;
     aspect-ratio: 4 / 5;
     overflow: hidden;
     background: #f3eee9;
@@ -3332,12 +3365,16 @@ a { color: inherit; }
     height: 100%;
     object-fit: cover;
     display: block;
-    border-radius: 16px;
+    border-radius: 12px;
+}
+
+.jbw-product-card--listing.is-rental .jbw-product-card-img::after {
+    content: none !important;
 }
 
 .jbw-product-card--listing .jbw-product-card-body {
-    padding: 0.7rem 0.2rem 0.15rem !important;
-    background: #fff;
+    padding: 0.75rem 0.1rem 0.1rem !important;
+    background: transparent;
     gap: 0;
 }
 
@@ -3363,13 +3400,13 @@ a { color: inherit; }
 .jbw-product-rating {
     display: inline-flex;
     align-items: center;
-    gap: 0.2rem;
+    gap: 0.25rem;
     flex-shrink: 0;
     background: transparent;
-    color: #6b7280;
+    color: #1f2937;
     padding: 0;
     font-size: 0.78rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1;
 }
 
@@ -3379,7 +3416,7 @@ a { color: inherit; }
 }
 
 .jbw-product-card--listing .jbw-product-title {
-    font-weight: 700;
+    font-weight: 600;
     font-size: 0.95rem;
     color: #111827;
     margin: 0 0 0.45rem;
@@ -3388,7 +3425,7 @@ a { color: inherit; }
 
 .jbw-product-card--listing .jbw-product-price {
     margin: 0 0 0.55rem;
-    color: var(--c-primary);
+    color: #b3261e;
     font-size: 0.98rem;
     font-weight: 800;
     line-height: 1.2;
@@ -3555,7 +3592,7 @@ a { color: inherit; }
 .jbw-product-price { color: var(--c-primary); font-weight: 800; margin: 0; font-size: 0.9375rem; }
 
 @media (min-width: 900px) {
-    .jbw-catalog-layout { grid-template-columns: 340px 1fr; }
+    .jbw-catalog-layout { grid-template-columns: clamp(230px, 18vw, 300px) 1fr; }
 }
 
 /* ─── Product detail ─────────────────────────────────────────────── */
@@ -6912,8 +6949,8 @@ background: #AE2A0B;
     }
 
     .jbw-product-card--listing .jbw-product-card-body {
-        padding: 0.65rem 0.75rem 0.8rem !important;
-        background: #fff;
+        padding: 0.65rem 0.1rem 0.5rem !important;
+        background: transparent;
     }
 
     .jbw-product-brand {
@@ -7308,33 +7345,40 @@ background: #AE2A0B;
 /* Hero - compact on mobile */
 @media (max-width: 640px) {
     .jbw-hero {
+        padding: 0.75rem 1.75rem 0;
+    }
+    .jbw-hero-frame {
         height: min(38vh, 260px);
         min-height: 200px;
         max-height: 260px;
+        border-radius: 12px;
+    }
+    .jbw-hero-nav {
+        top: 0.75rem;
+        height: min(38vh, 260px);
     }
     .jbw-hero-content {
         max-width: 92%;
         padding: 1rem 0.875rem;
-        background: rgb(0 0 0 / 0.28);
-        backdrop-filter: blur(4px);
+        background: rgb(255 255 255 / 0.42);
+        backdrop-filter: blur(8px);
     }
-    .jbw-hero-title { font-size: clamp(1.5rem, 7vw, 2rem); margin-bottom: 0.5rem; }
-    .jbw-hero-text { font-size: 0.875rem; margin-bottom: 0.875rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .jbw-hero-title { font-size: clamp(1.35rem, 6.5vw, 1.85rem); margin-bottom: 0.5rem; }
+    .jbw-hero-text { font-size: 0.8125rem; margin-bottom: 0.875rem; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .jbw-hero-actions { gap: 0.625rem; }
-    .jbw-hero-actions .jbw-btn--lg { padding: 0.7rem 1rem; font-size: 0.875rem; }
+    .jbw-hero-actions .jbw-btn--hero { padding: 0.65rem 1.1rem; font-size: 0.7rem; }
     .jbw-hero-scroll { display: none; }
     .jbw-hero-arrow {
-        width: 2.25rem;
-        height: 2.25rem;
+        width: 1.75rem;
+        height: 1.75rem;
         font-size: 0.875rem;
         top: 50%;
         transform: translateY(-50%);
     }
-    .jbw-hero-arrow:hover { transform: translateY(-50%) scale(1.05); }
-    .jbw-hero-arrow--prev { left: 0.5rem; }
-    .jbw-hero-arrow--next { right: 0.5rem; }
-    .jbw-hero-arrow svg { width: 14px; height: 14px; }
-    .jbw-hero-dots { bottom: 0.65rem; gap: 0.3rem; }
+    .jbw-hero-arrow--prev { left: 0; }
+    .jbw-hero-arrow--next { right: 0; }
+    .jbw-hero-arrow svg { width: 16px; height: 16px; }
+    .jbw-hero-dots { padding-top: 0.6rem; gap: 0.35rem; }
 }
 
 /* Section bands — less padding on mobile */
@@ -9099,6 +9143,145 @@ background: #AE2A0B;
     height: auto;
     max-height: none;
     margin-bottom: 0;
+}
+
+/* ─── App download band (Figma "Fashion. Style. Booked.") ─────────── */
+.jbw-app-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    background: #f7efe6;
+    border-radius: 24px;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    overflow: hidden;
+}
+
+.jbw-app-band-logo { margin-bottom: 1.1rem; }
+
+.jbw-app-band-title {
+    font-family: var(--font-serif);
+    font-size: clamp(1.9rem, 4vw, 2.9rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #23222c;
+    line-height: 1.15;
+    margin: 0 0 0.9rem;
+}
+.jbw-app-band-title span { color: #a04a56; }
+
+.jbw-app-band-sub {
+    border-top: 1px solid #e4d5c3;
+    padding-top: 0.9rem;
+    margin: 0 0 1.25rem;
+    color: #5d5850;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.jbw-app-band-tags {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.jbw-app-band-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: #fffdf9;
+    border: 1px solid #e6d8c6;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.5625rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #3c3a44;
+    line-height: 1.35;
+}
+.jbw-app-band-tag svg { color: #a04a56; flex-shrink: 0; }
+
+.jbw-app-band-download {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+    background: #a25f66;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    color: #fff;
+}
+
+.jbw-app-band-qr {
+    width: 4.75rem;
+    height: 4.75rem;
+    border-radius: 8px;
+    background: #fff;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+.jbw-app-band-download-title {
+    margin: 0;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.975rem;
+    line-height: 1.3;
+}
+
+.jbw-app-band-download-sub {
+    margin: 0.3rem 0 0;
+    font-size: 0.75rem;
+    color: rgb(255 255 255 / 0.85);
+}
+
+.jbw-app-band-stores {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.jbw-store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: #101014;
+    color: #fff;
+    border: 1px solid rgb(255 255 255 / 0.28);
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    min-width: 8.75rem;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+.jbw-store-badge:hover { transform: translateY(-2px); background: #000; }
+.jbw-store-badge small { display: block; font-size: 0.55rem; letter-spacing: 0.04em; opacity: 0.8; line-height: 1.2; }
+.jbw-store-badge strong { display: block; font-size: 0.8125rem; line-height: 1.15; }
+
+.jbw-app-band-visual { align-self: stretch; }
+.jbw-app-band-visual img {
+    width: 100%;
+    height: 100%;
+    min-height: 22rem;
+    object-fit: cover;
+    border-radius: 18px;
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .jbw-app-band { grid-template-columns: 1fr; }
+    .jbw-app-band-visual img { min-height: 14rem; max-height: 18rem; }
+}
+
+@media (max-width: 560px) {
+    .jbw-app-band { padding: 1.25rem; border-radius: 18px; }
+    .jbw-app-band-stores { margin-left: 0; flex-direction: row; width: 100%; }
+    .jbw-store-badge { flex: 1 1 auto; justify-content: center; }
 }
 
 /* Smooth scroll and selection */

@@ -144,6 +144,18 @@ class CustomerApiPresenter
     {
         $cartItem->loadMissing(['portfolioItem.vendor', 'portfolioItem.category', 'portfolioItem.subcategory.parent', 'portfolioItem.variants', 'variant', 'vendor']);
         $item = $cartItem->portfolioItem;
+        $variant = $cartItem->variant;
+
+        $available = $item !== null && $item->isCatalogAvailable();
+        if ($available) {
+            if ($variant) {
+                $available = $variant->quantity === null || (int) $variant->quantity > 0;
+            } elseif ($item->variants && $item->variants->isNotEmpty()) {
+                $available = $item->variants->contains(
+                    fn ($v) => ($v->quantity ?? null) === null || (int) $v->quantity > 0
+                );
+            }
+        }
 
         return [
             'id' => $cartItem->id,
@@ -151,7 +163,9 @@ class CustomerApiPresenter
             'vendor_id' => $cartItem->vendor_id,
             'portfolio_item_id' => $cartItem->portfolio_item_id,
             'portfolio_item_variant_id' => $cartItem->portfolio_item_variant_id,
-            'variant' => $cartItem->variant ? self::catalogVariant($cartItem->variant) : null,
+            'is_available' => $available,
+            'availability' => $available ? 'available' : 'unavailable',
+            'variant' => $variant ? self::catalogVariant($variant) : null,
             'product' => $item ? self::catalogItem($item) : null,
             'vendor' => $cartItem->vendor ? self::designerSummary($cartItem->vendor) : null,
             'line_total' => round($cartItem->unitDailyRate() * $cartItem->quantity, 2),
@@ -475,7 +489,11 @@ class CustomerApiPresenter
 
     public static function measurementDetail(CustomerMeasurement $profile): array
     {
-        $fields = $profile->apiMeasurementFields();
+        // Display values carry the cm unit ("34 cm"); raw *_cm / extra_measurements stay numeric.
+        $fields = array_map(
+            fn (?string $value) => BookingMeasurementSupport::withCmUnit($value),
+            $profile->apiMeasurementFields()
+        );
 
         return [
             'id' => $profile->id,

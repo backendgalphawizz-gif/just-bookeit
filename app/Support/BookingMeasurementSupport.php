@@ -215,6 +215,20 @@ class BookingMeasurementSupport
     }
 
     /**
+     * Append the cm unit to a numeric measurement value for display (e.g. "34" → "34 cm").
+     */
+    public static function withCmUnit(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return preg_match('/^\d+(\.\d+)?$/', $trimmed) ? $trimmed.' cm' : $trimmed;
+    }
+
+    /**
      * Flat fields (backward compatible) + named sections for mobile UI.
      *
      * @param  array<string, mixed>  $extra
@@ -247,6 +261,9 @@ class BookingMeasurementSupport
             ? (string) $waistCm
             : (isset($extra['waist']) ? (string) $extra['waist'] : null);
 
+        // Display copies carry the cm unit (e.g. "34 cm"); raw *_cm / extra stay numeric.
+        $displayFields = array_map(fn (?string $value) => self::withCmUnit($value), $fields);
+
         $labelToField = WebMeasurementForm::labelToField();
 
         $sections = [];
@@ -260,7 +277,7 @@ class BookingMeasurementSupport
                 $sectionFields[] = [
                     'key' => $key,
                     'label' => $label,
-                    'value' => $fields[$key] ?? null,
+                    'value' => $displayFields[$key] ?? null,
                 ];
             }
             $sections[] = [
@@ -271,9 +288,9 @@ class BookingMeasurementSupport
 
         // Core height/chest/waist not always in the section map for every type — expose under Basics when present.
         $basics = array_values(array_filter([
-            ['key' => 'height', 'label' => 'Height (cm)', 'value' => $fields['height']],
-            ['key' => 'chest', 'label' => 'Chest (cm)', 'value' => $fields['chest']],
-            ['key' => 'waist', 'label' => 'Waist (cm)', 'value' => $fields['waist']],
+            ['key' => 'height', 'label' => 'Height (cm)', 'value' => $displayFields['height']],
+            ['key' => 'chest', 'label' => 'Chest (cm)', 'value' => $displayFields['chest']],
+            ['key' => 'waist', 'label' => 'Waist (cm)', 'value' => $displayFields['waist']],
         ], fn (array $row) => filled($row['value'])));
 
         if ($basics !== []) {
@@ -290,7 +307,7 @@ class BookingMeasurementSupport
             'height_cm' => $heightCm,
             'chest_cm' => $chestCm,
             'waist_cm' => $waistCm,
-            ...$fields,
+            ...$displayFields,
             'extra_measurements' => $extra,
             'sections' => $sections,
             'section_names' => array_values(array_map(fn (array $section) => $section['name'], $sections)),

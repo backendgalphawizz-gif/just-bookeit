@@ -145,61 +145,71 @@ body {
     margin-bottom: 0 !important;
 }
 
-/* Hero */
+/* Hero — inset rounded carousel with light glass card (Figma) */
 .jbw-hero {
-    height: clamp(460px, 62vh, 620px);
-    min-height: 460px;
     margin-bottom: 0;
+}
+
+.jbw-hero-frame {
+    height: clamp(440px, 60vh, 600px);
+    min-height: 440px;
+}
+
+.jbw-hero-nav {
+    height: clamp(440px, 60vh, 600px);
 }
 
 .jbw-hero-overlay {
     background: linear-gradient(
         105deg,
-        rgb(26 47 56 / 0.82) 0%,
-        rgb(26 47 56 / 0.45) 45%,
-        rgb(26 47 56 / 0.15) 100%
+        rgb(0 0 0 / 0.10) 0%,
+        rgb(0 0 0 / 0.04) 55%,
+        rgb(0 0 0 / 0) 100%
     );
 }
 
 .jbw-hero-content {
-    max-width: 36rem;
-    padding: 2rem;
-    background: rgb(255 255 255 / 0.08);
-    backdrop-filter: blur(8px);
-    border-radius: var(--r-card);
-    border: 1px solid rgb(255 255 255 / 0.12);
+    max-width: 34rem;
+    padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
+    background: rgb(255 255 255 / 0.38);
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    border: 1px solid rgb(255 255 255 / 0.55);
 }
 
 .jbw-hero-title {
     font-family: var(--font-serif);
-    font-size: clamp(2rem, 4.5vw, 3.25rem);
+    font-size: clamp(2.25rem, 5vw, 3.25rem);
     font-weight: 600;
-    line-height: 1.12;
+    line-height: 1.1;
     margin: 0 0 1rem;
-    color: #fff;
-    text-shadow: 0 2px 20px rgb(0 0 0 / 0.2);
+    color: #17130f;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    text-shadow: none;
 }
 
 .jbw-hero-text {
-    font-size: 1.0625rem;
-    line-height: 1.7;
-    color: rgb(255 255 255 / 0.92);
-    margin-bottom: 1.5rem;
+    font-size: 0.975rem;
+    line-height: 1.65;
+    color: #57504a;
+    margin-bottom: 1.75rem;
 }
 
 .jbw-hero-arrow {
-    background: #fff;
-    color: #1a2f38;
+    background: transparent;
+    color: #17130f;
+    box-shadow: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s, color 0.2s;
+    transition: color 0.2s;
 }
 
 .jbw-hero-arrow:hover {
     color: var(--c-primary, #f25123);
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: var(--shadow-hover);
+    transform: translateY(-50%);
+    box-shadow: none;
 }
 
 /* Trust strip */
@@ -1925,7 +1935,7 @@ body {
 
 /* Mobile home — keep after desktop rules so cascade wins */
 @media (max-width: 768px) {
-    .jbw-hero {
+    .jbw-hero-frame {
         height: min(38vh, 260px);
         min-height: 200px;
         max-height: 260px;
