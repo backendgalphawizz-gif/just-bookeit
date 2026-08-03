@@ -377,6 +377,8 @@ class OrderItem extends Model
                     ? 'Accepted · Driver assigned'
                     : 'In Transit · Driver assigned',
                 Order::DRIVER_STATUS_RESCHEDULED => 'Rescheduled',
+                // Driver marked complete — booking lifecycle can still be In Transit for vendor/customer.
+                Order::DRIVER_STATUS_DELIVERED => self::STATUS_LABELS[$displayStatus] ?? 'In Transit',
                 default => self::STATUS_LABELS[$displayStatus] ?? 'In Transit',
             };
         }
@@ -387,6 +389,7 @@ class OrderItem extends Model
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'Return out for delivery',
                 Order::DRIVER_STATUS_ACCEPTED => 'Return In Transit · Driver assigned',
                 Order::DRIVER_STATUS_RESCHEDULED => 'Return rescheduled',
+                Order::DRIVER_STATUS_DELIVERED => self::STATUS_LABELS['re_intransit'],
                 default => self::STATUS_LABELS['re_intransit'],
             };
         }
@@ -407,6 +410,7 @@ class OrderItem extends Model
             Order::DRIVER_STATUS_PICKED_UP => 'Picked up',
             Order::DRIVER_STATUS_OUT_FOR_DELIVERY => 'Out for delivery',
             Order::DRIVER_STATUS_RESCHEDULED => 'Rescheduled',
+            Order::DRIVER_STATUS_DELIVERED => 'Delivered',
             default => null,
         };
     }

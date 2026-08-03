@@ -232,7 +232,7 @@ class DriverApiPresenter
                 Order::DRIVER_STATUS_PICKED_UP,
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
                 Order::DRIVER_STATUS_RESCHEDULED,
-            ], true),
+            ], true) && $item->driver_delivery_status !== Order::DRIVER_STATUS_DELIVERED,
             'rental_start_date' => $item->rentalStartDate(),
             'rental_end_date' => $item->rentalEndDate(),
         ];
@@ -330,7 +330,7 @@ class DriverApiPresenter
             }
 
             $active = $mine->filter(
-                fn (OrderItem $item) => ! in_array($item->status, self::driverItemDoneStatuses(), true)
+                fn (OrderItem $item) => ! self::isDriverItemDelivered($item)
             );
 
             if ($active->isNotEmpty()) {
@@ -351,6 +351,13 @@ class DriverApiPresenter
                     default => 'ASSIGNED',
                 };
             }
+        }
+
+        if (
+            $order->driver_delivery_status === Order::DRIVER_STATUS_DELIVERED
+            || $order->driver_delivered_at !== null
+        ) {
+            return 'DELIVERED';
         }
 
         if (in_array($order->status, ['delivered', 're_delivered', 'returned', 'completed'], true)) {
@@ -397,6 +404,20 @@ class DriverApiPresenter
         return ['delivered', 'returned', 're_delivered', 'completed', 'cancelled'];
     }
 
+    public static function isDriverItemDelivered(OrderItem $item): bool
+    {
+        if ($item->status === OrderItem::STATUS_CANCELLED) {
+            return true;
+        }
+
+        if ($item->driver_delivery_status === Order::DRIVER_STATUS_DELIVERED) {
+            return true;
+        }
+
+        // Legacy rows completed before driver-only delivered status existed.
+        return in_array($item->status, ['delivered', 'returned', 're_delivered', 'completed'], true);
+    }
+
     /** @param  Collection<int, OrderItem>  $items */
     public static function driverItemsAllDelivered(Collection $items): bool
     {
@@ -405,9 +426,7 @@ class DriverApiPresenter
             return false;
         }
 
-        return $active->every(
-            fn (OrderItem $item) => in_array($item->status, ['delivered', 'returned', 're_delivered', 'completed'], true)
-        );
+        return $active->every(fn (OrderItem $item) => self::isDriverItemDelivered($item));
     }
 
     protected static function viewerHasAssignedItems(Order $order, ?Driver $viewer): bool
@@ -526,6 +545,8 @@ class DriverApiPresenter
         return $viewer
             && self::driverOwnsDelivery($order, $viewer)
             && self::isDispatchReady($order)
+            && $order->driver_delivery_status !== Order::DRIVER_STATUS_DELIVERED
+            && blank($order->driver_delivered_at)
             && in_array($order->driver_delivery_status, [
                 Order::DRIVER_STATUS_PICKED_UP,
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,

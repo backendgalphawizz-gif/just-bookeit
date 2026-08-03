@@ -28,7 +28,7 @@
     <div class="vp-form-grid-2">
         <div class="vp-field">
             <label class="vp-label" for="business_mobile">Business Mobile</label>
-            <input id="business_mobile" type="tel" name="business_mobile" class="vp-input @error('business_mobile') vp-input--error @enderror" value="{{ old('business_mobile', $vendor->business_mobile) }}" placeholder="10 digit number" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" data-vp-restrict="phone">
+            <input id="business_mobile" type="tel" name="business_mobile" class="vp-input @error('business_mobile') vp-input--error @enderror" value="{{ old('business_mobile', $vendor->business_mobile) }}" placeholder="10 digit number" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" data-vp-restrict="phone">
             @error('business_mobile')<p class="vp-field-error">{{ $message }}</p>@enderror
         </div>
         <div class="vp-field">

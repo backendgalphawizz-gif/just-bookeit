@@ -7,12 +7,15 @@ use App\Models\AdminInboxNotification;
 use App\Models\ContactMessage;
 use App\Models\Dispute;
 use App\Models\Driver;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PortfolioItem;
 use App\Models\Refund;
 use App\Models\SupportTicket;
 use App\Models\Vendor;
 use App\Models\VendorWithdrawalRequest;
 use App\Support\AdminCityScope;
+use App\Support\OrderDispatchSupport;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -161,6 +164,70 @@ class AdminInboxNotificationService
             metaKey: 'dispute_id',
             metaId: $dispute->id,
         );
+    }
+
+    /**
+     * Raised when a vendor moves a booking to In Transit (or Return In Transit)
+     * so admin can assign a driver. Re-runs on every status/driver change and
+     * clears itself once nothing is waiting.
+     */
+    public function notifyOrderAwaitingDriver(Order $order): void
+    {
+        if (in_array($order->status, ['cancelled', 'refunded', 'completed'], true)) {
+            $this->dismissForOrderDriver($order);
+
+            return;
+        }
+
+        $order->loadMissing('vendor');
+
+        $items = OrderItem::query()->where('order_id', $order->id)->get();
+
+        $pending = $items->filter(fn (OrderItem $item) => $item->canAssignDriver() && blank($item->driver_id));
+
+        // Legacy single bookings carry the driver on the order row itself.
+        $pendingCount = $items->isEmpty()
+            ? (int) (OrderDispatchSupport::isDispatchStatus((string) $order->status) && blank($order->driver_id))
+            : $pending->count();
+
+        if ($pendingCount === 0) {
+            $this->dismissForOrderDriver($order);
+
+            return;
+        }
+
+        // Item statuses are more current than the rolled-up order status here,
+        // because this runs before the roll-up when a single item changes.
+        $isReturnLeg = $items->isEmpty()
+            ? $order->status === 're_intransit'
+            : $pending->every(fn (OrderItem $item) => in_array($item->status, ['re_intransit', 'returned'], true));
+
+        $this->push(
+            type: AdminInboxNotification::TYPE_ORDER_AWAITING_DRIVER,
+            title: $isReturnLeg ? 'Return in transit — assign a driver' : 'Booking in transit — assign a driver',
+            message: sprintf(
+                '%s moved order %s to %s. %d item%s waiting for driver assignment.',
+                $order->vendor?->brand_name ?? 'Vendor',
+                $order->order_number ?? '#'.$order->id,
+                $isReturnLeg ? 'Return In Transit' : 'In Transit',
+                $pendingCount,
+                $pendingCount === 1 ? '' : 's'
+            ),
+            actionUrl: route('admin.orders.show', $order),
+            vendorId: $order->vendor_id,
+            metaKey: 'order_id',
+            metaId: $order->id,
+        );
+    }
+
+    public function dismissForOrderDriver(Order|int $order): void
+    {
+        $orderId = $order instanceof Order ? $order->id : $order;
+
+        AdminInboxNotification::query()
+            ->where('type', AdminInboxNotification::TYPE_ORDER_AWAITING_DRIVER)
+            ->where('action_url', route('admin.orders.show', $orderId))
+            ->delete();
     }
 
     public function dismissForProduct(PortfolioItem|int $product): void

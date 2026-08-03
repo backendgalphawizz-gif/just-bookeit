@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V3;
 
 use App\Models\DriverDeliverySkip;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Services\Driver\DriverWalletService;
 use App\Support\Api\DriverApiPresenter;
 use App\Support\Api\DriverDeliveryTab;
@@ -307,6 +308,10 @@ class DeliveryController extends DriverApiController
             return $this->error('Pass item_id to complete delivery for a specific item.', 422);
         }
 
+        if ($item->driver_delivery_status === Order::DRIVER_STATUS_DELIVERED) {
+            return $this->error('This item is already marked delivered.', 422);
+        }
+
         if (! in_array($item->driver_delivery_status, [
             Order::DRIVER_STATUS_PICKED_UP,
             Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
@@ -317,20 +322,11 @@ class DeliveryController extends DriverApiController
 
         $request->validate(DriverValidationRules::deliveryComplete());
 
-        $itemFinal = $item->status === 're_intransit'
-            ? (\App\Support\OrderItemStatusSupport::isRentalItem($item, $delivery) ? 'returned' : 're_delivered')
-            : \App\Support\OrderItemStatusSupport::statusAfterOutboundDelivery($item, $delivery);
-
+        // Driver completion is isolated from booking lifecycle. Vendor / customer / admin
+        // keep seeing In Transit (or Return In Transit) until they advance the order.
         $item->update([
-            'status' => $itemFinal,
-            'driver_delivery_status' => null,
-            ...((in_array($itemFinal, ['delivered', 'rental_active'], true) && blank($item->delivered_at))
-                ? ['delivered_at' => now()]
-                : []),
+            'driver_delivery_status' => Order::DRIVER_STATUS_DELIVERED,
         ]);
-
-        app(\App\Services\Checkout\VendorBookingItemService::class)
-            ->syncBookingFromItems($delivery->fresh(['orderItems', 'checkoutOrder']));
 
         if ($request->hasFile('delivery_image')) {
             $delivery->update([
@@ -349,17 +345,16 @@ class DeliveryController extends DriverApiController
 
         $remaining = $delivery->fresh(['orderItems'])->orderItems
             ->where('driver_id', $driver->id)
-            ->filter(fn ($row) => in_array($row->status, ['in_progress', 're_intransit'], true)
-                || in_array($row->driver_delivery_status, [
-                    Order::DRIVER_STATUS_ACCEPTED,
-                    Order::DRIVER_STATUS_PICKED_UP,
-                    Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
-                    Order::DRIVER_STATUS_RESCHEDULED,
-                ], true));
+            ->filter(fn ($row) => $row->status !== OrderItem::STATUS_CANCELLED
+                && $row->driver_delivery_status !== Order::DRIVER_STATUS_DELIVERED
+                && (
+                    in_array($row->status, ['in_progress', 're_intransit', OrderItem::STATUS_ACCEPTED], true)
+                    || in_array($row->driver_delivery_status, Order::driverActiveDeliveryStatuses(), true)
+                ));
 
         if ($remaining->isEmpty()) {
             $delivery->update([
-                'driver_delivery_status' => null,
+                'driver_delivery_status' => Order::DRIVER_STATUS_DELIVERED,
                 'driver_delivered_at' => now(),
                 'driver_scheduled_for' => null,
                 'driver_rescheduled_at' => null,

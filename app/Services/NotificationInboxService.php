@@ -26,18 +26,32 @@ class NotificationInboxService
         };
     }
 
-    public function baseQuery(string $recipientType): Builder
+    public function baseQuery(string $recipientType, ?int $recipientId = null): Builder
     {
-        return NotificationLog::query()
+        $query = NotificationLog::query()
             ->where('status', 'sent')
             ->whereIn('audience', $this->audiencesFor($recipientType))
             ->orderByDesc('sent_at')
             ->orderByDesc('id');
+
+        // Targeted vendor alerts (e.g. product rejection) must only appear for that vendor.
+        // Broadcast rows keep target_vendor_id null and remain visible to everyone.
+        if ($recipientType === self::TYPE_VENDOR && $recipientId !== null) {
+            $query->where(function (Builder $scoped) use ($recipientId): void {
+                $scoped
+                    ->whereNull('target_vendor_id')
+                    ->orWhere('target_vendor_id', $recipientId);
+            });
+        } elseif ($recipientType !== self::TYPE_VENDOR) {
+            $query->whereNull('target_vendor_id');
+        }
+
+        return $query;
     }
 
     public function paginate(string $recipientType, int $recipientId, int $perPage = 15, ?string $filter = null): LengthAwarePaginator
     {
-        $query = $this->baseQuery($recipientType)
+        $query = $this->baseQuery($recipientType, $recipientId)
             ->with(['reads' => fn ($readQuery) => $readQuery
                 ->where('recipient_type', $recipientType)
                 ->where('recipient_id', $recipientId)]);
@@ -62,14 +76,14 @@ class NotificationInboxService
         return $query->paginate($perPage);
     }
 
-    public function totalCount(string $recipientType): int
+    public function totalCount(string $recipientType, ?int $recipientId = null): int
     {
-        return $this->baseQuery($recipientType)->count();
+        return $this->baseQuery($recipientType, $recipientId)->count();
     }
 
     public function unreadCount(string $recipientType, int $recipientId): int
     {
-        return $this->baseQuery($recipientType)
+        return $this->baseQuery($recipientType, $recipientId)
             ->where(function (Builder $query) use ($recipientType, $recipientId) {
                 $query->whereDoesntHave('reads', fn (Builder $readQuery) => $readQuery
                     ->where('recipient_type', $recipientType)
@@ -84,7 +98,7 @@ class NotificationInboxService
 
     public function readCount(string $recipientType, int $recipientId): int
     {
-        return $this->baseQuery($recipientType)
+        return $this->baseQuery($recipientType, $recipientId)
             ->whereHas('reads', fn (Builder $readQuery) => $readQuery
                 ->where('recipient_type', $recipientType)
                 ->where('recipient_id', $recipientId)
@@ -94,7 +108,7 @@ class NotificationInboxService
 
     public function markRead(NotificationLog $notification, string $recipientType, int $recipientId): NotificationRead
     {
-        $this->assertAudience($notification, $recipientType);
+        $this->assertAudience($notification, $recipientType, $recipientId);
 
         return NotificationRead::query()->updateOrCreate(
             [
@@ -108,7 +122,7 @@ class NotificationInboxService
 
     public function markUnread(NotificationLog $notification, string $recipientType, int $recipientId): NotificationRead
     {
-        $this->assertAudience($notification, $recipientType);
+        $this->assertAudience($notification, $recipientType, $recipientId);
 
         return NotificationRead::query()->updateOrCreate(
             [
@@ -124,7 +138,7 @@ class NotificationInboxService
     {
         $marked = 0;
 
-        $this->baseQuery($recipientType)
+        $this->baseQuery($recipientType, $recipientId)
             ->pluck('id')
             ->each(function (int $notificationId) use ($recipientType, $recipientId, &$marked) {
                 NotificationRead::query()->updateOrCreate(
@@ -157,11 +171,20 @@ class NotificationInboxService
         ];
     }
 
-    protected function assertAudience(NotificationLog $notification, string $recipientType): void
+    protected function assertAudience(NotificationLog $notification, string $recipientType, ?int $recipientId = null): void
     {
         abort_unless(
             in_array($notification->audience, $this->audiencesFor($recipientType), true),
             404
         );
+
+        if (
+            $recipientType === self::TYPE_VENDOR
+            && $notification->target_vendor_id
+            && $recipientId !== null
+            && (int) $notification->target_vendor_id !== (int) $recipientId
+        ) {
+            abort(404);
+        }
     }
 }

@@ -119,21 +119,42 @@ class DriverDeliveryTab
                 ->where('driver_delivery_status', Order::DRIVER_STATUS_OUT_FOR_DELIVERY),
             self::TAB_DELIVERED => self::whereAssignedToDriver($query, $driver)
                 ->where(function (Builder $builder) use ($driver) {
-                    $done = ['delivered', 'returned', 're_delivered', 'completed'];
+                    $lifecycleDone = ['delivered', 'returned', 're_delivered', 'completed', 'rental_active'];
 
-                    // Legacy booking-level: booking itself delivered.
-                    $builder->where(function (Builder $legacy) use ($done) {
-                        $legacy->whereIn('status', $done)
-                            ->whereDoesntHave('orderItems', fn (Builder $items) => $items->whereNotNull('driver_id'));
-                    })->orWhere(function (Builder $itemWise) use ($driver, $done) {
-                        // Item-wise: this driver has items, and none of their active items are still open.
-                        $itemWise->whereHas('orderItems', fn (Builder $items) => $items
-                            ->where('driver_id', $driver->id)
-                            ->whereIn('status', $done))
-                            ->whereDoesntHave('orderItems', fn (Builder $items) => $items
+                    // Driver-only completion: prefer explicit driver signals so Vendor/User/Admin
+                    // lifecycle status can stay In Transit while this tab still populates.
+                    $builder->where(function (Builder $byDriverSignal) use ($driver) {
+                        $byDriverSignal
+                            ->where('driver_delivery_status', Order::DRIVER_STATUS_DELIVERED)
+                            ->orWhere(function (Builder $completed) use ($driver) {
+                                $completed->whereNotNull('driver_delivered_at')
+                                    ->where('driver_id', $driver->id);
+                            })
+                            ->orWhereHas('orderItems', fn (Builder $items) => $items
                                 ->where('driver_id', $driver->id)
-                                ->whereNotIn('status', [...$done, 'cancelled']));
-                    });
+                                ->where('driver_delivery_status', Order::DRIVER_STATUS_DELIVERED));
+                    })->orWhere(function (Builder $legacy) use ($driver, $lifecycleDone) {
+                        // Pre-change rows where lifecycle already advanced on deliver().
+                        $legacy->where(function (Builder $bookingDone) use ($lifecycleDone) {
+                            $bookingDone->whereIn('status', $lifecycleDone)
+                                ->whereDoesntHave('orderItems', fn (Builder $items) => $items->whereNotNull('driver_id'));
+                        })->orWhere(function (Builder $itemWise) use ($driver, $lifecycleDone) {
+                            $itemWise->whereHas('orderItems', fn (Builder $items) => $items
+                                ->where('driver_id', $driver->id)
+                                ->whereIn('status', $lifecycleDone))
+                                ->whereDoesntHave('orderItems', fn (Builder $items) => $items
+                                    ->where('driver_id', $driver->id)
+                                    ->whereNotIn('status', [...$lifecycleDone, 'cancelled'])
+                                    ->where(function (Builder $open) {
+                                        $open->whereNull('driver_delivery_status')
+                                            ->orWhereNotIn('driver_delivery_status', [
+                                                Order::DRIVER_STATUS_DELIVERED,
+                                            ]);
+                                    }));
+                        });
+                    })->whereDoesntHave('orderItems', fn (Builder $items) => $items
+                        ->where('driver_id', $driver->id)
+                        ->whereIn('driver_delivery_status', Order::driverActiveDeliveryStatuses()));
                 }),
             self::TAB_CANCELLED => self::whereAssignedToDriver($query, $driver)
                 ->where(function (Builder $builder) {

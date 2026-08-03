@@ -7,6 +7,7 @@ use App\Models\PortfolioItem;
 use App\Models\PortfolioItemImage;
 use App\Models\Vendor;
 use App\Services\Admin\AdminInboxNotificationService;
+use App\Services\AppPushNotificationService;
 use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
@@ -22,7 +23,8 @@ class PortfolioController extends AdminController
     use ManagesPortfolioProducts;
 
     public function __construct(
-        protected AdminInboxNotificationService $adminInboxNotifications
+        protected AdminInboxNotificationService $adminInboxNotifications,
+        protected AppPushNotificationService $appPushNotifications
     ) {}
 
     protected string $permissionModule = 'portfolio';
@@ -125,6 +127,10 @@ class PortfolioController extends AdminController
         }
         $this->syncProductDamageDeductions($product, $data['damage_deductions'] ?? []);
 
+        if ($data['status'] === 'rejected') {
+            $this->appPushNotifications->productRejected($product->fresh(['vendor']));
+        }
+
         return redirect()
             ->route('admin.portfolio.show', $product)
             ->with('success', 'Product created successfully.');
@@ -178,6 +184,8 @@ class PortfolioController extends AdminController
             $data['damage_deductions'] ?? []
         );
 
+        $previousStatus = $portfolio->status;
+
         $portfolio->fill([
             'vendor_id' => $data['vendor_id'],
             'category_id' => $data['category_id'],
@@ -221,6 +229,13 @@ class PortfolioController extends AdminController
             $portfolio->variants()->delete();
         }
         $this->syncProductDamageDeductions($portfolio, $data['damage_deductions'] ?? [], true);
+
+        if ($data['status'] === 'rejected' && $previousStatus !== 'rejected') {
+            $this->adminInboxNotifications->dismissForProduct($portfolio);
+            $this->appPushNotifications->productRejected($portfolio->fresh(['vendor']));
+        } elseif ($data['status'] === 'approved') {
+            $this->adminInboxNotifications->dismissForProduct($portfolio);
+        }
 
         return redirect()
             ->route('admin.portfolio.show', $portfolio)
@@ -270,6 +285,7 @@ class PortfolioController extends AdminController
         ]);
 
         $this->adminInboxNotifications->dismissForProduct($portfolio);
+        $this->appPushNotifications->productRejected($portfolio->fresh(['vendor']));
 
         return back()->with('success', 'Product rejected.');
     }

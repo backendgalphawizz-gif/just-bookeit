@@ -5,8 +5,11 @@ namespace App\Services;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
 use App\Models\Driver;
+use App\Models\NotificationLog;
 use App\Models\Order;
+use App\Models\PortfolioItem;
 use App\Support\OrderDispatchSupport;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -194,6 +197,47 @@ class AppPushNotificationService
                 $this->orderPayload($order)
             ));
         }
+    }
+
+    public function productRejected(PortfolioItem $product): void
+    {
+        $product->loadMissing('vendor');
+
+        if (! $product->vendor || $product->status !== 'rejected') {
+            return;
+        }
+
+        $reason = trim((string) ($product->rejection_reason ?? ''));
+        $title = 'Product rejected';
+        $inboxMessage = $reason !== ''
+            ? sprintf('Your product "%s" was rejected by admin. Reason: %s', $product->title, $reason)
+            : sprintf('Your product "%s" was rejected by admin.', $product->title);
+        $pushBody = Str::limit($inboxMessage, 160);
+
+        NotificationLog::query()->create([
+            'admin_id' => Auth::guard('admin')->id(),
+            'title' => $title,
+            'message' => $inboxMessage,
+            'channel' => 'push',
+            'audience' => 'vendors',
+            'target_vendor_id' => $product->vendor_id,
+            'status' => 'sent',
+            'recipients_count' => 1,
+            'sent_at' => now(),
+        ]);
+
+        $this->safeSend(fn () => $this->push->sendToVendor(
+            $product->vendor,
+            $title,
+            $pushBody,
+            [
+                'type' => 'product',
+                'type_id' => (string) $product->id,
+                'status' => 'rejected',
+                'order_id' => '',
+                'chat' => '',
+            ]
+        ));
     }
 
     public function chatMessageCreated(ChatMessage $message): void

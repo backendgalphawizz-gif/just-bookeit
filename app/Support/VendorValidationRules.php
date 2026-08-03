@@ -258,6 +258,8 @@ class VendorValidationRules
             'state' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
             'country' => ['nullable', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_CITY],
             'pincode' => ['nullable', 'string', 'max:10', 'regex:/^[1-9][0-9]{5}$/'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'shop_logo' => ['nullable', ...$image],
             'pan_card' => ['nullable', ...$image],
             'account_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],

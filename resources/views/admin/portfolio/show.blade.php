@@ -36,10 +36,11 @@
 @section('page_title')
     <span class="block max-w-full truncate" title="{{ $portfolio->title }}">{{ $portfolio->title }}</span>
 @endsection
-@section('page_subtitle', 'Product · '.$portfolio->vendor->brand_name)
+@section('page_subtitle', 'Product · '.$portfolio->vendor->brand_name.' · '.ucfirst((string) $portfolio->status))
 
 @section('back_href', route('admin.portfolio.index'))
 @section('header_actions')
+    @include('admin.components.status-badge', ['status' => $portfolio->status, 'label' => ucfirst((string) $portfolio->status)])
     @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
         <x-admin.button variant="secondary" :href="route('admin.portfolio.edit', $portfolio)">Edit product</x-admin.button>
     @endif
@@ -148,10 +149,10 @@
                             <p>{{ $portfolio->description ?: 'No description added.' }}</p>
                         </div>
 
-                        @if ($portfolio->rejection_reason)
+                        @if ($portfolio->status === 'rejected')
                             <div class="jb-product-reject-box">
-                                <strong>Rejection reason</strong>
-                                <p>{{ $portfolio->rejection_reason }}</p>
+                                <strong>Status: Rejected</strong>
+                                <p>{{ filled($portfolio->rejection_reason) ? $portfolio->rejection_reason : 'No rejection reason was recorded.' }}</p>
                             </div>
                         @endif
                     </div>
@@ -319,8 +320,17 @@
                 @if (in_array($portfolio->status, ['pending', 'rejected'], true) && auth('admin')->user()->hasPermission('portfolio', 'edit'))
                     <div class="jb-product-view-card jb-product-view-card--aside">
                         <h3 class="jb-product-view-aside-title">Moderation</h3>
+                        <div class="mb-3">
+                            @include('admin.components.status-badge', ['status' => $portfolio->status, 'label' => ucfirst((string) $portfolio->status)])
+                        </div>
                         @if ($portfolio->status === 'rejected')
-                            <p class="jb-product-view-moderation-note">This product was rejected. Approve again if the vendor has fixed the issues.</p>
+                            <p class="jb-product-view-moderation-note">
+                                This product is <strong>Rejected</strong>.
+                                @if (filled($portfolio->rejection_reason))
+                                    Reason: {{ $portfolio->rejection_reason }}
+                                @endif
+                                Approve again if the vendor has fixed the issues.
+                            </p>
                         @endif
                         <div class="jb-product-view-moderation-actions">
                             <form method="POST" action="{{ route('admin.portfolio.approve', $portfolio) }}">@csrf

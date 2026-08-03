@@ -27,7 +27,7 @@
                     placeholder="Enter 10 digit number"
                     inputmode="numeric"
                     maxlength="10"
-                    pattern="[0-9]{10}"
+                    pattern="[6-9][0-9]{9}"
                     data-vp-restrict="phone"
                     required
                     autofocus

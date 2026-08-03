@@ -310,6 +310,13 @@
                     </span>
                 </div>
 
+                @if ($item->status === 'rejected')
+                    <div class="vp-alert vp-alert--error" style="margin-top: 1rem;">
+                        <strong>Rejected by admin</strong>
+                        <p>{{ filled($item->rejection_reason) ? $item->rejection_reason : 'No rejection reason was provided.' }}</p>
+                    </div>
+                @endif
+
                 <div class="vp-product-view-desc">
                     <h2>Description</h2>
                     <p>{{ $item->description ?: 'No description added.' }}</p>

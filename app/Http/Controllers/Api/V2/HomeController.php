@@ -46,7 +46,7 @@ class HomeController extends VendorApiController
             'vendor' => VendorApiPresenter::vendorSummary($vendor),
             'notifications' => [
                 'unread_count' => $this->notifications->unreadCount(NotificationInboxService::TYPE_VENDOR, $vendor->id),
-                'total_count' => $this->notifications->totalCount(NotificationInboxService::TYPE_VENDOR),
+                'total_count' => $this->notifications->totalCount(NotificationInboxService::TYPE_VENDOR, $vendor->id),
                 'unread_chats' => $unreadChats,
                 'new_bookings' => $newBookings->count(),
             ],

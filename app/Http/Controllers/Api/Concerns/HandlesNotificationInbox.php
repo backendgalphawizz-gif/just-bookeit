@@ -50,7 +50,7 @@ trait HandlesNotificationInbox
                 )
             ),
             'summary' => [
-                'total_count' => $this->inbox()->totalCount($recipientType),
+                'total_count' => $this->inbox()->totalCount($recipientType, $recipientId),
                 'unread_count' => $this->inbox()->unreadCount($recipientType, $recipientId),
                 'read_count' => $this->inbox()->readCount($recipientType, $recipientId),
             ],

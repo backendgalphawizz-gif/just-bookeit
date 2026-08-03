@@ -14,6 +14,7 @@ class NotificationLog extends Model
         'message',
         'channel',
         'audience',
+        'target_vendor_id',
         'status',
         'recipients_count',
         'scheduled_at',
@@ -31,6 +32,11 @@ class NotificationLog extends Model
     public function admin(): BelongsTo
     {
         return $this->belongsTo(Admin::class);
+    }
+
+    public function targetVendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class, 'target_vendor_id');
     }
 
     public function reads(): HasMany

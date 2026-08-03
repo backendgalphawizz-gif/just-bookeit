@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('vendor.partials.styles')
     @include('partials.panel-lightbox-assets')
+    @stack('styles')
 </head>
 <body class="vp-body vp-body--guest">
     <div class="vp-guest-wrap">
@@ -18,5 +19,6 @@
     @include('vendor.partials.global-confirm')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script defer src="{{ asset('js/vendor-panel.js') }}"></script>
+    @stack('scripts')
 </body>
 </html>

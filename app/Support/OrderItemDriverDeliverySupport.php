@@ -163,13 +163,17 @@ class OrderItemDriverDeliverySupport
             return;
         }
 
-        $done = ['delivered', 'returned', 're_delivered', 'completed'];
         $active = $mine->where('status', '!=', OrderItem::STATUS_CANCELLED);
 
-        if ($active->isNotEmpty() && $active->every(fn (OrderItem $item) => in_array($item->status, $done, true))) {
+        if ($active->isEmpty()) {
+            return;
+        }
+
+        // Driver completion is tracked independently of booking lifecycle status.
+        if ($active->every(fn (OrderItem $item) => $item->driver_delivery_status === Order::DRIVER_STATUS_DELIVERED)) {
             $order->forceFill([
                 'driver_id' => $driver->id,
-                'driver_delivery_status' => null,
+                'driver_delivery_status' => Order::DRIVER_STATUS_DELIVERED,
                 'driver_delivered_at' => $order->driver_delivered_at ?: now(),
                 'driver_scheduled_for' => null,
                 'driver_rescheduled_at' => null,
@@ -178,8 +182,8 @@ class OrderItemDriverDeliverySupport
             return;
         }
 
-        $statuses = $mine
-            ->filter(fn (OrderItem $item) => ! in_array($item->status, [...$done, OrderItem::STATUS_CANCELLED], true))
+        $statuses = $active
+            ->filter(fn (OrderItem $item) => $item->driver_delivery_status !== Order::DRIVER_STATUS_DELIVERED)
             ->pluck('driver_delivery_status')
             ->filter()
             ->values();

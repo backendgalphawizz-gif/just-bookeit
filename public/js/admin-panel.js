@@ -169,17 +169,6 @@
     function validateVendorCategoryGroups(form) {
         let valid = true;
 
-        const audienceWrap = form.querySelector('[data-jb-audience-categories]');
-        if (audienceWrap) {
-            const checked = audienceWrap.querySelectorAll('input[name="audience_category_ids[]"]:checked').length;
-            if (checked === 0) {
-                showGroupError(audienceWrap, 'Select at least one category: Men, Women, or Kids.');
-                valid = false;
-            } else {
-                clearGroupError(audienceWrap);
-            }
-        }
-
         const serviceWrap = form.querySelector('[data-jb-service-categories]');
         if (serviceWrap) {
             const selected = serviceWrap.querySelectorAll('input[name="service_category_ids[]"]').length;
@@ -192,21 +181,6 @@
         }
 
         return valid;
-    }
-
-    function bindVendorCategoryValidation(form) {
-        const audienceWrap = form.querySelector('[data-jb-audience-categories]');
-        if (!audienceWrap) {
-            return;
-        }
-
-        audienceWrap.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-            input.addEventListener('change', () => {
-                if (audienceWrap.querySelectorAll('input[name="audience_category_ids[]"]:checked').length > 0) {
-                    clearGroupError(audienceWrap);
-                }
-            });
-        });
     }
 
     function bindCharCounter(input) {
@@ -256,7 +230,7 @@
         const required = input.hasAttribute('required');
         if (value === '') {
             if (required) {
-                showFieldError(input, 'Mobile no must be exactly 10 digits.');
+                showFieldError(input, 'Enter a valid 10-digit mobile number starting with 6–9.');
                 return false;
             }
             clearFieldError(input);
@@ -264,6 +238,10 @@
         }
         if (value.length !== 10) {
             showFieldError(input, 'Enter exactly 10 digits (' + value.length + '/10).');
+            return false;
+        }
+        if (!/^[6-9][0-9]{9}$/.test(value)) {
+            showFieldError(input, 'Mobile number must start with 6, 7, 8, or 9.');
             return false;
         }
         clearFieldError(input);
@@ -616,7 +594,6 @@
         form.querySelectorAll('input[type="file"][data-jb-max-mb]').forEach(bindFileSizeLimit);
         bindBankDetailsValidation(form);
         bindVehicleAccountType(form);
-        bindVendorCategoryValidation(form);
 
         form.addEventListener('submit', (event) => {
             let valid = true;

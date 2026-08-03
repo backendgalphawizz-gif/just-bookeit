@@ -27,7 +27,7 @@
                 <label class="vp-label" for="mobile">Phone Number</label>
                 <div class="vp-input-icon-wrap">
                     @include('vendor.partials.nav-icon', ['icon' => 'phone'])
-                    <input id="mobile" type="tel" name="mobile" class="vp-input @error('mobile') vp-input--error @enderror" value="{{ old('mobile', $vendor->mobile) }}" placeholder="10 digit mobile number" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" data-vp-restrict="phone" autocomplete="tel">
+                    <input id="mobile" type="tel" name="mobile" class="vp-input @error('mobile') vp-input--error @enderror" value="{{ old('mobile', $vendor->mobile) }}" placeholder="10 digit mobile number" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" data-vp-restrict="phone" autocomplete="tel">
                 </div>
                 <p class="vp-field-hint">10 digits only, no country code</p>
                 @error('mobile')<p class="vp-field-error">{{ $message }}</p>@enderror

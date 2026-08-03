@@ -34,9 +34,10 @@ class VendorRequest extends AdminFormRequest
 
     public function vendorData(): array
     {
+        $vendor = $this->route('vendor');
+
         $data = $this->safe()->except([
             'category_ids',
-            'audience_category_ids',
             'service_category_ids',
             'country_id',
             'country_other',
@@ -70,16 +71,31 @@ class VendorRequest extends AdminFormRequest
         }
 
         $categoryIds = collect($this->input('category_ids', []))
-            ->merge($this->input('audience_category_ids', []))
             ->merge($this->input('service_category_ids', []))
             ->filter(fn ($id) => filled($id))
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values();
 
-        $data['categories'] = $categoryIds->isEmpty()
-            ? []
-            : Category::query()->whereIn('id', $categoryIds)->orderBy('name')->pluck('name')->all();
+        $selectedNames = $categoryIds->isEmpty()
+            ? collect()
+            : Category::query()->whereIn('id', $categoryIds)->pluck('name');
+
+        // Audience categories (Men/Women/Kids) are not editable from this form,
+        // so keep whatever the vendor already has instead of wiping them.
+        $retainedNames = $vendor
+            ? Category::query()
+                ->whereIn('name', (array) ($vendor->categories ?? []))
+                ->where('type', '!=', 'service')
+                ->pluck('name')
+            : collect();
+
+        $data['categories'] = $retainedNames
+            ->merge($selectedNames)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
 
         $data['rating'] = $data['rating'] ?? 0;
         $data['orders_completed'] = $data['orders_completed'] ?? 0;

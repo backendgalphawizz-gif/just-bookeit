@@ -65,6 +65,19 @@ class Order extends Model
 
     public const DRIVER_STATUS_RESCHEDULED = 'rescheduled';
 
+    public const DRIVER_STATUS_DELIVERED = 'delivered';
+
+    /** @return list<string> */
+    public static function driverActiveDeliveryStatuses(): array
+    {
+        return [
+            self::DRIVER_STATUS_ACCEPTED,
+            self::DRIVER_STATUS_PICKED_UP,
+            self::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            self::DRIVER_STATUS_RESCHEDULED,
+        ];
+    }
+
     protected $fillable = [
         'checkout_order_id',
         'order_number',

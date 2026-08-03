@@ -14,7 +14,7 @@
 
 <p class="jb-form-section-title sm:col-span-2">Personal details</p>
 @include('admin.partials.form-input', ['label' => 'Full name', 'name' => 'name', 'value' => old('name', $driver?->name), 'required' => true, 'maxChars' => 100, 'restrict' => 'person-name'])
-@include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $driver?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits'])
+@include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $driver?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits starting with 6–9'])
 @include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $driver?->email)])
 @include('admin.partials.form-input', ['label' => 'City', 'name' => 'city', 'value' => old('city', $driver?->city)])
 @include('admin.partials.form-input', ['label' => 'Vehicle number', 'name' => 'vehicle_no', 'value' => old('vehicle_no', $driver?->vehicle_no), 'restrict' => 'vehicle-no', 'hint' => 'Max 20 characters. Required before selecting account type.'])

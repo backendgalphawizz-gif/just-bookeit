@@ -25,6 +25,8 @@ class AdminInboxNotification extends Model
 
     public const TYPE_DISPUTE_RAISED = 'dispute_raised';
 
+    public const TYPE_ORDER_AWAITING_DRIVER = 'order_awaiting_driver';
+
     protected $fillable = [
         'type',
         'portfolio_item_id',

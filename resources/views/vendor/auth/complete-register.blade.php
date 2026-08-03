@@ -128,7 +128,7 @@
             <div class="vp-form-grid-2">
                 <div class="vp-field">
                     <label class="vp-label" for="business_mobile">Business Mobile</label>
-                    <input id="business_mobile" type="tel" name="business_mobile" class="vp-input @error('business_mobile') vp-input--error @enderror" value="{{ old('business_mobile') }}" placeholder="+91 00000 00000" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" data-vp-restrict="phone">
+                    <input id="business_mobile" type="tel" name="business_mobile" class="vp-input @error('business_mobile') vp-input--error @enderror" value="{{ old('business_mobile') }}" placeholder="10 digit mobile" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" data-vp-restrict="phone">
                     @error('business_mobile')<p class="vp-field-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="vp-field">
@@ -152,11 +152,39 @@
 
             <h2 class="vp-register-panel-title" style="margin-top:1.35rem;">Location</h2>
 
-            <div class="vp-field">
+            @php $mapsEnabled = filled(config('services.google.maps_api_key')); @endphp
+
+            <div class="vp-field{{ $mapsEnabled ? ' vp-places-wrap' : '' }}">
                 <label class="vp-label" for="address">Full Address</label>
-                <textarea id="address" name="address" class="vp-input vp-textarea @error('address') vp-input--error @enderror" rows="3" placeholder="Shop/Building No, Street..." maxlength="500" data-vp-restrict="text">{{ old('address') }}</textarea>
+                @if ($mapsEnabled)
+                    <input
+                        id="address"
+                        type="text"
+                        name="address"
+                        class="vp-input vp-places-input @error('address') vp-input--error @enderror"
+                        value="{{ old('address') }}"
+                        placeholder="Start typing to search address…"
+                        maxlength="500"
+                        autocomplete="off"
+                        data-vp-restrict="text"
+                    >
+                    <p class="vp-field-hint">Search an address, or drop a pin on the map below.</p>
+                @else
+                    <textarea id="address" name="address" class="vp-input vp-textarea @error('address') vp-input--error @enderror" rows="3" placeholder="Shop/Building No, Street..." maxlength="500" data-vp-restrict="text">{{ old('address') }}</textarea>
+                @endif
                 @error('address')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
+
+            @if ($mapsEnabled)
+                <div class="vp-field">
+                    <div id="vp-location-map" class="vp-location-map" role="application" aria-label="Shop location map"></div>
+                    <p class="vp-field-hint">Drag the pin or tap the map to set exact location.</p>
+                    <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
+                    <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
+                    @error('latitude')<p class="vp-field-error">{{ $message }}</p>@enderror
+                    @error('longitude')<p class="vp-field-error">{{ $message }}</p>@enderror
+                </div>
+            @endif
 
             <div class="vp-form-grid-2">
                 <div class="vp-field">
@@ -472,4 +500,55 @@
 })();
 </script>
 @include('vendor.partials.form-file-persistence')
+
+@if (filled(config('services.google.maps_api_key')))
+@push('styles')
+<style>
+    .vp-places-wrap { position: relative; z-index: 30; }
+    .vp-location-map {
+        width: 100%;
+        height: 240px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #f1f5f9;
+        overflow: hidden;
+    }
+    .vp-location-map.is-ready { background: #fff; }
+    .pac-container {
+        z-index: 99999 !important;
+        margin-top: 6px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        overflow: hidden;
+        background: #fff;
+    }
+    .pac-container.vp-places-hidden {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+    }
+    .pac-item {
+        padding: 10px 12px;
+        border-top: 1px solid #f1f5f9;
+        line-height: 1.35;
+        cursor: pointer;
+    }
+    .pac-item:first-child { border-top: 0; }
+    .pac-item:hover,
+    .pac-item-selected { background: #fff7ed; }
+    .pac-item-query { font-weight: 600; color: #0f172a; }
+</style>
+@endpush
+@push('scripts')
+<script src="{{ asset('js/vendor-google-places.js') }}?v={{ @filemtime(public_path('js/vendor-google-places.js')) }}"></script>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key={{ urlencode(config('services.google.maps_api_key')) }}&libraries=places&callback=initVendorGooglePlaces"
+    async
+    defer
+></script>
+@endpush
+@endif
 @endsection

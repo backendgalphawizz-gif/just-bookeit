@@ -6,6 +6,7 @@ use App\Models\ChatMessage;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Observers\ChatMessageObserver;
+use App\Observers\OrderItemObserver;
 use App\Observers\OrderObserver;
 use App\Support\AdminListOrder;
 use App\View\Composers\AdminLayoutComposer;
@@ -71,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Order::observe(OrderObserver::class);
+        OrderItem::observe(OrderItemObserver::class);
         ChatMessage::observe(ChatMessageObserver::class);
 
         Route::bind('delivery', function (string $value): Order {

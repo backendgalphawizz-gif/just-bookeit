@@ -4,12 +4,7 @@
     $savedCategoryIds = $vendor
         ? \App\Models\Category::query()->whereIn('name', $vendor->categories ?? [])->pluck('id')->all()
         : [];
-    $audienceCategories = $categories->where('type', 'main')->values();
     $serviceCategories = $categories->where('type', 'service')->values();
-    $selectedAudienceIds = old(
-        'audience_category_ids',
-        $audienceCategories->whereIn('id', $savedCategoryIds)->pluck('id')->all()
-    );
     $selectedServiceIds = old(
         'service_category_ids',
         $serviceCategories->whereIn('id', $savedCategoryIds)->pluck('id')->all()
@@ -56,9 +51,9 @@
 @include('admin.partials.form-input', ['label' => 'Shop name', 'name' => 'shop_name', 'value' => old('shop_name', $vendor?->shop_name ?? $vendor?->brand_name), 'maxChars' => 100, 'restrict' => 'title'])
 @include('admin.partials.form-input', ['label' => 'Brand name', 'name' => 'brand_name', 'value' => old('brand_name', $vendor?->brand_name), 'required' => true, 'maxChars' => 100, 'restrict' => 'title'])
 @include('admin.partials.form-input', ['label' => 'Owner name', 'name' => 'owner_name', 'value' => old('owner_name', $vendor?->owner_name), 'required' => true, 'maxChars' => 100, 'restrict' => 'person-name'])
-@include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $vendor?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits'])
+@include('admin.partials.form-input', ['label' => 'Mobile No', 'name' => 'mobile', 'value' => old('mobile', $vendor?->mobile), 'required' => true, 'restrict' => 'phone', 'hint' => '10 digits starting with 6–9'])
 @include('admin.partials.form-input', ['label' => 'Email ID', 'name' => 'email', 'type' => 'email', 'value' => old('email', $vendor?->email), 'required' => true])
-@include('admin.partials.form-input', ['label' => 'Business Mobile No', 'name' => 'business_mobile', 'value' => old('business_mobile', $vendor?->business_mobile), 'restrict' => 'phone', 'hint' => '10 digits'])
+@include('admin.partials.form-input', ['label' => 'Business Mobile No', 'name' => 'business_mobile', 'value' => old('business_mobile', $vendor?->business_mobile), 'restrict' => 'phone', 'hint' => '10 digits starting with 6–9'])
 @include('admin.partials.form-input', ['label' => 'Business Email ID', 'name' => 'business_email', 'type' => 'email', 'value' => old('business_email', $vendor?->business_email)])
 @include('admin.partials.form-input', ['label' => 'GST number', 'name' => 'gst_number', 'value' => old('gst_number', $vendor?->gst_number), 'restrict' => 'gst', 'placeholder' => '15-character GSTIN'])
 
@@ -107,30 +102,11 @@
 ]])
 
 <p class="jb-form-section-title sm:col-span-2">
-    Categories & admin stats
+    Service categories & admin stats
     @if (auth('admin')->user()->hasPermission('categories', 'view'))
         <a href="{{ route('admin.categories.index') }}" class="ml-2 text-xs font-semibold text-rose-600 hover:text-rose-700">Manage categories</a>
     @endif
 </p>
-<div class="sm:col-span-2" data-jb-audience-categories>
-    <p class="jb-label">Categories <span class="text-rose-600">*</span></p>
-    <p class="mb-3 text-xs text-slate-500">Select one or more: Men, Women, Kids.</p>
-    <div class="flex flex-wrap gap-4">
-        @foreach ($audienceCategories as $category)
-            <label class="jb-checkbox-row">
-                <input
-                    type="checkbox"
-                    name="audience_category_ids[]"
-                    value="{{ $category->id }}"
-                    @checked(in_array($category->id, (array) $selectedAudienceIds))
-                >
-                <span>{{ $category->name }}</span>
-            </label>
-        @endforeach
-    </div>
-    @error('audience_category_ids')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-    @error('audience_category_ids.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-</div>
 <div class="sm:col-span-2">
     @include('admin.partials.multi-select-dropdown', [
         'name' => 'service_category_ids',

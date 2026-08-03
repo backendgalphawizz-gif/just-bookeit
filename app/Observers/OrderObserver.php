@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Order;
+use App\Services\Admin\AdminInboxNotificationService;
 use App\Services\AppPushNotificationService;
 use App\Services\Booking\BookingPaymentService;
 use App\Services\Booking\RentalPeriodService;
@@ -42,6 +43,10 @@ class OrderObserver
 
         if ($order->wasChanged('driver_id')) {
             $notifications->orderDriverAssigned($order, $order->getOriginal('driver_id'));
+        }
+
+        if ($order->wasChanged('status') || $order->wasChanged('driver_id')) {
+            app(AdminInboxNotificationService::class)->notifyOrderAwaitingDriver($order);
         }
 
         if ($order->wasChanged('driver_delivery_status')) {

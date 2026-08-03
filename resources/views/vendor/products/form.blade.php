@@ -41,6 +41,14 @@
             </div>
         @endif
 
+        @if ($item->exists && $item->status === 'rejected')
+            <div class="vp-alert vp-alert--error" style="margin-bottom:1rem;">
+                <p style="margin:0 0 .35rem;font-weight:700;">This product was rejected by admin</p>
+                <p style="margin:0;">{{ filled($item->rejection_reason) ? $item->rejection_reason : 'No rejection reason was provided.' }}</p>
+                <p style="margin:.5rem 0 0;font-size:.875rem;">Update the product and save to resubmit it for approval.</p>
+            </div>
+        @endif
+
         <form id="vendor-product-form" method="POST" action="{{ $item->exists ? route('vendor.products.update', $item) : route('vendor.products.store') }}" enctype="multipart/form-data" data-vp-product-form>
             @csrf
             @if ($item->exists) @method('PUT') @endif

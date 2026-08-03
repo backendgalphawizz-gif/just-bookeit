@@ -26,7 +26,8 @@ class AdminValidationRules
 
     public const REGEX_CITY = '/^[\p{L}\s.\'\-]+$/u';
 
-    public const REGEX_PHONE = '/^[0-9]{10}$/';
+    /** Indian mobile: 10 digits starting with 6–9 (rejects 0000000000, etc.). */
+    public const REGEX_PHONE = '/^[6-9][0-9]{9}$/';
 
     public const REGEX_TITLE = '/^[\p{L}\p{N}\s.,\'&()\-]+$/u';
 
@@ -238,8 +239,6 @@ class AdminValidationRules
             'commission' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
-            'audience_category_ids' => ['required', 'array', 'min:1'],
-            'audience_category_ids.*' => ['integer', 'exists:categories,id'],
             'service_category_ids' => ['required', 'array', 'min:1'],
             'service_category_ids.*' => ['integer', 'exists:categories,id'],
             'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
@@ -750,15 +749,16 @@ class AdminValidationRules
             'name.regex' => 'Name may only contain letters, spaces, dots, and hyphens.',
             'owner_name.regex' => 'Owner name may only contain letters, spaces, dots, and hyphens.',
             'brand_name.regex' => 'Brand name contains invalid characters.',
-            'mobile.regex' => 'Mobile no must be exactly 10 digits.',
-            'mobile.digits' => 'Mobile no must be exactly 10 digits.',
-            'business_mobile.regex' => 'Business mobile no must be exactly 10 digits.',
-            'business_mobile.digits' => 'Business mobile no must be exactly 10 digits.',
+            'mobile.regex' => 'Enter a valid 10-digit mobile number starting with 6–9.',
+            'mobile.digits' => 'Enter a valid 10-digit mobile number starting with 6–9.',
+            'business_mobile.regex' => 'Enter a valid 10-digit business mobile number starting with 6–9.',
+            'business_mobile.digits' => 'Enter a valid 10-digit business mobile number starting with 6–9.',
             'gst_number.regex' => 'Enter a valid 15-character GSTIN.',
             'gst_number.size' => 'GST number must be exactly 15 characters.',
             'vehicle_no.regex' => 'Vehicle number may only contain letters and numbers (max 20).',
-            'support_phone.regex' => 'Phone no must be exactly 10 digits.',
-            'support_phone.digits' => 'Phone no must be exactly 10 digits.',
+            'support_phone.regex' => 'Enter a valid 10-digit phone number starting with 6–9.',
+            'support_phone.digits' => 'Enter a valid 10-digit phone number starting with 6–9.',
+            'mobile_number.regex' => 'Enter a valid 10-digit mobile number starting with 6–9.',
             'city.regex' => 'City may only contain letters, spaces, dots, and hyphens.',
             'title.regex' => 'This field contains invalid characters.',
             'subtitle.regex' => 'Subtitle contains invalid characters.',
@@ -766,8 +766,6 @@ class AdminValidationRules
             'platform_name.regex' => 'Platform name contains invalid characters.',
             'categories_text.regex' => 'Categories may only use letters, numbers, commas, and spaces.',
             'category_ids.array' => 'Select at least one category for this sub-admin.',
-            'audience_category_ids.required' => 'Select at least one category (Men, Women, or Kids).',
-            'audience_category_ids.min' => 'Select at least one category (Men, Women, or Kids).',
             'service_category_ids.required' => 'Select at least one service category.',
             'service_category_ids.min' => 'Select at least one service category.',
             'registered_at.after_or_equal' => 'Registration date must be on or after Jan 1, 1970.',
@@ -855,7 +853,6 @@ class AdminValidationRules
             'gallery_images.*' => 'gallery image',
             'gallery_videos' => 'gallery videos',
             'gallery_videos.*' => 'gallery video',
-            'audience_category_ids' => 'categories',
             'service_category_ids' => 'service categories',
         ];
     }

@@ -103,7 +103,7 @@
             @if (!empty($step)) step="{{ $step }}" @endif
             @if (!empty($placeholder)) placeholder="{{ $placeholder }}" @endif
             @if ($restrict === 'email') maxlength="255" pattern="{{ $emailPattern }}" title="{{ $emailTitle }}" @endif
-            @if ($restrict === 'phone') maxlength="10" @endif
+            @if ($restrict === 'phone') maxlength="10" pattern="[6-9][0-9]{9}" title="10-digit mobile number starting with 6–9" @endif
             @if ($restrict === 'currency') maxlength="10" @endif
             @if ($restrict === 'gst') maxlength="15" data-jb-max-chars="15" @endif
             @if ($restrict === 'vehicle-no') maxlength="20" data-jb-max-chars="20" @endif
