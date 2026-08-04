@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api\V3;
 use App\Models\DriverDeliverySkip;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Checkout\VendorBookingItemService;
 use App\Services\Driver\DriverWalletService;
 use App\Support\Api\DriverApiPresenter;
 use App\Support\Api\DriverDeliveryTab;
 use App\Support\AppliesListDateFilter;
 use App\Support\DriverValidationRules;
 use App\Support\OrderItemDriverDeliverySupport;
+use App\Support\OrderItemStatusSupport;
 use App\Support\StoresUploadedFiles;
 use App\Support\OrderDispatchSupport;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +24,8 @@ class DeliveryController extends DriverApiController
     use AppliesListDateFilter;
 
     public function __construct(
-        protected DriverWalletService $wallet
+        protected DriverWalletService $wallet,
+        protected VendorBookingItemService $bookingItems,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -386,8 +389,6 @@ class DeliveryController extends DriverApiController
             return $this->error('Invalid delivery OTP.', 422);
         }
 
-        // Driver completion is isolated from booking lifecycle. Vendor / customer / admin
-        // keep seeing In Transit (or Return In Transit) until they advance the order.
         $item->update([
             'driver_delivery_status' => Order::DRIVER_STATUS_DELIVERED,
         ]);
@@ -403,6 +404,12 @@ class DeliveryController extends DriverApiController
             ]);
         } elseif ($delivery->isCod() && ! $delivery->cod_collected_at) {
             $delivery->update(['cod_collected_at' => now()]);
+        }
+
+        try {
+            $this->advanceLifecycleAfterDriverDelivery($delivery->fresh(['orderItems']), $item->fresh());
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
         }
 
         OrderItemDriverDeliverySupport::refreshBookingDriverStatusFromItems($delivery->fresh(['orderItems']), $driver);
@@ -482,6 +489,17 @@ class DeliveryController extends DriverApiController
         $delivery->update($payload);
 
         try {
+            // Maps rentals to rental_active (and return legs to returned) via driver-aware apply.
+            $this->bookingItems->setActiveItemsStatus(
+                $delivery->fresh(['orderItems']),
+                'delivered',
+                $driver
+            );
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        try {
             $this->wallet->creditDeliveryEarning($delivery->fresh(), $driver);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
@@ -490,6 +508,30 @@ class DeliveryController extends DriverApiController
         return $this->success([
             'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
         ], 'Delivery completed.');
+    }
+
+    /**
+     * Advance booking/item lifecycle when the driver completes a handoff.
+     * Rental outbound → rental_active; fashion outbound → delivered; return → returned/re_delivered.
+     */
+    protected function advanceLifecycleAfterDriverDelivery(Order $delivery, OrderItem $item): void
+    {
+        $item->refresh();
+        $delivery->loadMissing('orderItems');
+
+        if ($item->status === OrderItem::STATUS_ACCEPTED) {
+            $this->bookingItems->updateItemStatus($delivery, $item, 'in_progress');
+            $item->refresh();
+            $delivery->refresh();
+            $delivery->loadMissing('orderItems');
+        }
+
+        $nextStatus = OrderItemStatusSupport::statusAfterDriverDeliveryComplete($item, $delivery);
+        if ($nextStatus === null || $item->status === $nextStatus) {
+            return;
+        }
+
+        $this->bookingItems->updateItemStatus($delivery, $item, $nextStatus);
     }
 
     public function rescheduled(Request $request, Order $delivery): JsonResponse

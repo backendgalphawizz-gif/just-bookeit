@@ -44,6 +44,21 @@ class OrderItemStatusSupport
         return self::isRentalItem($item, $order) ? 'rental_active' : 'delivered';
     }
 
+    /**
+     * Booking lifecycle status after the driver marks an item delivered.
+     * Outbound rentals become rental_active; return legs become returned / re_delivered.
+     */
+    public static function statusAfterDriverDeliveryComplete(OrderItem $item, ?Order $order = null): ?string
+    {
+        $order ??= $item->order;
+
+        return match ($item->status) {
+            'in_progress', OrderItem::STATUS_ACCEPTED => self::statusAfterOutboundDelivery($item, $order),
+            're_intransit' => self::isRentalItem($item, $order) ? 'returned' : 're_delivered',
+            default => null,
+        };
+    }
+
     /** @return list<string> */
     public static function allowedNextStatuses(OrderItem $item, ?Order $order = null): array
     {
