@@ -270,7 +270,7 @@ class OtpService
 
         if ($type === self::TYPE_LOGIN && ! $isRegistered) {
             throw ValidationException::withMessages([
-                'type' => ['No account found with this mobile. Please register first.'],
+                'type' => ['No account found for this mobile number.'],
             ]);
         }
     }

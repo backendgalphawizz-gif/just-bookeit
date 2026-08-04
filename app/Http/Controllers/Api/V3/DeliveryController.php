@@ -382,6 +382,10 @@ class DeliveryController extends DriverApiController
 
         $request->validate(DriverValidationRules::deliveryComplete());
 
+        if (! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'))) {
+            return $this->error('Invalid delivery OTP.', 422);
+        }
+
         // Driver completion is isolated from booking lifecycle. Vendor / customer / admin
         // keep seeing In Transit (or Return In Transit) until they advance the order.
         $item->update([
@@ -450,6 +454,10 @@ class DeliveryController extends DriverApiController
         }
 
         $request->validate(DriverValidationRules::deliveryComplete());
+
+        if (! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'))) {
+            return $this->error('Invalid delivery OTP.', 422);
+        }
 
         $payload = [
             'driver_delivery_status' => Order::DRIVER_STATUS_DELIVERED,
@@ -594,6 +602,13 @@ class DeliveryController extends DriverApiController
         }
 
         return null;
+    }
+
+    protected function deliveryOtpMatches(Order $delivery, string $otp): bool
+    {
+        $expected = $delivery->delivery_otp ?: $delivery->ensureDeliveryOtp();
+
+        return filled($expected) && hash_equals((string) $expected, $otp);
     }
 
     /** @return array<string, array<int, string>> */

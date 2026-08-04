@@ -23,21 +23,24 @@ class EnsureVendorIsAuthenticated
             Auth::guard('vendor')->logout();
 
             return redirect()->route('vendor.login')
-                ->with('error', 'Your vendor account is pending admin approval. You can login once approved.');
+                ->with('error', 'Your vendor account is pending admin approval. You can login once approved.')
+                ->with('error_title', 'Approval pending');
         }
 
         if ($vendor->status === 'rejected') {
             Auth::guard('vendor')->logout();
 
             return redirect()->route('vendor.login')
-                ->with('error', $this->statusMessage('vendor application', $vendor->rejection_reason, 'rejected'));
+                ->with('error', $this->statusMessage('vendor application', $vendor->rejection_reason, 'rejected'))
+                ->with('error_title', 'Account unavailable');
         }
 
         if ($vendor->status === 'inactive') {
             Auth::guard('vendor')->logout();
 
             return redirect()->route('vendor.login')
-                ->with('error', $this->statusMessage('vendor account', $vendor->rejection_reason, 'deactivated'));
+                ->with('error', $this->statusMessage('vendor account', $vendor->rejection_reason, 'deactivated'))
+                ->with('error_title', 'Account unavailable');
         }
 
         return $next($request);

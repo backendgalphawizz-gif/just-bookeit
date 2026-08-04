@@ -1,22 +1,65 @@
 @php
+    $resolveVendorAlert = static function (string $message, ?string $forcedTitle = null): array {
+        $lower = strtolower($message);
+
+        if (str_contains($lower, 'pending admin approval')) {
+            return [
+                'type' => 'warning',
+                'title' => $forcedTitle ?: 'Approval pending',
+                'message' => $message,
+            ];
+        }
+
+        if (str_contains($lower, 'no account found')) {
+            return [
+                'type' => 'warning',
+                'title' => $forcedTitle ?: 'User not found',
+                'message' => $message,
+            ];
+        }
+
+        if (str_contains($lower, ' was rejected') || str_contains($lower, 'was deactivated')) {
+            return [
+                'type' => 'error',
+                'title' => $forcedTitle ?: 'Account unavailable',
+                'message' => $message,
+            ];
+        }
+
+        return [
+            'type' => 'error',
+            'title' => $forcedTitle ?: 'Something went wrong',
+            'message' => $message,
+        ];
+    };
+
     $alerts = [];
     if (session('success')) {
         $alerts[] = ['type' => 'success', 'title' => 'Success!', 'message' => session('success')];
     }
     if (session('error')) {
-        $alerts[] = ['type' => 'error', 'title' => 'Something went wrong', 'message' => session('error')];
+        $alerts[] = $resolveVendorAlert((string) session('error'), session('error_title'));
     }
     if (session('info')) {
-        $alerts[] = ['type' => 'warning', 'title' => 'Notice', 'message' => session('info')];
-    }
-    if (isset($errors) && $errors->any()) {
         $alerts[] = [
             'type' => 'warning',
-            'title' => 'Please check the form',
-            'message' => $errors->count() === 1
-                ? $errors->first()
-                : 'Please fix '.$errors->count().' errors in the form below.',
+            'title' => session('info_title') ?: 'Notice',
+            'message' => session('info'),
         ];
+    }
+    if (isset($errors) && $errors->any()) {
+        $message = $errors->count() === 1
+            ? $errors->first()
+            : 'Please fix '.$errors->count().' errors in the form below.';
+        $resolved = $resolveVendorAlert((string) $message);
+        if ($errors->count() > 1 && ! str_contains(strtolower((string) $message), 'pending admin approval')) {
+            $resolved['type'] = 'warning';
+            $resolved['title'] = 'Please check the form';
+        } elseif ($errors->count() === 1 && $resolved['title'] === 'Something went wrong') {
+            $resolved['type'] = 'warning';
+            $resolved['title'] = 'Please check the form';
+        }
+        $alerts[] = $resolved;
     }
 @endphp
 

@@ -26,6 +26,7 @@ class DriverValidationRules
     {
         return [
             'item_id' => ['nullable', 'integer', 'min:1'],
+            'delivery_otp' => ['required', 'digits:4'],
             'delivery_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
         ];
     }

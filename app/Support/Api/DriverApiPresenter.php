@@ -150,7 +150,7 @@ class DriverApiPresenter
             'delivery_proof_image_url' => $order->deliveryProofImageUrl(),
             'cod_collected_at' => $order->cod_collected_at?->format('M d, Y, g:i A'),
             'cod_collected_at_iso' => $order->cod_collected_at?->toIso8601String(),
-            'requires_delivery_otp' => false,
+            'requires_delivery_otp' => self::requiresDeliveryOtp($order, $viewer),
             'items' => $lineItems,
         ];
     }
@@ -190,6 +190,24 @@ class DriverApiPresenter
 
         // Legacy booking-level assignment (no per-item drivers).
         return $items->where('status', '!=', OrderItem::STATUS_CANCELLED)->values();
+    }
+
+    public static function requiresDeliveryOtp(Order $order, ?Driver $viewer): bool
+    {
+        $readyStatuses = [
+            Order::DRIVER_STATUS_PICKED_UP,
+            Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            Order::DRIVER_STATUS_RESCHEDULED,
+        ];
+
+        $items = self::itemsForDriver($order, $viewer);
+        if ($items->isNotEmpty()) {
+            return $items->contains(
+                fn (OrderItem $item) => in_array($item->driver_delivery_status, $readyStatuses, true)
+            );
+        }
+
+        return in_array($order->driver_delivery_status, $readyStatuses, true);
     }
 
     /** @return array<string, mixed> */
