@@ -4309,4 +4309,30 @@
         gap: 0.5rem;
         flex-shrink: 0;
     }
+
+    /* Vendor profile show: full images, no crop */
+    .jb-page--vendor-show .jb-actor-avatar--lg {
+        object-fit: contain;
+        object-position: center;
+        background: rgb(248 250 252);
+        border: 1px solid rgb(226 232 240);
+    }
+
+    .jb-page--vendor-show .jb-doc-image {
+        object-fit: contain;
+        object-position: center;
+        background: rgb(248 250 252);
+    }
+
+    .jb-page--vendor-show .jb-vendor-show-cover__img {
+        display: block;
+        width: 100%;
+        max-height: 16rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: rgb(248 250 252);
+        object-fit: contain;
+        object-position: center;
+        cursor: zoom-in;
+    }
 </style>

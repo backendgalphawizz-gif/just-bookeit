@@ -47,6 +47,7 @@
     @endif
 @endsection
 @section('content')
+    <div class="jb-page--vendor-show">
     @if ($vendor->isInactive())
         @include('admin.partials.account-status-banner', [
             'title' => 'Account blocked',
@@ -90,6 +91,16 @@
     <div class="jb-detail-grid">
         <div class="jb-detail-card lg:col-span-2">
             <h2>Profile & branding</h2>
+            @if ($vendor->coverImageUrl())
+                <div class="jb-vendor-show-cover mb-4">
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Cover image</p>
+                    <img
+                        src="{{ $vendor->coverImageUrl() }}"
+                        alt="Cover"
+                        class="jb-vendor-show-cover__img panel-lightbox-trigger"
+                    >
+                </div>
+            @endif
             <x-admin.actor-profile-header
                 :image-url="$vendor->profileImageUrl()"
                 :fallback-url="$vendor->shopLogoUrl()"
@@ -239,6 +250,7 @@
                 </table>
             </div>
         </div>
+    </div>
     </div>
 
 @endsection

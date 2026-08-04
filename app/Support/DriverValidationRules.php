@@ -22,11 +22,13 @@ class DriverValidationRules
     }
 
     /** @return array<string, array<int, mixed>> */
-    public static function deliveryComplete(): array
+    public static function deliveryComplete(bool $requireDeliveryOtp = true): array
     {
         return [
             'item_id' => ['nullable', 'integer', 'min:1'],
-            'delivery_otp' => ['required', 'digits:4'],
+            'delivery_otp' => $requireDeliveryOtp
+                ? ['required', 'digits:4']
+                : ['nullable', 'digits:4'],
             'delivery_image' => MediaUploadSupport::imageRules(4096),
         ];
     }

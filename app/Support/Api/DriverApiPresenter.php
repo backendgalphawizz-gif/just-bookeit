@@ -202,9 +202,22 @@ class DriverApiPresenter
 
         $items = self::itemsForDriver($order, $viewer);
         if ($items->isNotEmpty()) {
-            return $items->contains(
+            $ready = $items->filter(
                 fn (OrderItem $item) => in_array($item->driver_delivery_status, $readyStatuses, true)
             );
+
+            if ($ready->isEmpty()) {
+                return false;
+            }
+
+            // User → vendor (return) drop-off: OTP not required.
+            return $ready->contains(
+                fn (OrderItem $item) => ! OrderDispatchSupport::isReturnLegItem($item)
+            );
+        }
+
+        if ($order->status === 're_intransit' || OrderDispatchSupport::isReturnLegForItems($order->orderItems ?? [])) {
+            return false;
         }
 
         return in_array($order->driver_delivery_status, $readyStatuses, true);
@@ -255,6 +268,11 @@ class DriverApiPresenter
                 Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
                 Order::DRIVER_STATUS_RESCHEDULED,
             ], true) && $item->driver_delivery_status !== Order::DRIVER_STATUS_DELIVERED,
+            'requires_delivery_otp' => ! $isReturnLeg && in_array($item->driver_delivery_status, [
+                Order::DRIVER_STATUS_PICKED_UP,
+                Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+                Order::DRIVER_STATUS_RESCHEDULED,
+            ], true),
             'rental_start_date' => $item->rentalStartDate(),
             'rental_end_date' => $item->rentalEndDate(),
         ];

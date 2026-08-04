@@ -383,9 +383,14 @@ class DeliveryController extends DriverApiController
             return $this->error('This item is not ready to be completed.', 422);
         }
 
-        $request->validate(DriverValidationRules::deliveryComplete());
+        $request->validate(DriverValidationRules::deliveryComplete(
+            requireDeliveryOtp: ! OrderDispatchSupport::isReturnLegItem($item)
+        ));
 
-        if (! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'), $item)) {
+        if (
+            ! OrderDispatchSupport::isReturnLegItem($item)
+            && ! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'), $item)
+        ) {
             return $this->error('Invalid delivery OTP.', 422);
         }
 
@@ -460,9 +465,17 @@ class DeliveryController extends DriverApiController
             return $this->error('This delivery is not ready to be completed.', 422);
         }
 
-        $request->validate(DriverValidationRules::deliveryComplete());
+        $delivery->loadMissing('orderItems');
 
-        if (! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'))) {
+        $isReturnLeg = $delivery->status === 're_intransit'
+            || OrderDispatchSupport::isReturnLegForItems($delivery->orderItems);
+
+        $request->validate(DriverValidationRules::deliveryComplete(requireDeliveryOtp: ! $isReturnLeg));
+
+        if (
+            ! $isReturnLeg
+            && ! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'))
+        ) {
             return $this->error('Invalid delivery OTP.', 422);
         }
 
