@@ -460,8 +460,9 @@ class DriverApiPresenter
     }
 
     /**
-     * Cash the driver must collect on delivery for COD bookings:
-     * product advance_amount + shipping (delivery_fee).
+     * Cash the driver must collect on delivery for COD bookings.
+     * - Rental (advance > 0): advance_amount + shipping
+     * - Fashion designer / sale (no advance): subtotal + shipping
      *
      * @return array{
      *   cash_to_collect: float,
@@ -470,6 +471,9 @@ class DriverApiPresenter
      *     required: bool,
      *     collected: bool,
      *     advance_amount: float,
+     *     subtotal_amount: float,
+     *     product_amount: float,
+     *     product_amount_type: string,
      *     shipping_fee: float,
      *     total: float,
      *     total_label: string
@@ -487,8 +491,16 @@ class DriverApiPresenter
         }
 
         $advance = round((float) ($order->advance_amount ?? 0), 2);
+        $subtotal = round((float) $order->subtotal(), 2);
         $shipping = round((float) ($order->delivery_fee ?? 0), 2);
-        $total = round($advance + $shipping, 2);
+
+        // Fashion designer / non-rental services typically have no advance —
+        // driver collects the product subtotal instead.
+        $useSubtotal = $advance <= 0 && ! $order->isRental();
+        $productAmount = $useSubtotal ? $subtotal : $advance;
+        $productAmountType = $useSubtotal ? 'subtotal' : 'advance';
+
+        $total = round($productAmount + $shipping, 2);
         $collected = filled($order->cod_collected_at);
 
         return [
@@ -498,6 +510,9 @@ class DriverApiPresenter
                 'required' => ! $collected && $total > 0,
                 'collected' => $collected,
                 'advance_amount' => $advance,
+                'subtotal_amount' => $subtotal,
+                'product_amount' => $productAmount,
+                'product_amount_type' => $productAmountType,
                 'shipping_fee' => $shipping,
                 'total' => $total,
                 'total_label' => '₹'.number_format($total, 2),
