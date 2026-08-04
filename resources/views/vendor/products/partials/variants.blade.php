@@ -41,8 +41,8 @@
                         <input type="text" name="variants[{{ $index }}][color]" value="{{ $variant['color'] ?? '' }}" class="vp-input" placeholder="e.g. Red">
                     </div>
                     <div>
-                        <label class="vp-label">Price (₹)</label>
-                        <input type="number" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" class="vp-input" min="0" step="0.01" placeholder="0">
+                        <label class="vp-label">Price Per Day</label>
+                        <input type="number" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" class="vp-input" min="0" step="0.01" placeholder="0" inputmode="decimal" data-vp-restrict="amount">
                     </div>
                     <div>
                         <label class="vp-label">Variant image</label>
@@ -50,7 +50,7 @@
                             <img src="{{ $variant['image_url'] }}" alt="" class="vp-thumb panel-lightbox-trigger" style="width:3rem;height:3rem;margin-bottom:.4rem;border-radius:8px;object-fit:cover;">
                         @endif
                         <input type="hidden" name="variants[{{ $index }}][stored_image_path]" value="{{ $variant['stored_image_path'] ?? '' }}">
-                        <input type="file" name="variants[{{ $index }}][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file vp-input" data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-file-label="Variant image">
+                        <input type="file" name="variants[{{ $index }}][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-file vp-input" data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-file-label="Variant image">
                     </div>
                     <div>
                         <button type="button" class="vp-btn vp-btn--ghost vp-btn--sm" style="color:#dc2626;" data-vp-variants-remove>Remove</button>
@@ -69,11 +69,11 @@
             <div class="vp-repeat-row-grid">
                 <div><label class="vp-label">Size</label><input type="text" name="variants[__INDEX__][size]" class="vp-input" placeholder="e.g. M, 32"></div>
                 <div><label class="vp-label">Color</label><input type="text" name="variants[__INDEX__][color]" class="vp-input" placeholder="e.g. Red"></div>
-                <div><label class="vp-label">Price (₹)</label><input type="number" name="variants[__INDEX__][price]" class="vp-input" min="0" step="0.01" placeholder="0"></div>
+                <div><label class="vp-label">Price Per Day</label><input type="number" name="variants[__INDEX__][price]" class="vp-input" min="0" step="0.01" placeholder="0" inputmode="decimal" data-vp-restrict="amount"></div>
                 <div>
                     <label class="vp-label">Variant image</label>
                     <input type="hidden" name="variants[__INDEX__][stored_image_path]" value="">
-                    <input type="file" name="variants[__INDEX__][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-file vp-input" data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-file-label="Variant image">
+                    <input type="file" name="variants[__INDEX__][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-file vp-input" data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-file-label="Variant image">
                 </div>
                 <div><button type="button" class="vp-btn vp-btn--ghost vp-btn--sm" style="color:#dc2626;" data-vp-variants-remove>Remove</button></div>
             </div>

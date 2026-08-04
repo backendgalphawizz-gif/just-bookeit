@@ -6,6 +6,7 @@ use App\Models\Faq;
 use App\Models\PlatformSetting;
 use App\Services\PlatformConfigService;
 use App\Support\Api\VendorApiPresenter;
+use App\Support\MediaUploadSupport;
 use App\Support\StoresUploadedFiles;
 use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
@@ -86,7 +87,7 @@ class ProfileController extends VendorApiController
 
         $data = $this->validateVendor($request, [
             'bio' => ['required', 'string', 'max:2000'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'cover_image' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
         ]);
 
         $vendor->bio = $data['bio'];

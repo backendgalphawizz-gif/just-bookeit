@@ -484,20 +484,12 @@ class ProductController extends VendorApiController
 
     protected function looksLikeVideoMime(UploadedFile $file): bool
     {
-        $mime = strtolower((string) $file->getMimeType());
-        $ext = strtolower((string) $file->getClientOriginalExtension());
-
-        return str_starts_with($mime, 'video/')
-            || in_array($ext, VendorValidationRules::VIDEO_MIMES, true);
+        return \App\Support\MediaUploadSupport::isVideoFile($file);
     }
 
     protected function looksLikeImageMime(UploadedFile $file): bool
     {
-        $mime = strtolower((string) $file->getMimeType());
-        $ext = strtolower((string) $file->getClientOriginalExtension());
-
-        return str_starts_with($mime, 'image/')
-            || in_array($ext, ['jpeg', 'jpg', 'png', 'webp', 'gif'], true);
+        return \App\Support\MediaUploadSupport::isImageFile($file);
     }
 
     /** @return list<UploadedFile> */

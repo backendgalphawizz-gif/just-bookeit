@@ -30,7 +30,7 @@
 <div class="vp-field vp-field--full">
     <div class="vp-product-form-grid vp-product-form-grid--2">
         <div class="vp-field">
-            <label class="vp-label" for="price_per_day">Product Price (per day) <span class="vp-required">*</span></label>
+            <label class="vp-label" for="price_per_day">Price Per Day <span class="vp-required">*</span></label>
             <div class="vp-currency-input @error('price_per_day') vp-currency-input--error @enderror">
                 <span class="vp-currency-prefix" aria-hidden="true">₹</span>
                 <input
@@ -42,6 +42,8 @@
                     min="0"
                     step="0.01"
                     placeholder="0"
+                    inputmode="decimal"
+                    data-vp-restrict="amount"
                     {{ $isCreate ? 'required' : '' }}
                 >
             </div>
@@ -61,6 +63,8 @@
                     min="0"
                     step="0.01"
                     placeholder="0"
+                    inputmode="decimal"
+                    data-vp-restrict="amount"
                 >
             </div>
             @error('advance_amount')<p class="vp-field-error">{{ $message }}</p>@enderror

@@ -103,17 +103,17 @@
                 </select>
             </div>
             <div class="vp-field">
-                <label class="vp-label">Price</label>
+                <label class="vp-label">Price Per Day</label>
                 <div class="vp-currency-input">
                     <span class="vp-currency-prefix" aria-hidden="true">₹</span>
-                    <input type="number" class="vp-input" min="0" step="0.01" placeholder="0" data-vp-variant-price>
+                    <input type="number" class="vp-input" min="0" step="0.01" placeholder="0" inputmode="decimal" data-vp-restrict="amount" data-vp-variant-price>
                 </div>
             </div>
             <div class="vp-field">
                 <label class="vp-label">Advance Amount</label>
                 <div class="vp-currency-input">
                     <span class="vp-currency-prefix" aria-hidden="true">₹</span>
-                    <input type="number" class="vp-input" min="0" step="0.01" placeholder="0" data-vp-variant-advance>
+                    <input type="number" class="vp-input" min="0" step="0.01" placeholder="0" inputmode="decimal" data-vp-restrict="amount" data-vp-variant-advance>
                 </div>
             </div>
             <div class="vp-field">
@@ -123,7 +123,7 @@
         </div>
 
         <label class="vp-dress-variant-upload" data-vp-variant-upload-zone>
-            <input type="file" accept="image/jpeg,image/jpg,image/png,image/webp" hidden data-vp-variant-file>
+            <input type="file" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" hidden data-vp-variant-file>
             <span class="vp-dress-variant-upload-preview" data-vp-variant-file-preview hidden>
                 <img alt="">
             </span>
@@ -159,7 +159,7 @@
                 <div class="vp-dress-variant-card-meta">
                     <div>SIZE - <strong data-vp-variant-size-label>{{ strtoupper((string) ($variant['size'] ?? '—')) }}</strong></div>
                     <div>COLOR - <strong data-vp-variant-color-label style="color: {{ $colorCss }};">{{ strtoupper($colorName !== '' ? $colorName : '—') }}</strong></div>
-                    <div>PRICE - <strong data-vp-variant-price-label>₹{{ number_format((float) ($variant['price'] ?? 0), 0) }}</strong></div>
+                    <div>PRICE/DAY - <strong data-vp-variant-price-label>₹{{ number_format((float) ($variant['price'] ?? 0), 0) }}</strong></div>
                     <div>ADVANCE - <strong data-vp-variant-advance-label>₹{{ number_format((float) ($variant['advance_amount'] ?? 0), 0) }}</strong></div>
                     <div>QTY - <strong data-vp-variant-quantity-label>{{ $variant['quantity'] !== null && $variant['quantity'] !== '' ? (int) $variant['quantity'] : '—' }}</strong></div>
                 </div>
@@ -178,7 +178,7 @@
                 <input type="hidden" name="variants[{{ $index }}][quantity]" value="{{ $variant['quantity'] ?? '' }}" data-vp-variant-quantity-input>
                 <input type="hidden" name="variants[{{ $index }}][stored_image_path]" value="{{ $variant['stored_image_path'] ?? '' }}" data-vp-variant-stored-path>
                 <input type="hidden" name="variants[{{ $index }}][image_base64]" value="" data-vp-variant-image-base64>
-                <input type="file" name="variants[{{ $index }}][image]" accept="image/jpeg,image/jpg,image/png,image/webp" hidden data-vp-variant-image-input>
+                <input type="file" name="variants[{{ $index }}][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" hidden data-vp-variant-image-input>
             </div>
         @endforeach
     </div>
@@ -196,7 +196,7 @@
             <div class="vp-dress-variant-card-meta">
                 <div>SIZE - <strong data-vp-variant-size-label>—</strong></div>
                 <div>COLOR - <strong data-vp-variant-color-label>—</strong></div>
-                <div>PRICE - <strong data-vp-variant-price-label>₹0</strong></div>
+                <div>PRICE/DAY - <strong data-vp-variant-price-label>₹0</strong></div>
                 <div>ADVANCE - <strong data-vp-variant-advance-label>₹0</strong></div>
                 <div>QTY - <strong data-vp-variant-quantity-label>—</strong></div>
             </div>
@@ -215,7 +215,7 @@
             <input type="hidden" name="variants[__INDEX__][quantity]" value="" data-vp-variant-quantity-input>
             <input type="hidden" name="variants[__INDEX__][stored_image_path]" value="" data-vp-variant-stored-path>
             <input type="hidden" name="variants[__INDEX__][image_base64]" value="" data-vp-variant-image-base64>
-            <input type="file" name="variants[__INDEX__][image]" accept="image/jpeg,image/jpg,image/png,image/webp" hidden data-vp-variant-image-input>
+            <input type="file" name="variants[__INDEX__][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" hidden data-vp-variant-image-input>
         </div>
     </template>
 </div>

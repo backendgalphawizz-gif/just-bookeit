@@ -52,6 +52,7 @@ class OrderItem extends Model
         'unit_price',
         'line_amount',
         'status',
+        'delivery_otp',
         'cancellation_reason',
         'responded_at',
         'driver_id',
@@ -79,6 +80,19 @@ class OrderItem extends Model
             'driver_pickup_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (OrderItem $item) {
+            if (! $item->isDirty('status')) {
+                return;
+            }
+
+            if (in_array($item->status, ['in_progress', 're_intransit'], true)) {
+                $item->delivery_otp = Order::generateDeliveryOtpValue();
+            }
+        });
     }
 
     public function order(): BelongsTo
@@ -456,6 +470,27 @@ class OrderItem extends Model
     public function canUpdateStatus(): bool
     {
         return ! in_array($this->status, [self::STATUS_CANCELLED, 'completed'], true);
+    }
+
+    public function needsDeliveryOtp(): bool
+    {
+        return in_array($this->status, ['in_progress', 're_intransit'], true);
+    }
+
+    public function ensureDeliveryOtp(): ?string
+    {
+        if (! $this->needsDeliveryOtp()) {
+            return $this->delivery_otp ?: null;
+        }
+
+        if (filled($this->delivery_otp)) {
+            return $this->delivery_otp;
+        }
+
+        $otp = Order::generateDeliveryOtpValue();
+        $this->forceFill(['delivery_otp' => $otp])->saveQuietly();
+
+        return $otp;
     }
 
     public function refundableLineTotal(): float

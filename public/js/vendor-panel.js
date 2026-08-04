@@ -25,6 +25,15 @@
         ifsc: (v) => v.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 11),
         email: (v) => v.replace(/[^\w.@+\-]/g, '').slice(0, 255),
         otp: (v) => v.replace(/\D/g, '').slice(0, 4),
+        // Money / non-negative decimals (strips minus and scientific-notation letters).
+        amount: (v) => {
+            let next = String(v ?? '').replace(/[^\d.]/g, '');
+            const dot = next.indexOf('.');
+            if (dot !== -1) {
+                next = next.slice(0, dot + 1) + next.slice(dot + 1).replace(/\./g, '');
+            }
+            return next;
+        },
     };
 
     function filterValue(type, value) {
@@ -90,9 +99,20 @@
             const after = clampToMaxLength(input, filterValue(type, before));
             if (after !== before) {
                 input.value = after;
-                const delta = after.length - before.length;
-                const pos = Math.max(0, (start ?? after.length) + delta);
-                input.setSelectionRange(pos, pos);
+                if (input.type !== 'number') {
+                    const delta = after.length - before.length;
+                    const pos = Math.max(0, (start ?? after.length) + delta);
+                    try {
+                        input.setSelectionRange(pos, pos);
+                    } catch (_) {}
+                }
+            }
+
+            if (type === 'amount' && input.value !== '') {
+                const num = Number(input.value);
+                if (!Number.isFinite(num) || num < 0) {
+                    input.value = '0';
+                }
             }
         };
 
@@ -108,9 +128,35 @@
                 filterValue(type, input.value.slice(0, start) + filtered + input.value.slice(end))
             );
             const pos = Math.min(start + filtered.length, input.value.length);
-            input.setSelectionRange(pos, pos);
+            try {
+                input.setSelectionRange(pos, pos);
+            } catch (_) {
+                // type=number may not support selection ranges in some browsers.
+            }
             input.dispatchEvent(new Event('input', { bubbles: true }));
         });
+
+        if (type === 'amount') {
+            const blockSignedKeys = (event) => {
+                if (['-', '+', 'e', 'E'].includes(event.key)) {
+                    event.preventDefault();
+                }
+            };
+            input.addEventListener('keydown', blockSignedKeys);
+            input.addEventListener('wheel', (event) => {
+                if (document.activeElement === input) {
+                    event.preventDefault();
+                }
+            }, { passive: false });
+            input.addEventListener('change', () => {
+                if (input.value === '') return;
+                const num = Number(input.value);
+                if (!Number.isFinite(num) || num < 0) {
+                    input.value = '0';
+                }
+            });
+        }
+
         if (input.value) input.value = clampToMaxLength(input, filterValue(type, input.value));
 
         if (type === 'email') {
@@ -260,6 +306,50 @@
     document.querySelectorAll('input[type="file"][data-vp-max-file-bytes]').forEach(bindFileInput);
 
     document.querySelectorAll('[data-vp-product-form]').forEach((form) => {
+        const isProductAmountField = (el) => {
+            if (!(el instanceof HTMLInputElement) || el.type !== 'number') {
+                return false;
+            }
+            if (el.dataset.vpRestrict === 'amount') {
+                return true;
+            }
+            const name = el.getAttribute('name') || '';
+            return /(^|\[)(price|price_per_day|advance_amount|advance)(\]|$)/i.test(name)
+                || el.hasAttribute('data-vp-variant-price')
+                || el.hasAttribute('data-vp-variant-advance');
+        };
+
+        form.addEventListener('keydown', (event) => {
+            if (!isProductAmountField(event.target)) {
+                return;
+            }
+            if (['-', '+', 'e', 'E'].includes(event.key)) {
+                event.preventDefault();
+            }
+        });
+
+        form.addEventListener('beforeinput', (event) => {
+            if (!isProductAmountField(event.target)) {
+                return;
+            }
+            if (typeof event.data === 'string' && /[+\-eE]/.test(event.data)) {
+                event.preventDefault();
+            }
+        });
+
+        form.addEventListener('input', (event) => {
+            const input = event.target;
+            if (!isProductAmountField(input)) {
+                return;
+            }
+            if (String(input.value).includes('-')) {
+                input.value = String(input.value).replace(/-/g, '');
+            }
+            if (input.value !== '' && Number(input.value) < 0) {
+                input.value = '0';
+            }
+        });
+
         form.addEventListener('change', (event) => {
             const input = event.target;
             if (input instanceof HTMLInputElement && input.type === 'file' && form.contains(input)) {
@@ -271,6 +361,15 @@
         });
 
         form.addEventListener('submit', (event) => {
+            form.querySelectorAll('input[type="number"]').forEach((input) => {
+                if (!isProductAmountField(input)) {
+                    return;
+                }
+                if (input.value !== '' && Number(input.value) < 0) {
+                    input.value = '0';
+                }
+            });
+
             let valid = true;
             form.querySelectorAll('input[type="file"]').forEach((input) => {
                 if (!input.dataset.vpMaxFileBytes) {
@@ -292,4 +391,244 @@
             }
         });
     });
+
+    // In-zone image/video previews for product dropzones + register upload tiles.
+    (function initVendorMediaPreviews() {
+        const isImageFile = (file) => {
+            const type = String(file?.type || '').toLowerCase();
+            if (type.startsWith('image/')) return true;
+            const ext = String(file?.name || '').split('.').pop()?.toLowerCase() || '';
+            return ['jpeg', 'jpg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic', 'heif', 'avif'].includes(ext);
+        };
+
+        const isVideoFile = (file) => {
+            const type = String(file?.type || '').toLowerCase();
+            if (type.startsWith('video/')) return true;
+            const ext = String(file?.name || '').split('.').pop()?.toLowerCase() || '';
+            return ['mp4', 'mov', 'm4v', 'webm', 'avi', 'mkv', '3gp', 'hevc', 'h265'].includes(ext);
+        };
+
+        const makeRemoveButton = (className, onClick) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = className;
+            btn.title = 'Remove';
+            btn.setAttribute('aria-label', 'Remove uploaded file');
+            btn.textContent = '×';
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onClick();
+            });
+            return btn;
+        };
+
+        const bindDropzone = (zone) => {
+            if (zone.dataset.vpPreviewBound === '1') return;
+            zone.dataset.vpPreviewBound = '1';
+
+            const input = zone.querySelector('input[type="file"]');
+            const nameEl = zone.querySelector('[data-vp-dropzone-name]');
+            if (!input) return;
+
+            let preview = zone.querySelector('[data-vp-dropzone-preview]');
+            if (!preview) {
+                preview = document.createElement('div');
+                preview.className = 'vp-dropzone-preview';
+                preview.dataset.vpDropzonePreview = '1';
+                preview.hidden = true;
+                zone.appendChild(preview);
+            }
+
+            let objectUrls = [];
+
+            const revoke = () => {
+                objectUrls.forEach((url) => URL.revokeObjectURL(url));
+                objectUrls = [];
+            };
+
+            const setFiles = (files) => {
+                try {
+                    const dt = new DataTransfer();
+                    Array.from(files || []).forEach((file) => dt.items.add(file));
+                    input.files = dt.files;
+                } catch (_) {
+                    return;
+                }
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+
+            const updateName = () => {
+                if (!nameEl) return;
+                const files = input.files;
+                if (!files || files.length === 0) {
+                    nameEl.textContent = zone.dataset.emptyText || 'No file chosen';
+                    return;
+                }
+                if (files.length === 1) {
+                    nameEl.textContent = files[0].name;
+                    return;
+                }
+                nameEl.textContent = files.length + ' files selected';
+            };
+
+            const render = () => {
+                revoke();
+                preview.innerHTML = '';
+                const files = Array.from(input.files || []);
+
+                if (files.length === 0) {
+                    zone.classList.remove('has-preview');
+                    preview.hidden = true;
+                    preview.classList.remove('vp-dropzone-preview--single', 'vp-dropzone-preview--multi');
+                    updateName();
+                    return;
+                }
+
+                zone.classList.add('has-preview');
+                preview.hidden = false;
+                preview.classList.toggle('vp-dropzone-preview--single', files.length === 1);
+                preview.classList.toggle('vp-dropzone-preview--multi', files.length > 1);
+
+                files.forEach((file, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'vp-dropzone-preview-item';
+
+                    if (isVideoFile(file)) {
+                        const url = URL.createObjectURL(file);
+                        objectUrls.push(url);
+                        const video = document.createElement('video');
+                        video.src = url;
+                        video.muted = true;
+                        video.playsInline = true;
+                        video.preload = 'metadata';
+                        video.title = 'Click to view';
+                        video.addEventListener('click', (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            window.open(url, '_blank', 'noopener');
+                        });
+                        item.appendChild(video);
+                    } else if (isImageFile(file)) {
+                        const url = URL.createObjectURL(file);
+                        objectUrls.push(url);
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = '';
+                        img.className = 'panel-lightbox-trigger';
+                        img.title = 'Click to view';
+                        img.addEventListener('click', (event) => event.stopPropagation());
+                        item.appendChild(img);
+                    } else {
+                        const label = document.createElement('div');
+                        label.textContent = file.name;
+                        label.style.cssText = 'padding:.75rem;font-size:.75rem;word-break:break-all;';
+                        item.appendChild(label);
+                    }
+
+                    item.appendChild(makeRemoveButton('vp-dropzone-preview-remove', () => {
+                        const next = files.filter((_, i) => i !== index);
+                        setFiles(next);
+                    }));
+                    preview.appendChild(item);
+                });
+
+                updateName();
+            };
+
+            zone.addEventListener('click', (event) => {
+                if (event.target === input) return;
+                if (event.target.closest('.vp-dropzone-preview-remove')) return;
+                if (event.target.closest('img.panel-lightbox-trigger, video')) return;
+                input.click();
+            });
+
+            zone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                zone.classList.add('is-dragover');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
+            zone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                zone.classList.remove('is-dragover');
+                if (!event.dataTransfer?.files?.length) return;
+                const incoming = Array.from(event.dataTransfer.files);
+                const selected = input.multiple ? incoming : incoming.slice(0, 1);
+                setFiles(selected);
+            });
+
+            input.addEventListener('change', render);
+            render();
+        };
+
+        const bindUploadTile = (input) => {
+            if (input.dataset.vpPreviewBound === '1') return;
+            input.dataset.vpPreviewBound = '1';
+
+            const tile = input.closest('.vp-upload-tile');
+            if (!tile) return;
+
+            let preview = tile.querySelector('[data-vp-upload-tile-preview]');
+            if (!preview) {
+                preview = document.createElement('div');
+                preview.className = 'vp-upload-tile-preview';
+                preview.dataset.vpUploadTilePreview = '1';
+                preview.hidden = true;
+                tile.appendChild(preview);
+            }
+
+            const nameEl = tile.querySelector('.vp-upload-name');
+            let objectUrl = null;
+
+            const render = () => {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+                preview.innerHTML = '';
+                const file = input.files?.[0];
+
+                if (!file) {
+                    tile.classList.remove('has-preview');
+                    preview.hidden = true;
+                    if (nameEl) nameEl.textContent = '';
+                    return;
+                }
+
+                tile.classList.add('has-preview');
+                preview.hidden = false;
+                if (nameEl) nameEl.textContent = file.name;
+
+                if (isImageFile(file)) {
+                    objectUrl = URL.createObjectURL(file);
+                    const img = document.createElement('img');
+                    img.src = objectUrl;
+                    img.alt = '';
+                    img.className = 'panel-lightbox-trigger';
+                    preview.appendChild(img);
+                } else if (isVideoFile(file)) {
+                    objectUrl = URL.createObjectURL(file);
+                    const video = document.createElement('video');
+                    video.src = objectUrl;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.preload = 'metadata';
+                    preview.appendChild(video);
+                }
+
+                preview.appendChild(makeRemoveButton('vp-upload-tile-preview-remove', () => {
+                    try {
+                        input.value = '';
+                    } catch (_) {}
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }));
+            };
+
+            input.addEventListener('change', render);
+            render();
+        };
+
+        document.querySelectorAll('[data-vp-dropzone]').forEach(bindDropzone);
+        document.querySelectorAll('input[type="file"][data-vp-preview]').forEach(bindUploadTile);
+    })();
 })();

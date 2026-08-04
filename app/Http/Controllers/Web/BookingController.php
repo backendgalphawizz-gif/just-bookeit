@@ -220,7 +220,7 @@ class BookingController extends WebController
             'event_date' => ['nullable', 'date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
             'reference_images' => ['nullable', 'array', 'max:5'],
-            'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'reference_images.*' => \App\Support\MediaUploadSupport::imageRules(4096),
             'size' => ['nullable', 'string', 'max:50'],
             'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],

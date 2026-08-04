@@ -7,15 +7,21 @@ use App\Models\Driver;
 use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
+use App\Support\MediaUploadSupport;
 use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
+use App\Support\VendorValidationRules;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class DriverAuthController extends ApiController
 {
-    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.\App\Support\VendorValidationRules::MAX_IMAGE_KB];
+    /** @return list<string|\Closure> */
+    private static function imageRule(bool $required = false): array
+    {
+        return MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB, $required);
+    }
 
     public function __construct(
         protected OtpService $otp
@@ -110,7 +116,7 @@ class DriverAuthController extends ApiController
         $data = $request->validate(array_merge(
             $this->driverFieldRules(required: false, driverId: $driver->id),
             $this->driverBankFieldRules(),
-            ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
+            ['profile_image' => ['sometimes', ...self::imageRule()]]
         ));
 
         $driver->fill($this->mapDriverAttributes($data));
@@ -146,9 +152,9 @@ class DriverAuthController extends ApiController
             'mobile_no' => $driverId ? $mobileRules : ['prohibited'],
             'city' => [$emailRule, 'nullable', 'string', 'max:100'],
             'vehicle_no' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:20'],
-            'aadhar_front' => [$rule, ...self::IMAGE_RULE],
-            'aadhar_back' => [$rule, ...self::IMAGE_RULE],
-            'driving_licence' => [$rule, ...self::IMAGE_RULE],
+            'aadhar_front' => $required ? self::imageRule(true) : ['sometimes', ...self::imageRule()],
+            'aadhar_back' => $required ? self::imageRule(true) : ['sometimes', ...self::imageRule()],
+            'driving_licence' => $required ? self::imageRule(true) : ['sometimes', ...self::imageRule()],
         ];
     }
 

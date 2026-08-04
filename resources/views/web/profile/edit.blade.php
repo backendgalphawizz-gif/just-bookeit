@@ -21,7 +21,7 @@
                 @endif
                 <div class="jbw-profile-edit-photo-body">
                     <label class="jbw-label" for="profile_image">Profile photo</label>
-                    <input id="profile_image" type="file" name="profile_image" accept="image/*" class="jbw-input jbw-profile-edit-photo-input">
+                    <input id="profile_image" type="file" name="profile_image" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="jbw-input jbw-profile-edit-photo-input">
                     <p class="jbw-profile-edit-hint">JPG or PNG, up to 4 MB.</p>
                 </div>
             </div>

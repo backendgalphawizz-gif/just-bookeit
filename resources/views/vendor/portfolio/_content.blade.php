@@ -62,7 +62,7 @@
                 <input
                     type="file"
                     name="portfolio_image"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
                     required
                     hidden
                     data-vp-file-label="Portfolio image"

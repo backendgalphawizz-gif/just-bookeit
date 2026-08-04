@@ -9,10 +9,10 @@
     $isRentalJewellery = ($type ?? '') === 'rented-jewellery';
     if ($isRentalDress) {
         $formTitle = $isCreate ? 'Add New Dress' : 'Edit Dress';
-        $submitLabel = $isCreate ? 'Add Design' : 'Save changes';
+        $submitLabel = $isCreate ? 'Add Dress' : 'Save changes';
     } elseif ($isRentalJewellery) {
         $formTitle = $isCreate ? 'Add New Jewelry' : 'Edit Jewelry';
-        $submitLabel = $isCreate ? 'Add Design' : 'Save changes';
+        $submitLabel = $isCreate ? 'Add Jewellery' : 'Save changes';
     } else {
         $formTitle = $isCreate ? 'Add New Design' : 'Edit Design';
         $submitLabel = $isCreate ? 'Add Design' : 'Save changes';
@@ -149,54 +149,9 @@
         });
     };
 
+    // Dropzone click/drag/preview handled globally by vendor-panel.js
     root.querySelectorAll('[data-vp-dropzone]').forEach((zone) => {
-        const input = zone.querySelector('input[type="file"]');
-        const nameEl = zone.querySelector('[data-vp-dropzone-name]');
-        if (!input) return;
-
-        const updateName = () => {
-            if (!nameEl) return;
-            const files = input.files;
-            if (!files || files.length === 0) {
-                nameEl.textContent = zone.dataset.emptyText || 'No file chosen';
-                return;
-            }
-            if (files.length === 1) {
-                nameEl.textContent = files[0].name;
-                return;
-            }
-            nameEl.textContent = files.length + ' files selected';
-        };
-
-        zone.addEventListener('click', (e) => {
-            if (e.target === input) return;
-            input.click();
-        });
-
-        zone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            zone.classList.add('is-dragover');
-        });
-        zone.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
-        zone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            zone.classList.remove('is-dragover');
-            if (!e.dataTransfer?.files?.length) return;
-            try {
-                const dt = new DataTransfer();
-                const max = input.multiple ? e.dataTransfer.files.length : 1;
-                for (let i = 0; i < max; i++) {
-                    dt.items.add(e.dataTransfer.files[i]);
-                }
-                input.files = dt.files;
-            } catch (_) {
-                return;
-            }
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-            updateName();
-        });
-        input.addEventListener('change', updateName);
-        updateName();
+        zone.dataset.vpSkipLocalDropzone = '1';
     });
 
     initRepeatable({
@@ -224,7 +179,7 @@
         onBind: bindColorFileName,
     });
 
-    // Rental dress/jewelry: media preview slots
+    // Rental dress/jewelry: media preview slots (click image to view, × to remove)
     (function initDressMedia() {
         const wrap = root.querySelector('[data-vp-dress-media]');
         if (!wrap) return;
@@ -236,8 +191,10 @@
             input.getAttribute('data-vp-max-media-files') || wrap.getAttribute('data-vp-max-media-files') || '5',
             10
         );
+        const mediaRequired = input.hasAttribute('required') || input.dataset.vpMediaRequired === '1';
 
-        const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'mpg', 'm4v', 'wmv', 'flv', 'ogv'];
+        const videoExtensions = @json(\App\Support\MediaUploadSupport::VIDEO_EXTENSIONS);
+        const imageExtensions = @json(\App\Support\MediaUploadSupport::IMAGE_EXTENSIONS);
 
         const isVideoFile = (file) => {
             const type = String(file?.type || '').toLowerCase();
@@ -249,11 +206,35 @@
             return videoExtensions.includes(ext);
         };
 
+        const isImageFile = (file) => {
+            const type = String(file?.type || '').toLowerCase();
+            if (type.startsWith('image/')) {
+                return true;
+            }
+            const ext = String(file?.name || '').split('.').pop()?.toLowerCase() || '';
+
+            return imageExtensions.includes(ext);
+        };
+
         let previewObjectUrls = [];
 
         const revokePreviewUrls = () => {
             previewObjectUrls.forEach((url) => URL.revokeObjectURL(url));
             previewObjectUrls = [];
+        };
+
+        const syncRequired = () => {
+            if (!mediaRequired) return;
+            const hasExisting = slots.some((slot) => {
+                const existing = slot.querySelector('[data-vp-existing-media]');
+                return existing && !existing.hidden;
+            });
+            const hasNew = (input.files?.length || 0) > 0;
+            if (hasExisting || hasNew) {
+                input.removeAttribute('required');
+            } else {
+                input.setAttribute('required', 'required');
+            }
         };
 
         const applyFiles = (files) => {
@@ -271,8 +252,62 @@
             render();
         };
 
+        const removeNewFileAt = (fileIndex) => {
+            try {
+                const dt = new DataTransfer();
+                Array.from(input.files || []).forEach((file, index) => {
+                    if (index !== fileIndex) {
+                        dt.items.add(file);
+                    }
+                });
+                input.files = dt.files;
+            } catch (_) {
+                return;
+            }
+            render();
+        };
+
         const clearNewPreviews = (slot) => {
             slot.querySelectorAll('[data-vp-new-preview]').forEach((el) => el.remove());
+        };
+
+        const makeRemoveButton = (onRemove) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'vp-dress-media-remove';
+            btn.title = 'Remove';
+            btn.setAttribute('aria-label', 'Remove uploaded file');
+            btn.textContent = '×';
+            btn.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onRemove();
+            });
+            return btn;
+        };
+
+        const openVideoPreview = (src) => {
+            if (!src) return;
+            const overlay = document.createElement('div');
+            overlay.className = 'panel-lightbox-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-label', 'Video preview');
+            overlay.innerHTML = `
+                <button type="button" class="panel-lightbox-close" aria-label="Close preview">&times;</button>
+                <div class="panel-lightbox-backdrop"></div>
+                <div class="panel-lightbox-stage">
+                    <video src="${src}" class="panel-lightbox-img" controls autoplay playsinline></video>
+                </div>
+            `;
+            const close = () => {
+                overlay.remove();
+                document.body.classList.remove('panel-lightbox-open');
+            };
+            overlay.querySelector('.panel-lightbox-backdrop')?.addEventListener('click', close);
+            overlay.querySelector('.panel-lightbox-close')?.addEventListener('click', close);
+            document.body.classList.add('panel-lightbox-open');
+            document.body.appendChild(overlay);
         };
 
         const render = () => {
@@ -303,10 +338,13 @@
                 if (emptyIcon) emptyIcon.hidden = true;
                 slot.classList.add('has-file');
 
+                const shell = document.createElement('div');
+                shell.className = 'vp-dress-media-new-preview';
+                shell.dataset.vpNewPreview = '1';
+
                 if (isVideoFile(file)) {
                     const preview = document.createElement('div');
                     preview.className = 'vp-dress-media-video-preview';
-                    preview.dataset.vpNewPreview = '1';
 
                     const objectUrl = URL.createObjectURL(file);
                     previewObjectUrls.push(objectUrl);
@@ -317,6 +355,13 @@
                     video.playsInline = true;
                     video.preload = 'metadata';
                     video.setAttribute('playsinline', '');
+                    video.title = 'Click to view';
+                    video.style.cursor = 'pointer';
+                    video.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        openVideoPreview(objectUrl);
+                    });
 
                     const badge = document.createElement('span');
                     badge.className = 'vp-dress-media-video-badge';
@@ -324,20 +369,36 @@
 
                     preview.appendChild(video);
                     preview.appendChild(badge);
-                    slot.appendChild(preview);
-                    return;
+                    shell.appendChild(preview);
+                } else {
+                    const objectUrl = URL.createObjectURL(file);
+                    previewObjectUrls.push(objectUrl);
+
+                    const img = document.createElement('img');
+                    img.src = objectUrl;
+                    img.alt = '';
+                    img.className = 'panel-lightbox-trigger';
+                    img.title = 'Click to view';
+                    shell.appendChild(img);
                 }
 
-                const objectUrl = URL.createObjectURL(file);
-                previewObjectUrls.push(objectUrl);
-
-                const img = document.createElement('img');
-                img.src = objectUrl;
-                img.alt = '';
-                img.dataset.vpNewPreview = '1';
-                slot.appendChild(img);
+                shell.appendChild(makeRemoveButton(() => removeNewFileAt(index)));
+                slot.appendChild(shell);
             });
+
+            syncRequired();
         };
+
+        // Existing videos: click to view
+        wrap.querySelectorAll('[data-vp-existing-media] video').forEach((video) => {
+            video.style.cursor = 'pointer';
+            video.title = 'Click to view';
+            video.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openVideoPreview(video.currentSrc || video.src);
+            });
+        });
 
         input.addEventListener('change', () => applyFiles(input.files));
         wrap.addEventListener('dragover', (e) => {
@@ -351,6 +412,8 @@
             if (!e.dataTransfer?.files?.length) return;
             applyFiles(e.dataTransfer.files);
         });
+
+        syncRequired();
     })();
 
     // Rental dress: variant composer + cards

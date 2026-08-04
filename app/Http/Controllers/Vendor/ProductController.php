@@ -8,6 +8,7 @@ use App\Models\PortfolioItemImage;
 use App\Services\Admin\AdminInboxNotificationService;
 use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
+use App\Support\MediaUploadSupport;
 use App\Support\ProductDamageDeductionRules;
 use App\Support\StoresUploadedFiles;
 use App\Support\SubcategoryCatalog;
@@ -392,23 +393,23 @@ class ProductController extends VendorController
     {
         // Dress/jewelry use media_files; fashion uses image.
         $imageRequired = $creating && $type === 'fashion-designer';
-        $imageRule = $imageRequired ? 'required' : 'nullable';
-        $fileRule = ['image', 'mimes:jpeg,jpg,png,webp,svg', 'max:'.VendorValidationRules::MAX_IMAGE_KB];
+        $imageRules = MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB, $imageRequired);
+        $optionalImageRules = MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB);
         $videoRule = VendorValidationRules::productVideoUploadRules();
         $mediaRequired = $creating && $type === 'rented-jewellery';
 
         $mediaLimit = VendorValidationRules::maxProductMediaFiles($type);
 
         return [
-            'image' => [$imageRule, ...$fileRule],
+            'image' => $imageRules,
             'gallery_images' => ['nullable', 'array', 'max:'.$mediaLimit],
-            'gallery_images.*' => $fileRule,
+            'gallery_images.*' => $optionalImageRules,
             'gallery_videos' => ['nullable', 'array', 'max:'.$mediaLimit],
             'gallery_videos.*' => $videoRule,
             'media_files' => [$mediaRequired ? 'required' : 'nullable', 'array', 'max:'.$mediaLimit],
             'media_files.*' => VendorValidationRules::productMixedMediaUploadRules(),
-            'colors.*.image' => ['nullable', ...$fileRule],
-            'variants.*.image' => ['nullable', ...$fileRule],
+            'colors.*.image' => $optionalImageRules,
+            'variants.*.image' => $optionalImageRules,
             'sizes' => ['nullable', 'array'],
             'sizes.*' => ['string', 'max:50'],
             'colors' => ['nullable', 'array', 'max:50'],

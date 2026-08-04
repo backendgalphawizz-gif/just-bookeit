@@ -62,7 +62,7 @@
     <input
         type="file"
         name="{{ $name }}"
-        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+        accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
         class="jb-input mt-3"
         data-jb-max-mb="4"
         data-jb-file-alpine="1"

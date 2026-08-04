@@ -111,7 +111,7 @@
 <div class="sm:col-span-2">
     <label for="reference_images" class="jb-label">Reference images</label>
     <p class="text-xs text-slate-500 mb-2">Upload styling or accessory reference photos (multiple allowed)</p>
-    <input type="file" id="reference_images" name="reference_images[]" accept="image/png,image/jpeg,image/jpg,image/webp" multiple class="jb-input">
+    <input type="file" id="reference_images" name="reference_images[]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" multiple class="jb-input">
     @if ($order && count($order->referenceImageUrls()) > 0)
         <div class="mt-3 flex flex-wrap gap-2">
             @foreach ($order->referenceImageUrls() as $url)

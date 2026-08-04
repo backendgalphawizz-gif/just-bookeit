@@ -135,7 +135,7 @@
         x-ref="fileInput"
         type="file"
         name="{{ $name }}[]"
-        accept="image/png,image/jpeg,image/jpg,image/webp"
+        accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
         class="jb-input"
         multiple
         data-jb-max-mb="4"

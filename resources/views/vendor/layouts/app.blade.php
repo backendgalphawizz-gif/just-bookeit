@@ -99,7 +99,7 @@
 <script defer src="{{ asset('js/date-filter-fields.js') }}"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 <script defer src="/js/chat-compose.js"></script>
-<script defer src="{{ asset('js/vendor-panel.js') }}"></script>
+<script defer src="{{ asset('js/vendor-panel.js') }}?v={{ @filemtime(public_path('js/vendor-panel.js')) ?: time() }}"></script>
 @stack('scripts')
 </body>
 </html>

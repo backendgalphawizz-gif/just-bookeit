@@ -241,7 +241,7 @@ class BookingController extends ApiController
             'shipment_required' => ['nullable', 'boolean'],
             'measurement_id' => ['nullable', 'string'],
             'reference_images' => ['nullable', 'array', 'max:5'],
-            'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'reference_images.*' => \App\Support\MediaUploadSupport::imageRules(4096),
             // Optional: COD or online payment can be confirmed at place-order time.
             'payment_method' => ['nullable', 'string', RazorpayPaymentSupport::allowedMethodRule()],
             'razorpay_order_id' => ['nullable', 'string', 'max:100'],

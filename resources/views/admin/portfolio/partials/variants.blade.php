@@ -59,7 +59,7 @@
                         <img src="{{ $variant['image_url'] }}" alt="" class="mb-2 h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
                     @endif
                     <input type="hidden" name="variants[{{ $index }}][stored_image_path]" value="{{ $variant['stored_image_path'] ?? '' }}">
-                    <input type="file" name="variants[{{ $index }}][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input vp-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
+                    <input type="file" name="variants[{{ $index }}][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="jb-input vp-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
                 </div>
                 <div class="flex items-end">
                     <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
@@ -97,7 +97,7 @@
             <div>
                 <label class="jb-label">Variant image</label>
                 <input type="hidden" name="variants[__INDEX__][stored_image_path]" value="">
-                <input type="file" name="variants[__INDEX__][image]" accept="image/jpeg,image/jpg,image/png,image/webp" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
+                <input type="file" name="variants[__INDEX__][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
             </div>
             <div class="flex items-end">
                 <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>

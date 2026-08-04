@@ -685,6 +685,7 @@ class CustomerApiPresenter
                         : 'fashion_designer',
                     'can_review' => in_array($model->status, OrderReview::reviewableStatuses(), true) && ! $model->review,
                     'review' => $model->review ? self::orderReview($model->review) : null,
+                    'delivery_otp' => $model->needsDeliveryOtp() ? $model->ensureDeliveryOtp() : null,
                     ...self::itemProductReturnFields($model, $order),
                     ...FashionDesignerLifecycleSupport::apiFields($model, $order),
                 ];
@@ -727,7 +728,7 @@ class CustomerApiPresenter
             'advance_amount' => (float) ($customerPayment['advance_amount'] ?? ($vendorDetail['advance_amount'] ?? 0)),
             'tracking_steps' => $order->trackBookingSteps(),
             'tracking_type' => $order->isRental() ? 'rental' : 'fashion_designer',
-            'delivery_otp' => $order->ensureDeliveryOtp(),
+            'delivery_otp' => self::customerBookingDeliveryOtp($order, $lineItems),
             'line_items' => $lineItems,
             'order_items' => $lineItems,
             'items' => $lineItems,
@@ -767,6 +768,38 @@ class CustomerApiPresenter
         $hasBookingLevelReview = $order->reviews->contains(fn (OrderReview $review) => blank($review->order_item_id));
 
         return in_array($order->status, OrderReview::reviewableStatuses(), true) && ! $hasBookingLevelReview;
+    }
+
+    /**
+     * Booking-level OTP: single active item OTP when only one is in transit;
+     * otherwise null so clients use line_items[].delivery_otp. Legacy bookings
+     * without line items keep the order-level OTP.
+     *
+     * @param  list<array<string, mixed>>  $lineItems
+     */
+    protected static function customerBookingDeliveryOtp(Order $order, array $lineItems): ?string
+    {
+        $order->loadMissing('orderItems');
+
+        if ($order->orderItems->isEmpty()) {
+            return $order->ensureDeliveryOtp();
+        }
+
+        $activeOtps = collect($lineItems)
+            ->pluck('delivery_otp')
+            ->filter(fn ($otp) => filled($otp))
+            ->unique()
+            ->values();
+
+        if ($activeOtps->count() === 1) {
+            return (string) $activeOtps->first();
+        }
+
+        if ($activeOtps->isEmpty()) {
+            return $order->ensureDeliveryOtp();
+        }
+
+        return null;
     }
 
     /**

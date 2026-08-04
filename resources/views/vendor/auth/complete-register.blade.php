@@ -52,7 +52,7 @@
                 <label class="vp-label">Aadhaar Card <span class="vp-required">*</span></label>
                 <div class="vp-upload-grid">
                     <label class="vp-upload-tile">
-                        <input type="file" name="aadhar_front" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview data-vp-required-step="1" data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar front">
+                        <input type="file" name="aadhar_front" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-upload-input" data-vp-preview data-vp-required-step="1" data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar front">
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
@@ -61,7 +61,7 @@
                         <span class="vp-upload-name"></span>
                     </label>
                     <label class="vp-upload-tile">
-                        <input type="file" name="aadhar_back" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview data-vp-required-step="1" data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar back">
+                        <input type="file" name="aadhar_back" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-upload-input" data-vp-preview data-vp-required-step="1" data-vp-max-file-bytes="{{ $maxImageBytes }}" data-vp-file-label="Aadhaar back">
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
@@ -79,7 +79,7 @@
                 <label class="vp-label">Cover &amp; Profile Image</label>
                 <div class="vp-upload-grid">
                     <label class="vp-upload-tile">
-                        <input type="file" name="cover_image" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview>
+                        <input type="file" name="cover_image" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-upload-input" data-vp-preview>
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
@@ -88,7 +88,7 @@
                         <span class="vp-upload-name"></span>
                     </label>
                     <label class="vp-upload-tile">
-                        <input type="file" name="profile_image" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview>
+                        <input type="file" name="profile_image" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-upload-input" data-vp-preview>
                         <span class="vp-upload-icon" aria-hidden="true">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                         </span>
@@ -208,7 +208,7 @@
             <h2 class="vp-register-panel-title" style="margin-top:1.35rem;">Documents</h2>
             <div class="vp-upload-grid">
                 <label class="vp-upload-tile">
-                    <input type="file" name="shop_logo" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview>
+                    <input type="file" name="shop_logo" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-upload-input" data-vp-preview>
                     <span class="vp-upload-icon" aria-hidden="true">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                     </span>
@@ -217,7 +217,7 @@
                     <span class="vp-upload-name"></span>
                 </label>
                 <label class="vp-upload-tile">
-                    <input type="file" name="pan_card" accept="image/jpeg,image/jpg,image/png,image/webp" class="vp-upload-input" data-vp-preview>
+                    <input type="file" name="pan_card" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="vp-upload-input" data-vp-preview>
                     <span class="vp-upload-icon" aria-hidden="true">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg>
                     </span>

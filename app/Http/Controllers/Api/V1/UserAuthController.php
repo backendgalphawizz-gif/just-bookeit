@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
+use App\Support\MediaUploadSupport;
 use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +17,11 @@ use Illuminate\Validation\ValidationException;
 
 class UserAuthController extends ApiController
 {
-    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'];
+    /** @return list<string|\Closure> */
+    private static function imageRule(): array
+    {
+        return MediaUploadSupport::imageRules(4096);
+    }
 
     public function __construct(
         protected OtpService $otp
@@ -138,7 +143,7 @@ class UserAuthController extends ApiController
 
         $data = $request->validate(array_merge(
             $this->customerFieldRules(required: false, customerId: $customer->id),
-            ['profile_image' => ['sometimes', ...self::IMAGE_RULE]]
+            ['profile_image' => ['sometimes', ...self::imageRule()]]
         ));
 
         $customer->fill($this->mapCustomerAttributes($data));

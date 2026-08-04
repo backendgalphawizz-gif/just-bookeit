@@ -45,7 +45,7 @@
                 @endif
                 <label class="vp-cover-edit" title="Change cover">
                     @include('vendor.partials.nav-icon', ['icon' => 'camera'])
-                    <input type="file" name="cover_image" accept="image/jpeg,image/jpg,image/png,image/webp" style="display:none" data-vp-file-label="Cover image" data-vp-max-file-bytes="{{ \App\Support\VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-upload-only="cover_image">
+                    <input type="file" name="cover_image" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" style="display:none" data-vp-file-label="Cover image" data-vp-max-file-bytes="{{ \App\Support\VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-upload-only="cover_image">
                 </label>
                 <div class="vp-profile-avatar-wrap">
                     @if ($vendor->avatarUrl())
@@ -55,7 +55,7 @@
                     @endif
                     <label class="vp-profile-edit" title="Change profile photo">
                         @include('vendor.partials.nav-icon', ['icon' => 'camera'])
-                        <input type="file" name="profile_image" accept="image/jpeg,image/jpg,image/png,image/webp" style="display:none" data-vp-file-label="Profile image" data-vp-max-file-bytes="{{ \App\Support\VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-upload-only="profile_image">
+                        <input type="file" name="profile_image" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" style="display:none" data-vp-file-label="Profile image" data-vp-max-file-bytes="{{ \App\Support\VendorValidationRules::MAX_IMAGE_KB * 1024 }}" data-vp-upload-only="profile_image">
                     </label>
                 </div>
             </div>

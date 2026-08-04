@@ -8,6 +8,7 @@ use App\Services\Auth\OtpService;
 use App\Support\AdminValidationRules;
 use App\Support\CodeGenerator;
 use App\Support\LocationResolver;
+use App\Support\MediaUploadSupport;
 use App\Support\StoresActorFcmToken;
 use App\Support\StoresUploadedFiles;
 use App\Support\VendorValidationRules;
@@ -17,7 +18,11 @@ use Illuminate\Validation\Rule;
 
 class VendorAuthController extends ApiController
 {
-    private const IMAGE_RULE = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB];
+    /** @return list<string|\Closure> */
+    private static function imageRule(bool $required = false): array
+    {
+        return MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB, $required);
+    }
 
     public function __construct(
         protected OtpService $otp
@@ -147,9 +152,9 @@ class VendorAuthController extends ApiController
         $data = $request->validate(array_merge(
             $this->vendorFieldRules(required: false, vendorId: $vendor->id),
             [
-                'profile_image' => ['sometimes', ...self::IMAGE_RULE],
-                'cover_image' => ['sometimes', ...self::IMAGE_RULE],
-                'coverImage' => ['sometimes', ...self::IMAGE_RULE],
+                'profile_image' => ['sometimes', ...self::imageRule()],
+                'cover_image' => ['sometimes', ...self::imageRule()],
+                'coverImage' => ['sometimes', ...self::imageRule()],
                 'bio' => ['sometimes', 'nullable', 'string', 'max:2000'],
                 'is_available' => ['sometimes', 'boolean'],
             ]
@@ -246,10 +251,10 @@ class VendorAuthController extends ApiController
             'city_id' => ['nullable'],
             'city_other' => ['nullable', 'required_if:city_id,other', 'required_if:state_id,other', 'required_if:country_id,other', 'string', 'max:100'],
             'pincode' => [$required ? 'nullable' : 'sometimes', 'nullable', 'string', 'max:10'],
-            'aadhar_front' => [$rule, ...self::IMAGE_RULE],
-            'aadhar_back' => [$rule, ...self::IMAGE_RULE],
-            'shop_logo' => ['sometimes', 'nullable', ...self::IMAGE_RULE],
-            'pan_card' => ['sometimes', 'nullable', ...self::IMAGE_RULE],
+            'aadhar_front' => $required ? self::imageRule(true) : ['sometimes', ...self::imageRule()],
+            'aadhar_back' => $required ? self::imageRule(true) : ['sometimes', ...self::imageRule()],
+            'shop_logo' => ['sometimes', ...self::imageRule()],
+            'pan_card' => ['sometimes', ...self::imageRule()],
             'account_name' => [$rule, 'string', 'max:255'],
             'account_no' => [$rule, 'string', 'max:20'],
             'ifsc_code' => [$rule, 'string', 'max:11'],

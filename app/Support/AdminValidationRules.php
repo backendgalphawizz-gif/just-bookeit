@@ -241,15 +241,15 @@ class AdminValidationRules
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'service_category_ids' => ['required', 'array', 'min:1'],
             'service_category_ids.*' => ['integer', 'exists:categories,id'],
-            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'shop_logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'profile_image' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'shop_logo' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
             'shop_images' => ['nullable', 'array', 'max:12'],
-            'shop_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'shop_images.*' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
             'remove_shop_image_ids' => ['nullable', 'array'],
             'remove_shop_image_ids.*' => ['integer', 'exists:vendor_shop_images,id'],
-            'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'pan_card' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'aadhar_front' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'aadhar_back' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'pan_card' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
         ];
     }
 
@@ -274,11 +274,11 @@ class AdminValidationRules
             'account_type' => ['nullable', 'in:savings,current'],
             'status' => ['required', 'in:pending,active,inactive,rejected'],
             'is_verified' => ['nullable', 'boolean'],
-            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'aadhar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'aadhar_front' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'aadhar_back' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'driving_licence' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'profile_image' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'aadhar' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'aadhar_front' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'aadhar_back' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'driving_licence' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
         ];
     }
 
@@ -302,7 +302,7 @@ class AdminValidationRules
             'status' => ['required', 'in:active,inactive'],
             'is_verified' => ['nullable', 'boolean'],
             'registered_at' => ['nullable', 'date', 'after_or_equal:'.self::MYSQL_MIN_TIMESTAMP_DATE, 'before_or_equal:today'],
-            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'profile_image' => MediaUploadSupport::imageRules(4096),
         ];
     }
 
@@ -340,9 +340,9 @@ class AdminValidationRules
             'measure_chest_cm' => ['nullable', 'integer', 'min:50', 'max:200'],
             'measure_waist_cm' => ['nullable', 'integer', 'min:40', 'max:200'],
             'billing_address' => ['nullable', 'string', 'max:1000', 'regex:'.self::REGEX_TEXT],
-            'item_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'item_image' => MediaUploadSupport::imageRules(4096),
             'reference_images' => ['nullable', 'array'],
-            'reference_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'reference_images.*' => MediaUploadSupport::imageRules(4096),
             'payment_status' => ['required', 'in:pending,advance_paid,success,failed,refunded'],
             'status' => ['required', 'in:'.implode(',', Order::STATUSES)],
         ];
@@ -397,7 +397,7 @@ class AdminValidationRules
             'redirect_url' => ['nullable', 'url', 'max:500'],
             'starts_at' => ['nullable', 'date', 'after_or_equal:'.self::MYSQL_MIN_TIMESTAMP_DATE],
             'ends_at' => ['nullable', 'date', 'after_or_equal:'.self::MYSQL_MIN_TIMESTAMP_DATE, 'after_or_equal:starts_at'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:4096'],
+            'image' => MediaUploadSupport::imageRules(4096),
         ];
     }
 
@@ -409,7 +409,7 @@ class AdminValidationRules
             'parent_id' => ['nullable', 'exists:categories,id'],
             'service_category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'image' => MediaUploadSupport::imageRules(4096),
         ];
     }
 
@@ -595,9 +595,11 @@ class AdminValidationRules
             'audience' => ['required', 'in:women,men,kids'],
             'status' => ['required', 'in:pending,approved,rejected'],
             'rejection_reason' => ['nullable', 'string', 'max:500', 'regex:'.self::REGEX_TEXT],
-            'image' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'image' => $creating
+                ? MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB, true)
+                : MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
             'gallery_images' => ['nullable', 'array', 'max:10'],
-            'gallery_images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'gallery_images.*' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
             'gallery_videos' => ['nullable', 'array', 'max:'.VendorValidationRules::productUploadLimits()['gallery_videos']],
             'gallery_videos.*' => VendorValidationRules::productVideoUploadRules(),
             'variants' => ['nullable', 'array', 'max:50'],
@@ -609,8 +611,8 @@ class AdminValidationRules
             'variants.*.stored_image_path' => ['nullable', 'string', 'max:500'],
             'variants.*.image_base64' => ['nullable', 'string'],
             'variant_images' => ['nullable', 'array', 'max:50'],
-            'variant_images.*' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
-            'variants.*.image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.VendorValidationRules::MAX_IMAGE_KB],
+            'variant_images.*' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
+            'variants.*.image' => MediaUploadSupport::imageRules(VendorValidationRules::MAX_IMAGE_KB),
             'damage_deductions' => ['nullable', 'array', 'max:20'],
             'damage_deductions.*.damage_type' => ['required_with:damage_deductions', 'string', 'max:100', 'regex:'.self::REGEX_TITLE],
             'damage_deductions.*.percent' => ['required_with:damage_deductions', 'numeric', 'min:0', 'max:100'],
@@ -786,12 +788,12 @@ class AdminValidationRules
             'image.max' => 'The image is too large. Please choose a smaller file.',
             'image.uploaded' => 'The image is too large. Please choose a smaller file.',
             'image.image' => 'Please upload a valid image file (JPG, PNG, or WebP).',
-            'image.mimes' => 'Please upload a valid image file (JPG, PNG, or WebP).',
+            'image.mimes' => 'Please upload a valid image file (JPG, PNG, WebP, HEIC/HEIF, …).',
             'gallery_images.*.max' => 'One or more gallery images are too large. Maximum size is 20 MB each.',
             'gallery_images.*.uploaded' => 'One or more gallery images are too large. Maximum size is 20 MB each. Please choose smaller files.',
             'gallery_videos.*.max' => 'One or more gallery videos are too large. Maximum size is 100 MB each.',
             'gallery_videos.*.uploaded' => 'One or more gallery videos are too large. Maximum size is 100 MB each. Please choose smaller files.',
-            'gallery_videos.*.mimes' => 'Please upload a valid video file (MP4, MOV, WEBM, etc.).',
+            'gallery_videos.*.mimes' => 'Please upload a valid video file (MP4, MOV, HEVC/H.265, WEBM, etc.).',
             'variant_images.*.max' => 'One or more variant images are too large. Maximum size is 20 MB each.',
             'variant_images.*.uploaded' => 'One or more variant images are too large. Maximum size is 20 MB each. Please choose smaller files.',
             'shop_logo.max' => 'Shop logo is too large. Maximum size is 4 MB.',

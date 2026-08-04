@@ -199,7 +199,7 @@
         <input
             type="file"
             name="image"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
+            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
             class="jb-input vp-input"
             data-jb-max-mb="{{ $productImageMaxMb }}"
             data-jb-file-label="Primary image"
@@ -237,7 +237,7 @@
         <input
             type="file"
             name="gallery_images[]"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
+            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
             multiple
             class="jb-input vp-input"
             data-jb-max-mb="{{ $productImageMaxMb }}"
@@ -282,7 +282,7 @@
         <input
             type="file"
             name="gallery_videos[]"
-            accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/x-msvideo,video/x-matroska,.mp4,.mov,.webm,.mkv,.avi,.m4v"
+            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('video') }}"
             multiple
             class="jb-input vp-input"
             data-jb-max-mb="{{ $productVideoMaxMb }}"

@@ -108,11 +108,7 @@ trait ManagesPortfolioProducts
 
     protected function uploadedProductFileIsVideo(UploadedFile $file): bool
     {
-        $mime = strtolower((string) $file->getMimeType());
-        $ext = strtolower((string) $file->getClientOriginalExtension());
-
-        return str_starts_with($mime, 'video/')
-            || in_array($ext, VendorValidationRules::VIDEO_MIMES, true);
+        return MediaUploadSupport::isVideoFile($file);
     }
 
     /** @param list<array<string, mixed>> $variants */

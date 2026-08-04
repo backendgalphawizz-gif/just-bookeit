@@ -32,6 +32,15 @@ class OrderDispatchSupport
         if (self::isDispatchStatus($order->status) && blank($order->delivery_otp)) {
             $order->delivery_otp = Order::generateDeliveryOtpValue();
         }
+
+        $order->loadMissing('orderItems');
+        foreach ($order->orderItems as $item) {
+            if ($item->needsDeliveryOtp() && blank($item->delivery_otp)) {
+                $item->forceFill([
+                    'delivery_otp' => Order::generateDeliveryOtpValue(),
+                ])->saveQuietly();
+            }
+        }
     }
 
     public static function resetDriverAssignment(Order $order): void
@@ -49,12 +58,18 @@ class OrderDispatchSupport
 
     public static function resetItemDriverAssignment(OrderItem $item): void
     {
-        $item->forceFill([
+        $payload = [
             'driver_id' => null,
             'driver_assigned_at' => null,
             'driver_delivery_status' => null,
             'driver_pickup_at' => null,
-        ])->save();
+        ];
+
+        if (in_array($item->status, ['in_progress', 're_intransit'], true)) {
+            $payload['delivery_otp'] = Order::generateDeliveryOtpValue();
+        }
+
+        $item->forceFill($payload)->save();
     }
 
     public static function isReturnLegItem(OrderItem $item): bool

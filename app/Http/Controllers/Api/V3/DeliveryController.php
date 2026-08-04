@@ -382,7 +382,7 @@ class DeliveryController extends DriverApiController
 
         $request->validate(DriverValidationRules::deliveryComplete());
 
-        if (! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'))) {
+        if (! $this->deliveryOtpMatches($delivery, (string) $request->input('delivery_otp'), $item)) {
             return $this->error('Invalid delivery OTP.', 422);
         }
 
@@ -604,8 +604,15 @@ class DeliveryController extends DriverApiController
         return null;
     }
 
-    protected function deliveryOtpMatches(Order $delivery, string $otp): bool
+    protected function deliveryOtpMatches(Order $delivery, string $otp, ?OrderItem $item = null): bool
     {
+        if ($item) {
+            $itemExpected = $item->delivery_otp ?: $item->ensureDeliveryOtp();
+            if (filled($itemExpected) && hash_equals((string) $itemExpected, $otp)) {
+                return true;
+            }
+        }
+
         $expected = $delivery->delivery_otp ?: $delivery->ensureDeliveryOtp();
 
         return filled($expected) && hash_equals((string) $expected, $otp);

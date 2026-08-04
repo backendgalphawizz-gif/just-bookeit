@@ -29,7 +29,7 @@ class ProfileController extends WebController
             'name' => ['required', 'string', 'max:255'],
             'email' => AdminValidationRules::emailRules(false),
             'city' => ['nullable', 'string', 'max:100'],
-            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'profile_image' => \App\Support\MediaUploadSupport::imageRules(4096),
         ]);
 
         $customer->fill(collect($data)->only(['name', 'email', 'city'])->all());

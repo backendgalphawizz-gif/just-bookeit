@@ -204,7 +204,7 @@
                     </div>
                     <div class="jbw-ref-images-grid" data-ref-grid>
                         <label class="jbw-ref-add" data-ref-add>
-                            <input type="file" name="reference_images[]" accept="image/png,image/jpeg,image/jpg,image/webp" multiple hidden data-ref-input>
+                            <input type="file" name="reference_images[]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" multiple hidden data-ref-input>
                             <span class="jbw-ref-add-icon" aria-hidden="true">
                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>

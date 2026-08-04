@@ -15,7 +15,7 @@
         <input
             type="file"
             name="media_files[]"
-            accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml,video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('mixed') }}"
             multiple
             hidden
             data-vp-dress-media-input
@@ -23,6 +23,7 @@
             data-vp-max-file-bytes="{{ max(VendorValidationRules::MAX_IMAGE_KB, VendorValidationRules::MAX_VIDEO_KB) * 1024 }}"
             data-vp-file-label="Media file"
             {{ $mediaRequired ? 'required' : '' }}
+            @if ($mediaRequired) data-vp-media-required="1" @endif
         >
         <span class="vp-dress-media-upload-badge" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -30,7 +31,7 @@
             </svg>
         </span>
         <span class="vp-dress-media-upload-title">Click to upload or drag and drop</span>
-        <span class="vp-dress-media-upload-hint">Up to {{ $maxMediaFiles }} files — image or video (max. {{ $productImageMaxMb }}MB image / {{ $productVideoMaxMb }}MB video)</span>
+        <span class="vp-dress-media-upload-hint">Up to {{ $maxMediaFiles }} files — image (incl. HEIC) or video (MP4/MOV/HEVC, max. {{ $productImageMaxMb }}MB image / {{ $productVideoMaxMb }}MB video)</span>
     </label>
 
     @for ($i = 0; $i < $slotCount; $i++)

@@ -53,7 +53,7 @@
                                 <input
                                     type="file"
                                     name="avatar"
-                                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                                    accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
                                     class="jb-profile-file-input"
                                     @change="pickFile($event)"
                                 >

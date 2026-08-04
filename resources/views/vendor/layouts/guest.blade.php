@@ -18,7 +18,7 @@
     @include('vendor.partials.alert')
     @include('vendor.partials.global-confirm')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
-    <script defer src="{{ asset('js/vendor-panel.js') }}"></script>
+    <script defer src="{{ asset('js/vendor-panel.js') }}?v={{ @filemtime(public_path('js/vendor-panel.js')) ?: time() }}"></script>
     @stack('scripts')
 </body>
 </html>

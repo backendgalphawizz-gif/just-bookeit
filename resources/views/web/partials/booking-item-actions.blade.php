@@ -28,7 +28,9 @@
         in_array($order->status, ['in_progress', 're_intransit'], true)
         || $order->orderItems->contains(fn ($item) => in_array($item->statusForDisplay($order), ['in_progress', 're_intransit'], true))
     );
-    if ($itemInDispatch || $bookingInDispatch) {
+    if ($itemInDispatch) {
+        $otp = $orderItem->ensureDeliveryOtp();
+    } elseif ($bookingInDispatch) {
         $otp = $order->ensureDeliveryOtp();
     }
     $hasActions = $canConfirm || $canReturn || $canRework || $canReviewItem || $canReviewBooking || $otp

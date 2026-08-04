@@ -566,6 +566,7 @@ class VendorApiPresenter
             ...\App\Support\FashionDesignerLifecycleSupport::apiFields($item, $item->order),
             ...self::orderItemLegAddressFields($item),
             ...self::orderItemDriverFields($item),
+            'delivery_otp' => $item->needsDeliveryOtp() ? $item->ensureDeliveryOtp() : null,
         ];
     }
 
@@ -657,6 +658,7 @@ class VendorApiPresenter
             ...self::orderItemDamageFields($item),
             ...self::orderItemLegAddressFields($item, $order),
             ...self::orderItemDriverFields($item),
+            'delivery_otp' => $item->needsDeliveryOtp() ? $item->ensureDeliveryOtp() : null,
         ];
     }
 

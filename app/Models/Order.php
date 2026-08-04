@@ -228,6 +228,12 @@ class Order extends Model
             return null;
         }
 
+        foreach ($this->orderItems as $item) {
+            if ($item->needsDeliveryOtp()) {
+                $item->ensureDeliveryOtp();
+            }
+        }
+
         if ($this->delivery_otp) {
             return $this->delivery_otp;
         }

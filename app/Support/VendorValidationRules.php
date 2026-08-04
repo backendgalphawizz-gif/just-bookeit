@@ -18,9 +18,10 @@ class VendorValidationRules
     public const MAX_PRODUCT_MEDIA_FILES = 5;
 
     /** @var list<string> */
-    public const VIDEO_MIMES = [
-        'mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'mpg', 'm4v', 'wmv', 'flv', 'ogv', 'ts', 'm2ts',
-    ];
+    public const VIDEO_MIMES = MediaUploadSupport::VIDEO_EXTENSIONS;
+
+    /** @var list<string> */
+    public const IMAGE_MIMES = MediaUploadSupport::IMAGE_EXTENSIONS;
 
     public const SERVICE_TYPES = [
         'Fashion Designer',
@@ -117,8 +118,8 @@ class VendorValidationRules
             'aadhar_back.max' => 'Aadhaar back is too large. Maximum size is '.$maxMb.' MB.',
             'aadhar_front.image' => 'Aadhaar front must be a JPEG, PNG, or WebP image.',
             'aadhar_back.image' => 'Aadhaar back must be a JPEG, PNG, or WebP image.',
-            'aadhar_front.mimes' => 'Aadhaar front must be a JPEG, PNG, or WebP image.',
-            'aadhar_back.mimes' => 'Aadhaar back must be a JPEG, PNG, or WebP image.',
+            'aadhar_front.mimes' => 'Aadhaar front must be a JPEG, PNG, WebP, or HEIC/HEIF image.',
+            'aadhar_back.mimes' => 'Aadhaar back must be a JPEG, PNG, WebP, or HEIC/HEIF image.',
             'account_no.required' => 'Please enter the bank account number.',
             'account_no.min' => 'Account number must be at least 9 digits.',
             'account_no.max' => 'Account number must not exceed 18 digits.',
@@ -173,8 +174,8 @@ class VendorValidationRules
             'owner_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
             'email' => AdminValidationRules::emailRules(true, [Rule::unique('vendors', 'email')->ignore($vendorId)]),
             'mobile' => ['nullable', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE, Rule::unique('vendors', 'mobile')->ignore($vendorId)],
-            'profile_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB],
-            'cover_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB],
+            'profile_image' => MediaUploadSupport::imageRules(self::MAX_IMAGE_KB),
+            'cover_image' => MediaUploadSupport::imageRules(self::MAX_IMAGE_KB),
         ];
     }
 
@@ -236,16 +237,17 @@ class VendorValidationRules
 
     public static function register(): array
     {
-        $image = ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB];
+        $image = MediaUploadSupport::imageRules(self::MAX_IMAGE_KB);
+        $imageRequired = MediaUploadSupport::imageRules(self::MAX_IMAGE_KB, true);
 
         return [
             'owner_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
             'mobile' => ['required', 'string', 'regex:'.AdminValidationRules::REGEX_PHONE, 'unique:vendors,mobile'],
             'email' => AdminValidationRules::emailRules(true, ['unique:vendors,email']),
-            'aadhar_front' => ['required', ...$image],
-            'aadhar_back' => ['required', ...$image],
-            'cover_image' => ['nullable', ...$image],
-            'profile_image' => ['nullable', ...$image],
+            'aadhar_front' => $imageRequired,
+            'aadhar_back' => $imageRequired,
+            'cover_image' => $image,
+            'profile_image' => $image,
             'shop_name' => ['required', 'string', 'max:100', 'regex:'.AdminValidationRules::REGEX_TITLE],
             'service_types' => ['required', 'array', 'min:1'],
             'service_types.*' => ['string', 'max:100', Rule::in(self::SERVICE_TYPES)],
@@ -260,8 +262,8 @@ class VendorValidationRules
             'pincode' => ['nullable', 'string', 'max:10', 'regex:/^[1-9][0-9]{5}$/'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'shop_logo' => ['nullable', ...$image],
-            'pan_card' => ['nullable', ...$image],
+            'shop_logo' => $image,
+            'pan_card' => $image,
             'account_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_PERSON_NAME],
             'account_no' => ['required', 'string', 'min:9', 'max:18', 'regex:/^[0-9]{9,18}$/'],
             'bank_name' => ['required', 'string', 'max:255', 'regex:'.AdminValidationRules::REGEX_TITLE],
@@ -401,26 +403,22 @@ class VendorValidationRules
             : 10;
     }
 
-    /** @return list<string> */
+    /** @return list<string|\Closure> */
     public static function productMixedMediaUploadRules(): array
     {
-        return [
-            'file',
-            'max:'.self::MAX_VIDEO_KB,
-            'mimes:'.implode(',', array_merge(['jpeg', 'jpg', 'png', 'webp', 'svg'], self::VIDEO_MIMES)),
-        ];
+        return MediaUploadSupport::mixedRules(self::MAX_VIDEO_KB);
     }
 
-    /** @return list<string> */
+    /** @return list<string|\Closure> */
     public static function productUploadRules(): array
     {
-        return ['image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB];
+        return MediaUploadSupport::imageRules(self::MAX_IMAGE_KB);
     }
 
-    /** @return list<string> */
+    /** @return list<string|\Closure> */
     public static function productVideoUploadRules(): array
     {
-        return ['file', 'mimes:'.implode(',', self::VIDEO_MIMES), 'max:'.self::MAX_VIDEO_KB];
+        return MediaUploadSupport::videoRules(self::MAX_VIDEO_KB);
     }
 
     public static function isVideoUploadKey(string $key): bool
@@ -444,7 +442,7 @@ class VendorValidationRules
     {
         return [
             'audience' => ['required', 'in:women,men,kids'],
-            'portfolio_image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:'.self::MAX_IMAGE_KB],
+            'portfolio_image' => MediaUploadSupport::imageRules(self::MAX_IMAGE_KB, true),
         ];
     }
 }

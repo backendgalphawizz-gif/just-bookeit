@@ -14,7 +14,7 @@
     $isFashion = ($type ?? '') === 'fashion-designer';
     $isRentalDress = ($type ?? '') === 'rented-dress';
     $isRentalJewellery = ($type ?? '') === 'rented-jewellery';
-    $priceLabel = $isFashion ? 'Selling Price' : 'Price per day';
+    $priceLabel = $isFashion ? 'Selling Price' : 'Price Per Day';
 @endphp
 
 <input type="hidden" name="type" value="{{ $type }}">
@@ -101,6 +101,8 @@
                             min="0"
                             step="0.01"
                             placeholder="0"
+                            inputmode="decimal"
+                            data-vp-restrict="amount"
                             {{ $isCreate ? 'required' : '' }}
                         >
                     </div>
@@ -141,7 +143,7 @@
                         <input
                             type="file"
                             name="image"
-                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
                             data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}"
                             data-vp-file-label="Primary image"
                             {{ $isCreate ? 'required' : '' }}
@@ -154,7 +156,7 @@
                             </svg>
                         </div>
                         <div class="vp-dropzone-title">Click to upload or drag and drop</div>
-                        <div class="vp-dropzone-hint">SVG, PNG, JPG or WebP (max. {{ $productImageMaxMb }}MB)</div>
+                        <div class="vp-dropzone-hint">PNG, JPG, WebP or HEIC (max. {{ $productImageMaxMb }}MB)</div>
                         <div class="vp-dropzone-file" data-vp-dropzone-name>No file chosen</div>
                     </div>
                     @error('image')<p class="vp-field-error">{{ $message }}</p>@enderror
@@ -187,7 +189,7 @@
                         <input
                             type="file"
                             name="gallery_images[]"
-                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
                             multiple
                             data-vp-max-file-bytes="{{ VendorValidationRules::MAX_IMAGE_KB * 1024 }}"
                             data-vp-file-label="Gallery image"
