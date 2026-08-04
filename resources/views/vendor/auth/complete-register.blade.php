@@ -168,23 +168,16 @@
                         autocomplete="off"
                         data-vp-restrict="text"
                     >
-                    <p class="vp-field-hint">Search an address, or drop a pin on the map below.</p>
+                    <p class="vp-field-hint">Start typing to search and select an address.</p>
+                    <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
+                    <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
                 @else
                     <textarea id="address" name="address" class="vp-input vp-textarea @error('address') vp-input--error @enderror" rows="3" placeholder="Shop/Building No, Street..." maxlength="500" data-vp-restrict="text">{{ old('address') }}</textarea>
                 @endif
                 @error('address')<p class="vp-field-error">{{ $message }}</p>@enderror
+                @error('latitude')<p class="vp-field-error">{{ $message }}</p>@enderror
+                @error('longitude')<p class="vp-field-error">{{ $message }}</p>@enderror
             </div>
-
-            @if ($mapsEnabled)
-                <div class="vp-field">
-                    <div id="vp-location-map" class="vp-location-map" role="application" aria-label="Shop location map"></div>
-                    <p class="vp-field-hint">Drag the pin or tap the map to set exact location.</p>
-                    <input type="hidden" id="latitude" name="latitude" value="{{ old('latitude') }}">
-                    <input type="hidden" id="longitude" name="longitude" value="{{ old('longitude') }}">
-                    @error('latitude')<p class="vp-field-error">{{ $message }}</p>@enderror
-                    @error('longitude')<p class="vp-field-error">{{ $message }}</p>@enderror
-                </div>
-            @endif
 
             <div class="vp-form-grid-2">
                 <div class="vp-field">
@@ -505,15 +498,6 @@
 @push('styles')
 <style>
     .vp-places-wrap { position: relative; z-index: 30; }
-    .vp-location-map {
-        width: 100%;
-        height: 240px;
-        border-radius: 14px;
-        border: 1px solid #e2e8f0;
-        background: #f1f5f9;
-        overflow: hidden;
-    }
-    .vp-location-map.is-ready { background: #fff; }
     .pac-container {
         z-index: 99999 !important;
         margin-top: 6px;
