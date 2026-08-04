@@ -220,14 +220,20 @@ class OrderItemDriverDeliverySupport
 
         if ($itemId !== null) {
             $item = $order->orderItems->firstWhere('id', $itemId);
-            if (! $item) {
-                throw new InvalidArgumentException('Item not found on this booking.');
-            }
-            if ($item->driver_id !== null && (int) $item->driver_id !== (int) $driver->id) {
-                throw new InvalidArgumentException('This item is assigned to another driver.');
+            if ($item) {
+                if ($item->driver_id !== null && (int) $item->driver_id !== (int) $driver->id) {
+                    throw new InvalidArgumentException('This item is assigned to another driver.');
+                }
+
+                return $item;
             }
 
-            return $item;
+            // Legacy bookings have no line items; mobile often sends the booking id as item_id.
+            if ($order->orderItems->isEmpty()) {
+                return null;
+            }
+
+            throw new InvalidArgumentException('Item not found on this booking.');
         }
 
         $mine = $order->orderItems->where('driver_id', $driver->id)->values();
@@ -246,5 +252,15 @@ class OrderItemDriverDeliverySupport
         }
 
         return null;
+    }
+
+    /**
+     * True when this booking has no order_items rows (legacy single-item booking).
+     */
+    public static function isLegacyBookingLevel(Order $order): bool
+    {
+        $order->loadMissing('orderItems');
+
+        return $order->orderItems->isEmpty();
     }
 }

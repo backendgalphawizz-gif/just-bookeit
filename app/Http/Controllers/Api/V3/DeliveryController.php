@@ -201,6 +201,10 @@ class DeliveryController extends DriverApiController
             return $this->error($exception->getMessage(), 422);
         }
 
+        if (! $item && OrderItemDriverDeliverySupport::isLegacyBookingLevel($delivery)) {
+            return $this->pickupBookingLevel($delivery, $driver);
+        }
+
         if (! $item) {
             return $this->error('Pass item_id to pick up a specific item on this booking.', 422);
         }
@@ -237,6 +241,33 @@ class DeliveryController extends DriverApiController
         ], 'Item picked up.');
     }
 
+    protected function pickupBookingLevel(Order $delivery, \App\Models\Driver $driver): JsonResponse
+    {
+        $current = $delivery->driver_delivery_status;
+
+        if ($current === Order::DRIVER_STATUS_PICKED_UP || $current === Order::DRIVER_STATUS_OUT_FOR_DELIVERY) {
+            return $this->success([
+                'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
+            ], 'Delivery already picked up.');
+        }
+
+        if (! in_array($current, [null, Order::DRIVER_STATUS_ACCEPTED, Order::DRIVER_STATUS_RESCHEDULED], true)) {
+            return $this->error('Pickup is not available for this delivery status ('.($current ?: 'none').').', 422);
+        }
+
+        $delivery->update([
+            'driver_delivery_status' => Order::DRIVER_STATUS_PICKED_UP,
+            'driver_pickup_at' => $delivery->driver_pickup_at ?: now(),
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
+        ]);
+        $delivery->ensureDeliveryOtp();
+
+        return $this->success([
+            'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
+        ], 'Delivery picked up.');
+    }
+
     public function dispatch(Request $request, Order $delivery): JsonResponse
     {
         return $this->outForDelivery($request, $delivery);
@@ -251,6 +282,10 @@ class DeliveryController extends DriverApiController
             $item = $this->resolveActionItem($request, $delivery, $driver, requiredWhenMultiple: true);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
+        }
+
+        if (! $item && OrderItemDriverDeliverySupport::isLegacyBookingLevel($delivery)) {
+            return $this->outForDeliveryBookingLevel($delivery, $driver);
         }
 
         if (! $item) {
@@ -288,6 +323,27 @@ class DeliveryController extends DriverApiController
         ], 'Item out for delivery.');
     }
 
+    protected function outForDeliveryBookingLevel(Order $delivery, \App\Models\Driver $driver): JsonResponse
+    {
+        if (! in_array($delivery->driver_delivery_status, [
+            Order::DRIVER_STATUS_PICKED_UP,
+            Order::DRIVER_STATUS_RESCHEDULED,
+        ], true)) {
+            return $this->error('Mark pickup for this delivery before dispatching.', 422);
+        }
+
+        $delivery->update([
+            'driver_delivery_status' => Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            'driver_pickup_at' => $delivery->driver_pickup_at ?: now(),
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
+        ]);
+
+        return $this->success([
+            'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
+        ], 'Delivery out for delivery.');
+    }
+
     public function delivered(Request $request, Order $delivery): JsonResponse
     {
         return $this->deliver($request, $delivery);
@@ -302,6 +358,10 @@ class DeliveryController extends DriverApiController
             $item = $this->resolveActionItem($request, $delivery, $driver, requiredWhenMultiple: true);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
+        }
+
+        if (! $item && OrderItemDriverDeliverySupport::isLegacyBookingLevel($delivery)) {
+            return $this->deliverBookingLevel($request, $delivery, $driver);
         }
 
         if (! $item) {
@@ -373,6 +433,57 @@ class DeliveryController extends DriverApiController
         ], 'Item delivered.');
     }
 
+    protected function deliverBookingLevel(Request $request, Order $delivery, \App\Models\Driver $driver): JsonResponse
+    {
+        if ($delivery->driver_delivery_status === Order::DRIVER_STATUS_DELIVERED || filled($delivery->driver_delivered_at)) {
+            return $this->success([
+                'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
+            ], 'Delivery already completed.');
+        }
+
+        if (! in_array($delivery->driver_delivery_status, [
+            Order::DRIVER_STATUS_PICKED_UP,
+            Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            Order::DRIVER_STATUS_RESCHEDULED,
+        ], true)) {
+            return $this->error('This delivery is not ready to be completed.', 422);
+        }
+
+        $request->validate(DriverValidationRules::deliveryComplete());
+
+        $payload = [
+            'driver_delivery_status' => Order::DRIVER_STATUS_DELIVERED,
+            'driver_delivered_at' => now(),
+            'driver_scheduled_for' => null,
+            'driver_rescheduled_at' => null,
+        ];
+
+        if ($request->hasFile('delivery_image')) {
+            $payload['driver_delivery_proof_path'] = StoresUploadedFiles::replace(
+                $request->file('delivery_image'),
+                $delivery->driver_delivery_proof_path,
+                'driver/delivery-proofs'
+            );
+            if ($delivery->isCod()) {
+                $payload['cod_collected_at'] = $delivery->cod_collected_at ?: now();
+            }
+        } elseif ($delivery->isCod() && ! $delivery->cod_collected_at) {
+            $payload['cod_collected_at'] = now();
+        }
+
+        $delivery->update($payload);
+
+        try {
+            $this->wallet->creditDeliveryEarning($delivery->fresh(), $driver);
+        } catch (InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage(), 422);
+        }
+
+        return $this->success([
+            'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
+        ], 'Delivery completed.');
+    }
+
     public function rescheduled(Request $request, Order $delivery): JsonResponse
     {
         $driver = $this->driver($request);
@@ -382,6 +493,30 @@ class DeliveryController extends DriverApiController
             $item = $this->resolveActionItem($request, $delivery, $driver, requiredWhenMultiple: true);
         } catch (InvalidArgumentException $exception) {
             return $this->error($exception->getMessage(), 422);
+        }
+
+        if (! $item && OrderItemDriverDeliverySupport::isLegacyBookingLevel($delivery)) {
+            $data = $request->validate(DriverValidationRules::deliveryReschedule());
+
+            if (! in_array($delivery->driver_delivery_status, [
+                Order::DRIVER_STATUS_ACCEPTED,
+                Order::DRIVER_STATUS_PICKED_UP,
+                Order::DRIVER_STATUS_OUT_FOR_DELIVERY,
+            ], true)) {
+                return $this->error('This delivery cannot be rescheduled.', 422);
+            }
+
+            $delivery->update([
+                'driver_delivery_status' => Order::DRIVER_STATUS_RESCHEDULED,
+                'driver_pickup_at' => null,
+                'driver_scheduled_for' => $data['scheduled_date'],
+                'driver_rescheduled_at' => now(),
+                'driver_rejection_reason' => filled($data['reason'] ?? null) ? trim($data['reason']) : null,
+            ]);
+
+            return $this->success([
+                'delivery' => DriverApiPresenter::deliveryDetail($delivery->fresh(['customer', 'vendor', 'category', 'orderItems']), $driver),
+            ], 'Delivery rescheduled.');
         }
 
         if (! $item) {

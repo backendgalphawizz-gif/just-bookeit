@@ -89,8 +89,12 @@ class DriverApiPresenter
             'amount' => $amount,
             'amount_label' => '₹'.number_format($amount, 0),
             'delivery_fee' => (float) ($order->delivery_fee ?? 0),
+            'shipping_fee' => (float) ($order->delivery_fee ?? 0),
+            'advance_amount' => (float) ($order->advance_amount ?? 0),
+            ...self::codCashCollection($order),
             'driver_earning' => $order->driver_earning !== null ? (float) $order->driver_earning : null,
             'payment_method' => $order->payment_method,
+            'payment_status' => $order->payment_status,
             'is_cod' => $order->isCod(),
             'payment_badge' => self::paymentBadge($order),
             'pickup_address' => $addresses['pickup_address'],
@@ -453,6 +457,52 @@ class DriverApiPresenter
         }
 
         return 'CASH COLLECT';
+    }
+
+    /**
+     * Cash the driver must collect on delivery for COD bookings:
+     * product advance_amount + shipping (delivery_fee).
+     *
+     * @return array{
+     *   cash_to_collect: float,
+     *   cash_to_collect_label: string|null,
+     *   cash_collection: array{
+     *     required: bool,
+     *     collected: bool,
+     *     advance_amount: float,
+     *     shipping_fee: float,
+     *     total: float,
+     *     total_label: string
+     *   }|null
+     * }
+     */
+    public static function codCashCollection(Order $order): array
+    {
+        if (! $order->isCod()) {
+            return [
+                'cash_to_collect' => 0.0,
+                'cash_to_collect_label' => null,
+                'cash_collection' => null,
+            ];
+        }
+
+        $advance = round((float) ($order->advance_amount ?? 0), 2);
+        $shipping = round((float) ($order->delivery_fee ?? 0), 2);
+        $total = round($advance + $shipping, 2);
+        $collected = filled($order->cod_collected_at);
+
+        return [
+            'cash_to_collect' => $collected ? 0.0 : $total,
+            'cash_to_collect_label' => '₹'.number_format($collected ? 0 : $total, 2),
+            'cash_collection' => [
+                'required' => ! $collected && $total > 0,
+                'collected' => $collected,
+                'advance_amount' => $advance,
+                'shipping_fee' => $shipping,
+                'total' => $total,
+                'total_label' => '₹'.number_format($total, 2),
+            ],
+        ];
     }
 
     public static function pickupAddress(Order $order): ?string
