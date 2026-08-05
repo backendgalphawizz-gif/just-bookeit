@@ -1726,6 +1726,13 @@ a { color: inherit; }
     align-items: center;
 }
 
+/* Keep panels stacked over the image so every slide's title/subtitle is visible */
+.jbw-hero-content-wrap.jbw-hero-content-panel {
+    position: absolute;
+    inset: 0;
+    height: auto;
+}
+
 .jbw-hero-content {
     padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
     color: var(--c-text);
