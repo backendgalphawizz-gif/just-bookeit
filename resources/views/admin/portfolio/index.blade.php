@@ -9,12 +9,22 @@
             'rented-dress' => 'Rental Dress',
             'rented-jewellery' => 'Rental Jewellery',
         ];
-        $activeTypeLabel = $typeLabels[$type] ?? ($typeTabs->firstWhere('slug', $type)?->name ?? 'Products');
+        $allCount = (int) collect($tabCounts)->sum();
+        $activeTypeLabel = $type === 'all'
+            ? 'All'
+            : ($typeLabels[$type] ?? ($typeTabs->firstWhere('slug', $type)?->name ?? 'Products'));
         $filterQuery = request()->except('page', 'type');
+        $createType = $type === 'all'
+            ? ($typeTabs->first()?->slug ?? 'fashion-designer')
+            : $type;
     @endphp
 
     <div class="jb-tabs-row">
         <div class="jb-tabs-list">
+            <a href="{{ route('admin.portfolio.index', array_merge($filterQuery, ['type' => 'all'])) }}"
+               class="jb-settings-tab {{ $type === 'all' ? 'jb-settings-tab--active' : '' }}">
+                All ({{ $allCount }})
+            </a>
             @foreach ($typeTabs as $tab)
                 @php
                     $tabCount = (int) ($tabCounts[$tab->id] ?? 0);
@@ -31,7 +41,7 @@
     @push('filter_actions')
         <x-admin.export-dropdown module="portfolio" :params="['type', 'search', 'status', 'vendor_id', 'from', 'to']" />
         @if (auth('admin')->user()->hasPermission('portfolio', 'create'))
-            <x-admin.button variant="primary" size="sm" :href="route('admin.portfolio.create', ['type' => $type])">+ Add Product</x-admin.button>
+            <x-admin.button variant="primary" size="sm" :href="route('admin.portfolio.create', ['type' => $createType])">+ Add Product</x-admin.button>
         @endif
     @endpush
     <form method="GET" class="jb-filters">

@@ -34,12 +34,17 @@ class PortfolioController extends AdminController
         $this->validateListDateRange($request);
 
         $typeTabs = $this->productTypeTabs();
-        $type = $this->resolveProductTypeTab($request->string('type')->toString(), $typeTabs);
-        $typeCategory = $typeTabs->firstWhere('slug', $type);
+        $type = $this->resolveProductTypeTab($request->string('type')->toString(), $typeTabs, allowAll: true);
+        $typeCategory = $type === 'all' ? null : $typeTabs->firstWhere('slug', $type);
+        $typeCategoryIds = $typeTabs->pluck('id');
 
         $items = $this->applyDateRange(PortfolioItem::query(), $request)
             ->with(['vendor', 'category', 'subcategory.parent', 'images'])
-            ->when($typeCategory, fn ($q) => $q->where('category_id', $typeCategory->id))
+            ->when(
+                $typeCategory,
+                fn ($q) => $q->where('category_id', $typeCategory->id),
+                fn ($q) => $q->whereIn('category_id', $typeCategoryIds)
+            )
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('vendor_id'), fn ($q) => $q->where('vendor_id', $request->integer('vendor_id')))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -57,7 +62,7 @@ class PortfolioController extends AdminController
 
         $tabCounts = PortfolioItem::query()
             ->selectRaw('category_id, COUNT(*) as aggregate')
-            ->whereIn('category_id', $typeTabs->pluck('id'))
+            ->whereIn('category_id', $typeCategoryIds)
             ->groupBy('category_id')
             ->pluck('aggregate', 'category_id');
 
@@ -350,15 +355,19 @@ class PortfolioController extends AdminController
             ->values();
     }
 
-    protected function resolveProductTypeTab(string $type, $tabs): string
+    protected function resolveProductTypeTab(string $type, $tabs, bool $allowAll = false): string
     {
         $slugs = $tabs->pluck('slug')->all();
+
+        if ($allowAll && ($type === '' || $type === 'all')) {
+            return 'all';
+        }
 
         if ($type !== '' && in_array($type, $slugs, true)) {
             return $type;
         }
 
-        return $slugs[0] ?? 'fashion-designer';
+        return $allowAll ? 'all' : ($slugs[0] ?? 'fashion-designer');
     }
 
     protected function resolveServiceCategorySlug(Request $request): ?string

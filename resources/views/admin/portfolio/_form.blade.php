@@ -137,6 +137,19 @@
         {{-- 'hint' => 'Maximum 24 words.', --}}
     ])
 
+    <div class="sm:col-span-2" x-data="{ status: @js(old('status', $portfolio->status ?? 'pending')) }">
+        <label for="status" class="jb-label">Status</label>
+        <select id="status" name="status" class="jb-select" required x-model="status">
+            @foreach (['pending', 'approved', 'rejected'] as $status)
+                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+            @endforeach
+        </select>
+        @error('status')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
+        <div class="mt-4" x-show="status === 'rejected'" x-cloak>
+            @include('admin.partials.form-input', ['label' => 'Rejection reason', 'name' => 'rejection_reason', 'type' => 'textarea', 'rows' => 2, 'value' => old('rejection_reason', $portfolio->rejection_reason), 'full' => true])
+        </div>
+    </div>
+
     <div x-show="!hideProductPricing" x-cloak>
         <label for="price_per_day" class="jb-label">Price per day (₹) @if($isCreate)<span class="text-rose-600">*</span>@endif</label>
         <input
@@ -190,19 +203,6 @@
         {{-- 'hint' => 'Maximum 150 words.', --}}
         'full' => true,
     ])
-
-    <div class="sm:col-span-2" x-data="{ status: @js(old('status', $portfolio->status ?? 'pending')) }">
-        <label for="status" class="jb-label">Status</label>
-        <select id="status" name="status" class="jb-select" required x-model="status">
-            @foreach (['pending', 'approved', 'rejected'] as $status)
-                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-            @endforeach
-        </select>
-        @error('status')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-        <div class="mt-4" x-show="status === 'rejected'" x-cloak>
-            @include('admin.partials.form-input', ['label' => 'Rejection reason', 'name' => 'rejection_reason', 'type' => 'textarea', 'rows' => 2, 'value' => old('rejection_reason', $portfolio->rejection_reason), 'full' => true])
-        </div>
-    </div>
 
     @include('admin.portfolio.partials.media-uploads')
 
