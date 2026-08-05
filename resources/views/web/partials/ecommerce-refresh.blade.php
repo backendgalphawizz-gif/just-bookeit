@@ -1936,49 +1936,69 @@ body {
 /* Mobile home — keep after desktop rules so cascade wins */
 @media (max-width: 768px) {
     .jbw-hero-frame {
-        height: min(38vh, 260px);
-        min-height: 200px;
-        max-height: 260px;
+        height: min(42vh, 280px);
+        min-height: 220px;
+        max-height: 280px;
+    }
+
+    .jbw-hero-nav {
+        height: min(42vh, 280px);
+    }
+
+    .jbw-hero-arrow {
+        background: rgb(255 255 255 / 0.72);
+        border: 1px solid rgb(255 255 255 / 0.85);
+        border-radius: 999px;
+        box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .jbw-hero-arrow:focus,
+    .jbw-hero-arrow:focus-visible {
+        outline: none;
+        color: var(--c-primary, #f25123);
+        transform: translateY(-50%);
+        box-shadow: 0 2px 10px rgb(0 0 0 / 0.12);
     }
 
     .jbw-hero-content {
-        max-width: 92%;
-        padding: 1rem 0.875rem;
+        max-width: min(78%, 16.5rem);
+        padding: 0.85rem 0.75rem;
     }
 
     .jbw-hero-title {
-        font-size: clamp(1.5rem, 7vw, 2rem);
-        margin-bottom: 0.5rem;
+        font-size: clamp(1.15rem, 5.5vw, 1.55rem);
+        margin-bottom: 0.4rem;
     }
 
     .jbw-hero-text {
-        font-size: 0.875rem;
-        margin-bottom: 0.875rem;
-        line-height: 1.45;
+        font-size: 0.75rem;
+        margin-bottom: 0.7rem;
+        line-height: 1.4;
         display: -webkit-box;
-        -webkit-line-clamp: 3;
+        -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
     .jbw-section-band {
-        padding: 1.35rem 0;
+        padding: 1.6rem 0;
     }
 
     .jbw-section-band + .jbw-section-band {
-        padding-top: 0.35rem;
+        padding-top: 0.6rem;
     }
 
     .service-slider,
     .category-slider {
-        gap: 0.75rem;
+        gap: 0.85rem;
     }
 
     .service-card,
     .category-card {
-        width: min(46vw, 168px);
-        min-width: min(46vw, 168px);
-        max-width: 168px;
+        width: min(42vw, 156px);
+        min-width: min(42vw, 156px);
+        max-width: 156px;
     }
 
     .jbw-tile,
@@ -1994,18 +2014,23 @@ body {
         font-size: 0.875rem;
     }
 
+    .jbw-trust-strip {
+        padding: 1rem 0 1.15rem;
+        margin-bottom: 0.35rem;
+    }
+
     .jbw-trust-grid {
-        gap: 0.5rem 0.75rem;
+        gap: 0.9rem 0.85rem;
     }
 
     .jbw-trust-item {
-        padding: 0.25rem 0;
-        gap: 0.55rem;
+        padding: 0.35rem 0;
+        gap: 0.65rem;
     }
 
     .jbw-trust-icon {
-        width: 2rem;
-        height: 2rem;
+        width: 2.15rem;
+        height: 2.15rem;
     }
 }
 
