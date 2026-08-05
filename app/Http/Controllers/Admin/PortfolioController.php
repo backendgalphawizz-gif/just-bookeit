@@ -13,6 +13,7 @@ use App\Support\AppliesListDateFilter;
 use App\Support\ManagesPortfolioProducts;
 use App\Support\ProductDamageDeductionRules;
 use App\Support\StoresUploadedFiles;
+use App\Support\SubcategoryCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -99,6 +100,8 @@ class PortfolioController extends AdminController
             AdminValidationRules::attributes()
         );
 
+        $this->assertProductCategorySelection($request, $data);
+
         ProductDamageDeductionRules::assertWithinCategoryLimit(
             (int) $data['subcategory_id'],
             (int) $data['category_id'],
@@ -182,6 +185,8 @@ class PortfolioController extends AdminController
             AdminValidationRules::messages(),
             AdminValidationRules::attributes()
         );
+
+        $this->assertProductCategorySelection($request, $data);
 
         ProductDamageDeductionRules::assertWithinCategoryLimit(
             (int) $data['subcategory_id'],
@@ -353,6 +358,25 @@ class PortfolioController extends AdminController
                 return $index === false ? 99 : $index;
             })
             ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function assertProductCategorySelection(Request $request, array $data): void
+    {
+        $subcategory = SubcategoryCatalog::resolveSubcategory((int) $data['subcategory_id'], (int) $data['category_id']);
+        if (! $subcategory) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'subcategory_id' => ['Select a valid sub-category for this service type.'],
+            ]);
+        }
+
+        SubcategoryCatalog::assertBelongsToServiceCategory($subcategory, (int) $data['category_id']);
+
+        if ($request->filled('main_category_id')) {
+            SubcategoryCatalog::assertBelongsToMainCategory($subcategory, (int) $request->integer('main_category_id'));
+        }
     }
 
     protected function resolveProductTypeTab(string $type, $tabs, bool $allowAll = false): string

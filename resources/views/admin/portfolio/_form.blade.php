@@ -12,10 +12,15 @@
         : collect();
     $selectedSubcategoryId = old('subcategory_id', $portfolio->subcategory_id);
     $selectedMainCategoryId = old('main_category_id', $portfolio->subcategory?->parent_id);
+    $mainCategoryOptions = $mainCategories->map(fn ($main) => [
+        'id' => $main->id,
+        'name' => $main->name,
+    ])->values();
     $subcategoryOptions = $subcategories->map(fn ($sub) => [
         'id' => $sub->id,
         'name' => $sub->name,
         'parent_id' => $sub->parent_id,
+        'service_category_id' => $sub->service_category_id,
     ])->values();
     $audienceByMainSlug = $mainCategories->mapWithKeys(fn ($main) => [$main->id => $main->slug])->all();
     $serviceCategorySlugs = $serviceCategories->mapWithKeys(fn ($category) => [(string) $category->id => $category->slug])->all();
@@ -27,6 +32,17 @@
     x-data="{
         categoryId: @js($selectedCategoryId),
         categorySlugs: @js($serviceCategorySlugs),
+        mainCategoryId: @js((string) ($selectedMainCategoryId ?? '')),
+        subcategoryId: @js((string) ($selectedSubcategoryId ?? '')),
+        mainCategories: @js($mainCategoryOptions),
+        subcategories: @js($subcategoryOptions),
+        audienceByMain: @js($audienceByMainSlug),
+        audience: @js(old('audience', $portfolio->audience ?? 'women')),
+        init() {
+            this.onSubChange();
+            this.syncAudience();
+            this.$watch('categoryId', () => this.onServiceChange());
+        },
         get productType() {
             return this.categorySlugs[String(this.categoryId)] || '';
         },
@@ -38,6 +54,43 @@
         },
         get showVariants() {
             return this.productType === 'rented-dress';
+        },
+        serviceSubs() {
+            if (!this.categoryId) return [];
+            return this.subcategories.filter((sub) => String(sub.service_category_id) === String(this.categoryId));
+        },
+        filteredMains() {
+            const parentIds = new Set(this.serviceSubs().map((sub) => String(sub.parent_id)));
+            return this.mainCategories.filter((main) => parentIds.has(String(main.id)));
+        },
+        filteredSubs() {
+            if (!this.mainCategoryId || !this.categoryId) return [];
+            return this.serviceSubs().filter((sub) => String(sub.parent_id) === String(this.mainCategoryId));
+        },
+        syncAudience() {
+            const slug = this.audienceByMain[this.mainCategoryId];
+            if (slug) this.audience = slug;
+        },
+        onServiceChange() {
+            const mains = this.filteredMains();
+            if (!mains.some((main) => String(main.id) === String(this.mainCategoryId))) {
+                this.mainCategoryId = '';
+                this.subcategoryId = '';
+            } else if (!this.filteredSubs().some((sub) => String(sub.id) === String(this.subcategoryId))) {
+                this.subcategoryId = '';
+            }
+            this.syncAudience();
+        },
+        onMainChange() {
+            this.subcategoryId = '';
+            this.syncAudience();
+        },
+        onSubChange() {
+            const sub = this.subcategories.find((item) => String(item.id) === String(this.subcategoryId));
+            if (sub) {
+                this.mainCategoryId = String(sub.parent_id);
+                this.syncAudience();
+            }
         }
     }"
 >
@@ -59,39 +112,7 @@
         @error('category_id')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
     </div>
 
-    <div
-        class="sm:col-span-2"
-        x-data="{
-            mainCategoryId: @js((string) ($selectedMainCategoryId ?? '')),
-            subcategoryId: @js((string) ($selectedSubcategoryId ?? '')),
-            subcategories: @js($subcategoryOptions),
-            audienceByMain: @js($audienceByMainSlug),
-            audience: @js(old('audience', $portfolio->audience ?? 'women')),
-            init() {
-                this.onSubChange();
-                this.syncAudience();
-            },
-            filteredSubs() {
-                if (!this.mainCategoryId) return [];
-                return this.subcategories.filter((sub) => String(sub.parent_id) === String(this.mainCategoryId));
-            },
-            syncAudience() {
-                const slug = this.audienceByMain[this.mainCategoryId];
-                if (slug) this.audience = slug;
-            },
-            onMainChange() {
-                this.subcategoryId = '';
-                this.syncAudience();
-            },
-            onSubChange() {
-                const sub = this.subcategories.find((item) => String(item.id) === String(this.subcategoryId));
-                if (sub) {
-                    this.mainCategoryId = String(sub.parent_id);
-                    this.syncAudience();
-                }
-            }
-        }"
-    >
+    <div class="sm:col-span-2">
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label class="jb-label" for="main_category_id">Category <span class="text-rose-600">*</span></label>
@@ -102,20 +123,29 @@
                     x-model="mainCategoryId"
                     @change="onMainChange()"
                     required
+                    :disabled="!categoryId"
                 >
-                    <option value="">Select category</option>
-                    @foreach ($mainCategories as $mainCategory)
-                        <option value="{{ $mainCategory->id }}">{{ $mainCategory->name }}</option>
-                    @endforeach
+                    <option value="" x-text="categoryId ? 'Select category' : 'Select product type first'"></option>
+                    <template x-for="main in filteredMains()" :key="main.id">
+                        <option :value="String(main.id)" x-text="main.name" :selected="String(mainCategoryId) === String(main.id)"></option>
+                    </template>
                 </select>
+                @error('main_category_id')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
             </div>
 
             <div>
                 <label class="jb-label" for="subcategory_id">Sub-category <span class="text-rose-600">*</span></label>
                 {{-- Hidden input submits reliably; Alpine x-for options inside <select> often drop the value on submit. --}}
                 <input type="hidden" name="subcategory_id" x-model="subcategoryId">
-                <select id="subcategory_id" class="jb-select" x-model="subcategoryId" @change="onSubChange()" required>
-                    <option value="">Select sub-category</option>
+                <select
+                    id="subcategory_id"
+                    class="jb-select"
+                    x-model="subcategoryId"
+                    @change="onSubChange()"
+                    required
+                    :disabled="!categoryId || !mainCategoryId"
+                >
+                    <option value="" x-text="!categoryId ? 'Select product type first' : (!mainCategoryId ? 'Select category first' : 'Select sub-category')"></option>
                     <template x-for="sub in filteredSubs()" :key="sub.id">
                         <option :value="String(sub.id)" x-text="sub.name" :selected="String(subcategoryId) === String(sub.id)"></option>
                     </template>
