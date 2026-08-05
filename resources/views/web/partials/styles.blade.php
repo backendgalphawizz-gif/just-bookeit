@@ -1681,24 +1681,26 @@ a { color: inherit; }
 .jbw-hero-dots {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 0.5rem;
-    padding: 0.9rem 0 0.1rem;
+    padding: 0.9rem 0 1.25rem;
 }
 
 .jbw-hero-dot {
-    width: 0.4375rem;
-    height: 0.4375rem;
+    width: 0.625rem;
+    height: 0.625rem;
     border: none;
-    border-radius: 50%;
+    border-radius: 999px;
     background: #ddd3c9;
     cursor: pointer;
     padding: 0;
-    transition: background 0.25s ease, transform 0.25s ease;
+    transition: width 0.25s ease, background 0.25s ease;
 }
 
 .jbw-hero-dot.is-active {
+    width: 1.75rem;
     background: var(--c-primary);
-    transform: scale(1.15);
+    transform: none;
 }
 
 .alignmentheading {
