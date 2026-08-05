@@ -3,10 +3,15 @@
 namespace App\View\Composers;
 
 use App\Models\PlatformSetting;
+use App\Services\Admin\AdminThemeService;
 use Illuminate\View\View;
 
 class GuestLayoutComposer
 {
+    public function __construct(
+        protected AdminThemeService $themeService
+    ) {}
+
     public function compose(View $view): void
     {
         $logoUrl = PlatformSetting::mediaUrl('admin_logo');
@@ -14,8 +19,9 @@ class GuestLayoutComposer
         $view->with([
             'loginBranding' => [
                 'name' => PlatformSetting::get('platform_name', 'Just Book IT'),
-                'logo_url' => $logoUrl ?: asset('images/just-book-it-logo.png'),               
+                'logo_url' => $logoUrl ?: asset('images/just-book-it-logo.png'),
             ],
+            'adminTheme' => $this->themeService->variables(),
         ]);
     }
 }

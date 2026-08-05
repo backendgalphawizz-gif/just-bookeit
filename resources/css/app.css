@@ -850,8 +850,18 @@
 
     /* Admin login (guest) */
     .jb-login-page {
-        @apply flex min-h-screen items-center justify-center bg-slate-100 p-4 antialiased;
+        @apply flex min-h-screen items-center justify-center p-4 antialiased;
         font-family: var(--font-sans);
+        background-color: #f8fafc;
+        background-image:
+            radial-gradient(ellipse 80% 55% at 12% 18%, color-mix(in srgb, var(--jb-primary, #be123c) 20%, transparent), transparent 58%),
+            radial-gradient(ellipse 70% 50% at 92% 82%, color-mix(in srgb, var(--jb-sidebar-bg, #0f172a) 16%, transparent), transparent 55%),
+            linear-gradient(
+                145deg,
+                color-mix(in srgb, var(--jb-primary, #be123c) 9%, #f8fafc) 0%,
+                color-mix(in srgb, var(--jb-sidebar-bg, #0f172a) 5%, #f1f5f9) 48%,
+                color-mix(in srgb, var(--jb-primary, #be123c) 6%, #fff7ed) 100%
+            );
     }
 
     .jb-login-wrap {
