@@ -37,6 +37,8 @@
         ];
     })->values();
 
+    $colorImageMap = $colors->mapWithKeys(fn ($color) => [$color['name'] => $color['image']])->all();
+
     $initialColor = $selectedVariant?->color
         ? trim((string) $selectedVariant->color)
         : ($colors->first()['name'] ?? '');
@@ -51,10 +53,12 @@
         id="jbw-variant-picker"
         data-base-label="{{ $baseLabel }}"
         @if($baseImage) data-base-image="{{ $baseImage }}" @endif
-        data-variants="{{ Js::from($variantPayload) }}"
         data-selected-color="{{ $initialColor }}"
         data-selected-size="{{ $initialSize }}"
     >
+        <script type="application/json" id="jbw-variant-data">@json($variantPayload)</script>
+        <script type="application/json" id="jbw-variant-color-images">@json($colorImageMap)</script>
+
         <input type="hidden" name="portfolio_item_variant_id" id="jbw-variant-id" class="jbw-variant-input" value="{{ $selectedVariantId ?: '' }}" data-label="{{ $selectedVariant ? $item->rentalPriceLabelFor($selectedVariant) : $baseLabel }}" @if($selectedVariant?->imageUrl() ?: $baseImage) data-image="{{ $selectedVariant?->imageUrl() ?: $baseImage }}" @endif>
 
         @if ($colors->isNotEmpty())
@@ -105,10 +109,15 @@
             if (!picker || !picker.classList.contains('jbw-variant-picker--swatches')) return;
 
             const variantInput = document.getElementById('jbw-variant-id');
-            const variants = (() => {
-                try { return JSON.parse(picker.getAttribute('data-variants') || '[]'); }
-                catch (_) { return []; }
-            })();
+            const readJson = (id) => {
+                const el = document.getElementById(id);
+                if (!el) return null;
+                try { return JSON.parse(el.textContent || 'null'); }
+                catch (_) { return null; }
+            };
+            const variantsRaw = readJson('jbw-variant-data');
+            const variants = Array.isArray(variantsRaw) ? variantsRaw : [];
+            const colorImages = readJson('jbw-variant-color-images') || {};
 
             let selectedColor = picker.getAttribute('data-selected-color') || '';
             let selectedSize = picker.getAttribute('data-selected-size') || '';
@@ -124,6 +133,17 @@
                 }) || null;
             };
 
+            const resolveImage = (match) => {
+                if (match?.image) return match.image;
+                if (selectedColor) {
+                    const byName = colorImages[selectedColor];
+                    if (byName) return byName;
+                    const key = Object.keys(colorImages).find((name) => norm(name) === norm(selectedColor));
+                    if (key && colorImages[key]) return colorImages[key];
+                }
+                return picker.dataset.baseImage || '';
+            };
+
             const syncSizeAvailability = () => {
                 const hasColors = picker.querySelectorAll('[data-color]').length > 0;
                 picker.querySelectorAll('[data-size]').forEach((btn) => {
@@ -137,11 +157,16 @@
                     );
                     btn.disabled = !available;
                     btn.classList.toggle('is-disabled', !available);
-                    if (!available && norm(selectedSize) === norm(btn.dataset.size)) {
-                        const next = Array.from(picker.querySelectorAll('[data-size]')).find((b) => !b.disabled);
-                        selectedSize = next ? next.dataset.size : '';
-                    }
                 });
+
+                if (hasColors && selectedColor) {
+                    const currentBtn = Array.from(picker.querySelectorAll('[data-size]'))
+                        .find((btn) => norm(btn.dataset.size) === norm(selectedSize));
+                    if (!currentBtn || currentBtn.disabled) {
+                        const next = Array.from(picker.querySelectorAll('[data-size]')).find((btn) => !btn.disabled);
+                        selectedSize = next ? (next.dataset.size || '') : '';
+                    }
+                }
             };
 
             const applyVariant = ({ syncGallery = true } = {}) => {
@@ -151,12 +176,12 @@
                     btn.classList.toggle('is-selected', norm(btn.dataset.color) === norm(selectedColor));
                 });
                 picker.querySelectorAll('[data-size]').forEach((btn) => {
-                    btn.classList.toggle('is-selected', norm(btn.dataset.size) === norm(selectedSize));
+                    btn.classList.toggle('is-selected', !btn.disabled && norm(btn.dataset.size) === norm(selectedSize));
                 });
 
                 const match = findVariant();
                 const label = match?.label || picker.dataset.baseLabel || '';
-                const image = match?.image || picker.dataset.baseImage || '';
+                const image = resolveImage(match);
                 const variantLabel = [match?.color, match?.size].filter(Boolean).join(' · ');
 
                 if (variantInput) {
@@ -189,7 +214,7 @@
                 btn.addEventListener('click', () => {
                     if (btn.disabled) return;
                     selectedSize = btn.dataset.size || '';
-                    applyVariant({ syncGallery: false });
+                    applyVariant({ syncGallery: true });
                 });
             });
 

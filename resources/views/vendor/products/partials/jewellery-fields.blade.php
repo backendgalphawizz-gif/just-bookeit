@@ -80,12 +80,12 @@
         name="description"
         class="vp-textarea @error('description') vp-textarea--error @enderror"
         rows="4"
-        maxlength="5000"
+        maxlength="150"
         placeholder="Enter description..."
         data-vp-restrict="text"
-        data-vp-max-words="150"
+        data-vp-max-chars="150"
     >{{ old('description', $item->description) }}</textarea>
-    <p class="vp-field-hint" data-vp-word-count-for="description">0/150 words</p>
+    <p class="vp-field-hint" data-vp-char-count-for="description">0/150 characters</p>
     @error('description')<p class="vp-field-error">{{ $message }}</p>@enderror
 </div>
 

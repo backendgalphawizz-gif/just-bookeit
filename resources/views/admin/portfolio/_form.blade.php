@@ -163,8 +163,7 @@
         'value' => old('title', $portfolio->title),
         'required' => true,
         'restrict' => 'title',
-        'maxWords' => 24,
-        {{-- 'hint' => 'Maximum 24 words.', --}}
+        'maxChars' => 24,
     ])
 
     <div class="sm:col-span-2" x-data="{ status: @js(old('status', $portfolio->status ?? 'pending')) }">
@@ -229,8 +228,7 @@
         'rows' => 4,
         'value' => old('description', $portfolio->description),
         'restrict' => 'text',
-        'maxWords' => 150,
-        {{-- 'hint' => 'Maximum 150 words.', --}}
+        'maxChars' => 150,
         'full' => true,
     ])
 

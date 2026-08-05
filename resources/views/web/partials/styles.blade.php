@@ -3698,25 +3698,32 @@ a { color: inherit; }
     height: 48px;
     padding: 0 0.75rem;
     border-radius: 12px;
-    border: 1.5px solid #e5e2dc;
+    border: 1.5px solid #d6d1c9;
     background: #fff;
-    color: #6b7280;
+    color: #1f2937;
     font-size: 0.875rem;
     font-weight: 700;
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.jbw-detail-size-chip:hover:not(:disabled):not(.is-disabled) {
+    border-color: var(--c-primary);
+    color: var(--c-primary);
 }
 
 .jbw-detail-size-chip.is-selected {
     border-color: var(--c-primary);
     color: var(--c-primary);
     background: #fff8f5;
+    box-shadow: 0 0 0 1px var(--c-primary);
 }
 
 .jbw-detail-size-chip.is-disabled,
 .jbw-detail-size-chip:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+    color: #9ca3af;
 }
 
 .jbw-detail-desc-wrap { margin: 0.75rem 0 1rem; }

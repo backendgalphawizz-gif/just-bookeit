@@ -53,13 +53,30 @@
                     <label class="jb-label">Qty</label>
                     <input type="number" name="variants[{{ $index }}][quantity]" value="{{ $variant['quantity'] ?? '' }}" class="jb-input" min="0" step="1" placeholder="1">
                 </div>
-                <div>
+                <div data-variant-image-field>
                     <label class="jb-label">Variant image</label>
-                    @if (! empty($variant['image_url']))
-                        <img src="{{ $variant['image_url'] }}" alt="" class="mb-2 h-12 w-12 rounded-lg object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
-                    @endif
+                    <div class="jb-variant-image-preview" data-variant-image-preview @if (empty($variant['image_url'])) hidden @endif>
+                        <img
+                            src="{{ $variant['image_url'] ?? '' }}"
+                            alt="Variant image preview"
+                            class="jb-variant-image-preview__img panel-lightbox-trigger"
+                            data-variant-image-thumb
+                        >
+                        <p class="jb-variant-image-preview__hint" data-variant-image-hint>{{ ! empty($variant['image_url']) ? 'Current image' : '' }}</p>
+                    </div>
+                    <div class="jb-variant-image-preview jb-variant-image-preview--empty" data-variant-image-empty @if (! empty($variant['image_url'])) hidden @endif>
+                        <span>No image</span>
+                    </div>
                     <input type="hidden" name="variants[{{ $index }}][stored_image_path]" value="{{ $variant['stored_image_path'] ?? '' }}">
-                    <input type="file" name="variants[{{ $index }}][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="jb-input vp-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
+                    <input
+                        type="file"
+                        name="variants[{{ $index }}][image]"
+                        accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
+                        class="jb-input vp-input mt-2"
+                        data-jb-max-mb="{{ $productImageMaxMb }}"
+                        data-jb-file-label="Variant image"
+                        data-variant-image-input
+                    >
                 </div>
                 <div class="flex items-end">
                     <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
@@ -94,10 +111,25 @@
                 <label class="jb-label">Qty</label>
                 <input type="number" name="variants[__INDEX__][quantity]" class="jb-input" min="0" step="1" placeholder="1">
             </div>
-            <div>
+            <div data-variant-image-field>
                 <label class="jb-label">Variant image</label>
+                <div class="jb-variant-image-preview" data-variant-image-preview hidden>
+                    <img src="" alt="Variant image preview" class="jb-variant-image-preview__img panel-lightbox-trigger" data-variant-image-thumb>
+                    <p class="jb-variant-image-preview__hint" data-variant-image-hint></p>
+                </div>
+                <div class="jb-variant-image-preview jb-variant-image-preview--empty" data-variant-image-empty>
+                    <span>No image</span>
+                </div>
                 <input type="hidden" name="variants[__INDEX__][stored_image_path]" value="">
-                <input type="file" name="variants[__INDEX__][image]" accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}" class="jb-input" data-jb-max-mb="{{ $productImageMaxMb }}" data-jb-file-label="Variant image">
+                <input
+                    type="file"
+                    name="variants[__INDEX__][image]"
+                    accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
+                    class="jb-input mt-2"
+                    data-jb-max-mb="{{ $productImageMaxMb }}"
+                    data-jb-file-label="Variant image"
+                    data-variant-image-input
+                >
             </div>
             <div class="flex items-end">
                 <button type="button" class="jb-btn jb-btn-ghost jb-btn-sm text-rose-600" data-product-variants-remove>Remove</button>
@@ -115,6 +147,7 @@
         const template = root.querySelector('[data-product-variants-template]');
         const addBtn = root.querySelector('[data-product-variants-add]');
         const form = root.closest('form');
+        const maxBytes = {{ (int) $productImageMaxMb }} * 1024 * 1024;
 
         const variantsEnabled = () => {
             const host = root.closest('[data-variants-enabled]');
@@ -139,6 +172,94 @@
 
         const syncEnabledState = () => setInputsEnabled(variantsEnabled());
 
+        const revokePreviewUrl = (row) => {
+            const url = row.dataset.variantPreviewUrl;
+            if (url && url.startsWith('blob:')) {
+                URL.revokeObjectURL(url);
+            }
+            delete row.dataset.variantPreviewUrl;
+        };
+
+        const showPreview = (row, url, hint) => {
+            const preview = row.querySelector('[data-variant-image-preview]');
+            const empty = row.querySelector('[data-variant-image-empty]');
+            const thumb = row.querySelector('[data-variant-image-thumb]');
+            const hintEl = row.querySelector('[data-variant-image-hint]');
+            if (!preview || !empty || !thumb) return;
+
+            if (url) {
+                thumb.src = url;
+                preview.hidden = false;
+                empty.hidden = true;
+                if (hintEl) hintEl.textContent = hint || '';
+            } else {
+                thumb.removeAttribute('src');
+                preview.hidden = true;
+                empty.hidden = false;
+                if (hintEl) hintEl.textContent = '';
+            }
+        };
+
+        const clearImageField = (row) => {
+            revokePreviewUrl(row);
+            const file = row.querySelector('[data-variant-image-input]');
+            if (file) file.value = '';
+            const stored = row.querySelector('input[name*="[stored_image_path]"]');
+            const current = stored?.value ? (row.querySelector('[data-variant-image-thumb]')?.getAttribute('src') || '') : '';
+            // After clearing a new file, fall back to stored current image if still present in DOM dataset.
+            const fallback = row.dataset.variantCurrentUrl || '';
+            if (file && !file.files?.length && fallback) {
+                showPreview(row, fallback, 'Current image');
+            } else {
+                showPreview(row, '', '');
+            }
+        };
+
+        const bindImagePreview = (row) => {
+            const fileInput = row.querySelector('[data-variant-image-input]');
+            if (!fileInput || fileInput.dataset.previewBound === '1') return;
+            fileInput.dataset.previewBound = '1';
+
+            const thumb = row.querySelector('[data-variant-image-thumb]');
+            if (thumb?.getAttribute('src')) {
+                row.dataset.variantCurrentUrl = thumb.getAttribute('src');
+            }
+
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files && fileInput.files[0];
+                revokePreviewUrl(row);
+
+                if (!file) {
+                    const fallback = row.dataset.variantCurrentUrl || '';
+                    showPreview(row, fallback, fallback ? 'Current image' : '');
+                    return;
+                }
+
+                if (!file.type.startsWith('image/')) {
+                    fileInput.value = '';
+                    const fallback = row.dataset.variantCurrentUrl || '';
+                    showPreview(row, fallback, fallback ? 'Current image' : '');
+                    window.alert('Please choose an image file for the variant.');
+                    return;
+                }
+
+                if (file.size > maxBytes) {
+                    fileInput.value = '';
+                    const fallback = row.dataset.variantCurrentUrl || '';
+                    showPreview(row, fallback, fallback ? 'Current image' : '');
+                    window.alert('Variant image is too large. Maximum size is {{ $productImageMaxMb }} MB.');
+                    return;
+                }
+
+                const stored = row.querySelector('input[name*="[stored_image_path]"]');
+                if (stored) stored.value = '';
+
+                const url = URL.createObjectURL(file);
+                row.dataset.variantPreviewUrl = url;
+                showPreview(row, url, 'New upload preview');
+            });
+        };
+
         const reindexRows = () => {
             list.querySelectorAll('[data-product-variants-row]').forEach((row, index) => {
                 row.querySelectorAll('input').forEach((input) => {
@@ -151,17 +272,28 @@
         const bindRemove = (row) => {
             row.querySelector('[data-product-variants-remove]')?.addEventListener('click', () => {
                 if (list.querySelectorAll('[data-product-variants-row]').length <= 1) {
-                    row.querySelectorAll('input[type="text"], input[type="number"], input[type="hidden"]').forEach((input) => input.value = '');
-                    const file = row.querySelector('input[type="file"]');
-                    if (file) file.value = '';
+                    row.querySelectorAll('input[type="text"], input[type="number"], input[type="hidden"]').forEach((input) => {
+                        if (input.name && input.name.includes('[stored_image_path]')) {
+                            input.value = '';
+                            return;
+                        }
+                        input.value = '';
+                    });
+                    delete row.dataset.variantCurrentUrl;
+                    clearImageField(row);
+                    showPreview(row, '', '');
                     return;
                 }
+                revokePreviewUrl(row);
                 row.remove();
                 reindexRows();
             });
         };
 
-        list.querySelectorAll('[data-product-variants-row]').forEach(bindRemove);
+        list.querySelectorAll('[data-product-variants-row]').forEach((row) => {
+            bindRemove(row);
+            bindImagePreview(row);
+        });
 
         addBtn?.addEventListener('click', () => {
             if (!variantsEnabled()) return;
@@ -172,17 +304,16 @@
             const row = wrapper.firstElementChild;
             list.appendChild(row);
             bindRemove(row);
+            bindImagePreview(row);
             syncEnabledState();
             row.querySelector('input')?.focus();
         });
 
         const categorySelect = form?.querySelector('#category_id');
         categorySelect?.addEventListener('change', () => {
-            // Alpine updates data-variants-enabled on next tick.
             setTimeout(syncEnabledState, 0);
         });
 
-        // Observe Alpine attribute changes.
         const host = root.closest('[data-variants-enabled]') || root.parentElement;
         if (host) {
             const observer = new MutationObserver(syncEnabledState);

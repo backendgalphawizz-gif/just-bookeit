@@ -244,12 +244,13 @@
         if (!max) {
             return;
         }
-        const counter = document.querySelector('[data-jb-char-count-for="' + input.id + '"]');
+        const counter = document.querySelector('[data-jb-char-count-for="' + input.id + '"]')
+            || document.querySelector('[data-jb-char-count-for="' + input.name + '"]');
         if (!counter) {
             return;
         }
         const update = () => {
-            counter.textContent = input.value.length + '/' + max;
+            counter.textContent = input.value.length + '/' + max + ' characters';
             counter.classList.toggle('text-rose-600', input.value.length > max);
         };
         input.addEventListener('input', update);

@@ -121,7 +121,7 @@
         @endphp
         <p class="mt-1 text-xs text-slate-500" data-jb-word-count-for="{{ $name }}">{{ $wordCount }}/{{ $maxWords }} words</p>
     @elseif ($maxChars && ($type ?? '') !== 'select')
-        <p class="mt-1 text-xs text-slate-500" data-jb-char-count-for="{{ $name }}">{{ strlen((string) ($value ?? '')) }}/{{ $maxChars }}</p>
+        <p class="mt-1 text-xs text-slate-500" data-jb-char-count-for="{{ $name }}">{{ mb_strlen((string) ($value ?? '')) }}/{{ $maxChars }} characters</p>
     @endif
     @if (!empty($hint))
         <p class="mt-1 text-xs text-slate-500">{{ $hint }}</p>

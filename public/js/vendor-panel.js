@@ -224,7 +224,34 @@
         update();
     }
 
+    function bindCharCounter(input) {
+        const max = parseInt(input.dataset.vpMaxChars, 10);
+        if (!max) {
+            return;
+        }
+
+        const counter = document.querySelector('[data-vp-char-count-for="' + input.id + '"]')
+            || document.querySelector('[data-vp-char-count-for="' + input.name + '"]');
+
+        const update = () => {
+            if (input.value.length > max) {
+                input.value = input.value.slice(0, max);
+            }
+            if (counter) {
+                counter.textContent = input.value.length + '/' + max + ' characters';
+                counter.classList.toggle('is-limit', input.value.length >= max);
+            }
+        };
+
+        input.addEventListener('input', update);
+        input.addEventListener('paste', () => {
+            requestAnimationFrame(update);
+        });
+        update();
+    }
+
     document.querySelectorAll('[data-vp-max-words]').forEach(bindWordLimiter);
+    document.querySelectorAll('[data-vp-max-chars]').forEach(bindCharCounter);
 
     document.querySelectorAll('form[method="POST"], form[method="post"]').forEach((form) => {
         form.addEventListener('submit', (event) => {
