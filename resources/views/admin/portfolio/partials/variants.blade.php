@@ -42,7 +42,7 @@
                     <input type="text" name="variants[{{ $index }}][color]" value="{{ $variant['color'] ?? '' }}" class="jb-input" placeholder="e.g. Red">
                 </div>
                 <div>
-                    <label class="jb-label">Price (₹)</label>
+                    <label class="jb-label">Price (₹)/per day</label>
                     <input type="number" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" class="jb-input" min="0" step="0.01" placeholder="0">
                 </div>
                 <div>

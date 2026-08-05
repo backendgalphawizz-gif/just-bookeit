@@ -134,7 +134,7 @@
         'required' => true,
         'restrict' => 'title',
         'maxWords' => 24,
-        'hint' => 'Maximum 24 words.',
+        {{-- 'hint' => 'Maximum 24 words.', --}}
     ])
 
     <div x-show="!hideProductPricing" x-cloak>
@@ -187,7 +187,7 @@
         'value' => old('description', $portfolio->description),
         'restrict' => 'text',
         'maxWords' => 150,
-        'hint' => 'Maximum 150 words.',
+        {{-- 'hint' => 'Maximum 150 words.', --}}
         'full' => true,
     ])
 

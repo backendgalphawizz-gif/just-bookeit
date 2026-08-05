@@ -750,7 +750,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 8rem;
+        width: 15rem;
         height: 8rem;
         border-radius: 0.75rem;
         border: 1px dashed rgb(203 213 225);
