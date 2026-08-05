@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\PortfolioItem;
 use App\Models\Vendor;
-use App\Models\VendorPortfolioImage;
 use App\Support\AdminCityScope;
 use App\Support\AppliesListDateFilter;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +21,7 @@ class VendorPortfolioController extends AdminController
     {
         $this->validateListDateRange($request);
 
-        $portfolioFilter = $this->portfolioImageFilter($request);
+        $productFilter = $this->productImageFilter($request);
 
         $vendors = AdminCityScope::scopeVendors(Vendor::query())
             ->when($request->filled('vendor_id'), fn ($q) => $q->where('id', $request->integer('vendor_id')))
@@ -38,8 +38,8 @@ class VendorPortfolioController extends AdminController
             })
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('city'), fn ($q) => $q->where('city', 'like', '%'.$request->string('city').'%'))
-            ->whereHas('portfolioImages', $portfolioFilter)
-            ->withCount(['portfolioImages as portfolio_photos_count' => $portfolioFilter])
+            ->whereHas('portfolioItems', $productFilter)
+            ->withCount(['portfolioItems as product_photos_count' => $productFilter])
             ->newestFirst()
             ->paginate(15)
             ->withQueryString();
@@ -55,25 +55,39 @@ class VendorPortfolioController extends AdminController
 
         $this->validateListDateRange($request);
 
-        $portfolioFilter = $this->portfolioImageFilter($request);
+        $productFilter = $this->productImageFilter($request);
+
+        $productsQuery = PortfolioItem::query()
+            ->where('vendor_id', $vendor->id)
+            ->with(['images', 'category']);
+
+        $productFilter($productsQuery);
+
+        $products = $productsQuery
+            ->newestFirst()
+            ->get();
 
         $portfolioByAudience = [];
 
         foreach (['women' => 'Women', 'men' => 'Men', 'kids' => 'Kids'] as $key => $label) {
-            $query = VendorPortfolioImage::query()
-                ->where('vendor_id', $vendor->id)
-                ->where('audience', $key);
-
-            $portfolioFilter($query);
-
             $portfolioByAudience[$key] = [
                 'label' => $label,
-                'images' => $query->orderBy('sort_order')->orderByDesc('id')->get(),
+                'images' => collect(),
             ];
         }
 
+        foreach ($products as $product) {
+            $audience = in_array($product->audience, ['women', 'men', 'kids'], true)
+                ? $product->audience
+                : 'women';
+
+            foreach ($this->productImageEntries($product) as $entry) {
+                $portfolioByAudience[$audience]['images']->push($entry);
+            }
+        }
+
         $photoCount = collect($portfolioByAudience)->sum(fn (array $group) => $group['images']->count());
-        $totalPhotoCount = $vendor->portfolioImages()->count();
+        $totalPhotoCount = $this->vendorProductImageCount($vendor);
 
         return view('admin.vendor-portfolio.show', compact(
             'vendor',
@@ -84,7 +98,7 @@ class VendorPortfolioController extends AdminController
     }
 
     /** @return \Closure(HasMany|Builder): void */
-    protected function portfolioImageFilter(Request $request): \Closure
+    protected function productImageFilter(Request $request): \Closure
     {
         return function (HasMany|Builder $query) use ($request): void {
             $this->applyDateRange($query, $request);
@@ -92,6 +106,62 @@ class VendorPortfolioController extends AdminController
             if ($request->filled('audience')) {
                 $query->where('audience', $request->string('audience'));
             }
+
+            $query->where(function (Builder $q) {
+                $q->where(function (Builder $primary) {
+                    $primary->whereNotNull('image_url')->where('image_url', '!=', '');
+                })->orWhereHas('images', function (Builder $images) {
+                    $images->where(function (Builder $media) {
+                        $media->whereNull('media_type')
+                            ->orWhere('media_type', 'image');
+                    });
+                });
+            });
         };
+    }
+
+    /**
+     * @return list<array{url: string, title: string, product_id: int, created_at: mixed}>
+     */
+    protected function productImageEntries(PortfolioItem $product): array
+    {
+        $entries = [];
+        $seen = [];
+
+        foreach ($product->galleryMediaItems() as $media) {
+            if (($media['type'] ?? '') !== 'image') {
+                continue;
+            }
+
+            $url = $media['url'] ?? null;
+            if (! is_string($url) || $url === '') {
+                continue;
+            }
+
+            $key = ltrim((string) (parse_url($url, PHP_URL_PATH) ?: $url), '/');
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            $entries[] = [
+                'url' => $url,
+                'title' => $product->title,
+                'product_id' => $product->id,
+                'created_at' => $product->created_at,
+            ];
+        }
+
+        return $entries;
+    }
+
+    protected function vendorProductImageCount(Vendor $vendor): int
+    {
+        $products = PortfolioItem::query()
+            ->where('vendor_id', $vendor->id)
+            ->with('images')
+            ->get();
+
+        return $products->sum(fn (PortfolioItem $product) => count($this->productImageEntries($product)));
     }
 }

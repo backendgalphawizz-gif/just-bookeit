@@ -4,7 +4,7 @@
 @section('page_title')
     <span class="block max-w-full truncate" title="{{ $vendor->brand_name }}">{{ $vendor->brand_name }}</span>
 @endsection
-@section('page_subtitle', $vendor->vendor_code.' · Portfolio')
+@section('page_subtitle', $vendor->vendor_code.' · Product photos')
 @section('back_href', route('admin.vendor-portfolio.index', request()->only(['search', 'vendor_id', 'status', 'city', 'audience', 'from', 'to'])))
 
 @section('header_actions')
@@ -55,7 +55,7 @@
                     <dd>{{ $vendor->city ?? '—' }}</dd>
                 </div>
                 <div>
-                    <dt>Portfolio photos</dt>
+                    <dt>Product photos</dt>
                     <dd>
                         @if ($filtersActive && $photoCount !== $totalPhotoCount)
                             {{ $photoCount }} shown · {{ $totalPhotoCount }} total
@@ -102,6 +102,7 @@
                 @else
                     {{ $photoCount }} {{ Str::plural('photo', $photoCount) }}
                 @endif
+                <span class="font-normal text-slate-500">from products</span>
             </p>
         </div>
         <div class="jb-card-body">
@@ -120,21 +121,28 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                            <div class="jb-vendor-product-photo-grid">
                                 @foreach ($group['images'] as $image)
-                                    <article class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                                        @if ($url = $image->imageUrl())
-                                            <img
-                                                src="{{ $url }}"
-                                                alt="Portfolio work — {{ $group['label'] }}"
-                                                class="aspect-[4/5] w-full object-cover panel-lightbox-trigger"
-                                            >
+                                    <article class="jb-vendor-product-photo-card">
+                                        @if (! empty($image['url']))
+                                            <a href="{{ route('admin.portfolio.show', $image['product_id']) }}" class="jb-vendor-product-photo-card__media">
+                                                <img
+                                                    src="{{ $image['url'] }}"
+                                                    alt="{{ $image['title'] }}"
+                                                >
+                                            </a>
                                         @else
-                                            <div class="flex aspect-[4/5] items-center justify-center bg-slate-100 text-xs text-slate-400">No image</div>
+                                            <div class="jb-vendor-product-photo-card__media jb-vendor-product-photo-card__media--empty">No image</div>
                                         @endif
-                                        <div class="border-t border-slate-100 px-3 py-2.5">
-                                            <p class="text-xs font-medium text-slate-700">{{ $group['label'] }}</p>
-                                            <p class="mt-0.5 text-xs text-slate-500">Added {{ \App\Support\AdminDateTime::formatDate($image->created_at) }}</p>
+                                        <div class="jb-vendor-product-photo-card__body">
+                                            <p class="jb-vendor-product-photo-card__title" title="{{ $image['title'] }}">{{ $image['title'] }}</p>
+                                            <p class="jb-vendor-product-photo-card__meta">
+                                                {{ $group['label'] }}
+                                                @if (! empty($image['created_at']))
+                                                    · {{ \App\Support\AdminDateTime::formatDate($image['created_at']) }}
+                                                @endif
+                                            </p>
+                                            <a href="{{ route('admin.portfolio.show', $image['product_id']) }}" class="jb-vendor-product-photo-card__link">View product</a>
                                         </div>
                                     </article>
                                 @endforeach
@@ -144,14 +152,17 @@
                 </div>
             @else
                 <div class="py-12 text-center">
-                    <p class="text-sm font-medium text-slate-700">No portfolio photos match your filters.</p>
+                    <p class="text-sm font-medium text-slate-700">No product photos match your filters.</p>
                     @if ($filtersActive && $totalPhotoCount > 0)
-                        <p class="mt-1 text-sm text-slate-500">This vendor has {{ $totalPhotoCount }} {{ Str::plural('photo', $totalPhotoCount) }} in total — try clearing the filters.</p>
+                        <p class="mt-1 text-sm text-slate-500">This vendor has {{ $totalPhotoCount }} product {{ Str::plural('photo', $totalPhotoCount) }} in total — try clearing the filters.</p>
                         <div class="mt-4">
                             <x-admin.button variant="secondary" size="sm" :href="route('admin.vendor-portfolio.show', $vendor)">Clear filters</x-admin.button>
                         </div>
                     @else
-                        <p class="mt-1 text-sm text-slate-500">The vendor has not uploaded any portfolio photos yet.</p>
+                        <p class="mt-1 text-sm text-slate-500">This vendor has not added images to any products yet.</p>
+                        <div class="mt-4">
+                            <x-admin.button variant="secondary" size="sm" :href="route('admin.portfolio.index', ['vendor_id' => $vendor->id])">View products</x-admin.button>
+                        </div>
                     @endif
                 </div>
             @endif

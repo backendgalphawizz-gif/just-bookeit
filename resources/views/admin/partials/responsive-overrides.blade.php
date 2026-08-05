@@ -801,6 +801,87 @@
         display: none !important;
     }
 
+    .jb-vendor-product-photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+        gap: 0.75rem;
+    }
+
+    .jb-vendor-product-photo-card {
+        overflow: hidden;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: #fff;
+        box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    }
+
+    .jb-vendor-product-photo-card__media {
+        display: block;
+        aspect-ratio: 1 / 1;
+        background: rgb(241 245 249);
+        overflow: hidden;
+    }
+
+    .jb-vendor-product-photo-card__media img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .jb-vendor-product-photo-card__media--empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(148 163 184);
+        font-size: 0.7rem;
+    }
+
+    .jb-vendor-product-photo-card__body {
+        padding: 0.5rem 0.55rem 0.6rem;
+        border-top: 1px solid rgb(241 245 249);
+    }
+
+    .jb-vendor-product-photo-card__title {
+        margin: 0;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: rgb(51 65 85);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .jb-vendor-product-photo-card__meta {
+        margin: 0.15rem 0 0;
+        font-size: 0.65rem;
+        color: rgb(100 116 139);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .jb-vendor-product-photo-card__link {
+        display: inline-block;
+        margin-top: 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--jb-primary, #f25123);
+        text-decoration: none;
+    }
+
+    .jb-vendor-product-photo-card__link:hover {
+        text-decoration: underline;
+    }
+
+    @media (min-width: 1280px) {
+        .jb-vendor-product-photo-grid {
+            grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+            gap: 0.85rem;
+        }
+    }
+
     .jb-product-video-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));

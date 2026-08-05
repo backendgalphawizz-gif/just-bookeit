@@ -2,13 +2,14 @@
 
 @section('title', 'Portfolio')
 @section('page_title', 'Portfolio')
-@section('page_subtitle', 'Vendors with previous work — open a vendor to see their photos')
+@section('page_subtitle', 'Vendors with product photos — open a vendor to see images from their products')
 @section('content')
     <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
-        <p class="font-medium">Portfolio vs products</p>
+        <p class="font-medium">Product photos only</p>
         <p class="mt-1 text-amber-800">
-            Pick a vendor from the list below and click <strong>View</strong> to see their portfolio photos.
-            To manage items they sell or rent, go to
+            This list shows vendors who have uploaded images on their products.
+            Only those product images appear here — not separate portfolio uploads.
+            To manage sell/rent items, go to
             <a href="{{ route('admin.portfolio.index') }}" class="font-semibold underline">Products</a>.
         </p>
     </div>
@@ -57,7 +58,7 @@
 
     <div class="jb-card">
         <div class="jb-card-header">
-            <p class="jb-card-header-title">{{ $vendors->total() }} {{ Str::plural('vendor', $vendors->total()) }} with portfolio photos</p>
+            <p class="jb-card-header-title">{{ $vendors->total() }} {{ Str::plural('vendor', $vendors->total()) }} with product photos</p>
         </div>
         <div class="jb-table-wrap">
             <table class="jb-table jb-table--balanced">
@@ -69,7 +70,7 @@
                         <th>Mobile</th>
                         <th class="jb-col-category">City</th>
                         <th class="jb-col-status">Status</th>
-                        <th class="jb-col-amount text-center">Photos</th>
+                        <th class="jb-col-amount text-center">Products</th>
                         <th class="jb-table-actions-col">Actions</th>
                     </tr>
                 </thead>
@@ -95,7 +96,7 @@
                                 <span class="block truncate text-sm" title="{{ $vendor->city }}">{{ $vendor->city ?? '—' }}</span>
                             </td>
                             <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])</td>
-                            <td class="jb-col-amount text-center text-sm font-medium text-slate-700">{{ $vendor->portfolio_photos_count }}</td>
+                            <td class="jb-col-amount text-center text-sm font-medium text-slate-700">{{ $vendor->product_photos_count }}</td>
                             <td class="jb-table-actions-col">
                                 <div class="jb-actions">
                                     <x-admin.action-btn variant="view" :href="route('admin.vendor-portfolio.show', array_merge([$vendor], request()->only(['audience', 'from', 'to'])))" />
@@ -103,7 +104,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="jb-table-empty">No vendors with portfolio photos match your filters.</td></tr>
+                        <tr><td colspan="8" class="jb-table-empty">No vendors with product photos match your filters.</td></tr>
                     @endforelse
                 </tbody>
             </table>

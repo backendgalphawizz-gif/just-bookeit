@@ -397,7 +397,7 @@
                     @endif
                 </div>
                 <div class="jb-booking-billing-meta">
-                    <p>Phase: <strong>{{ str_replace('_', ' ', $paymentSummary['payment_phase'] ?? '—') }}</strong></p>
+                    <p>Phase: <strong>{{ $paymentSummary['payment_phase_label'] ?? str_replace('_', ' ', $paymentSummary['payment_phase'] ?? '—') }}</strong></p>
                     @if ($checkout->payment_method)
                         <p>Method: <strong>{{ strtoupper(str_replace('_', ' ', $checkout->payment_method)) }}</strong></p>
                     @endif

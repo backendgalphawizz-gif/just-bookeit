@@ -75,6 +75,7 @@ class BookingPaymentService
             'remaining_amount' => $remaining,
             'payable_now' => $payableNow,
             'payment_phase' => $phase,
+            'payment_phase_label' => $this->phaseLabel($phase),
             'payment_status' => $order->payment_status,
             'requires_advance' => $advanceRequired > 0,
             'remaining_payment_unlocked' => $remainingUnlocked,
@@ -139,6 +140,7 @@ class BookingPaymentService
             'grand_total' => $total,
             'currency' => 'INR',
             'payment_phase' => $phase,
+            'payment_phase_label' => $this->phaseLabel($phase),
             'payment_status' => $checkout->payment_status,
             'requires_advance' => $advanceRequired > 0,
             'remaining_payment_unlocked' => $remainingUnlocked,
@@ -499,6 +501,19 @@ class BookingPaymentService
         }
 
         return 'Pay ₹'.number_format($payableNow, 0);
+    }
+
+    public function phaseLabel(string $phase): string
+    {
+        return match ($phase) {
+            'fully_paid' => 'Fully paid',
+            'advance_paid_waiting' => 'Advance paid — remaining due later',
+            'remaining_due' => 'Remaining due',
+            'advance_due' => 'Advance due',
+            'full_due' => 'Payment due',
+            'cod_pending' => 'COD — pay on delivery',
+            default => str_replace('_', ' ', ucfirst($phase ?: '—')),
+        };
     }
 
     public function remainingPaymentUnlocked(string $status): bool
