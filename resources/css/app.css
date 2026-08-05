@@ -859,23 +859,25 @@
     }
 
     .jb-login-card {
-        @apply flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg md:min-h-[32rem] md:flex-row;
+        @apply flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg md:min-h-[36rem] md:flex-row;
     }
 
     .jb-login-brand {
-        @apply flex flex-col items-center justify-center border-b border-slate-200 bg-white px-8 py-10 text-center md:w-[42%] md:border-b-0 md:border-r md:px-10 md:py-12;
+        @apply flex flex-col items-center justify-center border-b border-slate-200 bg-white px-6 py-8 text-center md:w-[46%] md:border-b-0 md:border-r md:px-8 md:py-10;
     }
 
     .jb-login-brand-logo {
-        @apply mx-auto block h-auto w-full object-contain;
-        max-width: 22rem;
-        min-height: 10rem;
+        @apply mx-auto block w-full object-contain;
+        max-width: none;
+        height: clamp(16rem, 38vh, 24rem);
+        min-height: 16rem;
         background: transparent;
         mix-blend-mode: multiply;
+        object-position: center;
     }
 
     .jb-login-brand-title {
-        @apply mt-6 text-xl font-bold tracking-tight text-slate-900;
+        @apply mt-4 text-xl font-bold tracking-tight text-slate-900;
     }
 
     .jb-login-brand-tagline {

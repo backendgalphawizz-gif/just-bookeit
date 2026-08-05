@@ -21,16 +21,23 @@
             box-shadow: 0 10px 28px -14px rgba(15, 23, 42, 0.14);
         }
 
-        .jb-login-brand,
+        .jb-login-brand {
+            background: #ffffff !important;
+            border-color: #e2e8f0;
+            padding: 2rem 1.5rem !important;
+        }
+
         .jb-login-form-panel {
             background: #ffffff !important;
             border-color: #e2e8f0;
         }
 
         .jb-login-brand-logo {
+            display: block;
             width: 100%;
-            max-width: 22rem;
-            min-height: 10rem;
+            max-width: none !important;
+            height: clamp(16rem, 38vh, 24rem) !important;
+            min-height: 16rem !important;
             background: transparent !important;
             border: 0 !important;
             box-shadow: none !important;
@@ -38,6 +45,11 @@
             border-radius: 0 !important;
             mix-blend-mode: multiply;
             object-fit: contain;
+            object-position: center;
+        }
+
+        .jb-login-brand-title {
+            margin-top: 1rem !important;
         }
 
         .jb-login-form-logo {
