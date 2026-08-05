@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="jb-login-card" x-data="{ showPassword: false }">
-        <aside class="jb-login-brand logo" aria-hidden="false">
+        <aside class="jb-login-brand">
             <img
                 src="{{ $loginBranding['logo_url'] }}"
                 alt="{{ $loginBranding['name'] }}"
@@ -15,13 +15,6 @@
         </aside>
 
         <section class="jb-login-form-panel">
-            <img
-                src="{{ $loginBranding['logo_url'] }}"
-                alt=""
-                class="jb-login-form-logo"
-                aria-hidden="true"
-            >
-
             <header class="jb-login-form-header">
                 <h1 class="jb-login-title">Sign in to your account</h1>
                 <p class="jb-login-subtitle">Enter your credentials to access the admin dashboard.</p>

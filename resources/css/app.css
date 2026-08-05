@@ -859,19 +859,18 @@
     }
 
     .jb-login-card {
-        @apply flex flex-col overflow-hidden rounded-2xl border shadow-lg md:min-h-[32rem] md:flex-row;
-        border-color: color-mix(in srgb, var(--jb-primary, #be123c) 14%, #e2e8f0);
-        background: color-mix(in srgb, var(--jb-primary, #be123c) 6%, #ffffff);
+        @apply flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg md:min-h-[32rem] md:flex-row;
     }
 
     .jb-login-brand {
-        @apply flex flex-col items-center justify-center border-b px-8 py-10 text-center md:w-[42%] md:border-b-0 md:border-r md:px-10 md:py-12;
-        border-color: color-mix(in srgb, var(--jb-primary, #be123c) 12%, #e2e8f0);
-        background: transparent;
+        @apply flex flex-col items-center justify-center border-b border-slate-200 bg-white px-8 py-10 text-center md:w-[42%] md:border-b-0 md:border-r md:px-10 md:py-12;
     }
 
     .jb-login-brand-logo {
-        @apply mx-auto h-auto w-full max-w-[14rem] object-contain;
+        @apply mx-auto block h-auto w-full object-contain;
+        max-width: 100%;
+        background: transparent;
+        mix-blend-mode: multiply;
     }
 
     .jb-login-brand-title {
@@ -883,12 +882,11 @@
     }
 
     .jb-login-form-panel {
-        @apply flex flex-1 flex-col justify-center px-8 py-10 md:px-12 md:py-12;
-        background: transparent;
+        @apply flex flex-1 flex-col justify-center bg-white px-8 py-10 md:px-12 md:py-12;
     }
 
     .jb-login-form-logo {
-        @apply mx-auto mb-6 h-12 w-auto max-w-[10rem] object-contain;
+        @apply hidden;
     }
 
 

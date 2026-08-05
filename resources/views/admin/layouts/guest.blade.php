@@ -10,30 +10,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('admin.partials.built-assets')
     <style>
-        /* Flat admin look: plain page, matched card panels, theme primary CTA */
         .jb-login-page {
             background: #ffffff !important;
             background-image: none !important;
         }
 
         .jb-login-card {
-            border: 1px solid color-mix(in srgb, var(--jb-primary, #be123c) 14%, #e2e8f0);
-            background: color-mix(in srgb, var(--jb-primary, #be123c) 6%, #ffffff);
-            box-shadow: 0 10px 28px -14px rgba(15, 23, 42, 0.16);
+            border: 1px solid #e2e8f0;
+            background: #ffffff !important;
+            box-shadow: 0 10px 28px -14px rgba(15, 23, 42, 0.14);
         }
 
         .jb-login-brand,
         .jb-login-form-panel {
+            background: #ffffff !important;
+            border-color: #e2e8f0;
+        }
+
+        .jb-login-brand-logo {
+            width: 100%;
+            max-width: none;
             background: transparent !important;
-            border-color: color-mix(in srgb, var(--jb-primary, #be123c) 12%, #e2e8f0);
+            border: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            /* Softly drops baked-in white plate from logo PNGs */
+            mix-blend-mode: multiply;
         }
 
-        .jb-login-brand-title {
-            color: #0f172a;
-        }
-
-        .jb-login-brand-tagline {
-            color: #64748b;
+        .jb-login-form-logo {
+            display: none !important;
         }
 
         .jb-login-input:focus {
