@@ -210,8 +210,8 @@
             <h2>Categories & admin stats</h2>
             <dl class="jb-dl">
                 <div class="sm:col-span-2">
-                    <dt>Categories</dt>
-                    <dd>{{ filled($vendor->categories) ? implode(', ', $vendor->categories) : '—' }}</dd>
+                    <dt>Service categories</dt>
+                    <dd>{{ implode(', ', $vendor->serviceCategoryLabels()) ?: '—' }}</dd>
                 </div>
                 <div><dt>Status</dt><dd>@include('admin.components.status-badge', ['status' => $vendor->status, 'label' => \App\Support\AdminAccountStatus::labelFor($vendor->status)])</dd></div>
                 <div><dt>Commission</dt><dd>{{ $vendor->commission ? $vendor->commission . '%' : 'Using global commission' }}</dd></div>

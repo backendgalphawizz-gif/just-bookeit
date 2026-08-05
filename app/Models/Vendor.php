@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\StoresUploadedFiles;
+use App\Support\VendorValidationRules;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -237,6 +238,11 @@ class Vendor extends Authenticatable
 
     public function serviceType(): ?string
     {
+        $labels = $this->serviceCategoryLabels();
+        if ($labels !== []) {
+            return implode(', ', $labels);
+        }
+
         $value = $this->service_types;
 
         if (is_array($value)) {
@@ -246,5 +252,55 @@ class Vendor extends Authenticatable
         $value = trim((string) ($value ?? ''));
 
         return $value !== '' ? $value : null;
+    }
+
+    /**
+     * Labels from categories[] and service_types (aliases normalized via slugs).
+     *
+     * @return list<string>
+     */
+    public function serviceCategoryLabels(): array
+    {
+        $ids = $this->serviceCategoryIds();
+        if ($ids === []) {
+            return [];
+        }
+
+        return Category::query()
+            ->whereIn('id', $ids)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($name) => (string) $name)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Service category IDs for admin multi-select (matches Category.type=service).
+     *
+     * @return list<int>
+     */
+    public function serviceCategoryIds(): array
+    {
+        $labels = array_merge(
+            array_map('strval', (array) ($this->categories ?? [])),
+            $this->selectedServiceTypes()
+        );
+
+        $slugs = VendorValidationRules::serviceTypeSlugs($labels);
+        if ($slugs === []) {
+            return [];
+        }
+
+        return Category::query()
+            ->where('type', Category::TYPE_SERVICE)
+            ->whereIn('slug', $slugs)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 }

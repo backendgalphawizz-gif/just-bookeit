@@ -1,13 +1,10 @@
 @php
     $vendor = $vendor ?? null;
     $categories = $categories ?? collect();
-    $savedCategoryIds = $vendor
-        ? \App\Models\Category::query()->whereIn('name', $vendor->categories ?? [])->pluck('id')->all()
-        : [];
     $serviceCategories = $categories->where('type', 'service')->values();
     $selectedServiceIds = old(
         'service_category_ids',
-        $serviceCategories->whereIn('id', $savedCategoryIds)->pluck('id')->all()
+        $vendor?->serviceCategoryIds() ?? []
     );
     $initials = collect(preg_split('/\s+/u', trim($vendor?->brand_name ?? ''), -1, PREG_SPLIT_NO_EMPTY) ?: [])
         ->take(2)

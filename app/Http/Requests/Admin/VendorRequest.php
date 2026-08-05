@@ -77,16 +77,21 @@ class VendorRequest extends AdminFormRequest
             ->unique()
             ->values();
 
-        $selectedNames = $categoryIds->isEmpty()
+        $selectedServiceCategories = $categoryIds->isEmpty()
             ? collect()
-            : Category::query()->whereIn('id', $categoryIds)->pluck('name');
+            : Category::query()
+                ->whereIn('id', $categoryIds)
+                ->where('type', Category::TYPE_SERVICE)
+                ->get(['id', 'name']);
+
+        $selectedNames = $selectedServiceCategories->pluck('name');
 
         // Audience categories (Men/Women/Kids) are not editable from this form,
         // so keep whatever the vendor already has instead of wiping them.
         $retainedNames = $vendor
             ? Category::query()
                 ->whereIn('name', (array) ($vendor->categories ?? []))
-                ->where('type', '!=', 'service')
+                ->where('type', '!=', Category::TYPE_SERVICE)
                 ->pluck('name')
             : collect();
 
@@ -96,6 +101,12 @@ class VendorRequest extends AdminFormRequest
             ->sort()
             ->values()
             ->all();
+
+        // Keep vendor-app `service_types` in sync (canonical labels / aliases).
+        $data['service_types'] = implode(
+            ', ',
+            \App\Support\VendorValidationRules::normalizeServiceTypes($selectedNames->all())
+        );
 
         $data['rating'] = $data['rating'] ?? 0;
         $data['orders_completed'] = $data['orders_completed'] ?? 0;
