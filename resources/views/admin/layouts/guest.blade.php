@@ -10,24 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('admin.partials.built-assets')
     <style>
-        /* Match light admin shell: soft primary tint, white card, theme primary CTA */
+        /* Flat admin look: plain page, matched card panels, theme primary CTA */
         .jb-login-page {
-            background-color: #f1f5f9;
-            background-image: linear-gradient(
-                180deg,
-                color-mix(in srgb, var(--jb-primary, #be123c) 7%, #f8fafc) 0%,
-                #f1f5f9 100%
-            );
+            background: #ffffff !important;
+            background-image: none !important;
         }
 
         .jb-login-card {
-            border: 1px solid color-mix(in srgb, var(--jb-primary, #be123c) 16%, #e2e8f0);
-            background: color-mix(in srgb, var(--jb-primary, #be123c) 5%, #ffffff);
-            box-shadow: 0 10px 28px -14px rgba(15, 23, 42, 0.2);
+            border: 1px solid color-mix(in srgb, var(--jb-primary, #be123c) 14%, #e2e8f0);
+            background: color-mix(in srgb, var(--jb-primary, #be123c) 6%, #ffffff);
+            box-shadow: 0 10px 28px -14px rgba(15, 23, 42, 0.16);
         }
 
-        .jb-login-brand {
-            background: color-mix(in srgb, var(--jb-primary, #be123c) 9%, #f8fafc);
+        .jb-login-brand,
+        .jb-login-form-panel {
+            background: transparent !important;
             border-color: color-mix(in srgb, var(--jb-primary, #be123c) 12%, #e2e8f0);
         }
 
@@ -37,10 +34,6 @@
 
         .jb-login-brand-tagline {
             color: #64748b;
-        }
-
-        .jb-login-form-panel {
-            background: color-mix(in srgb, var(--jb-primary, #be123c) 4%, #ffffff);
         }
 
         .jb-login-input:focus {
