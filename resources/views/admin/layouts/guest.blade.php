@@ -21,14 +21,14 @@
         }
 
         .jb-login-card {
-            border: 1px solid #e2e8f0;
-            background: #fff;
+            border: 1px solid color-mix(in srgb, var(--jb-primary, #be123c) 16%, #e2e8f0);
+            background: color-mix(in srgb, var(--jb-primary, #be123c) 5%, #ffffff);
             box-shadow: 0 10px 28px -14px rgba(15, 23, 42, 0.2);
         }
 
         .jb-login-brand {
-            background: color-mix(in srgb, var(--jb-primary, #be123c) 6%, #f8fafc);
-            border-color: #e2e8f0;
+            background: color-mix(in srgb, var(--jb-primary, #be123c) 9%, #f8fafc);
+            border-color: color-mix(in srgb, var(--jb-primary, #be123c) 12%, #e2e8f0);
         }
 
         .jb-login-brand-title {
@@ -40,7 +40,7 @@
         }
 
         .jb-login-form-panel {
-            background: #fff;
+            background: color-mix(in srgb, var(--jb-primary, #be123c) 4%, #ffffff);
         }
 
         .jb-login-input:focus {
