@@ -727,6 +727,80 @@
         background: rgb(254 243 199);
     }
 
+    .jb-product-media-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .jb-product-media-preview__img {
+        display: block;
+        width: 8rem;
+        height: 8rem;
+        object-fit: contain;
+        object-position: center;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: rgb(248 250 252);
+        cursor: zoom-in;
+    }
+
+    .jb-product-media-preview--empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 8rem;
+        height: 8rem;
+        border-radius: 0.75rem;
+        border: 1px dashed rgb(203 213 225);
+        background: rgb(248 250 252);
+    }
+
+    .jb-product-video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+        gap: 0.75rem;
+    }
+
+    .jb-product-video-item {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(226 232 240);
+        background: rgb(15 23 42);
+    }
+
+    .jb-product-video-item--preview {
+        border-color: rgb(167 243 208);
+    }
+
+    .jb-product-video-item__media {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: contain;
+        background: #000;
+    }
+
+    .jb-product-video-item .jb-multi-image-upload-item__dismiss {
+        position: absolute;
+        top: 0.4rem;
+        right: 0.4rem;
+        z-index: 2;
+    }
+
+    .jb-product-video-item .jb-multi-image-upload-item__label {
+        display: block;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.7rem;
+        color: #e2e8f0;
+        background: rgb(15 23 42);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .jb-form-section-title {
         margin: 0.5rem 0 0;
         font-size: 0.75rem;

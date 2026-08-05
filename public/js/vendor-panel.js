@@ -168,6 +168,64 @@
 
     document.querySelectorAll('[data-vp-restrict]').forEach(bindRestriction);
 
+    function countWords(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) {
+            return 0;
+        }
+
+        return trimmed.split(/\s+/).filter(Boolean).length;
+    }
+
+    function clampToMaxWords(value, maxWords) {
+        const text = String(value || '');
+        if (!maxWords || maxWords < 1) {
+            return text;
+        }
+
+        const trimmed = text.trim();
+        if (!trimmed) {
+            return text;
+        }
+
+        const words = trimmed.split(/\s+/).filter(Boolean);
+        if (words.length <= maxWords) {
+            return text;
+        }
+
+        return words.slice(0, maxWords).join(' ');
+    }
+
+    function bindWordLimiter(input) {
+        const max = parseInt(input.dataset.vpMaxWords, 10);
+        if (!max) {
+            return;
+        }
+
+        const counter = document.querySelector('[data-vp-word-count-for="' + input.id + '"]')
+            || document.querySelector('[data-vp-word-count-for="' + input.name + '"]');
+
+        const update = () => {
+            const clamped = clampToMaxWords(input.value, max);
+            if (clamped !== input.value) {
+                input.value = clamped;
+            }
+            const count = countWords(input.value);
+            if (counter) {
+                counter.textContent = count + '/' + max + ' words';
+                counter.classList.toggle('is-limit', count >= max);
+            }
+        };
+
+        input.addEventListener('input', update);
+        input.addEventListener('paste', () => {
+            requestAnimationFrame(update);
+        });
+        update();
+    }
+
+    document.querySelectorAll('[data-vp-max-words]').forEach(bindWordLimiter);
+
     document.querySelectorAll('form[method="POST"], form[method="post"]').forEach((form) => {
         form.addEventListener('submit', (event) => {
             let valid = true;
@@ -183,6 +241,14 @@
                         input,
                         'Must be at most ' + max + ' characters (' + input.value.length + '/' + max + ').'
                     );
+                    valid = false;
+                }
+            });
+            form.querySelectorAll('[data-vp-max-words]').forEach((input) => {
+                const max = parseInt(input.dataset.vpMaxWords, 10);
+                const count = countWords(input.value);
+                if (max && count > max) {
+                    showFieldError(input, 'Must be at most ' + max + ' words (' + count + '/' + max + ').');
                     valid = false;
                 }
             });

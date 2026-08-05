@@ -127,7 +127,15 @@
         <input type="hidden" name="audience" x-model="audience">
     </div>
 
-    @include('admin.partials.form-input', ['label' => 'Title', 'name' => 'title', 'value' => old('title', $portfolio->title), 'required' => true])
+    @include('admin.partials.form-input', [
+        'label' => 'Title',
+        'name' => 'title',
+        'value' => old('title', $portfolio->title),
+        'required' => true,
+        'restrict' => 'title',
+        'maxWords' => 24,
+        'hint' => 'Maximum 24 words.',
+    ])
 
     <div x-show="!hideProductPricing" x-cloak>
         <label for="price_per_day" class="jb-label">Price per day (₹) @if($isCreate)<span class="text-rose-600">*</span>@endif</label>
@@ -171,11 +179,17 @@
         </div>
     </template>
 
-    <div class="sm:col-span-2">
-        <label for="description" class="jb-label">Description</label>
-        <textarea id="description" name="description" rows="4" class="jb-input">{{ old('description', $portfolio->description) }}</textarea>
-        @error('description')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-    </div>
+    @include('admin.partials.form-input', [
+        'label' => 'Description',
+        'name' => 'description',
+        'type' => 'textarea',
+        'rows' => 4,
+        'value' => old('description', $portfolio->description),
+        'restrict' => 'text',
+        'maxWords' => 150,
+        'hint' => 'Maximum 150 words.',
+        'full' => true,
+    ])
 
     <div class="sm:col-span-2" x-data="{ status: @js(old('status', $portfolio->status ?? 'pending')) }">
         <label for="status" class="jb-label">Status</label>
@@ -190,108 +204,7 @@
         </div>
     </div>
 
-    <div class="sm:col-span-2">
-        <label class="jb-label">Primary image @if($isCreate)<span class="text-rose-600">*</span>@endif</label>
-        <p class="mb-3 text-sm text-slate-500">Main cover photo shown in listings.</p>
-        @if ($portfolio->displayImageUrl())
-            <img src="{{ $portfolio->displayImageUrl() }}" alt="{{ $portfolio->title }}" class="mb-3 h-20 w-20 rounded-xl object-cover ring-1 ring-slate-200 panel-lightbox-trigger">
-        @endif
-        <input
-            type="file"
-            name="image"
-            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
-            class="jb-input vp-input"
-            data-jb-max-mb="{{ $productImageMaxMb }}"
-            data-jb-file-label="Primary image"
-            {{ $isCreate ? 'required' : '' }}
-        >
-        <p class="mt-1.5 text-xs text-slate-500">JPEG, PNG or WebP — max {{ $productImageMaxMb }} MB.</p>
-        @error('image')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-    </div>
-
-    <div class="sm:col-span-2">
-        <label class="jb-label">Gallery images</label>
-        <p class="mb-3 text-sm text-slate-500">Additional photos customers can browse when booking (up to 10).</p>
-
-        @if ($galleryImages->isNotEmpty())
-            <div class="mb-4 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6">
-                @foreach ($galleryImages as $image)
-                    <div class="relative h-20 w-20 overflow-hidden rounded-lg border border-slate-200">
-                        @if ($image->imageUrl())
-                            <img src="{{ $image->imageUrl() }}" alt="" class="h-full w-full object-cover panel-lightbox-trigger">
-                        @endif
-                        @if ($portfolio->exists)
-                            <button
-                                type="button"
-                                class="absolute right-1 top-1 rounded bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 shadow-sm hover:bg-white"
-                                onclick="if (confirm('This gallery image will be permanently removed.')) document.getElementById('delete-image-{{ $image->id }}').submit()"
-                            >
-                                Remove
-                            </button>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-        @endif
-
-        <input
-            type="file"
-            name="gallery_images[]"
-            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('image') }}"
-            multiple
-            class="jb-input vp-input"
-            data-jb-max-mb="{{ $productImageMaxMb }}"
-            data-jb-file-label="Gallery image"
-        >
-        <p class="mt-1.5 text-xs text-slate-500">Up to 10 images — max {{ $productImageMaxMb }} MB each.</p>
-        @error('gallery_images')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-        @error('gallery_images.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-    </div>
-
-    <div class="sm:col-span-2">
-        <label class="jb-label">Gallery videos</label>
-        <p class="mb-3 text-sm text-slate-500">Product videos customers can watch (same as vendor app — up to 5).</p>
-
-        @if ($galleryVideos->isNotEmpty())
-            <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                @foreach ($galleryVideos as $video)
-                    <div class="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                        @if ($video->mediaUrl())
-                            <video
-                                src="{{ $video->mediaUrl() }}"
-                                class="aspect-video w-full object-cover"
-                                controls
-                                playsinline
-                                preload="metadata"
-                            ></video>
-                        @endif
-                        @if ($portfolio->exists)
-                            <button
-                                type="button"
-                                class="absolute right-1 top-1 rounded bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 shadow-sm hover:bg-white"
-                                onclick="if (confirm('This gallery video will be permanently removed.')) document.getElementById('delete-image-{{ $video->id }}').submit()"
-                            >
-                                Remove
-                            </button>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-        @endif
-
-        <input
-            type="file"
-            name="gallery_videos[]"
-            accept="{{ \App\Support\MediaUploadSupport::acceptAttribute('video') }}"
-            multiple
-            class="jb-input vp-input"
-            data-jb-max-mb="{{ $productVideoMaxMb }}"
-            data-jb-file-label="Gallery video"
-        >
-        <p class="mt-1.5 text-xs text-slate-500">Up to 5 videos — MP4/MOV/WEBM etc., max {{ $productVideoMaxMb }} MB each.</p>
-        @error('gallery_videos')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-        @error('gallery_videos.*')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror
-    </div>
+    @include('admin.portfolio.partials.media-uploads')
 
     <div class="sm:col-span-2" x-show="showVariants" x-cloak x-bind:data-variants-enabled="showVariants ? '1' : '0'">
         @include('admin.portfolio.partials.variants')

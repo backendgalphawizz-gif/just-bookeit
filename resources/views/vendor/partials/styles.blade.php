@@ -1173,6 +1173,7 @@ img { max-width: 100%; display: block; }
 .vp-required { color: #dc2626; }
 .vp-field { margin-bottom: 1.1rem; }
 .vp-field-hint { font-size: .78rem; color: var(--vp-muted); margin-top: .35rem; }
+.vp-field-hint.is-limit { color: #dc2626; font-weight: 600; }
 .vp-field-error { font-size: .78rem; color: #dc2626; margin-top: .35rem; font-weight: 500; }
 .vp-input--error, .vp-select--error, .vp-textarea--error { border-color: #fca5a5 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, .08) !important; }
 .vp-portfolio-delete-form { margin: 0; }

@@ -183,6 +183,62 @@
         return valid;
     }
 
+    function countWords(value) {
+        const trimmed = String(value || '').trim();
+        if (!trimmed) {
+            return 0;
+        }
+
+        return trimmed.split(/\s+/).filter(Boolean).length;
+    }
+
+    function clampToMaxWords(value, maxWords) {
+        const text = String(value || '');
+        if (!maxWords || maxWords < 1) {
+            return text;
+        }
+
+        const trimmed = text.trim();
+        if (!trimmed) {
+            return text;
+        }
+
+        const words = trimmed.split(/\s+/).filter(Boolean);
+        if (words.length <= maxWords) {
+            return text;
+        }
+
+        return words.slice(0, maxWords).join(' ');
+    }
+
+    function bindWordLimiter(input) {
+        const max = parseInt(input.dataset.jbMaxWords, 10);
+        if (!max) {
+            return;
+        }
+
+        const counter = document.querySelector('[data-jb-word-count-for="' + input.id + '"]')
+            || document.querySelector('[data-jb-word-count-for="' + input.name + '"]');
+
+        const update = () => {
+            const clamped = clampToMaxWords(input.value, max);
+            if (clamped !== input.value) {
+                input.value = clamped;
+            }
+            const count = countWords(input.value);
+            if (counter) {
+                counter.textContent = count + '/' + max + ' words';
+                counter.classList.toggle('text-rose-600', count >= max);
+            }
+        };
+
+        input.addEventListener('input', update);
+        input.addEventListener('paste', () => {
+            requestAnimationFrame(update);
+        });
+        update();
+    }
+
     function bindCharCounter(input) {
         const max = parseInt(input.dataset.jbMaxChars, 10);
         if (!max) {
@@ -588,6 +644,7 @@
         }
         ensureEmailInputs(form);
         form.querySelectorAll('[data-jb-max-chars]').forEach(bindCharCounter);
+        form.querySelectorAll('[data-jb-max-words]').forEach(bindWordLimiter);
         form.querySelectorAll('[data-jb-restrict="gst"]').forEach(bindGstValidation);
         form.querySelectorAll('[data-jb-restrict="phone"]').forEach(bindPhoneValidation);
         form.querySelectorAll('[data-jb-restrict="email"]').forEach(bindEmailValidation);
@@ -626,6 +683,14 @@
             });
             form.querySelectorAll('[data-jb-restrict="phone"]').forEach((input) => {
                 if (!validatePhoneValue(input)) {
+                    valid = false;
+                }
+            });
+            form.querySelectorAll('[data-jb-max-words]').forEach((input) => {
+                const max = parseInt(input.dataset.jbMaxWords, 10);
+                const count = countWords(input.value);
+                if (max && count > max) {
+                    showFieldError(input, 'Must be at most ' + max + ' words (' + count + '/' + max + ').');
                     valid = false;
                 }
             });

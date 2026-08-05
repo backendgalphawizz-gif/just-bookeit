@@ -108,9 +108,14 @@ class VendorRequest extends AdminFormRequest
             \App\Support\VendorValidationRules::normalizeServiceTypes($selectedNames->all())
         );
 
-        $data['rating'] = $data['rating'] ?? 0;
-        $data['orders_completed'] = $data['orders_completed'] ?? 0;
-        $data['earnings'] = $data['earnings'] ?? 0;
+        // Rating / orders / earnings are system-managed — not editable from this form.
+        unset($data['rating'], $data['orders_completed'], $data['earnings']);
+
+        if (! $vendor) {
+            $data['rating'] = 0;
+            $data['orders_completed'] = 0;
+            $data['earnings'] = 0;
+        }
 
         return $data;
     }

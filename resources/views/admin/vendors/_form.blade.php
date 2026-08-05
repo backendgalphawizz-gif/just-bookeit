@@ -99,7 +99,7 @@
 ]])
 
 <p class="jb-form-section-title sm:col-span-2">
-    Service categories & admin stats
+    Service categories
     @if (auth('admin')->user()->hasPermission('categories', 'view'))
         <a href="{{ route('admin.categories.index') }}" class="ml-2 text-xs font-semibold text-rose-600 hover:text-rose-700">Manage categories</a>
     @endif
@@ -133,6 +133,3 @@
     </x-admin.form-select>
 @endif
 @include('admin.partials.form-input', ['label' => 'Commission (%)', 'name' => 'commission', 'type' => 'number', 'step' => '0.01', 'min' => '0', 'max' => '100', 'value' => old('commission', $vendor?->commission), 'hint' => 'Leave blank to use global commission (10%)'])
-@include('admin.partials.form-input', ['label' => 'Rating', 'name' => 'rating', 'type' => 'number', 'step' => '0.1', 'min' => '0', 'max' => '5', 'value' => old('rating', $vendor?->rating ?? 0)])
-@include('admin.partials.form-input', ['label' => 'Orders completed', 'name' => 'orders_completed', 'type' => 'number', 'step' => '1', 'value' => old('orders_completed', $vendor?->orders_completed ?? 0)])
-@include('admin.partials.form-input', ['label' => 'Earnings (₹)', 'name' => 'earnings', 'type' => 'number', 'step' => '0.01', 'value' => old('earnings', $vendor?->earnings ?? 0)])

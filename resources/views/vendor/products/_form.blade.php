@@ -54,7 +54,9 @@
             maxlength="255"
             placeholder="Enter product name"
             data-vp-restrict="title"
+            data-vp-max-words="24"
         >
+        <p class="vp-field-hint" data-vp-word-count-for="title">0/24 words</p>
         @error('title')<p class="vp-field-error">{{ $message }}</p>@enderror
     </div>
 
@@ -121,7 +123,9 @@
                 maxlength="5000"
                 placeholder="Enter description..."
                 data-vp-restrict="text"
+                data-vp-max-words="150"
             >{{ old('description', $item->description) }}</textarea>
+            <p class="vp-field-hint" data-vp-word-count-for="description">0/150 words</p>
             @error('description')<p class="vp-field-error">{{ $message }}</p>@enderror
         </div>
 
