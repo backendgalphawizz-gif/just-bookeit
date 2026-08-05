@@ -848,20 +848,16 @@
         accent-color: var(--jb-primary, #be123c);
     }
 
-    /* Admin login (guest) */
+    /* Admin login (guest) — light admin theme match */
     .jb-login-page {
         @apply flex min-h-screen items-center justify-center p-4 antialiased;
         font-family: var(--font-sans);
-        background-color: #f8fafc;
-        background-image:
-            radial-gradient(ellipse 80% 55% at 12% 18%, color-mix(in srgb, var(--jb-primary, #be123c) 20%, transparent), transparent 58%),
-            radial-gradient(ellipse 70% 50% at 92% 82%, color-mix(in srgb, var(--jb-sidebar-bg, #0f172a) 16%, transparent), transparent 55%),
-            linear-gradient(
-                145deg,
-                color-mix(in srgb, var(--jb-primary, #be123c) 9%, #f8fafc) 0%,
-                color-mix(in srgb, var(--jb-sidebar-bg, #0f172a) 5%, #f1f5f9) 48%,
-                color-mix(in srgb, var(--jb-primary, #be123c) 6%, #fff7ed) 100%
-            );
+        background-color: #f1f5f9;
+        background-image: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--jb-primary, #be123c) 7%, #f8fafc) 0%,
+            #f1f5f9 100%
+        );
     }
 
     .jb-login-wrap {
@@ -869,11 +865,12 @@
     }
 
     .jb-login-card {
-        @apply flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-300/40 md:min-h-[32rem] md:flex-row;
+        @apply flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg md:min-h-[32rem] md:flex-row;
     }
 
     .jb-login-brand {
-        @apply flex flex-col items-center justify-center border-b border-slate-200/80 bg-slate-50/90 px-8 py-10 text-center md:w-[42%] md:border-b-0 md:border-r md:px-10 md:py-12;
+        @apply flex flex-col items-center justify-center border-b border-slate-200 px-8 py-10 text-center md:w-[42%] md:border-b-0 md:border-r md:px-10 md:py-12;
+        background: color-mix(in srgb, var(--jb-primary, #be123c) 6%, #f8fafc);
     }
 
     .jb-login-brand-logo {
@@ -881,7 +878,7 @@
     }
 
     .jb-login-brand-title {
-        @apply mt-6 text-xl font-bold tracking-tight text-[#1a2e35];
+        @apply mt-6 text-xl font-bold tracking-tight text-slate-900;
     }
 
     .jb-login-brand-tagline {
@@ -889,7 +886,7 @@
     }
 
     .jb-login-form-panel {
-        @apply flex flex-1 flex-col justify-center px-8 py-10 md:px-12 md:py-12;
+        @apply flex flex-1 flex-col justify-center bg-white px-8 py-10 md:px-12 md:py-12;
     }
 
     .jb-login-form-logo {
@@ -902,7 +899,7 @@
     }
 
     .jb-login-title {
-        @apply text-xl font-bold text-[#1a2e35] sm:text-2xl;
+        @apply text-xl font-bold text-slate-900 sm:text-2xl;
     }
 
     .jb-login-subtitle {
@@ -922,7 +919,9 @@
     }
 
     .jb-login-input:focus {
-        @apply border-[#f15a24] outline-none ring-4 ring-[#f15a24]/15;
+        border-color: var(--jb-primary, #be123c);
+        outline: none;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--jb-primary, #be123c) 18%, transparent);
     }
 
     .jb-login-input--password {
@@ -943,11 +942,20 @@
 
     .jb-login-remember input {
         @apply h-4 w-4 rounded border-slate-300;
-        accent-color: #f15a24;
+        accent-color: var(--jb-primary, #be123c);
     }
 
     .jb-login-submit {
-        @apply mt-2 w-full rounded-lg bg-[#1a2e35] py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0f1f26] focus:outline-none focus:ring-4 focus:ring-[#1a2e35]/25;
+        @apply mt-2 w-full rounded-lg py-3 text-sm font-bold text-white transition focus:outline-none;
+        background: var(--jb-primary, #be123c);
+    }
+
+    .jb-login-submit:hover {
+        background: var(--jb-primary-hover, #9f1239);
+    }
+
+    .jb-login-submit:focus {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--jb-primary, #be123c) 22%, transparent);
     }
 
     .jb-login-error {
