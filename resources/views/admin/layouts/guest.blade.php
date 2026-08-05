@@ -29,14 +29,15 @@
 
         .jb-login-brand-logo {
             width: 100%;
-            max-width: none;
+            max-width: 22rem;
+            min-height: 10rem;
             background: transparent !important;
             border: 0 !important;
             box-shadow: none !important;
             padding: 0 !important;
             border-radius: 0 !important;
-            /* Softly drops baked-in white plate from logo PNGs */
             mix-blend-mode: multiply;
+            object-fit: contain;
         }
 
         .jb-login-form-logo {
