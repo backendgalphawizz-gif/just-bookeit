@@ -195,24 +195,29 @@ class VendorWalletService
         });
     }
 
-    public function releaseExpiredHolds(): int
+    public function releaseExpiredHolds(bool $force = false): int
     {
         $released = 0;
 
-        Order::query()
+        $query = Order::query()
             ->where('wallet_hold_status', 'held')
             ->where('vendor_wallet_held_amount', '>', 0)
-            ->whereNotNull('wallet_release_at')
-            ->where('wallet_release_at', '<=', now())
             ->whereDoesntHave('refund', fn ($q) => $q->whereIn('status', Refund::OPEN_STATUSES))
-            ->orderBy('id')
-            ->chunkById(50, function ($orders) use (&$released): void {
-                foreach ($orders as $order) {
-                    if ($this->releaseOrderHold($order)) {
-                        $released++;
-                    }
+            ->orderBy('id');
+
+        if (! $force) {
+            $query
+                ->whereNotNull('wallet_release_at')
+                ->where('wallet_release_at', '<=', now());
+        }
+
+        $query->chunkById(50, function ($orders) use (&$released, $force): void {
+            foreach ($orders as $order) {
+                if ($this->releaseOrderHold($order, $force)) {
+                    $released++;
                 }
-            });
+            }
+        });
 
         return $released;
     }
@@ -338,9 +343,9 @@ class VendorWalletService
         });
     }
 
-    protected function releaseOrderHold(Order $order): bool
+    protected function releaseOrderHold(Order $order, bool $force = false): bool
     {
-        return (bool) DB::transaction(function () use ($order): bool {
+        return (bool) DB::transaction(function () use ($order, $force): bool {
             $order = Order::query()->lockForUpdate()->find($order->id);
 
             if (! $order?->vendor_id || $order->wallet_hold_status !== 'held') {
@@ -351,7 +356,7 @@ class VendorWalletService
                 return false;
             }
 
-            if ($order->wallet_release_at && $order->wallet_release_at->isFuture()) {
+            if (! $force && $order->wallet_release_at && $order->wallet_release_at->isFuture()) {
                 return false;
             }
 

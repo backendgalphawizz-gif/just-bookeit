@@ -4,7 +4,7 @@
 @section('page_title', 'Portfolio')
 @section('page_subtitle', 'Vendors with product photos — open a vendor to see images from their products')
 @section('content')
-    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
+    {{--<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900">
         <p class="font-medium">Product photos only</p>
         <p class="mt-1 text-amber-800">
             This list shows vendors who have uploaded images on their products.
@@ -12,7 +12,7 @@
             To manage sell/rent items, go to
             <a href="{{ route('admin.portfolio.index') }}" class="font-semibold underline">Products</a>.
         </p>
-    </div>
+    </div>--}}
 
     <form method="GET" class="jb-filters">
         <div class="jb-filters-grid">
