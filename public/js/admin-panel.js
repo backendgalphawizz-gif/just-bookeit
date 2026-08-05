@@ -27,12 +27,28 @@
         text: (value) => value.replace(/[^\p{L}\p{N}\s.,'!?&()\-:@#%/\\[\]\n\r]/gu, ''),
         integer: (value) => value.replace(/\D/g, ''),
         decimal: (value) => {
-            let cleaned = value.replace(/[^\d.]/g, '');
+            let cleaned = String(value ?? '').replace(/[^\d.]/g, '');
             const parts = cleaned.split('.');
             if (parts.length > 2) {
                 cleaned = parts[0] + '.' + parts.slice(1).join('');
             }
-            return cleaned;
+            const [whole = '', fraction = ''] = cleaned.split('.');
+            if (cleaned.includes('.')) {
+                return whole + '.' + fraction.slice(0, 2);
+            }
+            return whole;
+        },
+        amount: (value) => {
+            let cleaned = String(value ?? '').replace(/[^\d.]/g, '');
+            const parts = cleaned.split('.');
+            if (parts.length > 2) {
+                cleaned = parts[0] + '.' + parts.slice(1).join('');
+            }
+            const [whole = '', fraction = ''] = cleaned.split('.');
+            if (cleaned.includes('.')) {
+                return whole + '.' + fraction.slice(0, 2);
+            }
+            return whole;
         },
         currency: (value) => value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 10),
         'comma-list': (value) => value.replace(/[^\p{L}\p{N}\s,.\-]/gu, ''),
@@ -72,9 +88,10 @@
 
     function bindRestriction(input) {
         const type = input.dataset.jbRestrict;
-        if (!type || !JB_FILTERS[type]) {
+        if (!type || !JB_FILTERS[type] || input.dataset.jbRestrictBound === '1') {
             return;
         }
+        input.dataset.jbRestrictBound = '1';
 
         const apply = () => {
             const start = input.selectionStart;
@@ -870,6 +887,8 @@
             return !! this.expanded[id];
         },
     });
+
+    window.jbBindRestriction = bindRestriction;
 
     document.addEventListener('DOMContentLoaded', () => {
         initSidebarScrollPersistence();

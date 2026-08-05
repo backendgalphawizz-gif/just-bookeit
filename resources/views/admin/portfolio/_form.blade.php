@@ -183,12 +183,14 @@
         <label for="price_per_day" class="jb-label">Price per day (₹) @if($isCreate)<span class="text-rose-600">*</span>@endif</label>
         <input
             id="price_per_day"
-            type="number"
+            type="text"
             name="price_per_day"
             value="{{ old('price_per_day', $portfolio->price_per_day) }}"
             class="jb-input"
-            min="0"
-            step="0.01"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="0"
+            data-jb-restrict="amount"
             x-bind:required="!hideProductPricing && {{ $isCreate ? 'true' : 'false' }}"
             x-bind:disabled="hideProductPricing"
         >
@@ -199,12 +201,14 @@
         <label for="advance_amount" class="jb-label">Advance amount (₹)</label>
         <input
             id="advance_amount"
-            type="number"
+            type="text"
             name="advance_amount"
             value="{{ old('advance_amount', $portfolio->advance_amount) }}"
             class="jb-input"
-            min="0"
-            step="0.01"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="0"
+            data-jb-restrict="amount"
             x-bind:disabled="!showAdvanceAmount"
         >
         @error('advance_amount')<p class="mt-1.5 text-xs font-medium text-rose-600">{{ $message }}</p>@enderror

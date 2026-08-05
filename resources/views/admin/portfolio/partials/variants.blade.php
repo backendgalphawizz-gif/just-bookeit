@@ -43,15 +43,15 @@
                 </div>
                 <div>
                     <label class="jb-label">Price (₹)/per day</label>
-                    <input type="number" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" class="jb-input" min="0" step="0.01" placeholder="0">
+                    <input type="text" name="variants[{{ $index }}][price]" value="{{ $variant['price'] ?? '' }}" class="jb-input" inputmode="decimal" autocomplete="off" placeholder="0" data-jb-restrict="amount">
                 </div>
                 <div>
                     <label class="jb-label">Advance (₹)</label>
-                    <input type="number" name="variants[{{ $index }}][advance_amount]" value="{{ $variant['advance_amount'] ?? '' }}" class="jb-input" min="0" step="0.01" placeholder="0">
+                    <input type="text" name="variants[{{ $index }}][advance_amount]" value="{{ $variant['advance_amount'] ?? '' }}" class="jb-input" inputmode="decimal" autocomplete="off" placeholder="0" data-jb-restrict="amount">
                 </div>
                 <div>
                     <label class="jb-label">Qty</label>
-                    <input type="number" name="variants[{{ $index }}][quantity]" value="{{ $variant['quantity'] ?? '' }}" class="jb-input" min="0" step="1" placeholder="1">
+                    <input type="text" name="variants[{{ $index }}][quantity]" value="{{ $variant['quantity'] ?? '' }}" class="jb-input" inputmode="numeric" autocomplete="off" placeholder="1" data-jb-restrict="integer">
                 </div>
                 <div data-variant-image-field>
                     <label class="jb-label">Variant image</label>
@@ -101,15 +101,15 @@
             </div>
             <div>
                 <label class="jb-label">Price (₹)</label>
-                <input type="number" name="variants[__INDEX__][price]" class="jb-input" min="0" step="0.01" placeholder="0">
+                <input type="text" name="variants[__INDEX__][price]" class="jb-input" inputmode="decimal" autocomplete="off" placeholder="0" data-jb-restrict="amount">
             </div>
             <div>
                 <label class="jb-label">Advance (₹)</label>
-                <input type="number" name="variants[__INDEX__][advance_amount]" class="jb-input" min="0" step="0.01" placeholder="0">
+                <input type="text" name="variants[__INDEX__][advance_amount]" class="jb-input" inputmode="decimal" autocomplete="off" placeholder="0" data-jb-restrict="amount">
             </div>
             <div>
                 <label class="jb-label">Qty</label>
-                <input type="number" name="variants[__INDEX__][quantity]" class="jb-input" min="0" step="1" placeholder="1">
+                <input type="text" name="variants[__INDEX__][quantity]" class="jb-input" inputmode="numeric" autocomplete="off" placeholder="1" data-jb-restrict="integer">
             </div>
             <div data-variant-image-field>
                 <label class="jb-label">Variant image</label>
@@ -269,10 +269,18 @@
             });
         };
 
+        const bindAmountRestrictions = (row) => {
+            row.querySelectorAll('[data-jb-restrict]').forEach((input) => {
+                if (typeof window.jbBindRestriction === 'function') {
+                    window.jbBindRestriction(input);
+                }
+            });
+        };
+
         const bindRemove = (row) => {
             row.querySelector('[data-product-variants-remove]')?.addEventListener('click', () => {
                 if (list.querySelectorAll('[data-product-variants-row]').length <= 1) {
-                    row.querySelectorAll('input[type="text"], input[type="number"], input[type="hidden"]').forEach((input) => {
+                    row.querySelectorAll('input[type="text"], input[type="hidden"]').forEach((input) => {
                         if (input.name && input.name.includes('[stored_image_path]')) {
                             input.value = '';
                             return;
@@ -293,6 +301,7 @@
         list.querySelectorAll('[data-product-variants-row]').forEach((row) => {
             bindRemove(row);
             bindImagePreview(row);
+            bindAmountRestrictions(row);
         });
 
         addBtn?.addEventListener('click', () => {
@@ -305,6 +314,7 @@
             list.appendChild(row);
             bindRemove(row);
             bindImagePreview(row);
+            bindAmountRestrictions(row);
             syncEnabledState();
             row.querySelector('input')?.focus();
         });
