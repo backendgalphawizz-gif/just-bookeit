@@ -78,7 +78,7 @@
             <p class="jb-card-header-title">{{ $items->total() }} {{ strtolower($activeTypeLabel) }} products</p>
         </div>
         <div class="jb-table-wrap">
-            <table class="jb-table jb-table--balanced">
+            <table class="jb-table jb-table--balanced jb-table--portfolio">
                 <thead><tr>
                     @include('admin.partials.table-index-header')
                     <th class="jb-col-name">Title</th>
@@ -152,12 +152,10 @@
                                 @endif
                             </td>
                             <td class="jb-table-actions-col">
-                                <div class="jb-actions jb-portfolio-row-actions" x-data="{ rejectOpen: false }">
-                                    <x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" />
+                                <div class="jb-actions">
                                     @if (auth('admin')->user()->hasPermission('portfolio', 'edit'))
-                                        <x-admin.action-btn variant="edit" :href="route('admin.portfolio.edit', $item)" />
                                         @if (in_array($item->status, ['pending', 'rejected'], true))
-                                            <form method="POST" action="{{ route('admin.portfolio.approve', $item) }}">
+                                            <form method="POST" action="{{ route('admin.portfolio.approve', $item) }}" class="jb-action-form">
                                                 @csrf
                                                 <x-admin.action-btn
                                                     variant="approve"
@@ -166,48 +164,28 @@
                                                     confirmTitle="Approve product"
                                                     confirmVariant="success"
                                                     confirmLabel="Approve"
-                                                >
-                                                    {{ $item->status === 'rejected' ? 'Approve again' : 'Approve' }}
-                                                </x-admin.action-btn>
+                                                    title="{{ $item->status === 'rejected' ? 'Approve again' : 'Approve' }}"
+                                                />
                                             </form>
                                         @endif
                                         @if ($item->status === 'pending')
-                                            <div class="relative">
-                                                <x-admin.button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="danger"
-                                                    @click="rejectOpen = !rejectOpen"
-                                                >
-                                                    Reject
-                                                </x-admin.button>
-                                                <div
-                                                    class="jb-portfolio-reject-panel"
-                                                    x-show="rejectOpen"
-                                                    x-cloak
-                                                    @click.outside="rejectOpen = false"
-                                                >
-                                                    <form method="POST" action="{{ route('admin.portfolio.reject', $item) }}" class="space-y-2">
-                                                        @csrf
-                                                        <label class="jb-label" for="rejection_reason_{{ $item->id }}">Rejection reason</label>
-                                                        <textarea
-                                                            id="rejection_reason_{{ $item->id }}"
-                                                            name="rejection_reason"
-                                                            class="jb-input"
-                                                            rows="3"
-                                                            required
-                                                            maxlength="500"
-                                                            placeholder="Why is this product being rejected?"
-                                                        ></textarea>
-                                                        <div class="flex items-center justify-end gap-2">
-                                                            <x-admin.button type="button" size="sm" variant="ghost" @click="rejectOpen = false">Cancel</x-admin.button>
-                                                            <x-admin.button type="submit" size="sm" variant="danger">Reject</x-admin.button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
+                                            <form
+                                                method="POST"
+                                                action="{{ route('admin.portfolio.reject', $item) }}"
+                                                class="jb-action-form"
+                                                data-jb-confirm="This product will be rejected. The reason you enter will be visible to the vendor."
+                                                data-jb-confirm-title="Reject product"
+                                                data-jb-confirm-variant="error"
+                                                data-jb-confirm-label="Reject"
+                                                data-jb-confirm-requires-reason="Rejection reason"
+                                            >
+                                                @csrf
+                                                <x-admin.action-btn variant="delete" type="submit" title="Reject" />
+                                            </form>
                                         @endif
+                                        <x-admin.action-btn variant="edit" :href="route('admin.portfolio.edit', $item)" />
                                     @endif
+                                    <x-admin.action-btn variant="view" :href="route('admin.portfolio.show', $item)" />
                                 </div>
                             </td>
                         </tr>
@@ -283,28 +261,15 @@
         opacity: .55;
         cursor: not-allowed;
     }
-    .jb-portfolio-row-actions {
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.4rem;
+    .jb-table--portfolio th.jb-table-actions-col,
+    .jb-table--portfolio td.jb-table-actions-col {
+        width: 11.5rem;
+        min-width: 11.5rem;
+        max-width: 13rem;
     }
-    .jb-table td.jb-table-actions-col:has(.jb-portfolio-row-actions) {
-        width: auto;
-        min-width: 12rem;
-        white-space: normal;
-    }
-    .jb-portfolio-reject-panel {
-        position: absolute;
-        right: 0;
-        top: calc(100% + 0.4rem);
-        z-index: 30;
-        width: min(18rem, 70vw);
-        padding: 0.75rem;
-        border-radius: 0.75rem;
-        border: 1px solid #e2e8f0;
-        background: #fff;
-        box-shadow: 0 10px 30px rgb(15 23 42 / 0.12);
+    .jb-table--portfolio td .jb-actions {
+        flex-wrap: nowrap;
+        gap: 0.35rem;
     }
 </style>
 @endpush

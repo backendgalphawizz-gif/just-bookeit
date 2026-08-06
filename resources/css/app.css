@@ -590,7 +590,9 @@
     }
 
     .jb-action-btn--icon-only.jb-action-btn--view,
-    .jb-action-btn--icon-only.jb-action-btn--edit {
+    .jb-action-btn--icon-only.jb-action-btn--edit,
+    .jb-action-btn--icon-only.jb-action-btn--approve,
+    .jb-action-btn--icon-only.jb-action-btn--delete {
         @apply h-9 w-9 p-0;
     }
 

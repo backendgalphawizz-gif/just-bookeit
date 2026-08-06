@@ -9,7 +9,7 @@
 ])
 
 @php
-    $iconOnly = in_array($variant, ['view', 'edit', 'delete'], true);
+    $iconOnly = in_array($variant, ['view', 'edit', 'delete', 'approve'], true);
     $class = 'jb-action-btn jb-action-btn--' . $variant . ($iconOnly ? ' jb-action-btn--icon-only' : '');
     $attrs = $attributes->merge(['class' => $class]);
     $label = ! $slot->isEmpty() ? $slot : match ($variant) {
