@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\RecordsAccountStatusHistory;
 use App\Http\Requests\Admin\DriverRequest;
 use App\Models\AccountStatusHistory;
 use App\Models\Driver;
+use App\Models\Order;
 use App\Support\AdminCityScope;
 use App\Support\AdminValidationRules;
 use App\Support\AppliesListDateFilter;
@@ -74,13 +75,22 @@ class DriverController extends AdminController
         $this->authorizeDriverCity($driver);
 
         $driver->load([
-            'orders' => fn ($q) => $q->latest()->limit(10),
             'statusHistories' => fn ($q) => $q->with('admin')->orderByDesc('created_at'),
         ]);
 
+        $orders = Order::query()
+            ->with(['customer', 'vendor'])
+            ->where(function ($builder) use ($driver) {
+                $builder->where('driver_id', $driver->id)
+                    ->orWhereHas('orderItems', fn ($items) => $items->where('driver_id', $driver->id));
+            })
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
         app(\App\Services\Admin\AdminInboxNotificationService::class)->dismissForDriver($driver);
 
-        return view('admin.drivers.show', compact('driver'));
+        return view('admin.drivers.show', compact('driver', 'orders'));
     }
 
     public function edit(Driver $driver): View
