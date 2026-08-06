@@ -2131,6 +2131,19 @@ a { color: inherit; }
     .category-slider.slider-is-few .jbw-tile--category {
         aspect-ratio: 4 / 3;
     }
+
+    /* One item should match a single slot in the 3-up row, not stretch full width. */
+    .service-slider.slider-is-few .service-card:only-child,
+    .category-slider.slider-is-few .category-card:only-child {
+        flex: 0 0 calc((100% - 3rem) / 3);
+        width: calc((100% - 3rem) / 3);
+        max-width: calc((100% - 3rem) / 3);
+    }
+
+    .service-slider.slider-is-few:has(.service-card:only-child),
+    .category-slider.slider-is-few:has(.category-card:only-child) {
+        justify-content: flex-start;
+    }
 }
 
 .service-card .jbw-step-title,
