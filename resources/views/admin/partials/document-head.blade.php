@@ -5,3 +5,4 @@
 @endphp
 <title>{{ $documentTitle }}</title>
 <link rel="icon" type="image/png" href="{{ $faviconUrl }}">
+<meta name="csrf-token" content="{{ csrf_token() }}">

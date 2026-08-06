@@ -5057,6 +5057,562 @@ a { color: inherit; }
     margin-top: 1rem;
     border-radius: 12px;
 }
+
+/* ─── Figma booking detail pages ─────────────────────────────────── */
+.jbw-figma-booking-page {
+    padding-top: 1.25rem;
+    padding-bottom: 4rem;
+}
+.jbw-figma-back-nav {
+    margin-bottom: 1.5rem;
+}
+.jbw-figma-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    transition: opacity var(--trans);
+}
+.jbw-figma-back-link:hover { opacity: 0.75; }
+.jbw-figma-back-link svg { flex-shrink: 0; }
+
+.jbw-figma-booking-head {
+    margin-bottom: 2rem;
+}
+.jbw-figma-booking-title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--c-text);
+}
+.jbw-figma-booking-meta {
+    margin: 0.625rem 0 0;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+.jbw-figma-booking-meta span {
+    margin: 0 0.4rem;
+}
+
+.jbw-figma-booking-layout {
+    display: grid;
+    gap: 2.5rem;
+    align-items: start;
+}
+@media (min-width: 1024px) {
+    .jbw-figma-booking-layout {
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 3rem;
+    }
+}
+.jbw-figma-booking-main {
+    display: grid;
+    gap: 2rem;
+    min-width: 0;
+}
+.jbw-figma-booking-aside {
+    align-self: start;
+}
+@media (min-width: 1024px) {
+    .jbw-figma-booking-aside {
+        position: sticky;
+        top: 5.75rem;
+    }
+}
+
+.jbw-figma-section-title {
+    margin: 0 0 1rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-text);
+}
+.jbw-figma-booking-section { min-width: 0; }
+
+.jbw-figma-address-card {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.25rem 1.375rem;
+    border: 1px solid #e8e4df;
+    border-radius: 8px;
+    background: #faf8f5;
+}
+.jbw-figma-address-icon {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: #fdeee8;
+    color: var(--c-primary);
+    flex-shrink: 0;
+}
+.jbw-figma-address-name {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--c-text);
+}
+.jbw-figma-address-lines {
+    margin: 0.3rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #6b7280;
+}
+
+.jbw-figma-item-list {
+    display: grid;
+    gap: 1.25rem;
+}
+.jbw-figma-item-card,
+.jbw-figma-product-card {
+    position: relative;
+    border: 1px solid #e8e4df;
+    border-radius: 8px;
+    background: #fff;
+}
+.jbw-figma-item-status {
+    position: absolute;
+    top: 1.125rem;
+    right: 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    z-index: 1;
+}
+.jbw-figma-item-status--delivered,
+.jbw-figma-item-status--re_delivered,
+.jbw-figma-item-status--completed { color: #15803d; }
+.jbw-figma-item-status--in_progress,
+.jbw-figma-item-status--re_intransit { color: #c2410c; }
+.jbw-figma-item-status--cancelled { color: #b91c1c; }
+.jbw-figma-item-status--returned { color: #0369a1; }
+.jbw-figma-item-status--new,
+.jbw-figma-item-status--accepted,
+.jbw-figma-item-status--default { color: #6b7280; }
+
+.jbw-figma-product-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0;
+}
+.jbw-figma-item-card-body,
+.jbw-figma-product-card-body {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1.125rem 1.25rem;
+    align-items: flex-start;
+}
+.jbw-figma-item-card .jbw-figma-item-card-body {
+    padding-top: 2.75rem;
+}
+.jbw-figma-item-img {
+    width: 7rem;
+    height: 7rem;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #f5f3f0;
+    flex-shrink: 0;
+}
+.jbw-figma-product-img {
+    width: 8.5rem;
+    height: 10.5rem;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #f5f3f0;
+    flex-shrink: 0;
+}
+.jbw-figma-item-info,
+.jbw-figma-product-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 4rem;
+}
+.jbw-figma-item-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 0.15rem;
+}
+.jbw-figma-item-title,
+.jbw-figma-product-title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--c-text);
+}
+.jbw-figma-item-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: #f3f4f6;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6b7280;
+}
+.jbw-figma-item-specs {
+    margin: 0.2rem 0 0;
+    font-size: 0.875rem;
+    color: #9ca3af;
+    font-weight: 400;
+}
+.jbw-figma-item-price {
+    margin: 0.45rem 0 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--c-text);
+}
+.jbw-figma-item-card-foot {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 1.25rem 1.125rem;
+}
+.jbw-figma-item-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--c-primary);
+}
+.jbw-figma-item-link:hover { text-decoration: underline; }
+
+.jbw-figma-notes-box {
+    padding: 1.125rem 1.25rem;
+    border: 1px solid #e8e4df;
+    border-radius: 8px;
+    background: #fafafa;
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: #6b7280;
+}
+.jbw-figma-notes-box--accent {
+    border-color: #f5d0c5;
+    background: #fffaf8;
+    color: var(--c-text);
+}
+
+.jbw-figma-pay-card {
+    padding: 1.5rem 1.625rem;
+    border: 1px solid #e8e4df;
+    border-radius: 8px;
+    background: #fff;
+}
+.jbw-figma-pay-lines {
+    display: grid;
+    gap: 0.75rem;
+    padding-bottom: 1.125rem;
+    margin-bottom: 1.125rem;
+    border-bottom: 1px solid #e8e4df;
+}
+.jbw-figma-pay-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+.jbw-figma-pay-line span:last-child {
+    font-weight: 600;
+    color: var(--c-text);
+    white-space: nowrap;
+}
+.jbw-figma-pay-line--accent span:last-child {
+    color: var(--c-primary);
+    font-weight: 700;
+}
+.jbw-figma-pay-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.jbw-figma-pay-total span {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-text);
+}
+.jbw-figma-pay-total strong {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--c-primary);
+    letter-spacing: -0.01em;
+    line-height: 1;
+}
+.jbw-figma-pay-btn {
+    margin-top: 1.25rem;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+}
+.jbw-figma-pay-footnote {
+    margin: 1rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #9ca3af;
+}
+
+.jbw-figma-stepper-card {
+    margin-bottom: 2rem;
+    padding: 1.5rem 2rem;
+    border: 1px solid #e8e4df;
+    border-radius: 8px;
+    background: #fff;
+    overflow-x: auto;
+}
+.jbw-figma-stepper {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0;
+    min-width: 32rem;
+}
+.jbw-figma-step {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.625rem;
+    text-align: center;
+    min-width: 0;
+}
+.jbw-figma-step-dot {
+    display: grid;
+    place-items: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    border-radius: 999px;
+    border: 2px solid #d1d5db;
+    background: #fff;
+    color: #fff;
+    z-index: 1;
+}
+.jbw-figma-step--done .jbw-figma-step-dot {
+    background: #9b1c1c;
+    border-color: #9b1c1c;
+}
+.jbw-figma-step--current .jbw-figma-step-dot {
+    background: #9b1c1c;
+    border-color: #9b1c1c;
+    box-shadow: none;
+}
+.jbw-figma-step--upcoming .jbw-figma-step-dot {
+    background: #fff;
+    border-color: #d1d5db;
+}
+.jbw-figma-step-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #9ca3af;
+    line-height: 1.3;
+    max-width: 5rem;
+}
+.jbw-figma-step--done .jbw-figma-step-label,
+.jbw-figma-step--current .jbw-figma-step-label {
+    color: #9b1c1c;
+    font-weight: 700;
+}
+.jbw-figma-step-line {
+    position: absolute;
+    top: 0.8125rem;
+    left: calc(50% + 0.8125rem);
+    width: calc(100% - 1.625rem);
+    height: 2px;
+    background: #e5e7eb;
+    z-index: 0;
+}
+.jbw-figma-step--done .jbw-figma-step-line {
+    background: #9b1c1c;
+}
+
+.jbw-figma-seller-card {
+    position: relative;
+    padding: 1.25rem 1.375rem;
+    border: 1px solid #e8e4df;
+    border-radius: 8px;
+    background: #fff;
+}
+.jbw-figma-seller-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+}
+.jbw-figma-seller-avatar {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 999px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+.jbw-figma-seller-avatar--fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fce7df, #fecaca);
+    color: var(--c-primary);
+    font-weight: 800;
+    font-size: 1.125rem;
+}
+.jbw-figma-seller-info { flex: 1; min-width: 0; padding-right: 2.5rem; }
+.jbw-figma-seller-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+.jbw-figma-seller-meta {
+    margin: 0.15rem 0 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+.jbw-figma-seller-location {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0.35rem 0 0;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+.jbw-figma-video-btn {
+    position: absolute;
+    top: 1.125rem;
+    right: 1.125rem;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    background: var(--c-primary);
+    color: #fff;
+    text-decoration: none;
+}
+.jbw-figma-seller-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin: 1rem 0;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: #9ca3af;
+}
+.jbw-figma-seller-note svg { flex-shrink: 0; margin-top: 0.1rem; }
+.jbw-figma-chat-btn {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    border-color: var(--c-primary);
+    color: var(--c-primary);
+    border-radius: 8px;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+.jbw-figma-rental-block {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f0ede8;
+}
+.jbw-figma-rental-icon {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 6px;
+    background: #faf8f5;
+    color: #6b7280;
+    flex-shrink: 0;
+}
+.jbw-figma-rental-label {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9ca3af;
+}
+.jbw-figma-rental-range {
+    margin: 0.15rem 0 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--c-text);
+}
+.jbw-figma-ref-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.jbw-figma-ref-item {
+    display: block;
+    width: 5.5rem;
+    height: 5.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e8e4df;
+    background: #f5f3f0;
+}
+.jbw-figma-ref-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+@media (max-width: 640px) {
+    .jbw-figma-item-info,
+    .jbw-figma-product-info {
+        padding-right: 0;
+    }
+    .jbw-figma-item-img {
+        width: 5.5rem;
+        height: 5.5rem;
+    }
+    .jbw-figma-product-img {
+        width: 6.5rem;
+        height: 8rem;
+    }
+    .jbw-figma-item-status {
+        top: 0.875rem;
+        right: 0.875rem;
+        font-size: 0.75rem;
+    }
+}
+
 .jbw-booking-detail-paid-note {
     margin: 0.875rem 0 0;
     font-size: 0.8125rem;

@@ -12,7 +12,7 @@
     @include('admin.partials.admin-theme-vars')
     @stack('styles')
 </head>
-<body class="jb-admin-shell" x-data="{ sidebarOpen: false, notificationOpen: false }">
+<body class="jb-admin-shell" x-data="{ sidebarOpen: false }">
     <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden" @click="sidebarOpen = false"></div>
 
     <aside

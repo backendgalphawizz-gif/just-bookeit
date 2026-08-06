@@ -46,6 +46,7 @@ Route::middleware('web')->prefix('admin')->name('admin.')->group(function () {
         Route::put('profile', [AdminProfileController::class, 'update'])->name('profile.update');
 
         Route::get('inbox-notifications', [InboxNotificationController::class, 'index'])->name('inbox-notifications.index');
+        Route::get('inbox-notifications/feed', [InboxNotificationController::class, 'feed'])->name('inbox-notifications.feed');
         Route::get('inbox-notifications/{inboxNotification}/open', [InboxNotificationController::class, 'open'])->name('inbox-notifications.open');
         Route::post('inbox-notifications/{inboxNotification}/read', [InboxNotificationController::class, 'read'])->name('inbox-notifications.read');
         Route::post('inbox-notifications/read-all', [InboxNotificationController::class, 'readAll'])->name('inbox-notifications.read-all');

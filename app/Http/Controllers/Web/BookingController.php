@@ -92,8 +92,12 @@ class BookingController extends WebController
         $customer = Auth::guard('customer')->user();
         abort_unless($order->customer_id === $customer->id, 403);
 
+        $checkoutOrder = null;
         if ($order->checkout_order_id) {
-            return redirect()->route('web.bookings.checkout.show', $order->checkout_order_id);
+            $checkoutOrder = CheckoutOrder::query()
+                ->whereKey($order->checkout_order_id)
+                ->where('customer_id', $customer->id)
+                ->first();
         }
 
         $order->load([
@@ -103,14 +107,29 @@ class BookingController extends WebController
             'category',
             'dispute',
             'reviews',
-            'orderItems.portfolioItem',
+            'orderItems.portfolioItem.category',
             'orderItems.driver',
             'orderItems.review',
-            'portfolioItem',
+            'portfolioItem.category',
         ]);
-        $paymentSummary = $this->payments->summaryForOrder($order);
 
-        return view('web.bookings.show', compact('order', 'paymentSummary'));
+        $focusedItemId = request()->integer('item') ?: null;
+        $focusedItem = $focusedItemId
+            ? $order->orderItems->firstWhere('id', $focusedItemId)
+            : $order->orderItems->first();
+
+        if ($checkoutOrder) {
+            $paymentSummary = $this->payments->summaryForCheckout($checkoutOrder);
+        } else {
+            $paymentSummary = $this->payments->summaryForOrder($order);
+        }
+
+        return view('web.bookings.show', compact(
+            'order',
+            'paymentSummary',
+            'checkoutOrder',
+            'focusedItem',
+        ));
     }
 
     public function showCheckout(CheckoutOrder $checkoutOrder): View|RedirectResponse
@@ -119,11 +138,12 @@ class BookingController extends WebController
         abort_unless($checkoutOrder->customer_id === $customer->id, 403);
 
         $checkoutOrder->load([
+            'customer',
             'subOrders.vendor',
             'subOrders.category',
             'subOrders.driver',
             'subOrders.reviews',
-            'subOrders.orderItems.portfolioItem',
+            'subOrders.orderItems.portfolioItem.category',
             'subOrders.orderItems.driver',
             'subOrders.orderItems.review',
             'subOrders.portfolioItem',
