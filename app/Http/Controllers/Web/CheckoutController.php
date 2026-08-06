@@ -124,9 +124,14 @@ class CheckoutController extends WebController
             'items.*.rental_start_date' => ['nullable', 'date', 'after_or_equal:today'],
             'items.*.rental_end_date' => ['nullable', 'date', 'after_or_equal:items.*.rental_start_date'],
             'customer_notes' => ['nullable', 'string', 'max:2000'],
+            'reference_images' => ['nullable', 'array'],
+            'reference_images.*' => ['nullable', 'array', 'max:5'],
+            'reference_images.*.*' => \App\Support\MediaUploadSupport::imageRules(4096),
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
+            'billing_address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
             'measurement_profile_id' => ['nullable', 'integer'],
             'measurement_id' => ['nullable', 'integer'],
+            'measurement_type' => ['nullable', 'in:women,men,kid'],
             'vendor_shipments' => ['nullable', 'array'],
             'vendor_shipments.*.vendor_id' => ['required_with:vendor_shipments', 'integer', 'exists:vendors,id'],
             'vendor_shipments.*.shipment_required' => ['nullable', 'boolean'],
@@ -139,6 +144,12 @@ class CheckoutController extends WebController
             $data['delivery_address'] = $address->fullAddress();
             $data['city'] = $address->city;
             $data['pincode'] = $address->pincode;
+        }
+
+        if ($request->filled('billing_address_id')) {
+            $billing = $customer->addresses()->find($request->integer('billing_address_id'));
+            abort_unless($billing, 403);
+            $data['billing_address'] = $billing->fullAddress();
         }
 
         if ($data['measurement_id'] ?? null) {

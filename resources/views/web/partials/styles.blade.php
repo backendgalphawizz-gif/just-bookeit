@@ -6753,6 +6753,27 @@ a { color: inherit; }
 }
 
 .jbw-ref-images {
+    margin-top: 0;
+}
+
+.jbw-bo-ref-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.jbw-bo-ref-item-title {
+    margin: 0 0 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1f1a17;
+}
+
+.jbw-bo-section > .jbw-ref-images,
+.jbw-bo-ref-list .jbw-ref-images {
+    margin-top: 0;
+}
+
+.jbw-ref-images-legacy {
     margin-top: 1.25rem;
 }
 
@@ -6914,6 +6935,802 @@ a { color: inherit; }
     padding: 0.900rem 1.0rem;
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
 }
+
+/* Figma Booking Overview — exact box-wise layout */
+body:has(.jbw-bo-page),
+.jbw-main:has(.jbw-bo-page),
+main:has(.jbw-bo-page) {
+    background: #fcf8f7;
+}
+
+.jbw-bo-page {
+    --bo-bg: #fcf8f7;
+    --bo-orange: #ff5722;
+    --bo-orange-soft: #fff3ee;
+    --bo-border: #ebe4e0;
+    --bo-border-soft: #f0ebe8;
+    --bo-muted: #9a908a;
+    --bo-ink: #1f1a17;
+    --bo-card: #ffffff;
+    --bo-radius: 10px;
+    --bo-gap: 14px;
+    background: var(--bo-bg);
+}
+
+.jbw-container.jbw-bo-page,
+.jbw-bo-page.jbw-container {
+    width: min(1180px, calc(100% - 2rem));
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1.15rem 0 3rem;
+    max-width: 1180px;
+}
+
+.jbw-bo-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.15rem;
+}
+
+.jbw-bo-back {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--bo-border);
+    background: var(--bo-card);
+    color: var(--bo-ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+    box-shadow: none;
+}
+
+.jbw-bo-back:hover {
+    border-color: #d9cec8;
+    color: var(--bo-orange);
+}
+
+.jbw-bo-title {
+    margin: 0;
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--bo-ink);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+/* Two-column layout */
+.jbw-bo-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.9fr);
+    gap: 1.15rem;
+    align-items: start;
+}
+
+.jbw-bo-main,
+.jbw-bo-aside,
+.jbw-bo-side {
+    display: grid;
+    gap: var(--bo-gap);
+    min-width: 0;
+    align-content: start;
+}
+
+.jbw-bo-section {
+    display: grid;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.jbw-bo-label {
+    display: block;
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6f6762;
+}
+
+.jbw-bo-muted {
+    margin: 0;
+    color: var(--bo-muted);
+    font-size: 0.9rem;
+}
+
+/* Shared solid card box */
+.jbw-bo-card {
+    background: var(--bo-card);
+    border: 1px solid var(--bo-border);
+    border-radius: var(--bo-radius);
+    padding: 0.85rem 1rem;
+    min-width: 0;
+}
+
+/* ===== BOX: Your Selection ===== */
+.jbw-bo-selection-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.jbw-bo-selection {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.95rem;
+    align-items: start;
+    position: relative;
+    padding: 0.85rem 1rem;
+}
+
+/* HTML order: trash, then body — place body left, trash top-right */
+.jbw-bo-selection > .jbw-bo-trash {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.jbw-bo-selection > .jbw-bo-selection-body {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 0.95rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.jbw-bo-selection > .jbw-bo-inline-rental,
+.jbw-bo-selection > .jbw-bo-variant-wrap,
+.jbw-bo-selection > input[type="hidden"] {
+    grid-column: 1 / -1;
+}
+
+.jbw-bo-selection-img,
+.jbw-bo-selection-media {
+    width: 92px;
+    height: 92px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #f3eeeb;
+    border: 1px solid var(--bo-border-soft);
+    display: block;
+}
+
+.jbw-bo-selection-info,
+.jbw-bo-selection-body > div:not(.jbw-bo-selection-media) {
+    min-width: 0;
+}
+
+.jbw-bo-selection-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--bo-ink);
+    line-height: 1.25;
+}
+
+.jbw-bo-selection-specs,
+.jbw-bo-selection-meta {
+    margin: 0.2rem 0 0;
+    color: var(--bo-muted);
+    font-size: 0.9rem;
+}
+
+.jbw-bo-selection-price {
+    margin: 0.35rem 0 0;
+    color: var(--bo-orange);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 1.08rem;
+    font-weight: 700;
+}
+
+.jbw-bo-trash {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    background: transparent;
+    color: #b0a8a3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: none;
+    margin-top: 0.05rem;
+}
+
+.jbw-bo-trash:hover {
+    color: #c62828;
+}
+
+/* ===== BOX ROW: Designer | Rental Period ===== */
+.jbw-bo-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--bo-gap);
+    align-items: stretch;
+}
+
+.jbw-bo-split > .jbw-bo-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 0;
+}
+
+.jbw-bo-split .jbw-bo-card {
+    flex: 1;
+    min-height: 96px;
+}
+
+.jbw-bo-designer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.jbw-bo-designer-avatar,
+.jbw-bo-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #f0ebe8;
+    border: 1px solid var(--bo-border);
+    display: grid;
+    place-items: center;
+    color: #b8aea8;
+    flex-shrink: 0;
+    object-fit: cover;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.jbw-bo-designer-avatar--fallback {
+    background: #fff3ee;
+    color: var(--bo-orange);
+    border-color: #ffd0c2;
+}
+
+.jbw-bo-designer-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--bo-ink);
+    line-height: 1.25;
+}
+
+.jbw-bo-designer-meta {
+    margin: 0.2rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.88rem;
+    color: var(--bo-muted);
+}
+
+.jbw-bo-designer-meta .starcolor,
+.jbw-bo-star {
+    color: var(--bo-orange);
+    font-weight: 700;
+}
+
+.jbw-bo-rental,
+.jbw-bo-period {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.15rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.jbw-bo-rental-summary {
+    padding-right: 4.5rem;
+}
+
+.jbw-bo-rental-dates,
+.jbw-bo-period-dates {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--bo-ink);
+    line-height: 1.25;
+}
+
+.jbw-bo-rental-days,
+.jbw-bo-period-sub {
+    margin: 0.25rem 0 0;
+    color: var(--bo-muted);
+    font-size: 0.88rem;
+}
+
+.jbw-bo-change,
+.jbw-bo-link {
+    position: absolute;
+    top: 0.85rem;
+    right: 1rem;
+    border: 0;
+    background: transparent;
+    color: var(--bo-orange);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.jbw-bo-change:hover,
+.jbw-bo-link:hover {
+    text-decoration: underline;
+    color: #e64a19;
+}
+
+.jbw-bo-rental-fields {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bo-border-soft);
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.jbw-bo-rental-help {
+    margin: 0 0 0.55rem;
+    color: var(--bo-muted);
+    font-size: 0.85rem;
+}
+
+/* Stack dates in the narrow rental card so inputs never clip */
+.jbw-bo-rental-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.jbw-bo-rental-fields .jbw-field,
+.jbw-bo-inline-rental .jbw-field {
+    min-width: 0;
+    width: 100%;
+}
+
+.jbw-bo-rental-fields .jbw-input,
+.jbw-bo-rental-fields input[type="date"],
+.jbw-bo-inline-rental .jbw-input,
+.jbw-bo-inline-rental input[type="date"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 0.875rem;
+}
+
+.jbw-bo-inline-rental {
+    margin-top: 0.65rem;
+    min-width: 0;
+    width: 100%;
+}
+
+.jbw-bo-inline-rental + .jbw-bo-inline-rental {
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px dashed var(--bo-border);
+}
+
+.checkout-vendor-row {
+    display: none !important;
+}
+
+/* ===== Delivery Preference: solid outer box + dashed address ===== */
+.jbw-bo-delivery {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.jbw-bo-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bo-ink);
+    cursor: pointer;
+    width: fit-content;
+    position: relative;
+}
+
+.jbw-bo-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--bo-orange);
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.jbw-bo-check-box {
+    display: none;
+}
+
+.jbw-bo-address-box {
+    border: 1.5px dashed #d8cfc9;
+    border-radius: var(--bo-radius);
+    background: var(--bo-card);
+    padding: 0.9rem 1rem;
+    position: relative;
+    min-height: 88px;
+}
+
+.jbw-bo-address-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem;
+}
+
+.jbw-bo-address-box > .jbw-bo-change,
+.jbw-bo-address-head > .jbw-bo-change {
+    position: static;
+    flex-shrink: 0;
+}
+
+.jbw-bo-address-name {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--bo-ink);
+}
+
+.jbw-bo-address-lines {
+    margin: 0.3rem 0 0;
+    color: #7a726c;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.jbw-bo-address-phone {
+    margin: 0.2rem 0 0;
+    color: #7a726c;
+    font-size: 0.88rem;
+}
+
+.jbw-bo-address-picker {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bo-border-soft);
+}
+
+.jbw-bo-address-manage {
+    margin: 0.55rem 0 0;
+    font-size: 0.85rem;
+}
+
+.jbw-bo-address-manage a {
+    color: var(--bo-orange);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.jbw-bo-address-manage a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Measurements ===== */
+.jbw-bo-measure-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+}
+
+.jbw-bo-measure-tab {
+    border: 1px solid var(--bo-border);
+    background: var(--bo-card);
+    border-radius: 8px;
+    min-height: 46px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #6f6762;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.jbw-bo-measure-tab.is-active {
+    border-color: var(--bo-orange);
+    background: var(--bo-orange-soft);
+    color: var(--bo-orange);
+    font-weight: 700;
+}
+
+.jbw-bo-measure-tab:hover:not(.is-active) {
+    border-color: #d9cec8;
+}
+
+.jbw-bo-measure-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+    color: var(--bo-muted);
+}
+
+.jbw-bo-measure-meta a {
+    color: var(--bo-orange);
+    font-weight: 700;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+}
+
+.jbw-bo-measure-empty {
+    border: 1px dashed #d8cfc9;
+    border-radius: var(--bo-radius);
+    background: var(--bo-card);
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.jbw-bo-measure-empty p {
+    margin: 0;
+    color: var(--bo-muted);
+    font-size: 0.9rem;
+}
+
+/* ===== Additional Notes ===== */
+textarea.jbw-bo-notes,
+.jbw-bo-textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1px solid var(--bo-border);
+    border-radius: var(--bo-radius);
+    background: var(--bo-card);
+    padding: 0.85rem 1rem;
+    resize: vertical;
+    font: inherit;
+    font-size: 0.92rem;
+    color: var(--bo-ink);
+    outline: none;
+    display: block;
+}
+
+textarea.jbw-bo-notes::placeholder,
+.jbw-bo-textarea::placeholder {
+    color: #b0a8a3;
+}
+
+textarea.jbw-bo-notes:focus,
+.jbw-bo-textarea:focus {
+    border-color: #ffb399;
+    box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.08);
+}
+
+/* ===== RIGHT: Billing Address dashed box ===== */
+.jbw-bo-billing {
+    border: 1.5px dashed #d8cfc9;
+    border-radius: var(--bo-radius);
+    background: var(--bo-card);
+    min-height: 118px;
+    padding: 1rem;
+    position: relative;
+}
+
+.jbw-bo-billing-empty {
+    min-height: 86px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    text-align: center;
+}
+
+.jbw-bo-add-address,
+.jbw-bo-billing-add {
+    border: 0;
+    background: transparent;
+    color: var(--bo-orange);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.35rem 0.5rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.jbw-bo-add-address:hover,
+.jbw-bo-billing-add:hover {
+    text-decoration: underline;
+}
+
+.jbw-bo-billing-pick {
+    position: static;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.jbw-bo-billing-selected {
+    width: 100%;
+}
+
+.jbw-bo-billing-selected .jbw-bo-change {
+    position: static;
+}
+
+.jbw-bo-billing .jbw-bo-address-picker {
+    margin-top: 0.75rem;
+}
+
+/* ===== RIGHT: Payment Summary box ===== */
+.jbw-bo-pay-card,
+.jbw-bo-pay {
+    background: var(--bo-card);
+    border: 1px solid var(--bo-border);
+    border-radius: var(--bo-radius);
+    padding: 1.15rem 1.2rem 1.2rem;
+    display: grid;
+    gap: 0;
+}
+
+.jbw-bo-pay-card > .jbw-bo-label,
+.jbw-bo-pay-title {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--bo-ink);
+}
+
+.jbw-bo-pay-lines,
+.jbw-bo-pay-rows {
+    display: grid;
+    gap: 0.72rem;
+}
+
+.jbw-bo-pay-line,
+.jbw-bo-pay-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.95rem;
+}
+
+.jbw-bo-pay-line span:first-child,
+.jbw-bo-pay-row span:first-child {
+    color: #8a817b;
+}
+
+.jbw-bo-pay-line span:last-child,
+.jbw-bo-pay-row strong,
+.jbw-bo-pay-line strong {
+    color: var(--bo-ink);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.jbw-bo-pay-total {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.95rem;
+    padding-top: 0.95rem;
+    border-top: 1px solid #f0ebe8;
+}
+
+.jbw-bo-pay-total > span {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--bo-ink);
+    padding-bottom: 0.2rem;
+}
+
+.jbw-bo-pay-total strong {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    font-size: 2.05rem;
+    font-weight: 700;
+    color: var(--bo-orange);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.jbw-bo-pay-note {
+    margin: 0.55rem 0 0;
+    color: #a39a94;
+    font-size: 0.78rem;
+}
+
+.jbw-bo-checkout-btn,
+.jbw-bo-cta {
+    width: 100%;
+    margin-top: 1.1rem;
+    min-height: 50px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--bo-orange) !important;
+    color: #fff !important;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+.jbw-bo-checkout-btn:hover,
+.jbw-bo-cta:hover {
+    background: #f4511e !important;
+}
+
+.jbw-bo-variant-wrap {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bo-border-soft);
+}
+
+@media (max-width: 980px) {
+    .jbw-bo-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .jbw-bo-aside {
+        order: 2;
+    }
+}
+
+@media (max-width: 720px) {
+    .jbw-container.jbw-bo-page,
+    .jbw-bo-page.jbw-container {
+        width: min(100% - 1.25rem, 1180px);
+    }
+
+    .jbw-bo-title {
+        font-size: 1.35rem;
+    }
+
+    .jbw-bo-split {
+        grid-template-columns: 1fr;
+    }
+
+    .jbw-bo-selection {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .jbw-bo-selection > .jbw-bo-selection-body {
+        grid-template-columns: 76px minmax(0, 1fr);
+    }
+
+    .jbw-bo-selection-img {
+        width: 76px;
+        height: 76px;
+    }
+
+    .jbw-bo-pay-total strong {
+        font-size: 1.7rem;
+    }
+
+    .jbw-bo-rental-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 .jbw-overview-card.is-highlight {
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-primary) 45%, transparent);

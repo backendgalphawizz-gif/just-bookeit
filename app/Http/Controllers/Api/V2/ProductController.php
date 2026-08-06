@@ -127,6 +127,7 @@ class ProductController extends VendorApiController
         $this->storeGalleryImages($request, $product, $primaryImage);
         $this->storeGalleryVideos($request, $product);
         $this->syncVariants($request, $product, $data['variants'] ?? []);
+        $this->propagateVariantColorImages($product);
         $this->syncDamageDeductions($product, $data['damage_deductions'] ?? []);
         $product->refreshDressPricingFromVariants();
 
@@ -227,6 +228,7 @@ class ProductController extends VendorApiController
         if (array_key_exists('variants', $data) || $productType === 'rented-dress') {
             if (array_key_exists('variants', $data)) {
                 $this->syncVariants($request, $product, $data['variants'] ?? [], true);
+                $this->propagateVariantColorImages($product);
             }
             $product->refreshDressPricingFromVariants();
         }
@@ -647,19 +649,81 @@ class ProductController extends VendorApiController
     /** @param list<array<string, mixed>> $variants */
     protected function syncVariants(Request $request, PortfolioItem $product, array $variants, bool $replacing = false): void
     {
+        $oldVariants = $replacing
+            ? $product->variants()->orderBy('sort_order')->get()->values()
+            : collect();
+
         if ($replacing) {
-            foreach ($product->variants as $existing) {
-                StoresUploadedFiles::delete($existing->image_path);
-            }
+            // Keep files until after recreate so unchanged variants can reuse paths.
             $product->variants()->delete();
         }
 
         if ($variants === []) {
+            foreach ($oldVariants as $existing) {
+                StoresUploadedFiles::delete($existing->image_path);
+            }
+
             return;
         }
 
+        $keptPaths = [];
+        $sortOrder = 0;
+        $oldImageByColor = [];
+
+        foreach ($oldVariants as $existing) {
+            $colorKey = trim((string) $existing->color);
+            if ($colorKey !== '' && filled($existing->image_path) && ! isset($oldImageByColor[$colorKey])) {
+                $oldImageByColor[$colorKey] = $existing->image_path;
+            }
+        }
+
+        $allowedStoredPaths = $oldVariants
+            ->pluck('image_path')
+            ->filter()
+            ->values()
+            ->all();
+
         foreach ($variants as $index => $variant) {
-            $imagePath = ProductVariantUpload::storeVariantImage($request, (int) $index, $variant);
+            $sortOrder++;
+            $index = (int) $index;
+            $color = trim((string) ($variant['color'] ?? ''));
+            $newImagePath = ProductVariantUpload::storeVariantImage($request, $index, $variant);
+            $old = $oldVariants->get($index);
+
+            $storedPath = $variant['stored_image_path']
+                ?? $variant['image_path']
+                ?? $variant['image_url']
+                ?? null;
+            if (is_string($storedPath) && (str_starts_with($storedPath, 'http://') || str_starts_with($storedPath, 'https://') || str_starts_with($storedPath, '/'))) {
+                // Clients often resend the absolute/public image_url; map back to a known stored path.
+                $matched = $oldVariants->first(function ($row) use ($storedPath) {
+                    if (! filled($row->image_path)) {
+                        return false;
+                    }
+                    $url = StoresUploadedFiles::url($row->image_path);
+                    if (! $url) {
+                        return false;
+                    }
+                    $basename = basename((string) $row->image_path);
+
+                    return $url === $storedPath
+                        || str_ends_with(rtrim($storedPath, '/'), '/'.$basename)
+                        || str_ends_with(rtrim($storedPath, '/'), $basename);
+                });
+                $storedPath = $matched?->image_path;
+            }
+            if (! is_string($storedPath) || $storedPath === '' || ! in_array($storedPath, $allowedStoredPaths, true)) {
+                $storedPath = null;
+            }
+
+            $imagePath = $newImagePath
+                ?? $storedPath
+                ?? ($color !== '' ? ($oldImageByColor[$color] ?? null) : null)
+                ?? $old?->image_path;
+
+            if ($imagePath !== null && $imagePath !== '') {
+                $keptPaths[] = $imagePath;
+            }
 
             PortfolioItemVariant::query()->create([
                 'portfolio_item_id' => $product->id,
@@ -673,8 +737,36 @@ class ProductController extends VendorApiController
                     ? max(0, (int) $variant['quantity'])
                     : null,
                 'image_path' => $imagePath,
-                'sort_order' => $index + 1,
+                'sort_order' => $sortOrder,
             ]);
+        }
+
+        if ($replacing) {
+            foreach ($oldVariants as $existing) {
+                $path = $existing->image_path;
+                if ($path && ! in_array($path, $keptPaths, true)) {
+                    StoresUploadedFiles::delete($path);
+                }
+            }
+        }
+    }
+
+    protected function propagateVariantColorImages(PortfolioItem $product): void
+    {
+        $product->load('variants');
+        $byColor = $product->variants->groupBy(fn ($variant) => trim((string) $variant->color));
+
+        foreach ($byColor as $variants) {
+            $withImage = $variants->first(fn ($variant) => filled($variant->image_path));
+            if (! $withImage) {
+                continue;
+            }
+
+            foreach ($variants as $variant) {
+                if (! filled($variant->image_path)) {
+                    $variant->update(['image_path' => $withImage->image_path]);
+                }
+            }
         }
     }
 

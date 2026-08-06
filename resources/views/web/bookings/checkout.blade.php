@@ -67,7 +67,7 @@
                     <div class="jbw-figma-address-body">
                         <p class="jbw-figma-address-name">{{ $checkoutOrder->customer?->name ?? auth('customer')->user()?->name }}</p>
                         <p class="jbw-figma-address-lines">
-                            {{ $checkoutOrder->delivery_address }}@if ($checkoutOrder->city), {{ $checkoutOrder->city }}@endif@if($checkoutOrder->pincode) {{ $checkoutOrder->pincode }}@endif
+                            {{ $checkoutOrder->delivery_address }}{{ $checkoutOrder->city ? ', '.$checkoutOrder->city : '' }}{{ $checkoutOrder->pincode ? ' '.$checkoutOrder->pincode : '' }}
                         </p>
                     </div>
                 </div>

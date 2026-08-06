@@ -292,27 +292,48 @@ class CheckoutItemPayloadSupport
         }
 
         $map = [];
+        $sequential = 0;
 
-        foreach (array_values($items) as $index => $row) {
+        foreach ($items as $key => $row) {
             if (! is_array($row)) {
                 continue;
             }
 
-            if (! self::rowHasItemIdentity($row) && self::referenceImageFiles($request, $index) === []) {
+            $lookupIndexes = [];
+            if (is_numeric($key)) {
+                $lookupIndexes[] = (int) $key;
+            }
+            if (! empty($row['cart_item_id'])) {
+                $lookupIndexes[] = (int) $row['cart_item_id'];
+            }
+            $lookupIndexes[] = $sequential;
+            $lookupIndexes = array_values(array_unique($lookupIndexes));
+
+            $files = [];
+            foreach ($lookupIndexes as $lookupIndex) {
+                $files = self::referenceImageFiles($request, $lookupIndex);
+                if ($files !== []) {
+                    break;
+                }
+            }
+
+            if (! self::rowHasItemIdentity($row) && $files === []) {
                 continue;
             }
 
             $row = self::normalizeDateFields($row);
 
             $row['reference_image_paths'] = self::storeReferenceImages(
-                self::referenceImageFiles($request, $index),
+                $files,
                 $row['reference_image_paths'] ?? []
             );
 
             $keys = self::keysForRow($row);
-            foreach ($keys as $key) {
-                $map[$key] = $row;
+            foreach ($keys as $mapKey) {
+                $map[$mapKey] = $row;
             }
+
+            $sequential++;
         }
 
         return $map;

@@ -232,7 +232,7 @@ class BookingController extends WebController
         $requiresRentalPeriod = $item->requiresRentalPeriod();
 
         $data = $request->validate(array_merge([
-            'delivery_address' => ['required', 'string', 'max:500'],
+            'delivery_address' => [$request->boolean('shipment_required', true) ? 'required' : 'nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'rental_start_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:today'],
@@ -244,9 +244,21 @@ class BookingController extends WebController
             'size' => ['nullable', 'string', 'max:50'],
             'portfolio_item_variant_id' => ['nullable', 'integer', 'exists:portfolio_item_variants,id'],
             'address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
+            'billing_address_id' => ['nullable', 'integer', 'exists:customer_addresses,id'],
+            'billing_address' => ['nullable', 'string', 'max:500'],
+            'shipment_required' => ['nullable', 'boolean'],
             'measurement_profile_id' => ['nullable', 'integer'],
             'measurement_id' => ['nullable', 'integer'],
+            'measurement_type' => ['nullable', 'in:women,men,kid'],
         ], BookingMeasurementSupport::checkoutValidationRules()));
+
+        $data['shipment_required'] = $request->boolean('shipment_required');
+
+        if (! $data['shipment_required']) {
+            $data['delivery_address'] = $data['delivery_address']
+                ?: ($customer->defaultAddress()?->fullAddress() ?: ($customer->city ?: 'Pickup'));
+            $data['city'] = $data['city'] ?: $customer->city;
+        }
 
         if (! $requiresRentalPeriod && (empty($data['rental_start_date']) || empty($data['rental_end_date']))) {
             $data['rental_start_date'] = null;
@@ -269,6 +281,12 @@ class BookingController extends WebController
             $data['delivery_address'] = $address->fullAddress();
             $data['city'] = $address->city;
             $data['pincode'] = $address->pincode;
+        }
+
+        if ($request->filled('billing_address_id')) {
+            $billing = $customer->addresses()->find($request->integer('billing_address_id'));
+            abort_unless($billing, 403);
+            $data['billing_address'] = $billing->fullAddress();
         }
 
         $measurement = BookingMeasurementSupport::resolveProfile($customer, $data);
