@@ -203,7 +203,7 @@
         </div>
     </div>
 
-    @if ($related->isNotEmpty())
+    {{--@if ($related->isNotEmpty())
         <section class="jbw-section jbw-section--tight">
             <h2 class="jbw-section-title" style="font-size:1.375rem;margin-bottom:1.25rem">More from {{ $item->vendor?->brand_name ?? 'this designer' }}</h2>
             <div class="jbw-product-grid">
@@ -219,7 +219,7 @@
                 @endforeach
             </div>
         </section>
-    @endif
+    @endif--}}
 
     <section class="jbw-section jbw-reviews-block" style="padding-top: 0;">
         <h2 class="jbw-product-detail-title">Customer Reviews</h2>

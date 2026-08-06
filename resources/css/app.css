@@ -104,7 +104,7 @@
     }
 
     .jb-logo-preview-img--banner {
-        @apply max-h-40 w-full max-w-md rounded-lg object-cover;
+        @apply max-h-72 w-auto max-w-full rounded-lg object-contain;
     }
 
     .jb-nav-group-label {
@@ -250,6 +250,14 @@
 
     .jb-profile-file-input {
         @apply sr-only;
+    }
+
+    .jb-image-upload-preview {
+        @apply flex min-h-[7rem] w-full max-w-[11rem] shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50/80 p-3;
+    }
+
+    .jb-image-upload-preview__img {
+        @apply block max-h-48 w-auto max-w-full rounded-lg object-contain;
     }
 
     .jb-profile-dropdown-enter {

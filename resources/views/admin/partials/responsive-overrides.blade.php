@@ -655,7 +655,9 @@
         display: block;
         width: 100%;
         height: 9.5rem;
-        object-fit: cover;
+        object-fit: contain;
+        object-position: center;
+        background: rgb(248 250 252);
     }
 
     .jb-multi-image-upload-item--preview {
