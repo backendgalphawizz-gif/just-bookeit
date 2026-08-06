@@ -85,85 +85,88 @@
                 <div><dt>Registered</dt><dd>{{ \App\Support\AdminDateTime::formatDate($driver->registered_at) }}</dd></div>
             </dl>
         </div>
-        @if ($driver->aadharFrontUrl() || $driver->aadharBackUrl() || $driver->drivingLicenceUrl() || $driver->aadharUrl())
-            <div class="jb-detail-card lg:col-span-2">
-                <h2>Documents</h2>
-                <div class="jb-doc-image-grid">
-                    @if ($driver->aadharFrontUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar front</p>
-                            <img src="{{ $driver->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
-                    @elseif ($driver->aadharUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar</p>
-                            <img src="{{ $driver->aadharUrl() }}" alt="Aadhar" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
-                    @endif
-                    @if ($driver->aadharBackUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar back</p>
-                            <img src="{{ $driver->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
-                    @endif
-                    @if ($driver->drivingLicenceUrl())
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Driving licence</p>
-                            <img src="{{ $driver->drivingLicenceUrl() }}" alt="Driving licence" class="jb-doc-image panel-lightbox-trigger">
-                        </div>
+
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            @if ($driver->aadharFrontUrl() || $driver->aadharBackUrl() || $driver->drivingLicenceUrl() || $driver->aadharUrl())
+                <div class="jb-detail-card">
+                    <h2>Documents</h2>
+                    <div class="jb-doc-image-grid">
+                        @if ($driver->aadharFrontUrl())
+                            <div>
+                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar front</p>
+                                <img src="{{ $driver->aadharFrontUrl() }}" alt="Aadhar front" class="jb-doc-image panel-lightbox-trigger">
+                            </div>
+                        @elseif ($driver->aadharUrl())
+                            <div>
+                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar</p>
+                                <img src="{{ $driver->aadharUrl() }}" alt="Aadhar" class="jb-doc-image panel-lightbox-trigger">
+                            </div>
+                        @endif
+                        @if ($driver->aadharBackUrl())
+                            <div>
+                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Aadhar back</p>
+                                <img src="{{ $driver->aadharBackUrl() }}" alt="Aadhar back" class="jb-doc-image panel-lightbox-trigger">
+                            </div>
+                        @endif
+                        @if ($driver->drivingLicenceUrl())
+                            <div>
+                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Driving licence</p>
+                                <img src="{{ $driver->drivingLicenceUrl() }}" alt="Driving licence" class="jb-doc-image panel-lightbox-trigger">
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            <div class="jb-detail-card">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h2 class="mb-0">Orders</h2>
+                    @if ($orders->total() > 0)
+                        <p class="text-sm text-slate-500">{{ $orders->total() }} {{ Str::plural('order', $orders->total()) }}</p>
                     @endif
                 </div>
-            </div>
-        @endif
-
-        <div class="jb-detail-card lg:col-span-3">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="mb-0">Orders</h2>
-                @if ($orders->total() > 0)
-                    <p class="text-sm text-slate-500">{{ $orders->total() }} {{ Str::plural('order', $orders->total()) }}</p>
+                <div class="jb-table-wrap mt-4">
+                    <table class="jb-table">
+                        <thead><tr>
+                            @include('admin.partials.table-index-header')
+                            <th class="jb-col-id">Order</th>
+                            <th class="jb-col-name">Customer</th>
+                            <th class="jb-col-name">Vendor</th>
+                            <th class="jb-col-amount">Amount</th>
+                            <th class="jb-col-status">Status</th>
+                            <th class="jb-col-date">Placed</th>
+                            <th class="jb-table-actions-col">Actions</th>
+                        </tr></thead>
+                        <tbody>
+                            @forelse ($orders as $order)
+                                <tr>
+                                    @include('admin.partials.table-index-cell', ['paginator' => $orders])
+                                    <td class="jb-col-id font-semibold">{{ $order->order_number }}</td>
+                                    <td class="jb-col-name max-w-[12rem]">
+                                        <span class="block truncate font-medium" title="{{ $order->customer?->name ?? '—' }}">{{ $order->customer?->name ?? '—' }}</span>
+                                    </td>
+                                    <td class="jb-col-name max-w-[12rem]">
+                                        <span class="block truncate" title="{{ $order->vendor?->brand_name ?? '—' }}">{{ $order->vendor?->brand_name ?? '—' }}</span>
+                                    </td>
+                                    <td class="jb-col-amount">₹{{ number_format((float) $order->amount, 2) }}</td>
+                                    <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
+                                    <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($order->created_at) }}</td>
+                                    <td class="jb-table-actions-col">
+                                        <div class="jb-actions">
+                                            <x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" />
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="8" class="jb-table-empty">No orders assigned to this driver yet.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                @if ($orders->hasPages())
+                    <div class="border-t border-slate-100 px-4 py-3">{{ $orders->links() }}</div>
                 @endif
             </div>
-            <div class="jb-table-wrap mt-4">
-                <table class="jb-table">
-                    <thead><tr>
-                        @include('admin.partials.table-index-header')
-                        <th class="jb-col-id">Order</th>
-                        <th class="jb-col-name">Customer</th>
-                        <th class="jb-col-name">Vendor</th>
-                        <th class="jb-col-amount">Amount</th>
-                        <th class="jb-col-status">Status</th>
-                        <th class="jb-col-date">Placed</th>
-                        <th class="jb-table-actions-col">Actions</th>
-                    </tr></thead>
-                    <tbody>
-                        @forelse ($orders as $order)
-                            <tr>
-                                @include('admin.partials.table-index-cell', ['paginator' => $orders])
-                                <td class="jb-col-id font-semibold">{{ $order->order_number }}</td>
-                                <td class="jb-col-name max-w-[12rem]">
-                                    <span class="block truncate font-medium" title="{{ $order->customer?->name ?? '—' }}">{{ $order->customer?->name ?? '—' }}</span>
-                                </td>
-                                <td class="jb-col-name max-w-[12rem]">
-                                    <span class="block truncate" title="{{ $order->vendor?->brand_name ?? '—' }}">{{ $order->vendor?->brand_name ?? '—' }}</span>
-                                </td>
-                                <td class="jb-col-amount">₹{{ number_format((float) $order->amount, 2) }}</td>
-                                <td class="jb-col-status">@include('admin.components.status-badge', ['status' => $order->status])</td>
-                                <td class="jb-col-date text-sm text-slate-500">{{ \App\Support\AdminDateTime::formatDate($order->created_at) }}</td>
-                                <td class="jb-table-actions-col">
-                                    <div class="jb-actions">
-                                        <x-admin.action-btn variant="view" :href="route('admin.orders.show', $order)" />
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="8" class="jb-table-empty">No orders assigned to this driver yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            @if ($orders->hasPages())
-                <div class="border-t border-slate-100 px-4 py-3">{{ $orders->links() }}</div>
-            @endif
         </div>
     </div>
 @endsection
