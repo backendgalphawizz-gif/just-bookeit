@@ -2313,6 +2313,49 @@ a { color: inherit; }
     gap: 1.15rem 1.25rem;
 }
 
+.jbw-modal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    min-height: 12rem;
+    padding: 2rem 1.25rem;
+    text-align: center;
+}
+
+.jbw-modal-empty[hidden],
+.jbw-subcat-grid[hidden],
+#jbwServicesModal .jbw-modal-options-grid[hidden] {
+    display: none !important;
+}
+
+.jbw-modal-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #94a3b8;
+}
+
+.jbw-modal-empty-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.jbw-modal-empty-text {
+    margin: 0;
+    max-width: 22rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #64748b;
+}
+
 .jbw-subcat-card {
     display: flex;
     flex-direction: column;

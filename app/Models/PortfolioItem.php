@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Support\Api\CatalogFilter;
 
 class PortfolioItem extends Model
 {
@@ -356,5 +358,14 @@ class PortfolioItem extends Model
     public function isApprovedForCatalog(): bool
     {
         return in_array($this->status, ['approved', 'pending'], true);
+    }
+
+    public function scopeCatalogListed(Builder $query): Builder
+    {
+        return CatalogFilter::applyCustomerCatalogConstraints($query)
+            ->where(function (Builder $listed) {
+                $listed->whereNull('is_listing_active')
+                    ->orWhere('is_listing_active', true);
+            });
     }
 }

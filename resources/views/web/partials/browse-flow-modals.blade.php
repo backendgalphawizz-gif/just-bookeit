@@ -58,6 +58,7 @@
                     $genderCategory = $browseGenderCategories->get($genderKey);
                     $genderImage = $genderCategory?->imageUrl() ?: ($browseGenderFallbacks[$genderKey] ?? null);
                 @endphp
+                @if ($genderCategory)
                 <button type="button" class="jbw-modal-option" onclick="selectGender('{{ $genderKey }}')">
                     <div class="jbw-modal-circle-thumb">
                         @if ($genderImage)
@@ -66,6 +67,7 @@
                     </div>
                     <span class="jbw-modal-option-label">{{ $genderLabel }}</span>
                 </button>
+                @endif
             @endforeach
         </div>
     </div>
@@ -81,7 +83,7 @@
         </div>
         <div class="jbw-modal-options-grid">
             @forelse ($browseServices as $index => $service)
-                <button type="button" class="jbw-modal-option" onclick="selectService({{ (int) $service->id }})">
+                <button type="button" class="jbw-modal-option jbw-service-option" data-service-id="{{ (int) $service->id }}" onclick="selectService({{ (int) $service->id }})">
                     <div class="jbw-modal-circle-thumb">
                         <img src="{{ $service->imageUrl() ?: $browseServiceFallbacks[$index % count($browseServiceFallbacks)] }}" alt="{{ $service->name }}">
                     </div>
@@ -98,6 +100,13 @@
                 @endforeach
             @endforelse
         </div>
+        <div id="jbwServicesEmpty" class="jbw-modal-empty" hidden>
+            <div class="jbw-modal-empty-icon" aria-hidden="true">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+            <p class="jbw-modal-empty-title">No products or subcategories found</p>
+            <p class="jbw-modal-empty-text">Try another category or check back later.</p>
+        </div>
     </div>
 </div>
 
@@ -110,6 +119,13 @@
             <p class="jbw-subcat-sub">Choose the type of outfit you are looking for from our curated categories.</p>
         </div>
         <div id="jbwSubcategoryGrid" class="jbw-subcat-grid"></div>
+        <div id="jbwSubcategoryEmpty" class="jbw-modal-empty" hidden>
+            <div class="jbw-modal-empty-icon" aria-hidden="true">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+            <p class="jbw-modal-empty-title">No products or subcategories found</p>
+            <p class="jbw-modal-empty-text">Try another category or service, or check back later.</p>
+        </div>
     </div>
 </div>
 
@@ -240,10 +256,111 @@
         unlockBodyIfNoModals();
     }
 
+    function setBrowsePanelVisible(panel, visible) {
+        if (!panel) {
+            return;
+        }
+        panel.hidden = !visible;
+        panel.style.display = visible ? '' : 'none';
+    }
+
+    function showSubcategoryEmptyState(title) {
+        document.getElementById('jbwSubcategoryTitle').textContent = title;
+        const grid = document.getElementById('jbwSubcategoryGrid');
+        const empty = document.getElementById('jbwSubcategoryEmpty');
+        grid.innerHTML = '';
+        setBrowsePanelVisible(grid, false);
+        setBrowsePanelVisible(empty, true);
+        document.getElementById('jbwSubcategoryModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function renderSubcategoryGrid(main, subs) {
+        document.getElementById('jbwSubcategoryTitle').textContent = main.name;
+        const grid = document.getElementById('jbwSubcategoryGrid');
+        const empty = document.getElementById('jbwSubcategoryEmpty');
+        grid.innerHTML = '';
+        setBrowsePanelVisible(empty, false);
+        setBrowsePanelVisible(grid, true);
+
+        subs.forEach((sub) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'jbw-subcat-card';
+            button.onclick = () => selectSubcategory(sub.id);
+
+            const media = document.createElement('div');
+            media.className = 'jbw-subcat-card-media';
+            const img = document.createElement('img');
+            img.src = sub.image;
+            img.alt = sub.name;
+            img.loading = 'lazy';
+            media.appendChild(img);
+
+            const label = document.createElement('span');
+            label.className = 'jbw-subcat-card-label';
+            label.textContent = sub.name;
+
+            button.appendChild(media);
+            button.appendChild(label);
+            grid.appendChild(button);
+        });
+
+        document.getElementById('jbwSubcategoryModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function syncServicesEmptyState() {
+        const grid = document.querySelector('#jbwServicesModal .jbw-modal-options-grid');
+        const empty = document.getElementById('jbwServicesEmpty');
+        if (!grid || !empty) {
+            return;
+        }
+
+        const visibleCount = Array.from(grid.querySelectorAll('.jbw-service-option'))
+            .filter((button) => button.style.display !== 'none' && !button.hidden)
+            .length;
+
+        const showEmpty = grid.querySelectorAll('.jbw-service-option').length > 0 && visibleCount === 0;
+        setBrowsePanelVisible(empty, showEmpty);
+        setBrowsePanelVisible(grid, !showEmpty);
+    }
+
+    function syncServiceOptionsForGender(genderKey) {
+        const key = String(genderKey || '').toLowerCase();
+        const main = jbwSubcategoryTree[key];
+        const allowed = new Set(
+            (main?.subs || [])
+                .map((sub) => Number(sub.service_category_id))
+                .filter((id) => id > 0)
+        );
+        const hasAllowed = allowed.size > 0;
+
+        document.querySelectorAll('#jbwServicesModal .jbw-service-option').forEach((button) => {
+            const serviceId = Number(button.dataset.serviceId || 0);
+            const visible = !hasAllowed || allowed.has(serviceId);
+            button.hidden = !visible;
+            button.style.display = visible ? '' : 'none';
+        });
+
+        syncServicesEmptyState();
+    }
+
     function openServicesModal(genderKey) {
         pendingGenderKey = String(genderKey || '').toLowerCase();
         browseNeedsService = false;
         browseBackUrl = jbwHomeUrl;
+
+        const main = jbwSubcategoryTree[pendingGenderKey];
+        if (main && (!Array.isArray(main.subs) || !main.subs.length)) {
+            currentMainCategory = main;
+            closeGenderModal();
+            closeServicesModal();
+            showSubcategoryEmptyState(main.name);
+            return;
+        }
+
+        syncServiceOptionsForGender(pendingGenderKey);
         document.getElementById('jbwGenderModal').style.display = 'none';
         document.getElementById('jbwSubcategoryModal').style.display = 'none';
         document.getElementById('jbwServicesModal').style.display = 'flex';
@@ -273,6 +390,10 @@
         document.getElementById('jbwSubcategoryModal').style.display = 'none';
         document.body.style.overflow = '';
         currentMainCategory = null;
+        const grid = document.getElementById('jbwSubcategoryGrid');
+        const empty = document.getElementById('jbwSubcategoryEmpty');
+        setBrowsePanelVisible(grid, true);
+        setBrowsePanelVisible(empty, false);
     }
 
     function selectGender(selectedGenderKey) {
@@ -302,12 +423,7 @@
 
         let subs = Array.isArray(main.subs) ? main.subs.slice() : [];
         if (currentServiceId) {
-            const filtered = subs.filter((sub) => {
-                return !sub.service_category_id || Number(sub.service_category_id) === Number(currentServiceId);
-            });
-            if (filtered.length) {
-                subs = filtered;
-            }
+            subs = subs.filter((sub) => Number(sub.service_category_id) === Number(currentServiceId));
         }
 
         if (!subs.length) {
@@ -317,43 +433,12 @@
             })) {
                 return;
             }
-            const params = catalogParams({
-                category: main.id,
-                service: currentServiceId,
-            });
-            window.location.href = jbwCatalogBaseUrl + '?' + params.toString();
+
+            showSubcategoryEmptyState(main.name);
             return;
         }
 
-        document.getElementById('jbwSubcategoryTitle').textContent = main.name;
-        const grid = document.getElementById('jbwSubcategoryGrid');
-        grid.innerHTML = '';
-
-        subs.forEach((sub) => {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'jbw-subcat-card';
-            button.onclick = () => selectSubcategory(sub.id);
-
-            const media = document.createElement('div');
-            media.className = 'jbw-subcat-card-media';
-            const img = document.createElement('img');
-            img.src = sub.image;
-            img.alt = sub.name;
-            img.loading = 'lazy';
-            media.appendChild(img);
-
-            const label = document.createElement('span');
-            label.className = 'jbw-subcat-card-label';
-            label.textContent = sub.name;
-
-            button.appendChild(media);
-            button.appendChild(label);
-            grid.appendChild(button);
-        });
-
-        document.getElementById('jbwSubcategoryModal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        renderSubcategoryGrid(main, subs);
     }
 
     function selectSubcategory(subcategoryId) {

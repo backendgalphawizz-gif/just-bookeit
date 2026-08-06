@@ -52,6 +52,7 @@
     'name' => 'image',
     'label' => 'Category image',
     'currentUrl' => $category?->imageUrl(),
+    'hint' => 'Recommended resolution: 340 × 248 px · PNG, JPG, or WebP · max 4 MB',
 ])
 
 @if (! $isServiceEdit)

@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\PlatformSetting;
 use App\Services\NotificationInboxService;
+use App\Support\Web\BrowseCategoryQuery;
 use App\Support\WebLocation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -53,22 +54,8 @@ class WebLayoutComposer
 
         $view->with([
             'webCustomer' => $customer,
-            'webNavCategories' => Category::query()
-                ->active()
-                ->main()
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->limit(8)
-                ->get(),
-            'webBrowseCategories' => Category::query()
-                ->active()
-                ->main()
-                ->with(['subcategories' => fn ($query) => $query
-                    ->active()
-                    ->orderBy('sort_order')
-                    ->orderBy('name')])
-                ->orderBy('sort_order')
-                ->get(),
+            'webNavCategories' => BrowseCategoryQuery::mainWithSubs()->take(8),
+            'webBrowseCategories' => BrowseCategoryQuery::mainWithSubs(),
             'webServiceCategories' => Category::query()
                 ->active()
                 ->service()

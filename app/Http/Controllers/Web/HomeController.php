@@ -6,6 +6,7 @@ use App\Models\Banner;
 use App\Models\Category;
 use App\Models\OrderReview;
 use App\Models\Vendor;
+use App\Support\Web\BrowseCategoryQuery;
 use Illuminate\View\View;
 
 class HomeController extends WebController
@@ -25,15 +26,7 @@ class HomeController extends WebController
             ->orderBy('sort_order')
             ->get();
 
-        $shopCategories = Category::query()
-            ->active()
-            ->main()
-            ->with(['subcategories' => fn ($query) => $query
-                ->active()
-                ->orderBy('sort_order')
-                ->orderBy('name')])
-            ->orderBy('sort_order')
-            ->get();
+        $shopCategories = BrowseCategoryQuery::mainWithSubs();
 
         $featuredDesigners = Vendor::query()
             ->active()

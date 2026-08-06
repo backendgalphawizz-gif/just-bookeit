@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\PortfolioItem;
 use App\Support\Api\CatalogFilter;
 use App\Support\ProductOptionCatalog;
+use App\Support\Web\BrowseCategoryQuery;
 use App\Support\WebLocation;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -84,12 +85,16 @@ class CatalogController extends WebController
 
         $items = $query->latest('id')->paginate(12)->withQueryString();
 
-        $mainCategories = Category::query()
-            ->active()
-            ->main()
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $serviceCategoryId = CatalogFilter::resolveServiceCategoryId($filterRequest);
+        $mainCategoryId = CatalogFilter::resolveMainCategoryId($filterRequest);
+        $audience = null;
+
+        if ($mainCategoryId) {
+            $mainCategory = Category::query()->find($mainCategoryId);
+            $audience = $mainCategory ? CatalogFilter::audienceFromCategory($mainCategory) : null;
+        }
+
+        $mainCategories = BrowseCategoryQuery::mainWithSubs($serviceCategoryId);
 
         $serviceCategories = Category::query()
             ->active()
@@ -98,13 +103,7 @@ class CatalogController extends WebController
             ->orderBy('name')
             ->get();
 
-        $subcategories = Category::query()
-            ->active()
-            ->sub()
-            ->when($request->filled('category'), fn ($q) => $q->where('parent_id', $request->integer('category')))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $subcategories = BrowseCategoryQuery::subs($mainCategoryId, $serviceCategoryId, $audience);
 
         $filterSizes = ProductOptionCatalog::sizeNames(true);
         $filterColors = ProductOptionCatalog::colorApiItems(true);
