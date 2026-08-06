@@ -12,6 +12,7 @@
                 'advance_amount' => $v->advance_amount,
                 'quantity' => $v->quantity,
                 'image_url' => $v->imageUrl(),
+                'thumb_url' => $v->thumbUrl() ?: $v->imageUrl(),
                 'stored_image_path' => $v->image_path,
             ])->all()
             : [];
@@ -57,10 +58,13 @@
                     <label class="jb-label">Variant image</label>
                     <div class="jb-variant-image-preview" data-variant-image-preview @if (empty($variant['image_url'])) hidden @endif>
                         <img
-                            src="{{ $variant['image_url'] ?? '' }}"
+                            src="{{ $variant['thumb_url'] ?? $variant['image_url'] ?? '' }}"
+                            data-lightbox-src="{{ $variant['image_url'] ?? '' }}"
                             alt="Variant image preview"
                             class="jb-variant-image-preview__img panel-lightbox-trigger"
                             data-variant-image-thumb
+                            loading="lazy"
+                            decoding="async"
                         >
                         <p class="jb-variant-image-preview__hint" data-variant-image-hint>{{ ! empty($variant['image_url']) ? 'Current image' : '' }}</p>
                     </div>

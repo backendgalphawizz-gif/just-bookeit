@@ -116,17 +116,17 @@ class ProductController extends VendorController
         $imagePath = null;
 
         if ($primaryImage instanceof UploadedFile) {
-            $imagePath = StoresUploadedFiles::store($primaryImage, 'portfolio/images');
+            $imagePath = StoresUploadedFiles::storePortfolioImage($primaryImage, 'portfolio/images');
         } elseif ($type === 'rented-dress') {
             $mediaImage = $this->firstUploadedMediaImage($request);
             if ($mediaImage instanceof UploadedFile) {
-                $imagePath = StoresUploadedFiles::store($mediaImage, 'portfolio/images');
+                $imagePath = StoresUploadedFiles::storePortfolioImage($mediaImage, 'portfolio/images');
                 $primaryImage = $mediaImage;
             }
         } elseif ($type === 'rented-jewellery') {
             $mediaImage = $this->firstUploadedMediaImage($request);
             if ($mediaImage instanceof UploadedFile) {
-                $imagePath = StoresUploadedFiles::store($mediaImage, 'portfolio/images');
+                $imagePath = StoresUploadedFiles::storePortfolioImage($mediaImage, 'portfolio/images');
                 $primaryImage = $mediaImage;
             }
         }
@@ -265,7 +265,7 @@ class ProductController extends VendorController
 
         // Color uploads must not replace the banner — only an explicit cover `image` does.
         if ($primaryImage instanceof UploadedFile) {
-            $product->image_url = StoresUploadedFiles::replace(
+            $product->image_url = StoresUploadedFiles::replacePortfolioImage(
                 $primaryImage,
                 $product->image_url,
                 'portfolio/images'
@@ -278,7 +278,7 @@ class ProductController extends VendorController
         } elseif ($type === 'rented-jewellery' && blank($product->image_url)) {
             $mediaImage = $this->firstUploadedMediaImage($request);
             if ($mediaImage instanceof UploadedFile) {
-                $product->image_url = StoresUploadedFiles::store($mediaImage, 'portfolio/images');
+                $product->image_url = StoresUploadedFiles::storePortfolioImage($mediaImage, 'portfolio/images');
                 $primaryImage = $mediaImage;
             }
         }
@@ -369,7 +369,7 @@ class ProductController extends VendorController
             || $product->images()->where('image_path', $path)->exists();
 
         if (! $stillUsed) {
-            StoresUploadedFiles::delete($path);
+            StoresUploadedFiles::deletePortfolioImage($path);
         }
 
         return back()->with('success', 'Gallery image removed.');

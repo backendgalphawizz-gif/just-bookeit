@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\Api\CatalogFilter;
+use App\Support\StoresUploadedFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Support\Api\CatalogFilter;
 
 class PortfolioItem extends Model
 {
@@ -195,24 +196,34 @@ class PortfolioItem extends Model
             return ltrim(str_replace('\\', '/', $path), '/');
         };
 
-        $push = function (string $type, ?string $url) use (&$items, &$seen, $poster, $normalizeKey): void {
+        $push = function (string $type, ?string $url, ?string $path = null) use (&$items, &$seen, $poster, $normalizeKey): void {
             $key = $normalizeKey($url);
             if ($key === null || isset($seen[$type.':'.$key])) {
                 return;
             }
 
             $seen[$type.':'.$key] = true;
+            $thumbUrl = null;
+            if ($type === 'image' && is_string($path) && $path !== '') {
+                $thumbUrl = StoresUploadedFiles::thumbUrl($path);
+            }
+
             $items[] = [
                 'type' => $type,
                 'url' => $url,
+                'thumb_url' => $thumbUrl ?: $url,
                 'poster' => $type === 'video' ? $poster : null,
             ];
         };
 
-        $push('image', $poster);
+        $push('image', $poster, is_string($this->image_url) ? $this->image_url : null);
 
         foreach ($this->images->sortBy('sort_order') as $media) {
-            $push($media->isVideo() ? 'video' : 'image', $media->mediaUrl());
+            $push(
+                $media->isVideo() ? 'video' : 'image',
+                $media->mediaUrl(),
+                $media->isImage() ? $media->image_path : null
+            );
         }
 
         return $items;
@@ -289,6 +300,19 @@ class PortfolioItem extends Model
         }
 
         return '/storage/'.ltrim($this->image_url, '/');
+    }
+
+    public function displayThumbUrl(): ?string
+    {
+        if (! $this->image_url) {
+            return null;
+        }
+
+        if (str_starts_with($this->image_url, 'http://') || str_starts_with($this->image_url, 'https://')) {
+            return $this->image_url;
+        }
+
+        return StoresUploadedFiles::thumbUrl($this->image_url) ?: $this->displayImageUrl();
     }
 
     public function rentalPriceAmount(): int

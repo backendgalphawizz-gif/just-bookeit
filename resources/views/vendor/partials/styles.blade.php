@@ -908,15 +908,6 @@ img { max-width: 100%; display: block; }
     font-weight: 700;
     white-space: nowrap;
 }
-.vp-status-pill::after {
-    content: '';
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid currentColor;
-    opacity: .55;
-}
 .vp-status-select--new { background: #e8effc; color: #1e429f; }
 .vp-status-select--accepted { background: #ffe8df; color: #c2410c; }
 .vp-status-select--transit { background: #fff4df; color: #b45309; }

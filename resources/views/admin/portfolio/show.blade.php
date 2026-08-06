@@ -70,9 +70,11 @@
                             @else
                                 <img
                                     class="jb-product-view-hero panel-lightbox-trigger"
-                                    src="{{ url($hero['url']) }}"
+                                    src="{{ url($hero['thumb_url'] ?? $hero['url']) }}"
+                                    data-lightbox-src="{{ url($hero['url']) }}"
                                     alt="{{ $portfolio->title }}"
                                     data-jb-product-hero
+                                    decoding="async"
                                 >
                             @endif
                         @else
@@ -99,7 +101,7 @@
                                         <video src="{{ url($thumb['url']) }}" muted playsinline preload="metadata"></video>
                                         <span class="jb-product-view-thumb-label">Video</span>
                                     @else
-                                        <img src="{{ url($thumb['url']) }}" alt="">
+                                        <img src="{{ url($thumb['thumb_url'] ?? $thumb['url']) }}" alt="" loading="lazy" decoding="async">
                                     @endif
                                 </button>
                             @endforeach
@@ -175,7 +177,14 @@
                                 <article class="jb-product-variant-card">
                                     <div class="jb-product-variant-media">
                                         @if ($variant->imageUrl())
-                                            <img src="{{ $variant->imageUrl() }}" alt="" class="panel-lightbox-trigger">
+                                            <img
+                                                src="{{ $variant->thumbUrl() }}"
+                                                data-lightbox-src="{{ $variant->imageUrl() }}"
+                                                alt=""
+                                                class="panel-lightbox-trigger"
+                                                loading="lazy"
+                                                decoding="async"
+                                            >
                                         @else
                                             <div class="jb-product-variant-media--empty">No image</div>
                                         @endif
@@ -381,6 +390,7 @@
 
         if (hero.tagName === 'IMG') {
             hero.src = url;
+            hero.setAttribute('data-lightbox-src', url);
             return;
         }
 
@@ -389,6 +399,8 @@
         img.alt = productTitle;
         img.className = 'jb-product-view-hero panel-lightbox-trigger';
         img.setAttribute('data-jb-product-hero', '');
+        img.setAttribute('data-lightbox-src', url);
+        img.decoding = 'async';
         hero.replaceWith(img);
     };
 

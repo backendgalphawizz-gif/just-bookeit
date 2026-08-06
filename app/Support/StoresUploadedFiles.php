@@ -12,17 +12,34 @@ class StoresUploadedFiles
         return $file->store($directory, 'public');
     }
 
+    /**
+     * Store a portfolio product image: resize the original and write a list/admin thumbnail.
+     */
+    public static function storePortfolioImage(UploadedFile $file, string $directory): string
+    {
+        return PortfolioImageOptimizer::store($file, $directory);
+    }
+
     public static function replace(?UploadedFile $file, ?string $oldPath, string $directory): ?string
     {
         if (! $file) {
             return $oldPath;
         }
 
-        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-            Storage::disk('public')->delete($oldPath);
-        }
+        self::delete($oldPath);
 
         return self::store($file, $directory);
+    }
+
+    public static function replacePortfolioImage(?UploadedFile $file, ?string $oldPath, string $directory): ?string
+    {
+        if (! $file) {
+            return $oldPath;
+        }
+
+        self::deletePortfolioImage($oldPath);
+
+        return self::storePortfolioImage($file, $directory);
     }
 
     public static function delete(?string $path): void
@@ -30,6 +47,38 @@ class StoresUploadedFiles
         if ($path && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
+    }
+
+    public static function deletePortfolioImage(?string $path): void
+    {
+        PortfolioImageOptimizer::deleteWithThumb($path);
+    }
+
+    public static function thumbPath(?string $path): ?string
+    {
+        if (! $path || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return null;
+        }
+
+        return PortfolioImageOptimizer::thumbPathFor($path);
+    }
+
+    public static function thumbUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        $thumb = self::thumbPath($path);
+        if ($thumb && Storage::disk('public')->exists($thumb)) {
+            return self::url($thumb);
+        }
+
+        return self::url($path);
     }
 
     public static function url(?string $path): ?string

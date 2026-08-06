@@ -144,7 +144,14 @@
                     <div class="jb-multi-image-upload-item">
                         <div class="jb-multi-image-upload-item__media">
                             @if ($image->imageUrl())
-                                <img src="{{ $image->imageUrl() }}" alt="" class="panel-lightbox-trigger">
+                                <img
+                                    src="{{ $image->isImage() ? ($image->thumbUrl() ?: $image->imageUrl()) : $image->imageUrl() }}"
+                                    @if ($image->isImage()) data-lightbox-src="{{ $image->imageUrl() }}" @endif
+                                    alt=""
+                                    class="panel-lightbox-trigger"
+                                    loading="lazy"
+                                    decoding="async"
+                                >
                             @endif
                             @if ($portfolio->exists)
                                 <button

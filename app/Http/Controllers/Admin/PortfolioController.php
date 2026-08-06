@@ -108,7 +108,7 @@ class PortfolioController extends AdminController
             $data['damage_deductions'] ?? []
         );
 
-        $imagePath = StoresUploadedFiles::store($request->file('image'), 'portfolio/images');
+        $imagePath = StoresUploadedFiles::storePortfolioImage($request->file('image'), 'portfolio/images');
         $isDress = $typeSlug === 'rented-dress';
 
         $product = PortfolioItem::query()->create([
@@ -212,7 +212,7 @@ class PortfolioController extends AdminController
         ]);
 
         if ($request->hasFile('image')) {
-            $portfolio->image_url = StoresUploadedFiles::replace(
+            $portfolio->image_url = StoresUploadedFiles::replacePortfolioImage(
                 $request->file('image'),
                 $portfolio->image_url,
                 'portfolio/images'
@@ -234,7 +234,7 @@ class PortfolioController extends AdminController
         } elseif ($portfolio->variants()->exists()) {
             // Switching away from rental dress clears variant rows.
             foreach ($portfolio->variants as $existing) {
-                StoresUploadedFiles::delete($existing->image_path);
+                StoresUploadedFiles::deletePortfolioImage($existing->image_path);
             }
             $portfolio->variants()->delete();
         }
@@ -259,7 +259,11 @@ class PortfolioController extends AdminController
         abort_unless($image->portfolio_item_id === $portfolio->id, 404);
 
         $wasVideo = $image->isVideo();
-        StoresUploadedFiles::delete($image->image_path);
+        if ($wasVideo) {
+            StoresUploadedFiles::delete($image->image_path);
+        } else {
+            StoresUploadedFiles::deletePortfolioImage($image->image_path);
+        }
         $image->delete();
 
         return back()->with('success', $wasVideo ? 'Gallery video removed.' : 'Gallery image removed.');

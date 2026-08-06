@@ -37,4 +37,9 @@ class PortfolioItemVariant extends Model
     {
         return StoresUploadedFiles::url($this->image_path);
     }
+
+    public function thumbUrl(): ?string
+    {
+        return StoresUploadedFiles::thumbUrl($this->image_path);
+    }
 }

@@ -109,7 +109,7 @@ class ProductController extends VendorApiController
         );
 
         $primaryImage = $this->resolvePrimaryImage($request);
-        $imagePath = StoresUploadedFiles::store($primaryImage, 'portfolio/images');
+        $imagePath = StoresUploadedFiles::storePortfolioImage($primaryImage, 'portfolio/images');
 
         $product = PortfolioItem::query()->create([
             'vendor_id' => $vendor->id,
@@ -213,7 +213,7 @@ class ProductController extends VendorApiController
         $product->fill($updates);
 
         if ($request->hasFile('image') || $request->hasFile('product_image')) {
-            $product->image_url = StoresUploadedFiles::replace(
+            $product->image_url = StoresUploadedFiles::replacePortfolioImage(
                 $request->file('image') ?? $request->file('product_image'),
                 $product->image_url,
                 'portfolio/images'
@@ -609,10 +609,9 @@ class ProductController extends VendorApiController
             $sortOrder++;
             PortfolioItemImage::query()->create([
                 'portfolio_item_id' => $product->id,
-                'image_path' => StoresUploadedFiles::store(
-                    $file,
-                    $isVideo ? 'portfolio/videos' : 'portfolio/images'
-                ),
+                'image_path' => $isVideo
+                    ? StoresUploadedFiles::store($file, 'portfolio/videos')
+                    : StoresUploadedFiles::storePortfolioImage($file, 'portfolio/images'),
                 'media_type' => $isVideo ? PortfolioItemImage::TYPE_VIDEO : PortfolioItemImage::TYPE_IMAGE,
                 'sort_order' => $sortOrder,
             ]);
@@ -660,7 +659,7 @@ class ProductController extends VendorApiController
 
         if ($variants === []) {
             foreach ($oldVariants as $existing) {
-                StoresUploadedFiles::delete($existing->image_path);
+                StoresUploadedFiles::deletePortfolioImage($existing->image_path);
             }
 
             return;
@@ -745,7 +744,7 @@ class ProductController extends VendorApiController
             foreach ($oldVariants as $existing) {
                 $path = $existing->image_path;
                 if ($path && ! in_array($path, $keptPaths, true)) {
-                    StoresUploadedFiles::delete($path);
+                    StoresUploadedFiles::deletePortfolioImage($path);
                 }
             }
         }

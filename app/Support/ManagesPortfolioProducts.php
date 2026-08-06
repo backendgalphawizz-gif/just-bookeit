@@ -36,10 +36,9 @@ trait ManagesPortfolioProducts
             $sortOrder++;
             PortfolioItemImage::query()->create([
                 'portfolio_item_id' => $product->id,
-                'image_path' => StoresUploadedFiles::store(
-                    $file,
-                    $isVideo ? 'portfolio/videos' : 'portfolio/images'
-                ),
+                'image_path' => $isVideo
+                    ? StoresUploadedFiles::store($file, 'portfolio/videos')
+                    : StoresUploadedFiles::storePortfolioImage($file, 'portfolio/images'),
                 'media_type' => $isVideo ? PortfolioItemImage::TYPE_VIDEO : PortfolioItemImage::TYPE_IMAGE,
                 'sort_order' => $sortOrder,
             ]);
@@ -125,7 +124,7 @@ trait ManagesPortfolioProducts
 
         if ($variants === []) {
             foreach ($oldVariants as $existing) {
-                StoresUploadedFiles::delete($existing->image_path);
+                StoresUploadedFiles::deletePortfolioImage($existing->image_path);
             }
 
             return;
@@ -188,7 +187,7 @@ trait ManagesPortfolioProducts
             foreach ($oldVariants as $existing) {
                 $path = $existing->image_path;
                 if ($path && ! in_array($path, $keptPaths, true)) {
-                    StoresUploadedFiles::delete($path);
+                    StoresUploadedFiles::deletePortfolioImage($path);
                 }
             }
         }
@@ -322,7 +321,7 @@ trait ManagesPortfolioProducts
         foreach ((array) $request->file('colors', []) as $index => $row) {
             $file = is_array($row) ? ($row['image'] ?? null) : null;
             if ($file instanceof UploadedFile && $file->isValid()) {
-                $storedColorPaths[(int) $index] = StoresUploadedFiles::store($file, 'portfolio/variants');
+                $storedColorPaths[(int) $index] = StoresUploadedFiles::storePortfolioImage($file, 'portfolio/variants');
             }
         }
 

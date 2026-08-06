@@ -95,7 +95,7 @@ class ProductVariantUpload
         $file = self::resolveImage($request, $index);
 
         if ($file instanceof UploadedFile && $file->isValid()) {
-            return StoresUploadedFiles::store($file, $directory);
+            return StoresUploadedFiles::storePortfolioImage($file, $directory);
         }
 
         if (! self::hasEmbeddedImage($variant)) {
@@ -113,10 +113,28 @@ class ProductVariantUpload
         }
 
         ['extension' => $extension, 'binary' => $binary] = $decoded;
-        $filename = trim($directory, '/').'/'.uniqid('variant_', true).'.'.$extension;
-        \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $binary);
+        $tmp = tempnam(sys_get_temp_dir(), 'jbvar');
+        if ($tmp === false) {
+            return null;
+        }
 
-        return $filename;
+        $tmpPath = $tmp.'.'.$extension;
+        rename($tmp, $tmpPath);
+        file_put_contents($tmpPath, $binary);
+
+        try {
+            $uploaded = new UploadedFile(
+                $tmpPath,
+                'variant.'.$extension,
+                'image/'.($extension === 'jpg' ? 'jpeg' : $extension),
+                null,
+                true
+            );
+
+            return StoresUploadedFiles::storePortfolioImage($uploaded, $directory);
+        } finally {
+            @unlink($tmpPath);
+        }
     }
 
     /** @return array{extension: string, binary: string}|null */
