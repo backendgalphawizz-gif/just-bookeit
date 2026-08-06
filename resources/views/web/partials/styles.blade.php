@@ -2109,7 +2109,8 @@ a { color: inherit; }
     width: 100%;
 }
 
-/* When the slider has only a few items, keep card size consistent and center the row. */
+/* When the slider has only a few items, stretch them edge-to-edge so the row
+   fills the container like the Figma layout. */
 @media (min-width: 720px) {
     .service-slider.slider-is-few,
     .category-slider.slider-is-few {
@@ -2121,14 +2122,14 @@ a { color: inherit; }
     }
     .service-slider.slider-is-few .service-card,
     .category-slider.slider-is-few .category-card {
-        width: clamp(220px, 28vw, 300px);
-        min-width: clamp(220px, 28vw, 300px);
-        max-width: 300px;
-        flex: 0 0 clamp(220px, 28vw, 300px);
+        width: auto;
+        min-width: 220px;
+        max-width: none;
+        flex: 1 1 0;
     }
     .service-slider.slider-is-few .service-card .jbw-tile,
     .category-slider.slider-is-few .jbw-tile--category {
-        aspect-ratio: 4 / 4;
+        aspect-ratio: 4 / 3;
     }
 }
 
