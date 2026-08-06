@@ -47,6 +47,15 @@ class OtpService
 
         $this->assertAuthTypeMatchesAccount($actorType, $mobile, $type);
 
+        // Do not issue an OTP for login until the account is allowed to authenticate
+        // (e.g. vendor/driver pending admin approval or rejected/inactive).
+        if ($type === self::TYPE_LOGIN) {
+            $actor = $this->findActor($actorType, $mobile);
+            if ($actor) {
+                $this->assertActorCanAuthenticate($actorType, $actor);
+            }
+        }
+
         $otp = (string) random_int(1000, 9999);
 
         OtpVerification::query()

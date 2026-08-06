@@ -116,10 +116,16 @@ class AddressController extends ApiController
     {
         $houseNo = $data['house_no'] ?? $existing?->house_no;
         $roadArea = $data['road_area'] ?? $existing?->road_area;
-        $addressLine = $data['address_line'] ?? $existing?->address_line;
 
-        if (empty($addressLine) && ($houseNo || $roadArea)) {
-            $addressLine = trim(implode(', ', array_filter([$houseNo, $roadArea])));
+        // Prefer an explicitly sent address_line; otherwise rebuild from house/road
+        // so updates to house_no or road_area also refresh `line` / full_address.
+        if (array_key_exists('address_line', $data) && filled($data['address_line'])) {
+            $addressLine = trim((string) $data['address_line']);
+        } else {
+            $addressLine = trim(implode(', ', array_filter([$houseNo, $roadArea], fn ($v) => filled($v))));
+            if ($addressLine === '') {
+                $addressLine = $existing?->address_line;
+            }
         }
 
         return [

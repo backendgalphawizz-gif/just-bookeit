@@ -36,10 +36,12 @@ class CustomerAddress extends Model
 
     public function fullAddress(): string
     {
-        $street = $this->address_line ?: trim(implode(', ', array_filter([
+        $fromParts = trim(implode(', ', array_filter([
             $this->house_no,
             $this->road_area,
-        ])));
+        ], fn ($v) => filled($v))));
+
+        $street = $fromParts !== '' ? $fromParts : (string) ($this->address_line ?: '');
 
         return trim(implode(', ', array_filter([
             $street,
@@ -47,6 +49,16 @@ class CustomerAddress extends Model
             $this->state,
             $this->pincode,
             $this->country,
-        ])));
+        ], fn ($v) => filled($v))));
+    }
+
+    public function line(): string
+    {
+        $fromParts = trim(implode(', ', array_filter([
+            $this->house_no,
+            $this->road_area,
+        ], fn ($v) => filled($v))));
+
+        return $fromParts !== '' ? $fromParts : (string) ($this->address_line ?: '');
     }
 }

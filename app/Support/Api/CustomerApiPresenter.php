@@ -476,7 +476,7 @@ class CustomerApiPresenter
             'pincode' => $address->pincode,
             'city' => $address->city,
             'state' => $address->state,
-            'line' => $address->address_line,
+            'line' => $address->line(),
             'full_address' => $address->fullAddress(),
             'is_default' => (bool) $address->is_default,
         ];
