@@ -231,8 +231,31 @@ class BookingController extends WebController
 
         $requiresRentalPeriod = $item->requiresRentalPeriod();
 
+        // If a saved address is selected, fill delivery fields before validation
+        // so checkout does not fail with an empty hidden delivery_address.
+        if ($request->filled('address_id')) {
+            $selectedDelivery = $customer->addresses()->find($request->integer('address_id'));
+            if ($selectedDelivery) {
+                $request->merge([
+                    'delivery_address' => filled($request->input('delivery_address'))
+                        ? $request->input('delivery_address')
+                        : $selectedDelivery->fullAddress(),
+                    'city' => filled($request->input('city')) ? $request->input('city') : $selectedDelivery->city,
+                    'pincode' => filled($request->input('pincode')) ? $request->input('pincode') : $selectedDelivery->pincode,
+                ]);
+            }
+        }
+
         $data = $request->validate(array_merge([
-            'delivery_address' => [$request->boolean('shipment_required', true) ? 'required' : 'nullable', 'string', 'max:500'],
+            'delivery_address' => [
+                // After address_id merge above: empty hidden field is OK if the saved address has lines.
+                \Illuminate\Validation\Rule::requiredIf(
+                    fn () => $request->boolean('shipment_required', true)
+                ),
+                'nullable',
+                'string',
+                'max:500',
+            ],
             'city' => ['nullable', 'string', 'max:100'],
             'pincode' => \App\Support\AdminValidationRules::pincodeRules(),
             'rental_start_date' => [$requiresRentalPeriod ? 'required' : 'nullable', 'date', 'after_or_equal:today'],

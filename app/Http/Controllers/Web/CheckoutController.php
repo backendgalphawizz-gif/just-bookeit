@@ -110,8 +110,36 @@ class CheckoutController extends WebController
         /** @var Customer $customer */
         $customer = Auth::guard('customer')->user();
 
+        // Resolve delivery text from the selected saved address before validation.
+        if ($request->filled('address_id')) {
+            $selectedDelivery = $customer->addresses()->find($request->integer('address_id'));
+            if ($selectedDelivery) {
+                $request->merge([
+                    'delivery_address' => filled($request->input('delivery_address'))
+                        ? $request->input('delivery_address')
+                        : $selectedDelivery->fullAddress(),
+                    'city' => filled($request->input('city')) ? $request->input('city') : $selectedDelivery->city,
+                    'pincode' => filled($request->input('pincode')) ? $request->input('pincode') : $selectedDelivery->pincode,
+                ]);
+            }
+        }
+
         $data = $request->validate(array_merge([
-            'delivery_address' => ['required', 'string', 'max:500'],
+            'delivery_address' => [
+                \Illuminate\Validation\Rule::requiredIf(function () use ($request) {
+                    $shipments = $request->input('vendor_shipments', []);
+                    if (! is_array($shipments) || $shipments === []) {
+                        return true;
+                    }
+
+                    return collect($shipments)->contains(
+                        fn ($row) => filter_var($row['shipment_required'] ?? true, FILTER_VALIDATE_BOOLEAN)
+                    );
+                }),
+                'nullable',
+                'string',
+                'max:500',
+            ],
             'billing_address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'pincode' => \App\Support\AdminValidationRules::pincodeRules(),

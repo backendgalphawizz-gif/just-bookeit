@@ -138,8 +138,17 @@
                     </label>
 
                     <div class="jbw-bo-address-box" data-delivery-box @if (! $shipmentRequired) hidden @endif>
+                        @php
+                            $deliveryAddressValue = old('delivery_address');
+                            if (! filled($deliveryAddressValue)) {
+                                $deliveryAddressValue = $selectedAddress?->fullAddress() ?? '';
+                            }
+                            $deliveryAddressDisplay = filled($deliveryAddressValue)
+                                ? $deliveryAddressValue
+                                : 'Add a delivery address';
+                        @endphp
                         <input type="hidden" name="address_id" id="address_id" value="{{ $selectedAddress?->id }}">
-                        <input type="hidden" name="delivery_address" id="delivery_address" value="{{ old('delivery_address', $selectedAddress?->fullAddress()) }}">
+                        <input type="hidden" name="delivery_address" id="delivery_address" value="{{ $deliveryAddressValue }}">
                         <input type="hidden" name="city" id="city" value="{{ old('city', $selectedAddress?->city ?? $customer->city) }}">
                         <input type="hidden" name="pincode" id="pincode" value="{{ old('pincode', $selectedAddress?->pincode) }}">
 
@@ -147,7 +156,7 @@
                             <div>
                                 <p class="jbw-bo-address-name" data-delivery-name>{{ $selectedAddress?->name ?: $customer->name }}</p>
                                 <p class="jbw-bo-address-lines" data-delivery-lines>
-                                    {{ old('delivery_address', $selectedAddress?->fullAddress() ?: 'Add a delivery address') }}
+                                    {{ $deliveryAddressDisplay }}
                                 </p>
                                 @if ($selectedAddress?->mobile_number || $customer->mobile_number)
                                     <p class="jbw-bo-address-phone" data-delivery-phone>{{ $selectedAddress?->mobile_number ?: $customer->mobile_number }}</p>
@@ -433,6 +442,23 @@
         const phone = form.querySelector('[data-delivery-phone]');
         if (phone) phone.textContent = opt.dataset.phone || '';
     });
+
+    // Ensure hidden delivery fields match the currently selected saved address.
+    (function syncDeliveryFromSelect() {
+        const select = form.querySelector('[data-delivery-select]');
+        const deliveryInput = form.querySelector('#delivery_address');
+        if (!select || !deliveryInput) return;
+        const opt = select.selectedOptions[0];
+        if (!opt || !opt.value) return;
+        if (!String(deliveryInput.value || '').trim() && opt.dataset.lines) {
+            deliveryInput.value = opt.dataset.lines;
+            form.querySelector('#address_id').value = opt.value;
+            form.querySelector('#city').value = opt.dataset.city || '';
+            form.querySelector('#pincode').value = opt.dataset.pincode || '';
+            const lines = form.querySelector('[data-delivery-lines]');
+            if (lines) lines.textContent = opt.dataset.lines;
+        }
+    })();
 
     const billingPickers = form.querySelectorAll('[data-toggle-billing]');
     billingPickers.forEach((btn) => btn.addEventListener('click', () => {
