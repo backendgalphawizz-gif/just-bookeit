@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V2;
 
 use App\Http\Controllers\Api\ApiController;
 use App\Models\Category;
+use App\Models\PlatformSetting;
 use App\Support\Api\CustomerApiPresenter;
 use App\Support\LocationResolver;
 use App\Support\ProductOptionCatalog;
@@ -86,6 +87,11 @@ class ConfigController extends ApiController
             ],
             'locations' => LocationResolver::catalog(),
             'location_other_value' => LocationResolver::OTHER,
+            'contact' => [
+                'email' => PlatformSetting::get('support_email'),
+                'phone' => PlatformSetting::get('support_phone'),
+                'address' => PlatformSetting::get('contact_address'),
+            ],
             'broadcasting' => \App\Support\BroadcastingConfig::clientConfig('/api/v2/broadcasting/auth'),
         ]);
     }
