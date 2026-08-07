@@ -318,13 +318,18 @@
                             : collect();
                         $unavailable = ! $item->isCatalogAvailable()
                             || ($item->variants && $item->variants->isNotEmpty() && $item->variants->every(fn ($v) => (int) ($v->quantity ?? 0) <= 0));
+                        $cardClasses = [
+                            'jbw-product-card',
+                            'jbw-product-card--listing',
+                            'is-unavailable' => $unavailable,
+                            'is-rental' => $item->requiresRentalPeriod(),
+                        ];
                     @endphp
-                    <a href="{{ route('web.catalog.show', $item) }}" @class([
-                        'jbw-product-card',
-                        'jbw-product-card--listing',
-                        'is-unavailable' => $unavailable,
-                        'is-rental' => $item->requiresRentalPeriod(),
-                    ])>
+                    @if ($unavailable)
+                        <div @class($cardClasses) aria-disabled="true" title="This product is currently unavailable">
+                    @else
+                        <a href="{{ route('web.catalog.show', $item) }}" @class($cardClasses)>
+                    @endif
                         <div class="jbw-product-card-img">
                             <img
                                 src="{{ $item->displayImageUrl() ?: $fallback }}"
@@ -338,12 +343,14 @@
                         <div class="jbw-product-card-body">
                             <div class="brand-rating-row">
                                 <p class="jbw-product-brand textlimit">{{ $item->vendor?->brand_name ?? 'Designer' }}</p>
-                                <div class="jbw-product-rating">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                    </svg>
-                                    <span>{{ number_format($rating, 1) }}</span>
-                                </div>
+                                @if ($rating > 0)
+                                    <div class="jbw-product-rating">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                        </svg>
+                                        <span>{{ number_format($rating, 1) }}</span>
+                                    </div>
+                                @endif
                             </div>
                             <p class="jbw-product-title textlimit">{{ $item->title }}</p>
                             <p class="jbw-product-price">{{ $item->rentalPriceLabel() }}</p>
@@ -356,7 +363,11 @@
                                 </div>
                             @endif
                         </div>
-                    </a>
+                    @if ($unavailable)
+                        </div>
+                    @else
+                        </a>
+                    @endif
                 @empty
                     <div class="jbw-catalog-empty">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>

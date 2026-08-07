@@ -13,9 +13,15 @@
 
     <div class="jbw-dp-image-gallery jbw-portfolio-gallery">
         @forelse ($images as $image)
-            <a href="{{ $image['href'] }}" class="jbw-dp-image-tile">
-                <img src="{{ $image['url'] }}" alt="{{ $image['title'] }}" loading="lazy">
-            </a>
+            @if (! empty($image['href']))
+                <a href="{{ $image['href'] }}" class="jbw-dp-image-tile">
+                    <img src="{{ $image['url'] }}" alt="{{ $image['title'] }}" loading="lazy">
+                </a>
+            @else
+                <div class="jbw-dp-image-tile" aria-disabled="true" title="This product is currently unavailable">
+                    <img src="{{ $image['url'] }}" alt="{{ $image['title'] }}" loading="lazy">
+                </div>
+            @endif
         @empty
             <div class="jbw-card" style="grid-column:1/-1">
                 <p style="color:var(--c-muted);text-align:center;margin:0">No portfolio images found for this selection.</p>

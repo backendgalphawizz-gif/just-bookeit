@@ -133,9 +133,11 @@
                         @endif
                         <div class="jbw-figma-seller-info">
                             <h3 class="jbw-figma-seller-name">{{ $order->vendor->brand_name }}</h3>
-                            <p class="jbw-figma-seller-meta">
-                                <span class="starcolor">★</span> {{ number_format($order->vendor->rating, 1) }}
-                            </p>
+                            @if ((float) ($order->vendor->rating ?? 0) > 0)
+                                <p class="jbw-figma-seller-meta">
+                                    <span class="starcolor">★</span> {{ number_format($order->vendor->rating, 1) }}
+                                </p>
+                            @endif
                             @if ($order->vendor->city)
                                 <p class="jbw-figma-seller-location">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-4.5 7-11a7 7 0 10-14 0c0 6.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>

@@ -43,6 +43,7 @@
 <!-- Category audience modal -->
 <div id="jbwGenderModal" class="jbw-modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="jbwCategoryTitle">
     <div class="jbw-modal-content jbw-modal-content--category">
+        <button type="button" class="jbw-modal-close" onclick="closeGenderModal()" aria-label="Close">&times;</button>
         <div class="jbw-category-head jbw-category-head--with-back">
             <a href="{{ $browseHomeUrl }}" class="jbw-catalog-back jbw-modal-back" aria-label="Go back" onclick="return browseFlowGoHome(event)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>

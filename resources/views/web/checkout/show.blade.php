@@ -106,9 +106,14 @@
                             <div>
                                 <p class="jbw-bo-designer-name">{{ $primaryVendor->brand_name }}</p>
                                 <p class="jbw-bo-designer-meta">
-                                    <span class="starcolor">★</span> {{ number_format((float) $primaryVendor->rating, 1) }}
+                                    @if ((float) ($primaryVendor->rating ?? 0) > 0)
+                                        <span class="starcolor">★</span> {{ number_format((float) $primaryVendor->rating, 1) }}
+                                        @if ($primaryVendor->city || $cartItems->pluck('vendor_id')->unique()->count() > 1)
+                                            <span aria-hidden="true">·</span>
+                                        @endif
+                                    @endif
                                     @if ($primaryVendor->city)
-                                        <span aria-hidden="true">·</span> {{ $primaryVendor->city }}
+                                        {{ $primaryVendor->city }}
                                     @endif
                                     @if ($cartItems->pluck('vendor_id')->unique()->count() > 1)
                                         <span aria-hidden="true">·</span> +{{ $cartItems->pluck('vendor_id')->unique()->count() - 1 }} more
@@ -335,7 +340,10 @@
                 </div>
                 <div class="jbw-bo-pay-lines">
                     <div class="jbw-bo-pay-line"><span>Subtotal</span><span id="checkout-line-subtotal">₹{{ number_format($subtotalAll, 0) }}</span></div>
-                    <div class="jbw-bo-pay-line"><span>Advance Amount</span><span id="checkout-line-advance">₹{{ number_format($advanceAll, 0) }}</span></div>
+                    <div class="jbw-bo-pay-line" id="checkout-line-advance-row" @if ($advanceAll <= 0) hidden @endif>
+                        <span>Advance Amount</span>
+                        <span id="checkout-line-advance">₹{{ number_format($advanceAll, 0) }}</span>
+                    </div>
                     <div class="jbw-bo-pay-line"><span>Shipping</span><span id="checkout-line-shipping">₹{{ number_format($shippingAll, 0) }}</span></div>
                     <div class="jbw-bo-pay-line"><span>GST &amp; Tax</span><span id="checkout-line-tax">₹{{ number_format($taxAll, 0) }}</span></div>
                 </div>
@@ -428,6 +436,8 @@
         set('checkout-line-shipping', shipping);
         set('checkout-line-tax', tax);
         set('checkout-line-advance', advance);
+        const advanceRow = document.getElementById('checkout-line-advance-row');
+        if (advanceRow) advanceRow.hidden = !(advance > 0);
         set('checkout-grand-total', subtotal + shipping);
     };
 
@@ -459,7 +469,11 @@
             document.getElementById('checkout-line-subtotal').textContent = formatInr(data.summary.amount ?? data.summary.subtotal ?? 0);
             document.getElementById('checkout-line-shipping').textContent = formatInr(data.summary.delivery_fee ?? 0);
             document.getElementById('checkout-line-tax').textContent = formatInr(data.summary.tax_amount ?? 0);
-            document.getElementById('checkout-line-advance').textContent = formatInr(data.summary.advance_amount ?? 0);
+            const advanceAmount = Number(data.summary.advance_amount ?? 0);
+            const advanceEl = document.getElementById('checkout-line-advance');
+            const advanceRow = document.getElementById('checkout-line-advance-row');
+            if (advanceEl) advanceEl.textContent = formatInr(advanceAmount);
+            if (advanceRow) advanceRow.hidden = !(advanceAmount > 0);
             document.getElementById('checkout-grand-total').textContent = formatInr(data.summary.grand_total ?? 0);
         } else {
             recomputeTotalsFromVendors();

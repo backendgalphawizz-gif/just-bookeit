@@ -10,8 +10,10 @@
         'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=900&q=85&fit=crop',
         'https://images.unsplash.com/photo-1617032210317-3b0855f047a4?w=900&q=85&fit=crop',
     ];
-    $coverUrl = $vendor->coverImageUrl() ?: $coverFallback;
+    $coverUrl = $coverUrl ?? ($vendor->coverImageUrl() ?: $coverFallback);
     $avatarUrl = $vendor->profileImageUrl() ?: $vendor->shopLogoUrl();
+    $avatarIsLogo = $avatarUrl && $avatarUrl === $vendor->shopLogoUrl() && ! $vendor->profileImageUrl();
+    $serviceImages = $serviceImages ?? [];
     $displayRating = $averageRating > 0 ? $averageRating : round((float) ($vendor->rating ?? 0), 1);
     $bio = trim((string) ($vendor->bio ?: ''));
     if ($bio === '') {
@@ -43,11 +45,11 @@
 
     <section class="jbw-dp-hero">
         <div class="jbw-dp-banner">
-            <img src="{{ $coverUrl }}" alt="{{ $vendor->brand_name }} cover">
+            <img src="{{ $coverUrl }}" alt="{{ $vendor->brand_name }} cover" loading="eager" decoding="async">
         </div>
         <div class="jbw-dp-avatar-wrap">
             @if ($avatarUrl)
-                <img src="{{ $avatarUrl }}" alt="{{ $vendor->brand_name }}" class="jbw-dp-avatar">
+                <img src="{{ $avatarUrl }}" alt="{{ $vendor->brand_name }}" @class(['jbw-dp-avatar', 'jbw-dp-avatar--logo' => $avatarIsLogo])>
             @else
                 <span class="jbw-dp-avatar jbw-dp-avatar--fallback">{{ strtoupper(substr($vendor->brand_name, 0, 1)) }}</span>
             @endif
@@ -84,27 +86,29 @@
             </div>
 
             <div class="jbw-dp-actions-left">
-                <div class="jbw-dp-rating-block">
-                    @php
-                        $filledStars = (int) floor(min(5, max(0, (float) $displayRating)));
-                        $hasHalfStar = ($displayRating - $filledStars) >= 0.5 && $filledStars < 5;
-                    @endphp
-                    <div class="jbw-dp-rating-score">
-                        <strong>{{ number_format($displayRating, 1) }}</strong>
-                        <span class="jbw-dp-stars" aria-hidden="true">
-                            @for ($i = 1; $i <= 5; $i++)
-                                @if ($i <= $filledStars)
-                                    <span class="is-on">★</span>
-                                @elseif ($i === $filledStars + 1 && $hasHalfStar)
-                                    <span class="is-on is-half">★</span>
-                                @else
-                                    <span>☆</span>
-                                @endif
-                            @endfor
-                        </span>
+                @if ($reviewCount > 0 || $displayRating > 0)
+                    <div class="jbw-dp-rating-block">
+                        @php
+                            $filledStars = (int) floor(min(5, max(0, (float) $displayRating)));
+                            $hasHalfStar = ($displayRating - $filledStars) >= 0.5 && $filledStars < 5;
+                        @endphp
+                        <div class="jbw-dp-rating-score">
+                            <strong>{{ number_format($displayRating, 1) }}</strong>
+                            <span class="jbw-dp-stars" aria-hidden="true">
+                                @for ($i = 1; $i <= 5; $i++)
+                                    @if ($i <= $filledStars)
+                                        <span class="is-on">★</span>
+                                    @elseif ($i === $filledStars + 1 && $hasHalfStar)
+                                        <span class="is-on is-half">★</span>
+                                    @else
+                                        <span>☆</span>
+                                    @endif
+                                @endfor
+                            </span>
+                        </div>
+                        <p class="jbw-dp-reviews-count">{{ number_format($reviewCount) }} TOTAL REVIEWS</p>
                     </div>
-                    <p class="jbw-dp-reviews-count">{{ number_format($reviewCount) }} TOTAL REVIEWS</p>
-                </div>
+                @endif
                 <button type="button" class="jbw-dp-btn jbw-dp-btn--primary" onclick="openVendorProducts({{ (int) $vendor->id }})">OUR PRODUCTS</button>
             </div>
         </div>
@@ -137,9 +141,14 @@
             <h2 class="jbw-dp-section-title">Services Offered</h2>
             <div class="jbw-dp-services">
                 @foreach ($offeredServices as $index => $service)
+                    @php
+                        $serviceImage = $serviceImages[(int) $service->id]
+                            ?? $service->imageUrl()
+                            ?: $serviceFallbacks[$index % count($serviceFallbacks)];
+                    @endphp
                     <a href="{{ route('web.catalog.index', ['vendor' => $vendor->id, 'service' => $service->id]) }}" class="jbw-dp-service-card">
                         <div class="jbw-dp-service-media">
-                            <img src="{{ $service->imageUrl() ?: $serviceFallbacks[$index % count($serviceFallbacks)] }}" alt="{{ $service->name }}" loading="lazy">
+                            <img src="{{ $serviceImage }}" alt="{{ $service->name }}" loading="lazy">
                         </div>
                         <p class="jbw-dp-service-label">{{ $service->name }}{{ str_contains(strtolower($service->name), 'booking') ? '' : ' Booking' }}</p>
                     </a>
@@ -148,10 +157,10 @@
         </section>
     @endif
 
+    @if ($reviewCount > 0)
     <section class="jbw-dp-section jbw-reviews-block">
         <h2 class="jbw-dp-section-title">Customer Reviews</h2>
 
-        @if ($reviewCount > 0)
             @php
                 $summaryFilled = (int) floor(min(5, max(0, (float) $averageRating)));
                 $summaryHalf = (($averageRating - $summaryFilled) >= 0.25) && $summaryFilled < 5;
@@ -214,12 +223,8 @@
                     </article>
                 @endforeach
             </div>
-        @else
-            <div class="reviews-empty">
-                <p>No reviews yet for this designer.</p>
-            </div>
-        @endif
     </section>
+    @endif
 </div>
 @endsection
 

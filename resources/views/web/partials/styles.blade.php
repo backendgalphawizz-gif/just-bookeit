@@ -1738,14 +1738,14 @@ a { color: inherit; }
 .jbw-hero-content {
     padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
     color: var(--c-text);
-    background: rgb(255 255 255 / 0.38);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     display: inline-block;
     border-radius: 10px;
-    border: 1px solid rgb(255 255 255 / 0.55);
+    border: 0;
     max-width: min(100%, 34rem);
-    box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.35);
+    box-shadow: none;
 }
 
 .jbw-hero-kicker {
@@ -2211,7 +2211,7 @@ a { color: inherit; }
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    margin: 0 0 1.75rem;
+    margin: 0 2.75rem 1.75rem 0;
 }
 
 .jbw-category-head--with-back .jbw-category-title {
@@ -2400,18 +2400,19 @@ a { color: inherit; }
     border-radius: 14px;
     background: #fff8f8;
     border: 1px solid #fadada;
-    padding: 0.7rem;
+    padding: 0.55rem;
     box-sizing: border-box;
 }
 
 .jbw-subcat-card-media img {
     width: 100%;
-    aspect-ratio: 5 / 4;
+    aspect-ratio: 3 / 4;
     height: auto;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
     display: block;
     border-radius: 10px;
-    background: #f3f0ec;
+    background: #f7f3ef;
 }
 
 .jbw-subcat-card-label {
@@ -3512,6 +3513,15 @@ a { color: inherit; }
 
 .jbw-product-card--listing.is-unavailable {
     opacity: 1;
+    cursor: not-allowed;
+    text-decoration: none;
+    color: inherit;
+    user-select: none;
+}
+
+.jbw-product-card--listing.is-unavailable:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .jbw-product-card--listing.is-unavailable .jbw-product-card-img img {
@@ -3685,7 +3695,7 @@ a { color: inherit; }
 }
 .jbw-gallery-main { border-radius: 20px; overflow: hidden; background: #f0ede8; }
 .jbw-gallery-main img,
-.jbw-gallery-main video { width: 100%; display: block; aspect-ratio: 1 / 1; object-fit: cover; }
+.jbw-gallery-main video { width: 100%; height: 100%; display: block; object-fit: contain; object-position: center; }
 .jbw-product-detail-title {
     font-family: var(--font-serif);
     font-size: clamp(1.75rem, 3vw, 2.00rem);
@@ -3976,7 +3986,7 @@ a { color: inherit; }
     height:100%;
     max-width:100%;
     max-height:100%;
-    object-fit:cover;
+    object-fit:contain;
     object-position:center;
     border-radius:0;
     background:transparent;
@@ -3993,14 +4003,14 @@ a { color: inherit; }
 
 @media (max-width: 767px) {
     .jbw-gallery-main {
-        aspect-ratio: 1 / 1;
-        max-height: min(48vh, 360px);
-        min-height: 220px;
+        aspect-ratio: 3 / 4;
+        max-height: min(58vh, 480px);
+        min-height: 260px;
         border-radius: 14px;
     }
     .jbw-gallery-main img,
     .jbw-gallery-main video {
-        object-fit: cover;
+        object-fit: contain;
         aspect-ratio: auto;
     }
     .jbw-gallery-thumbs button,
@@ -5704,6 +5714,27 @@ a { color: inherit; }
 @media (min-width: 768px) { .jbw-measure-form-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 767px) { .jbw-measure-form-grid { grid-template-columns: repeat(1, 1fr); } }
 
+.jbw-measure-input {
+    position: relative;
+    display: block;
+}
+.jbw-measure-input .jbw-input--measure {
+    width: 100%;
+    padding-right: 2.75rem;
+}
+.jbw-measure-unit {
+    position: absolute;
+    top: 50%;
+    right: 0.9rem;
+    transform: translateY(-50%);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--c-muted);
+    pointer-events: none;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
 .jbw-measures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.625rem; }
 .jbw-measure { background: var(--c-bg); border-radius: 10px; padding: 0.75rem; text-align: center; }
 .jbw-measure-label { display: block; font-size: 0.625rem; font-weight: 800; color: var(--c-muted); text-transform: uppercase; }
@@ -5784,14 +5815,17 @@ a { color: inherit; }
 .jbw-dp-banner {
     border-radius: 22px;
     overflow: hidden;
-    background: #ddd;
+    background: linear-gradient(135deg, #efe8e1 0%, #e2d6cc 100%);
+    aspect-ratio: 16 / 7;
     min-height: 220px;
+    max-height: 360px;
 }
 
 .jbw-dp-banner img {
     width: 100%;
-    height: clamp(200px, 28vw, 320px);
+    height: 100%;
     object-fit: cover;
+    object-position: center center;
     display: block;
 }
 
@@ -5813,6 +5847,12 @@ a { color: inherit; }
     display: grid;
     place-items: center;
     background: #f3e7e1;
+}
+
+.jbw-dp-avatar--logo {
+    object-fit: contain;
+    padding: 0.55rem;
+    background: #fff;
 }
 
 .jbw-dp-avatar--fallback {
@@ -8535,21 +8575,21 @@ background: #AE2A0B;
     letter-spacing: 0;
     font-size: 1rem;
     line-height: 1;
-    color: #e5e7eb;
+    color: #d1d5db;
 }
 
-.jbw-reviews-block .stars .is-on { color: inherit; }
-.jbw-reviews-block .stars .is-half { opacity: 0.55; }
+.jbw-reviews-block .stars .is-on { color: #f5b301; }
+.jbw-reviews-block .stars .is-half { color: #f5b301; opacity: 0.55; }
 
-.jbw-reviews-block .stars--summary { color: #e5e7eb; }
+.jbw-reviews-block .stars--summary { color: #d1d5db; }
 .jbw-reviews-block .stars--summary .is-on { color: #f5b301; }
 
 .jbw-reviews-block .stars--card {
     margin-top: 0.2rem;
     font-size: 0.85rem;
-    color: #e5e7eb;
+    color: #d1d5db;
 }
-.jbw-reviews-block .stars--card .is-on { color: var(--c-primary); }
+.jbw-reviews-block .stars--card .is-on { color: #f5b301; }
 
 .jbw-reviews-block .reviews-grid {
     display: grid;
@@ -8698,7 +8738,7 @@ background: #AE2A0B;
     margin-bottom: 10px;
 }
 
-.rating-summary span {
+.rating-summary > span:not(.stars) {
     color: #444;
     font-size: 15px;
     margin-left: 8px;
@@ -8853,8 +8893,8 @@ background: #AE2A0B;
     .jbw-hero-content {
         max-width: min(78%, 16.5rem);
         padding: 0.85rem 0.75rem;
-        background: rgb(255 255 255 / 0.42);
-        backdrop-filter: blur(8px);
+        background: transparent;
+        backdrop-filter: none;
     }
     .jbw-hero-title { font-size: clamp(1.15rem, 5.5vw, 1.55rem); margin-bottom: 0.4rem; }
     .jbw-hero-text { font-size: 0.75rem; margin-bottom: 0.7rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

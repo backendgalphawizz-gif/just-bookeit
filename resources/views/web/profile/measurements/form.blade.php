@@ -83,15 +83,19 @@
                             @endphp
                             <div class="jbw-field" data-measure-field data-types="{{ implode(',', $fieldApplies) }}" @unless ($fieldVisible) style="display:none" @endunless>
                                 <label class="jbw-label" for="{{ $key }}">{{ $field }}</label>
-                                <input
-                                    type="text"
-                                    id="{{ $key }}"
-                                    name="{{ $key }}"
-                                    class="jbw-input jbw-input--measure"
-                                    value="{{ old($key, $values[$key] ?? '') }}"
-                                    placeholder="—"
-                                    @unless ($fieldVisible) disabled @endunless
-                                >
+                                <div class="jbw-measure-input">
+                                    <input
+                                        type="text"
+                                        id="{{ $key }}"
+                                        name="{{ $key }}"
+                                        class="jbw-input jbw-input--measure"
+                                        value="{{ old($key, $values[$key] ?? '') }}"
+                                        placeholder="—"
+                                        inputmode="decimal"
+                                        @unless ($fieldVisible) disabled @endunless
+                                    >
+                                    <span class="jbw-measure-unit" aria-hidden="true">cm</span>
+                                </div>
                             </div>
                         @endforeach
                     </div>

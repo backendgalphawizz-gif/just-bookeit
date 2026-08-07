@@ -211,6 +211,8 @@ class ProfileController extends WebController
             'state' => ['nullable', 'string', 'max:100'],
             'pincode' => \App\Support\AdminValidationRules::pincodeRules(true),
             'country' => ['nullable', 'string', 'max:100'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'is_default' => ['nullable', 'boolean'],
         ]);
 

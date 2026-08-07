@@ -171,10 +171,11 @@ body {
 .jbw-hero-content {
     max-width: 34rem;
     padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
-    background: rgb(255 255 255 / 0.38);
-    backdrop-filter: blur(12px);
+    background: transparent;
+    backdrop-filter: none;
     border-radius: 10px;
-    border: 1px solid rgb(255 255 255 / 0.55);
+    border: 0;
+    box-shadow: none;
 }
 
 .jbw-hero-title {
@@ -2124,15 +2125,15 @@ body {
     }
 
     .jbw-gallery-main {
-        aspect-ratio: 1 / 1 !important;
-        max-height: min(48vh, 360px) !important;
-        min-height: 220px !important;
+        aspect-ratio: 3 / 4 !important;
+        max-height: min(58vh, 480px) !important;
+        min-height: 260px !important;
         border-radius: 14px;
     }
 
     .jbw-gallery-main img,
     .jbw-gallery-main video {
-        object-fit: cover !important;
+        object-fit: contain !important;
     }
 
     .jbw-product-detail {

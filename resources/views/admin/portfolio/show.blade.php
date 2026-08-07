@@ -172,7 +172,6 @@
                                 @php
                                     $colorName = trim((string) ($variant->color ?? ''));
                                     $colorCss = $resolveColorCss($colorName);
-                                    $colorCode = ProductOptionCatalog::hexForName($colorName);
                                 @endphp
                                 <article class="jb-product-variant-card">
                                     <div class="jb-product-variant-media">
@@ -200,9 +199,6 @@
                                                 @if ($colorName !== '')
                                                     <span class="jb-product-variant-swatch" style="background-color: {{ $colorCss }};"></span>
                                                     <span>{{ $colorName }}</span>
-                                                    @if ($colorCode)
-                                                        <span class="jb-product-variant-hex">{{ strtoupper($colorCode) }}</span>
-                                                    @endif
                                                 @else
                                                     —
                                                 @endif

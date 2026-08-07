@@ -1518,27 +1518,29 @@
 
     .jb-product-variant-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-        gap: 0.85rem;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
 
     .jb-product-variant-card {
-        display: grid;
-        grid-template-columns: 4.5rem minmax(0, 1fr);
-        gap: 0.75rem;
-        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
         border: 1px solid rgb(226 232 240);
         border-radius: 0.85rem;
         background: rgb(248 250 252);
+        min-width: 0;
     }
 
     .jb-product-variant-media {
-        width: 4.5rem;
-        height: 4.5rem;
-        border-radius: 0.65rem;
+        width: 4.25rem;
+        height: 4.25rem;
+        border-radius: 0.7rem;
         overflow: hidden;
         background: #fff;
         border: 1px solid rgb(226 232 240);
+        flex-shrink: 0;
     }
 
     .jb-product-variant-media img {
@@ -1561,49 +1563,66 @@
     }
 
     .jb-product-variant-body {
-        display: grid;
-        gap: 0.3rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 0.85rem 1.75rem;
+        flex: 1;
         min-width: 0;
     }
 
     .jb-product-variant-row {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem;
-        font-size: 0.8125rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+        min-width: 4.5rem;
+        font-size: 0.875rem;
     }
 
     .jb-product-variant-label {
         color: rgb(100 116 139);
         font-weight: 600;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
     }
 
     .jb-product-variant-row strong {
         color: rgb(15 23 42);
         font-weight: 700;
-        text-align: right;
+        text-align: left;
+        line-height: 1.3;
+        word-break: break-word;
     }
 
     .jb-product-variant-color {
         display: inline-flex;
         align-items: center;
-        gap: 0.35rem;
+        gap: 0.4rem;
         min-width: 0;
     }
 
     .jb-product-variant-swatch {
-        width: 0.85rem;
-        height: 0.85rem;
+        width: 0.9rem;
+        height: 0.9rem;
         border-radius: 9999px;
         border: 1px solid rgb(226 232 240);
         flex-shrink: 0;
     }
 
     .jb-product-variant-hex {
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: rgb(100 116 139);
+        display: none;
+    }
+
+    @media (max-width: 640px) {
+        .jb-product-variant-card {
+            align-items: flex-start;
+        }
+
+        .jb-product-variant-body {
+            gap: 0.7rem 1.25rem;
+        }
     }
 
     .jb-product-damage-list {

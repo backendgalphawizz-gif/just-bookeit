@@ -76,9 +76,14 @@
                             <div>
                                 <p class="jbw-bo-designer-name">{{ $item->vendor->brand_name }}</p>
                                 <p class="jbw-bo-designer-meta">
-                                    <span class="starcolor">★</span> {{ number_format((float) $item->vendor->rating, 1) }}
+                                    @if ((float) ($item->vendor->rating ?? 0) > 0)
+                                        <span class="starcolor">★</span> {{ number_format((float) $item->vendor->rating, 1) }}
+                                        @if ($item->vendor->city)
+                                            <span aria-hidden="true">·</span>
+                                        @endif
+                                    @endif
                                     @if ($item->vendor->city)
-                                        <span aria-hidden="true">·</span> {{ $item->vendor->city }}
+                                        {{ $item->vendor->city }}
                                     @endif
                                 </p>
                             </div>
@@ -300,7 +305,7 @@
                         <span id="booking-rental-label">Subtotal</span>
                         <span id="booking-line-subtotal">₹{{ number_format($pricing['subtotal'] ?? $item->rentalPriceAmount(), 0) }}</span>
                     </div>
-                    <div class="jbw-bo-pay-line">
+                    <div class="jbw-bo-pay-line" id="booking-line-advance-row" @if (((float) ($pricing['advance_amount'] ?? 0)) <= 0) hidden @endif>
                         <span>Advance Amount</span>
                         <span id="booking-line-advance">₹{{ number_format($pricing['advance_amount'] ?? 0, 0) }}</span>
                     </div>
@@ -381,7 +386,11 @@
                     datesEl.textContent = `${fmt(start)} - ${fmt(end)}`;
                 }
                 document.getElementById('booking-line-subtotal').textContent = formatInr(pricing.subtotal);
-                document.getElementById('booking-line-advance').textContent = formatInr(pricing.advance_amount || 0);
+                const advanceAmount = Number(pricing.advance_amount || 0);
+                const advanceRow = document.getElementById('booking-line-advance-row');
+                const advanceEl = document.getElementById('booking-line-advance');
+                if (advanceEl) advanceEl.textContent = formatInr(advanceAmount);
+                if (advanceRow) advanceRow.hidden = !(advanceAmount > 0);
                 document.getElementById('booking-line-delivery').textContent = formatInr(pricing.shipping_fee);
                 document.getElementById('booking-line-tax').textContent = formatInr(pricing.tax_amount);
                 document.getElementById('booking-grand-total').textContent = formatInr(pricing.total_amount);

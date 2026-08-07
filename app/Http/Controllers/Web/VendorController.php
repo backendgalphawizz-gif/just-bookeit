@@ -27,12 +27,24 @@ class VendorController extends WebController
             ->limit(10)
             ->get();
 
+        $portfolioItems = $vendor->portfolioItems()
+            ->where('status', 'approved')
+            ->with(['images', 'variants'])
+            ->latest('id')
+            ->limit(24)
+            ->get();
+
+        $coverUrl = $this->resolveDesignerCoverUrl($vendor, $portfolioItems);
+        $serviceImages = $this->resolveServicePreviewImages($portfolioItems, $offeredServices);
+
         return view('web.vendors.show', compact(
             'vendor',
             'offeredServices',
             'reviews',
             'reviewCount',
-            'averageRating'
+            'averageRating',
+            'coverUrl',
+            'serviceImages'
         ));
     }
 
@@ -62,7 +74,7 @@ class VendorController extends WebController
             return $urls->map(fn ($url) => [
                 'url' => $url,
                 'title' => $item->title,
-                'href' => route('web.catalog.show', $item),
+                'href' => $item->isCatalogAvailable() ? route('web.catalog.show', $item) : null,
             ]);
         })->values();
 
@@ -138,5 +150,55 @@ class VendorController extends WebController
         }
 
         return $offeredServices;
+    }
+
+    /**
+     * Prefer a real portfolio photo for the wide banner — then cover — not a logo crop.
+     *
+     * @param  Collection<int, \App\Models\PortfolioItem>  $portfolioItems
+     */
+    protected function resolveDesignerCoverUrl(Vendor $vendor, Collection $portfolioItems): string
+    {
+        $fallback = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=85&fit=crop';
+
+        foreach ($portfolioItems as $item) {
+            $url = $item->displayImageUrl();
+            if (filled($url)) {
+                return $url;
+            }
+        }
+
+        $cover = $vendor->coverImageUrl();
+        $logo = $vendor->shopLogoUrl();
+        $profile = $vendor->profileImageUrl();
+
+        if ($cover && $cover !== $logo && $cover !== $profile) {
+            return $cover;
+        }
+
+        return $cover ?: $fallback;
+    }
+
+    /**
+     * Map each offered service to a vendor product image when available.
+     *
+     * @param  Collection<int, \App\Models\PortfolioItem>  $portfolioItems
+     * @param  Collection<int, Category>  $services
+     * @return array<int, string>
+     */
+    protected function resolveServicePreviewImages(Collection $portfolioItems, Collection $services): array
+    {
+        $byCategory = $portfolioItems->groupBy('category_id');
+        $images = [];
+
+        foreach ($services as $service) {
+            $item = $byCategory->get($service->id)?->first(
+                fn ($row) => filled($row->displayImageUrl())
+            );
+            $images[(int) $service->id] = $item?->displayImageUrl()
+                ?: ($service->imageUrl() ?: '');
+        }
+
+        return $images;
     }
 }

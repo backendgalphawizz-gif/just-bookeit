@@ -221,18 +221,28 @@
         </section>
     @endif--}}
 
+    @if ($reviewCount > 0)
     <section class="jbw-section jbw-reviews-block" style="padding-top: 0;">
         <h2 class="jbw-product-detail-title">Customer Reviews</h2>
 
-        @if ($reviewCount > 0)
             @php
-                $filledStars = (int) round(min(5, max(0, $averageRating)));
-                $summaryStars = str_repeat('★', $filledStars).str_repeat('☆', 5 - $filledStars);
+                $summaryFilled = (int) floor(min(5, max(0, (float) $averageRating)));
+                $summaryHalf = (($averageRating - $summaryFilled) >= 0.25) && $summaryFilled < 5;
             @endphp
             <div class="reviews-header">
                 <div class="rating-summary">
-                    <span class="stars" aria-hidden="true">{{ $summaryStars }}</span>
-                    <span>{{ number_format($averageRating, 1) }} ({{ $reviewCount }} {{ $reviewCount === 1 ? 'review' : 'reviews' }})</span>
+                    <span class="stars stars--summary" aria-hidden="true">
+                        @for ($i = 1; $i <= 5; $i++)
+                            @if ($i <= $summaryFilled)
+                                <span class="is-on">★</span>
+                            @elseif ($i === $summaryFilled + 1 && $summaryHalf)
+                                <span class="is-on is-half">★</span>
+                            @else
+                                <span>☆</span>
+                            @endif
+                        @endfor
+                    </span>
+                    <span class="rating-summary-text">{{ number_format($averageRating, 1) }} ({{ $reviewCount }} {{ $reviewCount === 1 ? 'review' : 'reviews' }})</span>
                 </div>
                 @if ($item->vendor)
                     <a href="{{ route('web.vendors.show', $item->vendor) }}" class="view-all">VIEW ALL</a>
@@ -243,7 +253,6 @@
                 @foreach ($reviews as $review)
                     @php
                         $rating = (int) round(min(5, max(0, (float) $review->rating)));
-                        $stars = str_repeat('★', $rating).str_repeat('☆', 5 - $rating);
                         $name = $review->customer?->name ?: 'Customer';
                         $avatar = $review->customer?->profileImageUrl();
                         $initial = strtoupper(substr($name, 0, 1));
@@ -259,7 +268,11 @@
                                 @endif
                                 <div>
                                     <h4>{{ $name }}</h4>
-                                    <div class="stars" aria-label="{{ $rating }} out of 5 stars">{{ $stars }}</div>
+                                    <div class="stars stars--card" aria-label="{{ $rating }} out of 5 stars">
+                                        @for ($i = 1; $i <= 5; $i++)
+                                            <span @class(['is-on' => $i <= $rating])>{{ $i <= $rating ? '★' : '☆' }}</span>
+                                        @endfor
+                                    </div>
                                 </div>
                             </div>
                             <span class="review-time">{{ $review->created_at?->diffForHumans() }}</span>
@@ -272,12 +285,8 @@
                     </div>
                 @endforeach
             </div>
-        @else
-            <div class="reviews-empty">
-                <p>No reviews yet for this designer.</p>
-            </div>
-        @endif
     </section>
+    @endif
 </div>
 @endsection
 
@@ -344,26 +353,98 @@
         }
     }
 
-    // Read more
+    // Read more — only when description overflows the collapsed line budget.
     const descWrap = document.querySelector('[data-desc-wrap]');
     if (descWrap) {
         const descText = descWrap.querySelector('[data-desc-text]');
         const readBtn = descWrap.querySelector('[data-read-more]');
         const readLabel = descWrap.querySelector('[data-read-more-label]');
         const full = (descText?.textContent || '').trim();
-        const limit = 160;
 
-        if (descText && readBtn && full.length > limit) {
+        if (descText && readBtn && full) {
+            const lines = 3;
             let expanded = false;
-            const collapsed = full.slice(0, limit).replace(/\s+\S*$/, '') + '…';
-            descText.textContent = collapsed;
-            readBtn.hidden = false;
+            let collapsed = full;
+
+            const lineHeightPx = () => {
+                const style = window.getComputedStyle(descText);
+                const lh = parseFloat(style.lineHeight);
+                if (!Number.isNaN(lh) && lh > 0) return lh;
+                const fs = parseFloat(style.fontSize) || 15;
+                return fs * 1.6;
+            };
+
+            const maxHeightPx = () => lineHeightPx() * lines + 1;
+
+            const fitsCollapsed = (sample) => {
+                descText.textContent = sample;
+                readBtn.hidden = false;
+                return descWrap.scrollHeight <= maxHeightPx() + lineHeightPx() * 0.35;
+            };
+
+            const buildCollapsed = () => {
+                descText.textContent = full;
+                readBtn.hidden = true;
+                if (descWrap.scrollHeight <= maxHeightPx() + lineHeightPx() * 0.35) {
+                    return null;
+                }
+
+                let low = 0;
+                let high = full.length;
+                let best = 0;
+
+                while (low <= high) {
+                    const mid = (low + high) >> 1;
+                    const sample = full.slice(0, mid).replace(/\s+\S*$/, '').trimEnd() + '…';
+                    if (fitsCollapsed(sample)) {
+                        best = mid;
+                        low = mid + 1;
+                    } else {
+                        high = mid - 1;
+                    }
+                }
+
+                if (best < 20) {
+                    return full.slice(0, 80).replace(/\s+\S*$/, '').trimEnd() + '…';
+                }
+
+                return full.slice(0, best).replace(/\s+\S*$/, '').trimEnd() + '…';
+            };
+
+            const applyCollapsed = () => {
+                const next = buildCollapsed();
+                if (!next) {
+                    descText.textContent = full;
+                    readBtn.hidden = true;
+                    readBtn.classList.remove('is-expanded');
+                    return false;
+                }
+                collapsed = next;
+                descText.textContent = collapsed;
+                readBtn.hidden = false;
+                if (readLabel) readLabel.textContent = 'Read More';
+                readBtn.classList.remove('is-expanded');
+                return true;
+            };
+
+            applyCollapsed();
 
             readBtn.addEventListener('click', () => {
                 expanded = !expanded;
-                descText.textContent = expanded ? full : collapsed;
-                if (readLabel) readLabel.textContent = expanded ? 'Read Less' : 'Read More';
-                readBtn.classList.toggle('is-expanded', expanded);
+                if (expanded) {
+                    descText.textContent = full;
+                    if (readLabel) readLabel.textContent = 'Read Less';
+                    readBtn.classList.add('is-expanded');
+                } else {
+                    descText.textContent = collapsed;
+                    if (readLabel) readLabel.textContent = 'Read More';
+                    readBtn.classList.remove('is-expanded');
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (expanded) return;
+                applyCollapsed();
             });
         }
     }
