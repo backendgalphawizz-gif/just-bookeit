@@ -1738,14 +1738,14 @@ a { color: inherit; }
 .jbw-hero-content {
     padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
     color: var(--c-text);
-    background: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    background: rgb(255 255 255 / 0.22);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: inline-block;
     border-radius: 10px;
-    border: 0;
+    border: 1px solid rgb(255 255 255 / 0.35);
     max-width: min(100%, 34rem);
-    box-shadow: none;
+    box-shadow: 0 16px 40px -28px rgb(0 0 0 / 0.28);
 }
 
 .jbw-hero-kicker {
@@ -3805,6 +3805,9 @@ a { color: inherit; }
     font-size: 0.875rem;
     font-weight: 700;
     cursor: pointer;
+}
+.jbw-read-more[hidden] {
+    display: none !important;
 }
 .jbw-read-more svg { transition: transform 0.15s; }
 .jbw-read-more.is-expanded svg { transform: rotate(180deg); }
@@ -8893,8 +8896,9 @@ background: #AE2A0B;
     .jbw-hero-content {
         max-width: min(78%, 16.5rem);
         padding: 0.85rem 0.75rem;
-        background: transparent;
-        backdrop-filter: none;
+        background: rgb(255 255 255 / 0.28);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgb(255 255 255 / 0.35);
     }
     .jbw-hero-title { font-size: clamp(1.15rem, 5.5vw, 1.55rem); margin-bottom: 0.4rem; }
     .jbw-hero-text { font-size: 0.75rem; margin-bottom: 0.7rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

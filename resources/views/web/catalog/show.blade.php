@@ -353,18 +353,26 @@
         }
     }
 
-    // Read more — only when description overflows the collapsed line budget.
+    // Read more — only when description is long enough to need collapsing.
     const descWrap = document.querySelector('[data-desc-wrap]');
     if (descWrap) {
         const descText = descWrap.querySelector('[data-desc-text]');
         const readBtn = descWrap.querySelector('[data-read-more]');
         const readLabel = descWrap.querySelector('[data-read-more-label]');
-        const full = (descText?.textContent || '').trim();
+        const full = (descText?.textContent || '').trim().replace(/\s+/g, ' ');
 
         if (descText && readBtn && full) {
             const lines = 3;
+            const minCharsForToggle = 160;
             let expanded = false;
             let collapsed = full;
+
+            const hideToggle = () => {
+                descText.textContent = full;
+                readBtn.hidden = true;
+                readBtn.classList.remove('is-expanded');
+                if (readLabel) readLabel.textContent = 'Read More';
+            };
 
             const lineHeightPx = () => {
                 const style = window.getComputedStyle(descText);
@@ -374,18 +382,22 @@
                 return fs * 1.6;
             };
 
-            const maxHeightPx = () => lineHeightPx() * lines + 1;
+            const maxHeightPx = () => lineHeightPx() * lines + 2;
+
+            const fitsWithoutToggle = () => {
+                descText.textContent = full;
+                readBtn.hidden = true;
+                return descText.scrollHeight <= maxHeightPx();
+            };
 
             const fitsCollapsed = (sample) => {
                 descText.textContent = sample;
-                readBtn.hidden = false;
-                return descWrap.scrollHeight <= maxHeightPx() + lineHeightPx() * 0.35;
+                readBtn.hidden = true;
+                return descText.scrollHeight <= maxHeightPx();
             };
 
             const buildCollapsed = () => {
-                descText.textContent = full;
-                readBtn.hidden = true;
-                if (descWrap.scrollHeight <= maxHeightPx() + lineHeightPx() * 0.35) {
+                if (full.length <= minCharsForToggle || fitsWithoutToggle()) {
                     return null;
                 }
 
@@ -396,6 +408,10 @@
                 while (low <= high) {
                     const mid = (low + high) >> 1;
                     const sample = full.slice(0, mid).replace(/\s+\S*$/, '').trimEnd() + '…';
+                    if (sample.length <= 4) {
+                        high = mid - 1;
+                        continue;
+                    }
                     if (fitsCollapsed(sample)) {
                         best = mid;
                         low = mid + 1;
@@ -404,19 +420,22 @@
                     }
                 }
 
-                if (best < 20) {
-                    return full.slice(0, 80).replace(/\s+\S*$/, '').trimEnd() + '…';
+                if (best < Math.min(40, full.length * 0.35)) {
+                    return null;
                 }
 
-                return full.slice(0, best).replace(/\s+\S*$/, '').trimEnd() + '…';
+                const next = full.slice(0, best).replace(/\s+\S*$/, '').trimEnd() + '…';
+                if (next.replace('…', '').length >= full.length - 8) {
+                    return null;
+                }
+
+                return next;
             };
 
             const applyCollapsed = () => {
                 const next = buildCollapsed();
                 if (!next) {
-                    descText.textContent = full;
-                    readBtn.hidden = true;
-                    readBtn.classList.remove('is-expanded');
+                    hideToggle();
                     return false;
                 }
                 collapsed = next;
@@ -427,7 +446,16 @@
                 return true;
             };
 
-            applyCollapsed();
+            const run = () => {
+                expanded = false;
+                applyCollapsed();
+            };
+
+            run();
+            requestAnimationFrame(run);
+            if (document.fonts?.ready) {
+                document.fonts.ready.then(run).catch(() => {});
+            }
 
             readBtn.addEventListener('click', () => {
                 expanded = !expanded;
@@ -446,6 +474,8 @@
                 if (expanded) return;
                 applyCollapsed();
             });
+        } else if (readBtn) {
+            readBtn.hidden = true;
         }
     }
 

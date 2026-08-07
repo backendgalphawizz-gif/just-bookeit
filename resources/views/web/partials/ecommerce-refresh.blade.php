@@ -171,11 +171,11 @@ body {
 .jbw-hero-content {
     max-width: 34rem;
     padding: clamp(1.75rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.75rem);
-    background: transparent;
-    backdrop-filter: none;
+    background: rgb(255 255 255 / 0.22);
+    backdrop-filter: blur(8px);
     border-radius: 10px;
-    border: 0;
-    box-shadow: none;
+    border: 1px solid rgb(255 255 255 / 0.35);
+    box-shadow: 0 16px 40px -28px rgb(0 0 0 / 0.28);
 }
 
 .jbw-hero-title {
